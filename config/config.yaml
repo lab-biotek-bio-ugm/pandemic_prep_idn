@@ -18,7 +18,7 @@ subsampling:
   group_by: "year month"
   sequences_per_group: 10
   max_n_content: 0.05
-  max_sequences: 500
+  max_sequences: 100
 
 # 5. File References
 references:
