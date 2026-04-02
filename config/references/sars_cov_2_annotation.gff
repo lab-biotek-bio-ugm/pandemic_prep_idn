@@ -5,7 +5,10 @@
 ##species https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=2697049
 MN908947.3	Genbank	region	1	29903	.	+	.	ID=MN908947.3:1..29903;Dbxref=taxon:2697049;collection-date=Dec-2019;country=China;gb-acronym=SARS-CoV-2;gbkey=Src;genome=genomic;isolate=Wuhan-Hu-1;mol_type=genomic RNA;nat-host=Homo sapiens;old-name=Wuhan seafood market pneumonia virus
 MN908947.3	Genbank	five_prime_UTR	1	265	.	+	.	ID=id-MN908947.3:1..265;gbkey=5'UTR
-
+MN908947.3	Genbank	gene	266	13483	.	+	.	ID=gene-ORF1a;Name=ORF1a;gbkey=Gene;gene=ORF1a;gene_biotype=protein_coding
+MN908947.3	Genbank	CDS	266	13483	.	+	0	ID=cds-ORF1a;Parent=gene-ORF1a;Name=ORF1a;gbkey=CDS;gene=ORF1a;product=ORF1a polyprotein
+MN908947.3	Genbank	gene	13468	21555	.	+	.	ID=gene-ORF1b;Name=ORF1b;gbkey=Gene;gene=ORF1b;gene_biotype=protein_coding
+MN908947.3	Genbank	CDS	13468	21555	.	+	0	ID=cds-ORF1b;Parent=gene-ORF1b;Name=ORF1b;gbkey=CDS;gene=ORF1b;product=ORF1b polyprotein
 MN908947.3	Genbank	gene	21563	25384	.	+	.	ID=gene-S;Name=S;gbkey=Gene;gene=S;gene_biotype=protein_coding
 MN908947.3	Genbank	CDS	21563	25384	.	+	0	ID=cds-QHD43416.1;Parent=gene-S;Dbxref=NCBI_GP:QHD43416.1;Name=QHD43416.1;Note=structural protein;gbkey=CDS;gene=S;product=surface glycoprotein;protein_id=QHD43416.1
 MN908947.3	Genbank	gene	25393	26220	.	+	.	ID=gene-ORF3a;Name=ORF3a;gbkey=Gene;gene=ORF3a;gene_biotype=protein_coding
