@@ -140,6 +140,7 @@ rule augur_translate:
             --tree {input.tree} \
             --ancestral-sequences {input.node_data} \
             --reference-sequence {input.reference} \
+            --validation-mode warn \
             --output-node-data {output.node_data} 2> {log}
         """
 
