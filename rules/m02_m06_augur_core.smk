@@ -18,10 +18,13 @@ rule augur_filter:
         seq_per_group=config["subsampling"]["sequences_per_group"],
         max_seq=config["subsampling"]["max_sequences"],
         min_length=config["ncbi_query"]["min_length"]
+    conda:
+        "../envs/nextstrain.yaml"
     log:
         f"logs/{BUILD}/m02_augur_filter.log"
     shell:
         """
+        mkdir -p results/{BUILD}/m02
         augur filter \
             --sequences {input.sequences} \
             --metadata {input.metadata} \
@@ -40,10 +43,13 @@ rule augur_align:
         alignment=f"results/{BUILD}/m03/aligned.fasta"
     threads:
         8
+    conda:
+        "../envs/nextstrain.yaml"
     log:
         f"logs/{BUILD}/m03_augur_align.log"
     shell:
         """
+        mkdir -p results/{BUILD}/m03
         augur align \
             --sequences {input.sequences} \
             --reference-sequence {input.reference} \
@@ -59,10 +65,13 @@ rule augur_tree:
         tree=f"results/{BUILD}/m04/tree_raw.nwk"
     threads:
         8
+    conda:
+        "../envs/nextstrain.yaml"
     log:
         f"logs/{BUILD}/m04_augur_tree.log"
     shell:
         """
+        mkdir -p results/{BUILD}/m04
         augur tree \
             --alignment {input.alignment} \
             --output {output.tree} \
@@ -78,6 +87,8 @@ rule augur_refine:
     output:
         tree=f"results/{BUILD}/m04/tree.nwk",
         node_data=f"results/{BUILD}/m04/branch_lengths.json"
+    conda:
+        "../envs/nextstrain.yaml"
     log:
         f"logs/{BUILD}/m04_augur_refine.log"
     shell:
@@ -99,10 +110,13 @@ rule augur_ancestral:
         alignment=f"results/{BUILD}/m03/aligned.fasta"
     output:
         node_data=f"results/{BUILD}/m06/nt_muts.json"
+    conda:
+        "../envs/nextstrain.yaml"
     log:
         f"logs/{BUILD}/m06_augur_ancestral.log"
     shell:
         """
+        mkdir -p results/{BUILD}/m06
         augur ancestral \
             --tree {input.tree} \
             --alignment {input.alignment} \
@@ -117,6 +131,8 @@ rule augur_translate:
         reference=config["references"]["annotation"]
     output:
         node_data=f"results/{BUILD}/m06/aa_muts.json"
+    conda:
+        "../envs/nextstrain.yaml"
     log:
         f"logs/{BUILD}/m06_augur_translate.log"
     shell:
@@ -139,14 +155,18 @@ rule augur_export:
         auspice_json=f"results/{BUILD}/nextstrain/auspice_dataset.json"
     params:
         build_name=BUILD
+    conda:
+        "../envs/nextstrain.yaml"
     log:
         f"logs/{BUILD}/m06_augur_export.log"
     shell:
         """
+        mkdir -p results/{BUILD}/nextstrain
         augur export v2 \
             --tree {input.tree} \
             --metadata {input.metadata} \
             --node-data {input.branch_lengths} {input.nt_muts} {input.aa_muts} \
             --output {output.auspice_json} \
+            --title "Pandemic Preparedness: {params.build_name}" \
             --build-url "https://github.com/engkinandatama/pandemic-preparedness" 2> {log}
         """

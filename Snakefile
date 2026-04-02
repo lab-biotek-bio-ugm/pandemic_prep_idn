@@ -10,8 +10,7 @@ BUILD = config["build_name"]
 
 rule all:
     input:
-        f"results/{BUILD}/nextstrain/auspice_dataset.json",  # Clade-annotated phylogeny (M6)
-        f"results/{BUILD}/nextstrain/aligned.fasta"          # Standardized MSA for HyPhy (M3)
+        f"results/{BUILD}/nextstrain/auspice_dataset.json"
 
 include: "rules/m01_acquisition.smk"
 include: "rules/m02_m06_augur_core.smk"

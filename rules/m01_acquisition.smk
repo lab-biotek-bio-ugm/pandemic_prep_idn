@@ -12,18 +12,22 @@ rule download_ncbi_data:
         organism=config["ncbi_query"]["organism"],
         location=config["ncbi_query"]["location"],
         zip_file=f"results/{BUILD}/m01/ncbi_dataset.zip"
+    conda:
+        "../envs/nextstrain.yaml"
     log:
         f"logs/{BUILD}/m01_download.log"
     shell:
         """
-        datasets download virus name "{params.organism}" \
+        mkdir -p results/{BUILD}/m01 logs/{BUILD}
+
+        datasets download virus genome taxon "{params.organism}" \
             --geo-location "{params.location}" \
             --filename {params.zip_file} 2> {log}
-            
-        unzip -p {params.zip_file} ncbi_dataset/data/genomic.fna > {output.fasta}
-        unzip -p {params.zip_file} ncbi_dataset/data/data_report.jsonl > {output.jsonl}
-        
-        rm {params.zip_file}
+
+        unzip -o -p {params.zip_file} ncbi_dataset/data/genomic.fna > {output.fasta}
+        unzip -o -p {params.zip_file} ncbi_dataset/data/data_report.jsonl > {output.jsonl}
+
+        rm -f {params.zip_file}
         """
 
 rule convert_metadata_tsv:
