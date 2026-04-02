@@ -1,0 +1,24 @@
+name: pandemic_nextstrain
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  # Pipeline Orchestrator
+  - snakemake >=8.0
+  
+  # Nextstrain Ecosystem (M1-M4, M6)
+  - augur >=24.0.0
+  - auspice >=3.0.0
+  - nextstrain-cli
+  - ncov-ingest
+  - ncbi-datasets-cli
+
+  # Custom Evolutionary Analytics (M5)
+  - hyphy >=2.5
+
+  # Python Script Dependencies (M7 Bridge)
+  - python >=3.10
+  - biopython
+  - pandas
+  - pyyaml
