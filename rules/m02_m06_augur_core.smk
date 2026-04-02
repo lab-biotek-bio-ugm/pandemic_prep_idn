@@ -10,7 +10,7 @@ BUILD = config["build_name"]
 rule augur_filter:
     input:
         sequences=f"results/{BUILD}/m01/raw_sequences.fasta",
-        metadata=f"results/{BUILD}/m01/metadata.tsv"
+        metadata=f"results/{BUILD}/m01/metadata_enriched.tsv"
     output:
         sequences=f"results/{BUILD}/m02/filtered_sequences.fasta"
     params:
@@ -82,7 +82,7 @@ rule augur_refine:
     input:
         tree=f"results/{BUILD}/m04/tree_raw.nwk",
         alignment=f"results/{BUILD}/m03/aligned.fasta",
-        metadata=f"results/{BUILD}/m01/metadata.tsv"
+        metadata=f"results/{BUILD}/m01/metadata_enriched.tsv"
     output:
         tree=f"results/{BUILD}/m04/tree.nwk",
         node_data=f"results/{BUILD}/m04/branch_lengths.json"
@@ -147,7 +147,7 @@ rule augur_translate:
 rule augur_export:
     input:
         tree=f"results/{BUILD}/m04/tree.nwk",
-        metadata=f"results/{BUILD}/m01/metadata.tsv",
+        metadata=f"results/{BUILD}/m01/metadata_enriched.tsv",
         branch_lengths=f"results/{BUILD}/m04/branch_lengths.json",
         nt_muts=f"results/{BUILD}/m06/nt_muts.json",
         aa_muts=f"results/{BUILD}/m06/aa_muts.json"

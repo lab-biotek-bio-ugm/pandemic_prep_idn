@@ -10,6 +10,8 @@ dependencies:
   # Nextstrain Ecosystem (M1-M4, M6)
   - augur >=24.0.0
   - ncbi-datasets-cli
+  - nextclade
+  - pandas
 
   # Custom Evolutionary Analytics (M5)
   - hyphy >=2.5

@@ -36,3 +36,45 @@ rule convert_metadata_tsv:
         echo "Bypassing TSV conversion. Touching generated dummy TSV to satisfy Snakemake."
         touch {output.tsv}
         """
+
+rule nextclade_dataset:
+    output:
+        dir=directory(f"data/nextclade_dataset")
+    conda:
+        "../envs/nextstrain.yaml"
+    shell:
+        """
+        nextclade dataset get --name sars-cov-2 --output-dir {output.dir}
+        """
+
+rule run_nextclade:
+    input:
+        sequences=f"results/{BUILD}/m01/raw_sequences.fasta",
+        dataset=rules.nextclade_dataset.output.dir
+    output:
+        tsv=f"results/{BUILD}/m01/nextclade.tsv",
+    conda:
+        "../envs/nextstrain.yaml"
+    shell:
+        """
+        nextclade run \
+            --input-dataset {input.dataset} \
+            --output-tsv {output.tsv} \
+            {input.sequences}
+        """
+
+rule enrich_metadata:
+    input:
+        base=f"results/{BUILD}/m01/metadata.tsv",
+        nc=f"results/{BUILD}/m01/nextclade.tsv"
+    output:
+        tsv=f"results/{BUILD}/m01/metadata_enriched.tsv"
+    conda:
+        "../envs/nextstrain.yaml"
+    shell:
+        """
+        python scripts/enrich_metadata.py \
+            --base-metadata {input.base} \
+            --nextclade-tsv {input.nc} \
+            --output {output.tsv}
+        """
