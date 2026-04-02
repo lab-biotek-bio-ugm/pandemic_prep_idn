@@ -1,0 +1,33 @@
+# M1-M7 Pipeline Configuration
+
+# 1. Target Identity
+build_name: "sars-cov-2-trial"
+
+# 2. Database Provider
+database: "ncbi"  # Options: "ncbi" or "gisaid"
+
+# 3. Data Acquisition
+# Settings for NCBI Datasets API (M1)
+ncbi_query:
+  organism: "SARS-CoV-2"
+  location: "Indonesia"
+  min_length: 29000
+  
+# 4. Spatio-Temporal Filter (M2)
+subsampling:
+  group_by: "year month"
+  sequences_per_group: 10
+  max_n_content: 0.05
+  max_sequences: 500
+
+# 5. File References
+references:
+  genome: "config/references/sars_cov_2_reference.fasta"
+  annotation: "config/references/sars_cov_2_annotation.gff"
+
+# 6. Evolutionary Selection Pressure Engine (M5)
+hyphy:
+  p_value_threshold: 0.1
+  methods:
+    - "FUBAR"
+    - "MEME"
