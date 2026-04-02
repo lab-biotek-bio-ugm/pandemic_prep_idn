@@ -11,6 +11,7 @@ database: "ncbi"  # Options: "ncbi" or "gisaid"
 ncbi_query:
   organism: "SARS-CoV-2"
   location: "Indonesia"
+  released_after: "2023-01-01"
   min_length: 29000
   
 # 4. Spatio-Temporal Filter (M2)

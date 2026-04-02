@@ -11,6 +11,7 @@ rule download_ncbi_data:
     params:
         organism=config["ncbi_query"]["organism"],
         location=config["ncbi_query"]["location"],
+        released_after=config["ncbi_query"].get("released_after", ""),
         zip_file=f"results/{BUILD}/m01/ncbi_dataset.zip"
     conda:
         "../envs/nextstrain.yaml"
@@ -20,8 +21,14 @@ rule download_ncbi_data:
         """
         mkdir -p results/{BUILD}/m01 logs/{BUILD}
 
+        RELEASE_FLAG=""
+        if [ ! -z "{params.released_after}" ]; then
+            RELEASE_FLAG="--released-after {params.released_after}"
+        fi
+
         datasets download virus genome taxon "{params.organism}" \
             --geo-location "{params.location}" \
+            $RELEASE_FLAG \
             --filename {params.zip_file} 2> {log}
 
         unzip -o -p {params.zip_file} ncbi_dataset/data/genomic.fna > {output.fasta}
