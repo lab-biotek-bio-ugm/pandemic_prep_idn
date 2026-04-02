@@ -30,7 +30,6 @@ rule augur_filter:
             --metadata {input.metadata} \
             --group-by {params.group_by} \
             --sequences-per-group {params.seq_per_group} \
-            --subsample-max-sequences {params.max_seq} \
             --min-length {params.min_length} \
             --output-sequences {output.sequences} 2> {log}
         """
