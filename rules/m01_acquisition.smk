@@ -171,17 +171,17 @@ else:
 # ==========================================================================
 
 # ---------------------------------------------------------------------------
-# Nextclade dataset download (cached locally)
+# Nextclade dataset download (isolated to specific build directory)
 # ---------------------------------------------------------------------------
 rule nextclade_dataset:
     output:
-        dir=directory("data/nextclade_dataset")
+        dir=directory(f"results/{{BUILD}}/m01/nextclade_dataset")
     params:
         dataset_name=config["nextclade"]["dataset_name"]
     conda:
         "../envs/nextstrain.yaml"
     log:
-        f"logs/{BUILD}/m01_nextclade_dataset.log"
+        f"logs/{{BUILD}}/m01_nextclade_dataset.log"
     shell:
         """
         nextclade dataset get \
@@ -195,8 +195,8 @@ rule nextclade_dataset:
 # ---------------------------------------------------------------------------
 rule run_nextclade:
     input:
-        sequences=f"results/{BUILD}/m01/raw_sequences.fasta",
-        dataset="data/nextclade_dataset"
+        sequences=f"results/{{BUILD}}/m01/raw_sequences.fasta",
+        dataset=f"results/{{BUILD}}/m01/nextclade_dataset"
     output:
         tsv=f"results/{BUILD}/m01/nextclade.tsv"
     conda:
