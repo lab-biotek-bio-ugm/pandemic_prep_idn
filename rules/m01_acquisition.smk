@@ -114,18 +114,6 @@ elif DATABASE == "gisaid":
     # ------------------------------------------------------------------
     # GISAID EpiCoV pathway (skeleton — requires credentials)
     # ------------------------------------------------------------------
-    # GISAID does not have a public CLI like NCBI. Data is typically:
-    #   1. Downloaded manually from https://epicov.org/epi3
-    #   2. Or via the GISAID API (requires institutional access)
-    #   3. Or via augur curate (Nextstrain's GISAID ingest pipeline)
-    #
-    # This skeleton expects the user to place raw files manually at:
-    #   results/{BUILD}/m01/raw_sequences.fasta
-    #   results/{BUILD}/m01/metadata.tsv
-    #
-    # The user can also set up automated download via the Nextstrain
-    # GISAID ingest workflow: https://github.com/nextstrain/ncov-ingest
-
     rule download_gisaid_data:
         output:
             fasta=f"results/{BUILD}/m01/raw_sequences.fasta",
@@ -147,23 +135,103 @@ elif DATABASE == "gisaid":
             echo "    - {output.fasta}" | tee -a {log}
             echo "    - {output.tsv}" | tee -a {log}
             echo "" | tee -a {log}
-            echo "  Expected metadata TSV columns:" | tee -a {log}
-            echo "    strain, virus, date, region, country, location, host," | tee -a {log}
-            echo "    date_submitted, length" | tee -a {log}
-            echo "" | tee -a {log}
             echo "  Download from: https://epicov.org/epi3" | tee -a {log}
-            echo "  Or use: https://github.com/nextstrain/ncov-ingest" | tee -a {log}
             echo "================================================================" | tee -a {log}
 
-            # Check if files already exist (manually placed by user)
             if [ ! -f "{output.fasta}" ] || [ ! -f "{output.tsv}" ]; then
-                echo "ERROR: GISAID files not found. Please download and place them manually." | tee -a {log}
+                echo "ERROR: GISAID files not found." | tee -a {log}
                 exit 1
             fi
             """
 
+elif DATABASE == "local":
+    # ------------------------------------------------------------------
+    # Local / Manual data pathway
+    # Supports files downloaded from NCBI Virus web portal or any
+    # manually prepared FASTA + metadata.
+    # ------------------------------------------------------------------
+    rule copy_local_sequences:
+        """Copy manually-placed FASTA sequences to pipeline results directory."""
+        input:
+            fasta=config["local_input"]["sequences"]
+        output:
+            fasta=f"results/{BUILD}/m01/raw_sequences.fasta"
+        log:
+            f"logs/{BUILD}/m01_download.log"
+        shell:
+            """
+            mkdir -p results/{BUILD}/m01
+            cp {input.fasta} {output.fasta}
+            echo "Copied local sequences: $(grep -c '^>' {output.fasta}) records" | tee {log}
+            """
+
+    rule convert_local_metadata:
+        """Convert NCBI Virus CSV metadata to pipeline TSV format."""
+        input:
+            csv=config["local_input"]["metadata"]
+        output:
+            tsv=f"results/{BUILD}/m01/metadata.tsv"
+        params:
+            fmt=config["local_input"].get("format", "ncbi_virus_csv")
+        log:
+            f"logs/{BUILD}/m01_convert_metadata.log"
+        run:
+            import csv as csvmod
+            import sys
+
+            fmt = params.fmt
+            log_path = str(log[0])
+
+            with open(log_path, "w") as logf:
+                if fmt == "ncbi_virus_csv":
+                    # --- NCBI Virus web portal CSV conversion ---
+                    COLUMN_MAP = {
+                        "Accession": "strain",
+                        "Organism_Name": "virus",
+                        "Pangolin": "pangolin_lineage",
+                        "Isolate": "isolate",
+                        "Length": "length",
+                        "Nuc_Completeness": "completeness",
+                        "Geo_Location": "location",
+                        "Host": "host",
+                        "Collection_Date": "date",
+                        "Release_Date": "date_submitted",
+                    }
+
+                    with open(str(input.csv), "r", encoding="utf-8") as fin, \
+                         open(str(output.tsv), "w", newline="", encoding="utf-8") as fout:
+                        reader = csvmod.DictReader(fin)
+                        out_fields = list(COLUMN_MAP.values()) + ["country", "region"]
+                        writer = csvmod.DictWriter(fout, fieldnames=out_fields, delimiter="\t")
+                        writer.writeheader()
+
+                        count = 0
+                        for row in reader:
+                            out_row = {}
+                            for csv_col, tsv_col in COLUMN_MAP.items():
+                                out_row[tsv_col] = row.get(csv_col, "")
+                            geo = row.get("Geo_Location", "")
+                            parts = geo.split(":", 1)
+                            out_row["country"] = parts[0].strip() if parts else ""
+                            out_row["region"] = parts[1].strip() if len(parts) > 1 else ""
+                            writer.writerow(out_row)
+                            count += 1
+
+                    logf.write(f"Converted {count} NCBI Virus CSV records → {output.tsv}\n")
+                    print(f"Converted {count} records from NCBI Virus CSV", file=sys.stderr)
+
+                elif fmt == "tsv":
+                    # --- Already in TSV format, just copy ---
+                    import shutil
+                    shutil.copy2(str(input.csv), str(output.tsv))
+                    logf.write(f"Copied pre-formatted TSV → {output.tsv}\n")
+
+                else:
+                    logf.write(f"ERROR: Unknown metadata format: {fmt}\n")
+                    raise ValueError(f"Unknown local_input format: '{fmt}'. Use 'ncbi_virus_csv' or 'tsv'.")
+
 else:
-    raise ValueError(f"Unknown database provider: '{DATABASE}'. Must be 'ncbi' or 'gisaid'.")
+    raise ValueError(f"Unknown database provider: '{DATABASE}'. Must be 'ncbi', 'gisaid', or 'local'.")
 
 
 # ==========================================================================

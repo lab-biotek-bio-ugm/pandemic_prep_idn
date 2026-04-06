@@ -6,11 +6,11 @@
 build_name: "sars-cov-2-trial"
 
 # 2. Database Provider
-# Options: "ncbi" or "gisaid"
-# - "ncbi"  : Public, no credentials needed (default for testing)
-# - "gisaid": Requires credentials. Set GISAID_USERNAME and GISAID_PASSWORD
-#             as environment variables, or provide gisaid_credentials below.
-database: "ncbi"
+# Options: "ncbi", "gisaid", or "local"
+# - "ncbi"  : Automatic download via NCBI Datasets CLI
+# - "gisaid": Automatic download (requires credentials)
+# - "local" : Manual input — place your files in data/local/
+database: "local"
 
 # 3a. Data Acquisition — NCBI Datasets API (used when database = "ncbi")
 ncbi_query:
@@ -30,6 +30,14 @@ gisaid_query:
   collection_date_from: "2023-01-01"
   complete_only: true
   host: "Human"
+
+# 3c. Data Acquisition — Local Files (used when database = "local")
+# Place your manually downloaded files in data/local/ directory.
+# Supported sources: NCBI Virus web portal, GISAID bulk download, etc.
+local_input:
+  sequences: "data/local/sequences.fasta"
+  metadata: "data/local/metadata.csv"
+  format: "ncbi_virus_csv"   # Options: ncbi_virus_csv | tsv
 
 # 4. Spatio-Temporal Filter (M2 — augur filter)
 subsampling:
