@@ -79,3 +79,6 @@ hyphy:
   methods:
     - "FUBAR"
     - "MEME"
+  target_genes:
+    - "N"
+    - "S"

@@ -1,0 +1,11 @@
+name: hyphy_macse
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python>=3.10
+  - pandas
+  - biopython
+  - macse
+  - hyphy
