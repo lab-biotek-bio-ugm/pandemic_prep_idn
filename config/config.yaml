@@ -16,9 +16,8 @@ database: "ncbi"
 ncbi_query:
   organism: "SARS-CoV-2"
   location: "Indonesia"
-  released_after: "2023-01-01"
+  released_after: "2024-10-01"   # Perkecil rentang tanggal untuk testing cepat
   min_length: 29000
-  download_limit: 150      # Limit jumlah sequence saat download (untuk testing, set kecil)
 
 # 3b. Data Acquisition — GISAID (used when database = "gisaid")
 # Requires GISAID EpiCoV Access credentials.

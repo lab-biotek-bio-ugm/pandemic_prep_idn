@@ -24,8 +24,7 @@ if DATABASE == "ncbi":
         params:
             organism=config["ncbi_query"]["organism"],
             location=config["ncbi_query"]["location"],
-            released_after=config["ncbi_query"].get("released_after", ""),
-            limit=config["ncbi_query"].get("download_limit", "")
+            released_after=config["ncbi_query"].get("released_after", "")
         conda:
             "../envs/nextstrain.yaml"
         log:
@@ -39,15 +38,9 @@ if DATABASE == "ncbi":
                 RELEASED_FLAG="--released-after {params.released_after}"
             fi
 
-            LIMIT_FLAG=""
-            if [ -n "{params.limit}" ]; then
-                LIMIT_FLAG="--limit {params.limit}"
-            fi
-
             datasets download virus genome taxon "{params.organism}" \
                 --geo-location "{params.location}" \
                 $RELEASED_FLAG \
-                $LIMIT_FLAG \
                 --include genome \
                 --filename {output.zip_file} \
                 2>&1 | tee {log}
