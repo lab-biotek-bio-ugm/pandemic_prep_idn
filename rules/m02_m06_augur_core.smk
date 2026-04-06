@@ -99,7 +99,8 @@ rule augur_refine:
             --output-node-data {output.node_data} \
             --timetree \
             --clock-rate 0.0008 \
-            --clock-std-dev 0.0004 2> {log}
+            --clock-std-dev 0.0004 \
+            --stochastic-resolve 2> {log}
         """
 
 rule augur_ancestral:
