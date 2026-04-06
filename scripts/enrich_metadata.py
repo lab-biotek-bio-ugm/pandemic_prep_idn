@@ -26,9 +26,22 @@ def main():
         # Load Nextclade TSV
         df_nc = pd.read_csv(args.nextclade_tsv, sep='\t', dtype=str)
         
-        # Nextclade outputs 'seqName' which corresponds to 'strain'
+        # Dynamic seqName matching to handle NCBI vs GISAID FASTA headers
         if 'seqName' in df_nc.columns:
-            df_nc = df_nc.rename(columns={'seqName': 'strain'})
+            base_strains = set(df_base['strain'])
+            matched_seqnames = []
+            
+            for seq_name in df_nc['seqName']:
+                if seq_name in base_strains:
+                    matched_seqnames.append(seq_name) # Exact match
+                elif seq_name.split()[0] in base_strains:
+                    matched_seqnames.append(seq_name.split()[0]) # NCBI style (space-separated)
+                elif seq_name.split('|')[0] in base_strains:
+                    matched_seqnames.append(seq_name.split('|')[0]) # GISAID style (pipe-separated)
+                else:
+                    matched_seqnames.append(seq_name) # Fallback
+                    
+            df_nc['strain'] = matched_seqnames
             
         # Select important columns from Nextclade to avoid TSV bloat
         nc_cols_wanted = [

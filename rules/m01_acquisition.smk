@@ -243,7 +243,7 @@ else:
 # ---------------------------------------------------------------------------
 rule nextclade_dataset:
     output:
-        dir=directory(f"results/{BUILD}/m01/nextclade_dataset")
+        zip_file=f"results/{BUILD}/m01/nextclade_dataset.zip"
     params:
         dataset_name=config["nextclade"]["dataset_name"]
     conda:
@@ -254,7 +254,7 @@ rule nextclade_dataset:
         """
         nextclade dataset get \
             --name '{params.dataset_name}' \
-            --output-dir {output.dir} \
+            --output-zip {output.zip_file} \
             2>&1 | tee {log}
         """
 
@@ -264,7 +264,7 @@ rule nextclade_dataset:
 rule run_nextclade:
     input:
         sequences=f"results/{BUILD}/m01/raw_sequences.fasta",
-        dataset=f"results/{BUILD}/m01/nextclade_dataset"
+        dataset=f"results/{BUILD}/m01/nextclade_dataset.zip"
     output:
         tsv=f"results/{BUILD}/m01/nextclade.tsv"
     conda:
