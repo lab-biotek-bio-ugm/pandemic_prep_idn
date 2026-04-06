@@ -11,7 +11,7 @@ dependencies:
   - augur >=24.0.0
   - ncbi-datasets-cli
   - nextclade
-  - pandas
+  - unzip
 
   # Custom Evolutionary Analytics (M5)
   - hyphy >=2.5

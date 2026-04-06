@@ -1,9 +1,18 @@
+"""
+Enrich base metadata TSV with Nextclade classification and QC results.
+
+Merges clade (Nextstrain), lineage (Pango), and quality metrics
+from Nextclade output into the pipeline's main metadata file.
+"""
+
 import pandas as pd
 import argparse
 import sys
 
 def main():
-    parser = argparse.ArgumentParser(description="Enrich base metadata with Nextclade TSV output")
+    parser = argparse.ArgumentParser(
+        description="Enrich base metadata with Nextclade TSV output"
+    )
     parser.add_argument("--base-metadata", required=True, help="Original metadata TSV")
     parser.add_argument("--nextclade-tsv", required=True, help="Nextclade output TSV")
     parser.add_argument("--output", required=True, help="Output enriched metadata TSV")
@@ -12,38 +21,61 @@ def main():
     
     try:
         # Load base metadata
-        # Nextstrain generally expects 'strain' as the index column.
-        df_base = pd.read_csv(args.base_metadata, sep='\t')
+        df_base = pd.read_csv(args.base_metadata, sep='\t', dtype=str)
         
         # Load Nextclade TSV
-        # Nextclade outputs 'seqName' which corresponds to 'strain'
-        df_nc = pd.read_csv(args.nextclade_tsv, sep='\t')
+        df_nc = pd.read_csv(args.nextclade_tsv, sep='\t', dtype=str)
         
-        # Rename Nextclade's key to match base metadata
+        # Nextclade outputs 'seqName' which corresponds to 'strain'
         if 'seqName' in df_nc.columns:
             df_nc = df_nc.rename(columns={'seqName': 'strain'})
             
         # Select important columns from Nextclade to avoid TSV bloat
-        # Assuming we care about clades, lineages, and QC metrics.
-        nc_cols_to_keep = ['strain', 'clade', 'Nextclade_pango', 'qc.overallStatus', 'totalSubstitutions']
-        # only keep columns that actually exist in the nextclade output
-        nc_cols = [c for c in nc_cols_to_keep if c in df_nc.columns]
+        nc_cols_wanted = [
+            'strain',
+            'clade',
+            'Nextclade_pango',
+            'qc.overallStatus',
+            'qc.overallScore',
+            'totalSubstitutions',
+            'totalDeletions',
+            'totalInsertions',
+            'totalFrameShifts',
+            'totalMissing',
+        ]
+        # Only keep columns that actually exist in the Nextclade output
+        nc_cols = [c for c in nc_cols_wanted if c in df_nc.columns]
         
-        df_nc_subset = df_nc[nc_cols]
+        if not nc_cols or 'strain' not in nc_cols:
+            print("WARNING: Nextclade output does not contain expected columns. "
+                  "Copying base metadata as-is.", file=sys.stderr)
+            df_base.to_csv(args.output, sep='\t', index=False)
+            return
         
-        # Rename so they look pretty in Auspice
-        df_nc_subset = df_nc_subset.rename(columns={
+        df_nc_subset = df_nc[nc_cols].copy()
+        
+        # Rename columns to Augur/Auspice-friendly names
+        rename_map = {
             'Nextclade_pango': 'lineage',
             'qc.overallStatus': 'qc_status',
-            'totalSubstitutions': 'total_mutations'
-        })
+            'qc.overallScore': 'qc_score',
+            'totalSubstitutions': 'total_substitutions',
+            'totalDeletions': 'total_deletions',
+            'totalInsertions': 'total_insertions',
+            'totalFrameShifts': 'total_frameshifts',
+            'totalMissing': 'total_missing',
+        }
+        df_nc_subset = df_nc_subset.rename(columns=rename_map)
         
-        # Merge by strain (Left merge ensures we don't drop rows if nextclade failed on some)
+        # Merge (left join so we keep all base rows even if Nextclade missed some)
         df_merged = pd.merge(df_base, df_nc_subset, on='strain', how='left')
         
         # Write out
         df_merged.to_csv(args.output, sep='\t', index=False)
-        print(f"Successfully merged Nextclade data into {args.output}")
+        
+        n_total = len(df_merged)
+        n_claded = df_merged['clade'].notna().sum() if 'clade' in df_merged.columns else 0
+        print(f"Successfully enriched metadata: {n_claded}/{n_total} sequences classified.")
         
     except Exception as e:
         print(f"Error enriching metadata: {e}", file=sys.stderr)

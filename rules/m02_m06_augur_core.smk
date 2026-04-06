@@ -16,7 +16,6 @@ rule augur_filter:
     params:
         group_by=config["subsampling"]["group_by"],
         seq_per_group=config["subsampling"]["sequences_per_group"],
-        max_seq=config["subsampling"]["max_sequences"],
         min_length=config["ncbi_query"]["min_length"]
     conda:
         "../envs/nextstrain.yaml"
@@ -166,6 +165,7 @@ rule augur_export:
             --tree {input.tree} \
             --metadata {input.metadata} \
             --node-data {input.branch_lengths} {input.nt_muts} {input.aa_muts} \
+            --color-by-metadata clade lineage country region date \
             --output {output.auspice_json} \
             --title "Pandemic Preparedness: {params.build_name}" \
             --build-url "https://github.com/engkinandatama/pandemic-preparedness" 2> {log}

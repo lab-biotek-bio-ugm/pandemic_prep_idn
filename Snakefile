@@ -12,7 +12,7 @@ rule all:
     input:
         f"results/{BUILD}/nextstrain/auspice_dataset.json"
 
-# include: "rules/m01_acquisition.smk"
+include: "rules/m01_acquisition.smk"
 include: "rules/m02_m06_augur_core.smk"
 # include: "rules/m05_hyphy.smk"
 # include: "rules/m07_bridge.smk"
