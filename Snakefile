@@ -8,7 +8,25 @@ configfile: "config/config.yaml"
 # Global namespace for run-specific build directory
 BUILD = config["build_name"]
 
-TARGET_GENES = config["hyphy"].get("target_genes", [])
+def get_target_genes(config):
+    genes = config["hyphy"].get("target_genes", ["ALL"])
+    if "ALL" in genes:
+        genes = []
+        gff_path = config["references"]["annotation"]
+        with open(gff_path, "r") as f:
+            for line in f:
+                if line.startswith("#"): continue
+                parts = line.strip().split("\t")
+                if len(parts) >= 9 and parts[2] in ["gene", "CDS"]:
+                    for attr in parts[8].split(";"):
+                        attr = attr.strip()
+                        if attr.startswith("gene=") or attr.startswith("Name="):
+                            name = attr.split("=")[1].strip('"')
+                            if name not in genes:
+                                genes.append(name)
+    return genes
+
+TARGET_GENES = get_target_genes(config)
 
 rule all:
     input:

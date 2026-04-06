@@ -80,5 +80,4 @@ hyphy:
     - "FUBAR"
     - "MEME"
   target_genes:
-    - "N"
-    - "S"
+    - "ALL"

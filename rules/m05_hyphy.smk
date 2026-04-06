@@ -4,7 +4,6 @@ Uses MACSE for codon-aware alignment and HyPhy for dN/dS selection analysis.
 """
 
 BUILD = config["build_name"]
-TARGET_GENES = config["hyphy"].get("target_genes", [])
 HYPHY_METHODS = config["hyphy"].get("methods", ["FUBAR"])
 
 rule m05_extract_genes:
