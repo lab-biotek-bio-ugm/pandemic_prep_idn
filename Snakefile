@@ -17,10 +17,10 @@ def get_target_genes(config):
             for line in f:
                 if line.startswith("#"): continue
                 parts = line.strip().split("\t")
-                if len(parts) >= 9 and parts[2] in ["gene", "CDS"]:
+                if len(parts) >= 9 and parts[2] == "gene":
                     for attr in parts[8].split(";"):
                         attr = attr.strip()
-                        if attr.startswith("gene=") or attr.startswith("Name="):
+                        if attr.startswith("gene="):
                             name = attr.split("=")[1].strip('"')
                             if name not in genes:
                                 genes.append(name)

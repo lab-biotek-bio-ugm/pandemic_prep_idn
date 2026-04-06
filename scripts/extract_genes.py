@@ -30,20 +30,20 @@ def parse_gff(gff_path):
             parts = line.strip().split("\t")
             if len(parts) < 9: continue
             
-            # We look for features that denote genes or CDS
+            # Only process 'gene' feature type to avoid duplicate CDS entries
             feat_type = parts[2]
-            if feat_type not in ["gene", "CDS"]: continue
+            if feat_type != "gene": continue
             
             start = int(parts[3]) - 1 # 1-based to 0-based
             end = int(parts[4])
             strand = parts[6]
             attributes = parts[8]
             
-            # Extract Name or gene from attributes
+            # Extract gene name strictly from 'gene=' attribute only
             name = None
             for attr in attributes.split(";"):
                 attr = attr.strip()
-                if attr.startswith("gene=") or attr.startswith("Name="):
+                if attr.startswith("gene="):
                     name = attr.split("=")[1].strip('"')
                     break
             
@@ -127,7 +127,7 @@ def main():
                 
             out_records.append(SeqRecord(Seq(unaligned_seq), id=r.id, description=""))
             
-        out_path = os.path.join(args.outdir, f"{gene_name}.fasta")
+        out_path = os.path.join(args.outdir, f"unaligned_{gene_name}.fasta")
         SeqIO.write(out_records, out_path, "fasta")
         print(f"Extracted {len(out_records)} unaligned sequences for {gene_name} -> {out_path}")
 
