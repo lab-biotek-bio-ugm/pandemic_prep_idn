@@ -50,6 +50,21 @@ rule m05_macse_align:
             -out_AA {output.aa_fasta} 2>&1 | tee {log}
         """
 
+rule m05_clean_alignment:
+    """Sanitizes MACSE outputs by masking stop codons and frameshifts so HyPhy doesn't crash."""
+    input:
+        alignment=f"results/{BUILD}/m05/macse_{{gene}}_NT.fasta"
+    output:
+        cleaned=f"results/{BUILD}/m05/cleaned_{{gene}}_NT.fasta"
+    conda:
+        "../envs/hyphy_macse.yaml"
+    log:
+        f"logs/{BUILD}/m05_clean_{{gene}}.log"
+    shell:
+        """
+        python scripts/clean_alignment_for_hyphy.py {input.alignment} {output.cleaned} 2>&1 | tee {log}
+        """
+
 rule m05_prune_tree:
     """Prunes the full phylogenetic tree to only contain tips present in the gene alignment."""
     input:
@@ -67,7 +82,7 @@ rule m05_prune_tree:
 rule m05_hyphy_fubar:
     """Runs HyPhy FUBAR to detect pervasive positive and negative selection."""
     input:
-        alignment=f"results/{BUILD}/m05/macse_{{gene}}_NT.fasta",
+        alignment=f"results/{BUILD}/m05/cleaned_{{gene}}_NT.fasta",
         tree=f"results/{BUILD}/m05/tree_{{gene}}.nwk"
     output:
         json=f"results/{BUILD}/m05/fubar_{{gene}}.json"
@@ -88,7 +103,7 @@ rule m05_hyphy_fubar:
 rule m05_hyphy_meme:
     """Runs HyPhy MEME to detect episodic positive selection."""
     input:
-        alignment=f"results/{BUILD}/m05/macse_{{gene}}_NT.fasta",
+        alignment=f"results/{BUILD}/m05/cleaned_{{gene}}_NT.fasta",
         tree=f"results/{BUILD}/m05/tree_{{gene}}.nwk"
     output:
         json=f"results/{BUILD}/m05/meme_{{gene}}.json"
