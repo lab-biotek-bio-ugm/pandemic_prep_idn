@@ -86,12 +86,14 @@ def main():
     # 3. Find reference and map coordinates
     ref_record = None
     for r in records:
-        if args.reference_id in r.id:
+        # Exact match or accession-without-version match (e.g., MN908947 matches MN908947.3)
+        if r.id == args.reference_id or r.id.split('.')[0] == args.reference_id:
             ref_record = r
             break
             
     if not ref_record:
         print(f"ERROR: Reference ID '{args.reference_id}' not found in alignment.", file=sys.stderr)
+        print(f"  Available IDs (first 5): {[r.id for r in records[:5]]}", file=sys.stderr)
         sys.exit(1)
         
     print(f"Mapping coordinates against reference: {ref_record.id}")
@@ -101,13 +103,17 @@ def main():
 
     # 4 & 5. Extract and save unaligned genes
     for gene_name, (start, end, strand) in genes.items():
+        # Clamp gene boundaries to reference length instead of skipping
         if end > len(col_map):
-            print(f"WARNING: Gene {gene_name} exceeds reference length. Skipping.")
+            print(f"WARNING: Gene {gene_name} end ({end}) exceeds reference ungapped length ({len(col_map)}). Clamping.")
+            end = len(col_map)
+        
+        if start >= len(col_map):
+            print(f"WARNING: Gene {gene_name} start ({start}) exceeds reference length. Skipping.")
             continue
             
         msa_start = col_map[start]
-        # map 'end' index (exclusive). If end is exactly len(col_map), it maps to the very end of MSA.
-        msa_end = col_map[end-1] + 1 if end <= len(col_map) else len(str(ref_record.seq))
+        msa_end = col_map[end - 1] + 1
         
         out_records = []
         for r in records:
