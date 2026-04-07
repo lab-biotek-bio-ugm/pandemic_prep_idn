@@ -16,25 +16,32 @@ def main(input_fasta, output_fasta):
     if not records:
         return
 
+    # 0. Verify alignment length consistency (all sequences MUST be same length in an MSA)
+    lengths = set(len(str(r.seq)) for r in records)
+    if len(lengths) > 1:
+        min_len = min(lengths)
+        print(f"WARNING: Alignment has inconsistent lengths: {lengths}. Trimming all to {min_len}.", file=sys.stderr)
+    else:
+        min_len = lengths.pop()
+
+    # Ensure canonical length is a multiple of 3, truncate if not
+    canonical_len = min_len - (min_len % 3)
+    if canonical_len != min_len:
+        print(f"WARNING: Alignment length {min_len} not divisible by 3. Truncating to {canonical_len}.", file=sys.stderr)
+
     stop_codons = {"TAA", "TAG", "TGA"}
     cleaned_records = []
 
     for record in records:
-        seq_str = str(record.seq).upper()
+        seq_str = str(record.seq).upper()[:canonical_len]
         
         # 1. Replace MACSE exclamation marks (frameshifts) with gaps
         seq_str = seq_str.replace("!", "-")
-        
-        # 2. Ensure length is multiple of 3 (pad with gaps if needed, though MACSE should guarantee this)
-        remainder = len(seq_str) % 3
-        if remainder != 0:
-            seq_str += "-" * (3 - remainder)
             
-        # 3. Replace in-frame stop codons
+        # 2. Replace in-frame stop codons
         cleaned_seq = []
         for i in range(0, len(seq_str), 3):
             codon = seq_str[i:i+3]
-            # If the codon is a stop codon, mask it with gaps
             if codon in stop_codons:
                 cleaned_seq.append("---")
             else:
