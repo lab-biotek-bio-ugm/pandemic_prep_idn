@@ -7,5 +7,5 @@ dependencies:
   - python>=3.10
   - pandas
   - biopython
-  - macse
-  - hyphy
+  - macse>=2.0,<3.0
+  - hyphy>=2.5,<2.6
