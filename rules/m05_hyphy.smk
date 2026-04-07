@@ -15,7 +15,7 @@ rule m05_extract_genes:
         fastas=[f"results/{BUILD}/m05/unaligned_{gene}.fasta" for gene in TARGET_GENES]
     params:
         outdir=f"results/{BUILD}/m05",
-        ref_id="MN908947"
+        ref_id=config["references"].get("reference_id", "MN908947")
     conda:
         "../envs/hyphy_macse.yaml"
     log:

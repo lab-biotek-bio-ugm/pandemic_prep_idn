@@ -49,6 +49,7 @@ subsampling:
 references:
   genome: "config/references/sars_cov_2_reference.fasta"
   annotation: "config/references/sars_cov_2_annotation.gff"
+  reference_id: "MN908947"  # Accession of the reference in the MSA (without version suffix)
 
 # 6. Nextclade — Clade/Lineage Classification & QC
 # Dataset name for Nextclade CLI. To see all available datasets, run:
