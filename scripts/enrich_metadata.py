@@ -81,6 +81,10 @@ def main():
         df_nc_subset = df_nc_subset.rename(columns=rename_map)
         
         # Merge (left join so we keep all base rows even if Nextclade missed some)
+        # Drop overlapping columns from base to prevent _x/_y duplication
+        overlap_cols = set(df_nc_subset.columns) & set(df_base.columns) - {'strain'}
+        if overlap_cols:
+            df_base = df_base.drop(columns=list(overlap_cols))
         df_merged = pd.merge(df_base, df_nc_subset, on='strain', how='left')
         
         # Write out
