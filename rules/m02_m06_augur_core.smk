@@ -30,6 +30,7 @@ rule augur_filter:
             --group-by {params.group_by} \
             --sequences-per-group {params.seq_per_group} \
             --min-length {params.min_length} \
+            --exclude-ambiguous-dates-by any \
             --output-sequences {output.sequences} 2> {log}
         """
 
