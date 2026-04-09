@@ -99,3 +99,32 @@ hyphy:
     - "N"
     - "E"
     - "M"
+
+# 8. Bridge Configuration (M7 — Conservation & Selection Integration)
+# The Bridge merges conservation data (Track A) with HyPhy evolutionary
+# selection data (Track B) to identify Gold Zones for primer design.
+bridge:
+  window_size: 150            # Sliding window size for conservation scan (bp)
+  min_region_length: 100      # Minimum conserved region length to consider (bp)
+  buffer_bp: 100              # Buffer around conserved zone for primer search area
+  entropy_threshold: 0.01     # Max Shannon entropy (0.01 ≈ >99% conserved)
+  gard_buffer_bp: 50          # Danger zone radius around GARD breakpoints (bp)
+  include_utr: true           # Include 5'/3' UTR in conservation scan
+  weights:
+    conservation: 0.35        # w1: Empirical conservation (Shannon Entropy)
+    purifying: 0.35           # w2: HyPhy FUBAR purifying selection probability
+    episodic_penalty: 0.15    # w3: MEME episodic selection penalty
+    recombination: 0.15       # w4: GARD breakpoint proximity penalty
+  # Tier thresholds — fail-safe protocol
+  # If no regions pass Tier 1, system relaxes to Tier 2, then Tier 3
+  tiers:
+    strict:                   # Tier 1: Ideal for universal primers
+      min_conservation: 0.99
+      min_purifying_prob: 0.9
+    moderate:                 # Tier 2: Good enough for most applications
+      min_conservation: 0.95
+      min_purifying_prob: 0.7
+    survival:                 # Tier 3: Last resort, conservation-only
+      min_conservation: 0.90
+  # Grade thresholds (composite_score → letter grade)
+  # A (≥0.90): Excellent | B (≥0.75): Good | C (≥0.60): Acceptable | D (<0.60): Caution

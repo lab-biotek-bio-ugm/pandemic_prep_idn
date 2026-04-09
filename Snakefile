@@ -37,12 +37,14 @@ rule all:
         # M05 Targets (HyPhy)
         [f"results/{BUILD}/m05/fubar_{gene}.json" for gene in TARGET_GENES],
         [f"results/{BUILD}/m05/meme_{gene}.json" for gene in TARGET_GENES],
-        [f"results/{BUILD}/m05/gard_{gene}.json" for gene in TARGET_GENES]
+        [f"results/{BUILD}/m05/gard_{gene}.json" for gene in TARGET_GENES],
+        # M07 Target (Bridge — primer target manifest)
+        f"results/{BUILD}/m07/primer_targets_manifest.yaml",
 
 include: "rules/m01_acquisition.smk"
 include: "rules/m02_m06_augur_core.smk"
 include: "rules/m05_hyphy.smk"
-# include: "rules/m07_bridge.smk"
+include: "rules/m07_bridge.smk"
 # include: "rules/m08_primerlab.smk"
 
 # ==========================================================================
