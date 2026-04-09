@@ -67,6 +67,7 @@ hyphy:
   methods:
     - "FUBAR"
     - "MEME"
+    - "GARD"   # Recombination breakpoint detection (critical for Coronaviruses)
   target_genes:
     - "S"
     - "N"

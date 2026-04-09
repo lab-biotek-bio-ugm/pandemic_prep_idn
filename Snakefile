@@ -34,7 +34,8 @@ rule all:
         f"results/{BUILD}/nextstrain/auspice_dataset.json",
         # M05 Targets (HyPhy)
         [f"results/{BUILD}/m05/fubar_{gene}.json" for gene in TARGET_GENES],
-        [f"results/{BUILD}/m05/meme_{gene}.json" for gene in TARGET_GENES]
+        [f"results/{BUILD}/m05/meme_{gene}.json" for gene in TARGET_GENES],
+        [f"results/{BUILD}/m05/gard_{gene}.json" for gene in TARGET_GENES]
 
 include: "rules/m01_acquisition.smk"
 include: "rules/m02_m06_augur_core.smk"

@@ -120,3 +120,26 @@ rule m05_hyphy_meme:
             --tree {input.tree} \
             --output {output.json} 2>&1 | tee {log}
         """
+
+rule m05_hyphy_gard:
+    """Runs HyPhy GARD to detect recombination breakpoints within each gene.
+    Critical for Coronaviruses; less so for segmented viruses (Influenza).
+    GARD infers its own phylogenies per partition, so no input tree is needed.
+    """
+    input:
+        alignment=f"results/{BUILD}/m05/cleaned_{{gene}}_NT.fasta"
+    output:
+        json=f"results/{BUILD}/m05/gard_{{gene}}.json"
+    threads:
+        4
+    conda:
+        "../envs/hyphy_macse.yaml"
+    log:
+        f"logs/{BUILD}/m05_hyphy_gard_{{gene}}.log"
+    shell:
+        """
+        hyphy gard \
+            --alignment {input.alignment} \
+            --output {output.json} \
+            --rv GDD 2>&1 | tee {log}
+        """
