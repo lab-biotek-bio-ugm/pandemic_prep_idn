@@ -181,6 +181,7 @@ def main():
     parser.add_argument("--format", default="auto",
                         choices=["auto", "gisaid_tsv", "gisaid_raw", "ncbi_csv", "tsv", "generic"],
                         help="Metadata format (default: auto-detect)")
+    parser.add_argument("--orig-file", default="", help="Original file path (for extension detection)")
     args = parser.parse_args()
 
     input_path = Path(args.input)
@@ -189,15 +190,27 @@ def main():
         sys.exit(1)
 
     # --- Read input ---
-    # Detect delimiter (tab for TSV, comma for CSV)
-    with open(input_path, "r", encoding="utf-8") as f:
-        first_line = f.readline()
-        delimiter = "\t" if "\t" in first_line else ","
+    orig_ext = Path(args.orig_file).suffix.lower() if args.orig_file else input_path.suffix.lower()
+    
+    if orig_ext in [".xls", ".xlsx"]:
+        import pandas as pd
+        engine = "openpyxl" if orig_ext == ".xlsx" else "xlrd"
+        print(f"[SANITIZE] Detected Excel file format ({orig_ext}). Loading via pandas (engine={engine})...")
+        df = pd.read_excel(input_path, engine=engine)
+        # GISAID Excel often has NaNs for empty cells, convert them to empty strings
+        df = df.fillna("")
+        raw_headers = list(df.columns)
+        raw_rows = df.to_dict('records')
+    else:
+        # Detect delimiter (tab for TSV, comma for CSV)
+        with open(input_path, "r", encoding="utf-8") as f:
+            first_line = f.readline()
+            delimiter = "\t" if "\t" in first_line else ","
 
-    with open(input_path, "r", encoding="utf-8") as f:
-        reader = csv.DictReader(f, delimiter=delimiter)
-        raw_headers = reader.fieldnames or []
-        raw_rows = list(reader)
+        with open(input_path, "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f, delimiter=delimiter)
+            raw_headers = reader.fieldnames or []
+            raw_rows = list(reader)
 
     print(f"[SANITIZE] Read {len(raw_rows)} rows from {input_path}")
     print(f"[SANITIZE] Columns detected: {raw_headers}")

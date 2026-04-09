@@ -18,3 +18,5 @@ dependencies:
   - biopython
   - pandas
   - pyyaml
+  - openpyxl
+  - xlrd

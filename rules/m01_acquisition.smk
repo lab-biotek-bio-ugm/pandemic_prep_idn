@@ -278,7 +278,8 @@ rule sanitize_metadata:
         tsv=f"results/{BUILD}/m01/metadata_sanitized.tsv",
         report=f"results/{BUILD}/m01/sanitize_report.json"
     params:
-        fmt=config["local_input"].get("format", "auto")
+        fmt=config["local_input"].get("format", "auto"),
+        orig_file=lambda w: config["local_input"]["metadata"] if DATABASE == "local" else ""
     log:
         f"logs/{BUILD}/m01_sanitize_metadata.log"
     shell:
@@ -287,7 +288,8 @@ rule sanitize_metadata:
             --input {input.tsv} \
             --output {output.tsv} \
             --report {output.report} \
-            --format {params.fmt} 2>&1 | tee {log}
+            --format {params.fmt} \
+            --orig-file "{params.orig_file}" 2>&1 | tee {log}
         """
 
 # ---------------------------------------------------------------------------
