@@ -60,6 +60,19 @@ GISAID_RAW_COLUMN_MAP = {
     "Submission date": "date_submitted",
 }
 
+# GISAID EpiFlu download format (XLS format)
+GISAID_EPIFLU_MAP = {
+    "Isolate_Name": "strain",
+    "Isolate_Id": "gisaid_epi_isl",
+    "Collection_Date": "date",
+    "Location": "_location_raw",  # uses continent / country / ...
+    "Host": "host",
+    "Subtype": "subtype",
+    "Lineage": "lineage",
+    "Clade": "GISAID_clade",
+    "Submission_Date": "date_submitted",
+}
+
 # NCBI (already handled by convert_ncbi_csv, but support as fallback)
 NCBI_COLUMN_MAP = {
     "Accession": "strain",
@@ -94,6 +107,10 @@ def detect_format(headers: list[str]) -> str:
     # Check for GISAID raw format
     if "Virus name" in header_set and "Accession ID" in header_set:
         return "gisaid_raw"
+
+    # Check for GISAID EpiFlu format
+    if "Isolate_Name" in header_set and "Isolate_Id" in header_set:
+        return "gisaid_epiflu"
 
     # Check for GISAID Nextstrain-preprocessed format
     if "strain" in header_set and "gisaid_epi_isl" in header_set:
@@ -142,7 +159,7 @@ def normalize_row(row: dict, fmt: str, column_map: dict) -> dict:
             out[dst_col] = row[src_col]
 
     # Handle special location parsing
-    if fmt == "gisaid_raw" and "_location_raw" in out:
+    if fmt in ["gisaid_raw", "gisaid_epiflu"] and "_location_raw" in out:
         loc = parse_gisaid_location(out.pop("_location_raw"))
         out.update(loc)
 
@@ -225,6 +242,7 @@ def main():
     column_maps = {
         "gisaid_tsv": GISAID_COLUMN_MAP,
         "gisaid_raw": GISAID_RAW_COLUMN_MAP,
+        "gisaid_epiflu": GISAID_EPIFLU_MAP,
         "ncbi_csv": NCBI_COLUMN_MAP,
         "tsv": {},      # Already in internal format
         "generic": {},   # Try as-is
