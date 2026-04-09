@@ -16,7 +16,7 @@ rule augur_filter:
     params:
         group_by=config["subsampling"]["group_by"],
         seq_per_group=config["subsampling"]["sequences_per_group"],
-        min_length=config["ncbi_query"]["min_length"]
+        min_length=config["subsampling"]["min_length"]
     conda:
         "../envs/nextstrain.yaml"
     log:
@@ -90,6 +90,9 @@ rule augur_refine:
         "../envs/nextstrain.yaml"
     log:
         f"logs/{BUILD}/m04_augur_refine.log"
+    params:
+        clock_rate=config["timetree"]["clock_rate"],
+        clock_std=config["timetree"]["clock_std_dev"]
     shell:
         """
         augur refine \
@@ -99,8 +102,8 @@ rule augur_refine:
             --output-tree {output.tree} \
             --output-node-data {output.node_data} \
             --timetree \
-            --clock-rate 0.0008 \
-            --clock-std-dev 0.0004 \
+            --clock-rate {params.clock_rate} \
+            --clock-std-dev {params.clock_std} \
             --stochastic-resolve 2> {log}
         """
 

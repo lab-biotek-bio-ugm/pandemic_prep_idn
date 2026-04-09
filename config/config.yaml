@@ -16,7 +16,6 @@ ncbi_query:
   organism: "SARS-CoV-2"
   location: "Indonesia"
   released_after: "2024-10-01"   # Perkecil rentang tanggal untuk testing cepat
-  min_length: 29000
 
 # 3b. Data Acquisition — Local Files (used when database = "local")
 # Place your manually downloaded files in data/local/ directory.
@@ -31,6 +30,23 @@ subsampling:
   group_by: "year month"
   sequences_per_group: 10
   max_sequences: 100
+  min_length: 29000              # Minimum sequence length to keep (bp)
+
+# 4b. Timetree Parameters (M4 — augur refine)
+# Clock rate varies by virus. Adjust when switching targets.
+# ┌───────────────────────────────────────────────────┐
+# │ Virus              │ clock_rate │ clock_std_dev   │
+# ├───────────────────────────────────────────────────┤
+# │ SARS-CoV-2         │ 0.0008     │ 0.0004          │
+# │ Influenza A (HA)   │ 0.004      │ 0.002           │
+# │ Influenza A (NA)   │ 0.003      │ 0.0015          │
+# │ Influenza B        │ 0.002      │ 0.001           │
+# │ RSV                │ 0.0006     │ 0.0003          │
+# │ Nipah              │ 0.0004     │ 0.0002          │
+# └───────────────────────────────────────────────────┘
+timetree:
+  clock_rate: 0.0008
+  clock_std_dev: 0.0004
 
 # 5. File References
 references:
