@@ -61,9 +61,11 @@ GISAID_RAW_COLUMN_MAP = {
 }
 
 # GISAID EpiFlu download format (XLS format)
+# NOTE: EpiFlu FASTA headers use Isolate_Id (EPI_ISL_xxx) as the primary ID,
+# so we map that to 'strain' for augur compatibility.
 GISAID_EPIFLU_MAP = {
-    "Isolate_Name": "strain",
-    "Isolate_Id": "gisaid_epi_isl",
+    "Isolate_Id": "strain",
+    "Isolate_Name": "virus_name",
     "Collection_Date": "date",
     "Location": "_location_raw",  # uses continent / country / ...
     "Host": "host",
@@ -71,6 +73,7 @@ GISAID_EPIFLU_MAP = {
     "Lineage": "lineage",
     "Clade": "GISAID_clade",
     "Submission_Date": "date_submitted",
+    "Pathogenicity": "pathogenicity",
 }
 
 # NCBI (already handled by convert_ncbi_csv, but support as fallback)
@@ -196,7 +199,8 @@ def main():
     parser.add_argument("--output", required=True, help="Output sanitized metadata (TSV)")
     parser.add_argument("--report", required=True, help="Output sanitization report (JSON)")
     parser.add_argument("--format", default="auto",
-                        choices=["auto", "gisaid_tsv", "gisaid_raw", "ncbi_csv", "tsv", "generic"],
+                        choices=["auto", "gisaid_tsv", "gisaid_raw", "gisaid_epiflu",
+                                 "ncbi_csv", "tsv", "generic"],
                         help="Metadata format (default: auto-detect)")
     parser.add_argument("--orig-file", default="", help="Original file path (for extension detection)")
     args = parser.parse_args()

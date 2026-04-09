@@ -1,91 +1,52 @@
 # =============================================================================
-# Pandemic Preparedness Diagnostic Pipeline — Main Configuration
+# Pandemic Preparedness Diagnostic Pipeline — Configuration Profile
+# Target: Influenza A (Universal) - MP Segment
 # =============================================================================
 
 # 1. Target Identity
-build_name: "sars-cov-2-trial"
+build_name: "influenza-a-mp-trial"
 
 # 2. Database Provider
-# Options: "ncbi" or "local"
-# - "ncbi"  : Automatic download via NCBI Datasets CLI (Warning: Under Testing)
-# - "local" : Manual input — place your files in data/local/
 database: "local"
 
-# 3a. Data Acquisition — NCBI Datasets API (used when database = "ncbi")
-ncbi_query:
-  organism: "SARS-CoV-2"
-  location: "Indonesia"
-  released_after: "2024-10-01"   # Perkecil rentang tanggal untuk testing cepat
-
-# 3b. Data Acquisition — Local Files (used when database = "local")
-# Place your manually downloaded files in data/local/ directory.
+# 3. Data Acquisition
 # Supported sources: NCBI Virus web portal, GISAID bulk download, etc.
 local_input:
-  sequences: "data/local/sequences.fasta"
-  metadata: "data/local/metadata.csv"
-  format: "auto"   # Options: auto | ncbi_virus_csv | gisaid_tsv | gisaid_raw | tsv
-                    #   auto          — detect format from column headers (recommended)
-                    #   ncbi_virus_csv — NCBI Virus CSV download (Accession, Collection_Date...)
-                    #   gisaid_tsv    — GISAID Nextstrain-preprocessed TSV (strain, gisaid_epi_isl...)
-                    #   gisaid_raw    — GISAID raw download (Virus name, Accession ID...)
-                    #   tsv           — Generic TSV with at least 'strain' and 'date' columns
+  sequences: "data/EpiFlu/Indonesia_EpiFlu_A_MP_Sequence.fasta"
+  metadata: "data/EpiFlu/Indonesia_EpiFlu_A_MP_Metadata.xls"
+  format: "gisaid_epiflu"
 
 # 4. Quality Control Prefilter (M2 — qc_prefilter)
 qc:
-  max_n_content: 5.0              # Max percentage of ambiguous 'N' bases allowed
+  max_n_content: 5.0              # Max percentage of ambiguous 'N' bases
   dedup: true                     # Remove identical sequences (MD5 hash)
 
 # 4a. Spatio-Temporal Filter (M2 — augur filter)
 subsampling:
   group_by: "year month"
-  sequences_per_group: 10
-  max_sequences: 100
-  min_length: 29000              # Minimum sequence length to keep (bp)
+  sequences_per_group: 50         # Pertahankan lebih banyak data flu
+  max_sequences: 500              # Sesuaikan kapasitas RAM
+  min_length: 800                 # MP segment panjang normalnya ~982 bp
 
 # 4b. Timetree Parameters (M4 — augur refine)
-# Clock rate varies by virus. Adjust when switching targets.
-# ┌───────────────────────────────────────────────────┐
-# │ Virus              │ clock_rate │ clock_std_dev   │
-# ├───────────────────────────────────────────────────┤
-# │ SARS-CoV-2         │ 0.0008     │ 0.0004          │
-# │ Influenza A (HA)   │ 0.004      │ 0.002           │
-# │ Influenza A (NA)   │ 0.003      │ 0.0015          │
-# │ Influenza B        │ 0.002      │ 0.001           │
-# │ RSV                │ 0.0006     │ 0.0003          │
-# │ Nipah              │ 0.0004     │ 0.0002          │
-# └───────────────────────────────────────────────────┘
 timetree:
-  clock_rate: 0.0008
-  clock_std_dev: 0.0004
+  clock_rate: 0.003               # Flu A internal segment mutation rate
+  clock_std_dev: 0.0015
 
 # 5. File References
+# Reference: A/Puerto Rico/8/1934(H1N1) Segment 7 (NC_002016.1)
 references:
-  genome: "config/references/sars_cov_2_reference.fasta"
-  annotation: "config/references/sars_cov_2_annotation.gff"
-  reference_id: "MN908947"  # Accession of the reference in the MSA (without version suffix)
+  genome: "config/references/flu_a_mp_reference.fasta"
+  annotation: "config/references/flu_a_mp_annotation.gff"
+  reference_id: "NC_002016.1"
 
 # 6. Nextclade — Clade/Lineage Classification & QC
-# Dataset name for Nextclade CLI. To see all available datasets, run:
-#   nextclade dataset list --only-names
-#
-# ┌─────────────────────────────────────────────────────────────────────────┐
-# │ Respiratory Virus Datasets (Quick Reference)                          │
-# ├─────────────────────────────────────────────────────────────────────────┤
-# │ SARS-CoV-2:  "nextstrain/sars-cov-2/wuhan-hu-1/orfs"                 │
-# │              or shortcut: "sars-cov-2"                                │
-# │ Influenza A/H1N1pdm: "nextstrain/flu/h1n1pdm/ha/MW626062"            │
-# │ Influenza A/H3N2:    "nextstrain/flu/h3n2/ha/EPI1857216"             │
-# │ Influenza B/Vic:     "nextstrain/flu/vic/ha/KX058884"                │
-# │ Influenza B/Yam:     "nextstrain/flu/yam/ha/JN993010"                │
-# │ RSV-A:               "nextstrain/rsv/a/EPI_ISL_412866"               │
-# │ RSV-B:               "nextstrain/rsv/b/EPI_ISL_1653999"              │
-# │ hMPV:                "nextstrain/hmpv/all/AF371337"                  │
-# └─────────────────────────────────────────────────────────────────────────┘
-#
-# Tip: You can also run `nextclade dataset list --only-names` in your
-#      conda environment to get the full up-to-date list.
+# Set enabled: false to bypass Nextclade for non-HA/NA segments (e.g. MP, NP)
+# where Nextclade datasets are not available. When disabled, metadata enrichment
+# skips Nextclade columns but preserves all other pipeline functionality.
 nextclade:
-  dataset_name: "nextstrain/sars-cov-2/wuhan-hu-1/orfs"
+  enabled: false   # Disabled for MP segment — no compatible Nextclade dataset
+  dataset_name: "nextstrain/flu/h1n1pdm/ha/MW626062"
 
 # 7. Evolutionary Selection Pressure Engine (M5 — HyPhy)
 hyphy:
@@ -93,35 +54,29 @@ hyphy:
   methods:
     - "FUBAR"
     - "MEME"
-    - "GARD"   # Recombination breakpoint detection (critical for Coronaviruses)
+    - "GARD"
   target_genes:
     - "ALL"
 
 # 8. Bridge Configuration (M7 — Conservation & Selection Integration)
-# The Bridge merges conservation data (Track A) with HyPhy evolutionary
-# selection data (Track B) to identify Gold Zones for primer design.
 bridge:
-  window_size: 150            # Sliding window size for conservation scan (bp)
-  min_region_length: 100      # Minimum conserved region length to consider (bp)
-  buffer_bp: 100              # Buffer around conserved zone for primer search area
-  entropy_threshold: 0.01     # Max Shannon entropy (0.01 ≈ >99% conserved)
-  gard_buffer_bp: 50          # Danger zone radius around GARD breakpoints (bp)
-  include_utr: true           # Include 5'/3' UTR in conservation scan
+  window_size: 100            # Diperkecil karena ukuran gen MP lebih pendek (1000bp)
+  min_region_length: 100
+  buffer_bp: 50
+  entropy_threshold: 0.015    # Sedikit dilonggarkan karena Flu sangat dinamis
+  gard_buffer_bp: 50
+  include_utr: true
   weights:
-    conservation: 0.35        # w1: Empirical conservation (Shannon Entropy)
-    purifying: 0.35           # w2: HyPhy FUBAR purifying selection probability
-    episodic_penalty: 0.15    # w3: MEME episodic selection penalty
-    recombination: 0.15       # w4: GARD breakpoint proximity penalty
-  # Tier thresholds — fail-safe protocol
-  # If no regions pass Tier 1, system relaxes to Tier 2, then Tier 3
+    conservation: 0.40        # Konservasi lebih penting untuk Influenza MP
+    purifying: 0.30
+    episodic_penalty: 0.10
+    recombination: 0.20
   tiers:
-    strict:                   # Tier 1: Ideal for universal primers
-      min_conservation: 0.99
+    strict:                   
+      min_conservation: 0.98
       min_purifying_prob: 0.9
-    moderate:                 # Tier 2: Good enough for most applications
-      min_conservation: 0.95
-      min_purifying_prob: 0.7
-    survival:                 # Tier 3: Last resort, conservation-only
+    moderate:                 
       min_conservation: 0.90
-  # Grade thresholds (composite_score → letter grade)
-  # A (≥0.90): Excellent | B (≥0.75): Good | C (≥0.60): Acceptable | D (<0.60): Caution
+      min_purifying_prob: 0.7
+    survival:                 
+      min_conservation: 0.85

@@ -1,0 +1,82 @@
+# =============================================================================
+# Pandemic Preparedness Diagnostic Pipeline — Configuration Profile
+# Target: Influenza A (Universal) - MP Segment
+# =============================================================================
+
+# 1. Target Identity
+build_name: "influenza-a-mp-trial"
+
+# 2. Database Provider
+database: "local"
+
+# 3. Data Acquisition
+# Supported sources: NCBI Virus web portal, GISAID bulk download, etc.
+local_input:
+  sequences: "data/EpiFlu/Indonesia_EpiFlu_A_MP_Sequence.fasta"
+  metadata: "data/EpiFlu/Indonesia_EpiFlu_A_MP_Metadata.xls"
+  format: "gisaid_epiflu"
+
+# 4. Quality Control Prefilter (M2 — qc_prefilter)
+qc:
+  max_n_content: 5.0              # Max percentage of ambiguous 'N' bases
+  dedup: true                     # Remove identical sequences (MD5 hash)
+
+# 4a. Spatio-Temporal Filter (M2 — augur filter)
+subsampling:
+  group_by: "year month"
+  sequences_per_group: 50         # Pertahankan lebih banyak data flu
+  max_sequences: 500              # Sesuaikan kapasitas RAM
+  min_length: 800                 # MP segment panjang normalnya ~982 bp
+
+# 4b. Timetree Parameters (M4 — augur refine)
+timetree:
+  clock_rate: 0.003               # Flu A internal segment mutation rate
+  clock_std_dev: 0.0015
+
+# 5. File References
+# Reference: A/Puerto Rico/8/1934(H1N1) Segment 7 (NC_002016.1)
+references:
+  genome: "config/references/flu_a_mp_reference.fasta"
+  annotation: "config/references/flu_a_mp_annotation.gff"
+  reference_id: "NC_002016.1"
+
+# 6. Nextclade — Clade/Lineage Classification & QC
+# Set enabled: false to bypass Nextclade for non-HA/NA segments (e.g. MP, NP)
+# where Nextclade datasets are not available. When disabled, metadata enrichment
+# skips Nextclade columns but preserves all other pipeline functionality.
+nextclade:
+  enabled: false   # Disabled for MP segment — no compatible Nextclade dataset
+  dataset_name: "nextstrain/flu/h1n1pdm/ha/MW626062"
+
+# 7. Evolutionary Selection Pressure Engine (M5 — HyPhy)
+hyphy:
+  p_value_threshold: 0.1
+  methods:
+    - "FUBAR"
+    - "MEME"
+    - "GARD"
+  target_genes:
+    - "ALL"
+
+# 8. Bridge Configuration (M7 — Conservation & Selection Integration)
+bridge:
+  window_size: 100            # Diperkecil karena ukuran gen MP lebih pendek (1000bp)
+  min_region_length: 100
+  buffer_bp: 50
+  entropy_threshold: 0.015    # Sedikit dilonggarkan karena Flu sangat dinamis
+  gard_buffer_bp: 50
+  include_utr: true
+  weights:
+    conservation: 0.40        # Konservasi lebih penting untuk Influenza MP
+    purifying: 0.30
+    episodic_penalty: 0.10
+    recombination: 0.20
+  tiers:
+    strict:                   
+      min_conservation: 0.98
+      min_purifying_prob: 0.9
+    moderate:                 
+      min_conservation: 0.90
+      min_purifying_prob: 0.7
+    survival:                 
+      min_conservation: 0.85

@@ -182,7 +182,12 @@ rule augur_export:
     output:
         auspice_json=f"results/{BUILD}/nextstrain/auspice_dataset.json"
     params:
-        build_name=BUILD
+        build_name=BUILD,
+        color_by=(
+            "clade lineage country region date"
+            if config.get("nextclade", {}).get("enabled", True)
+            else "subtype country region host date"
+        )
     conda:
         "../envs/nextstrain.yaml"
     log:
@@ -194,7 +199,7 @@ rule augur_export:
             --tree {input.tree} \
             --metadata {input.metadata} \
             --node-data {input.branch_lengths} {input.nt_muts} {input.aa_muts} \
-            --color-by-metadata clade lineage country region date \
+            --color-by-metadata {params.color_by} \
             --output {output.auspice_json} \
             --title "Pandemic Preparedness: {params.build_name}" \
             --build-url "https://github.com/engkinandatama/pandemic-preparedness" 2> {log}

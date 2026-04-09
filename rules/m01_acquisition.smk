@@ -205,11 +205,20 @@ elif DATABASE == "local":
                     print(f"Copied {fmt} metadata (normalization deferred to sanitizer)",
                           file=sys.stderr)
 
+                elif fmt == "gisaid_epiflu":
+                    # --- GISAID EpiFlu XLS format: copy as-is ---
+                    # sanitize_metadata.py reads Excel directly via --orig-file
+                    shutil.copy2(str(input.csv), str(output.tsv))
+                    logf.write(f"Copied EpiFlu XLS metadata → {output.tsv}\n")
+                    print(f"Copied EpiFlu XLS metadata (Excel parsing deferred to sanitizer)",
+                          file=sys.stderr)
+
                 else:
                     logf.write(f"ERROR: Unknown metadata format: {fmt}\n")
                     raise ValueError(
                         f"Unknown local_input format: '{fmt}'. "
-                        f"Use 'auto', 'ncbi_virus_csv', 'gisaid_tsv', 'gisaid_raw', or 'tsv'."
+                        f"Use 'auto', 'ncbi_virus_csv', 'gisaid_tsv', 'gisaid_raw', "
+                        f"'gisaid_epiflu', or 'tsv'."
                     )
 
 else:
@@ -220,47 +229,47 @@ else:
 # Shared rules (run regardless of data source)
 # ==========================================================================
 
-# ---------------------------------------------------------------------------
-# Nextclade dataset download (isolated to specific build directory)
-# ---------------------------------------------------------------------------
-rule nextclade_dataset:
-    output:
-        zip_file=f"results/{BUILD}/m01/nextclade_dataset.zip"
-    params:
-        dataset_name=config["nextclade"]["dataset_name"]
-    conda:
-        "../envs/nextstrain.yaml"
-    log:
-        f"logs/{BUILD}/m01_nextclade_dataset.log"
-    shell:
-        """
-        nextclade dataset get \
-            --name '{params.dataset_name}' \
-            --output-zip {output.zip_file} \
-            2>&1 | tee {log}
-        """
+NEXTCLADE_ENABLED = config.get("nextclade", {}).get("enabled", True)
 
 # ---------------------------------------------------------------------------
-# Run Nextclade for QC + Clade/Lineage classification
+# Nextclade dataset download + run (only when enabled)
 # ---------------------------------------------------------------------------
-rule run_nextclade:
-    input:
-        sequences=f"results/{BUILD}/m01/raw_sequences.fasta",
-        dataset=f"results/{BUILD}/m01/nextclade_dataset.zip"
-    output:
-        tsv=f"results/{BUILD}/m01/nextclade.tsv"
-    conda:
-        "../envs/nextstrain.yaml"
-    log:
-        f"logs/{BUILD}/m01_nextclade_run.log"
-    shell:
-        """
-        nextclade run \
-            --input-dataset {input.dataset} \
-            --output-tsv {output.tsv} \
-            {input.sequences} \
-            2>&1 | tee {log}
-        """
+if NEXTCLADE_ENABLED:
+    rule nextclade_dataset:
+        output:
+            zip_file=f"results/{BUILD}/m01/nextclade_dataset.zip"
+        params:
+            dataset_name=config["nextclade"]["dataset_name"]
+        conda:
+            "../envs/nextstrain.yaml"
+        log:
+            f"logs/{BUILD}/m01_nextclade_dataset.log"
+        shell:
+            """
+            nextclade dataset get \
+                --name '{params.dataset_name}' \
+                --output-zip {output.zip_file} \
+                2>&1 | tee {log}
+            """
+
+    rule run_nextclade:
+        input:
+            sequences=f"results/{BUILD}/m01/raw_sequences.fasta",
+            dataset=f"results/{BUILD}/m01/nextclade_dataset.zip"
+        output:
+            tsv=f"results/{BUILD}/m01/nextclade.tsv"
+        conda:
+            "../envs/nextstrain.yaml"
+        log:
+            f"logs/{BUILD}/m01_nextclade_run.log"
+        shell:
+            """
+            nextclade run \
+                --input-dataset {input.dataset} \
+                --output-tsv {output.tsv} \
+                {input.sequences} \
+                2>&1 | tee {log}
+            """
 
 # ---------------------------------------------------------------------------
 # Sanitize metadata: normalize columns, fill defaults, drop empty IDs
@@ -293,26 +302,45 @@ rule sanitize_metadata:
         """
 
 # ---------------------------------------------------------------------------
-# Enrich metadata with Nextclade clade/lineage/QC columns
+# Enrich metadata: with Nextclade (if enabled) or passthrough (if disabled)
 # ---------------------------------------------------------------------------
-rule enrich_metadata:
-    input:
-        base=f"results/{BUILD}/m01/metadata_sanitized.tsv",
-        nc=f"results/{BUILD}/m01/nextclade.tsv"
-    output:
-        tsv=f"results/{BUILD}/m01/metadata_enriched.tsv"
-    conda:
-        "../envs/nextstrain.yaml"
-    log:
-        f"logs/{BUILD}/m01_enrich_metadata.log"
-    shell:
+if NEXTCLADE_ENABLED:
+    rule enrich_metadata:
+        input:
+            base=f"results/{BUILD}/m01/metadata_sanitized.tsv",
+            nc=f"results/{BUILD}/m01/nextclade.tsv"
+        output:
+            tsv=f"results/{BUILD}/m01/metadata_enriched.tsv"
+        conda:
+            "../envs/nextstrain.yaml"
+        log:
+            f"logs/{BUILD}/m01_enrich_metadata.log"
+        shell:
+            """
+            python scripts/enrich_metadata.py \
+                --base-metadata {input.base} \
+                --nextclade-tsv {input.nc} \
+                --output {output.tsv} \
+                2>&1 | tee {log}
+            """
+else:
+    rule enrich_metadata_passthrough:
+        """When Nextclade is disabled, copy sanitized metadata directly as
+        the enriched output. All downstream rules read metadata_enriched.tsv
+        so this maintains full compatibility.
         """
-        python scripts/enrich_metadata.py \
-            --base-metadata {input.base} \
-            --nextclade-tsv {input.nc} \
-            --output {output.tsv} \
-            2>&1 | tee {log}
-        """
+        input:
+            base=f"results/{BUILD}/m01/metadata_sanitized.tsv"
+        output:
+            tsv=f"results/{BUILD}/m01/metadata_enriched.tsv"
+        log:
+            f"logs/{BUILD}/m01_enrich_metadata.log"
+        run:
+            import shutil
+            shutil.copy2(str(input.base), str(output.tsv))
+            with open(str(log[0]), "w") as f:
+                f.write("[ENRICH] Nextclade DISABLED — copied sanitized metadata as enriched.\n")
+            print("[ENRICH] Nextclade DISABLED — metadata passthrough (no clade/lineage columns).")
 
 # ==========================================================================
 # DEFERRED ITEMS for M01
