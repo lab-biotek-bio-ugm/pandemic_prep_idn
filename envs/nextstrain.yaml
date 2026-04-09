@@ -13,10 +13,7 @@ dependencies:
   - nextclade
   - unzip
 
-  # Custom Evolutionary Analytics (M5)
-  - hyphy >=2.5
-
-  # Python Script Dependencies (M7 Bridge)
+  # Python Script Dependencies (M1 sanitize, M2 QC prefilter, enrich)
   - python >=3.10
   - biopython
   - pandas
