@@ -143,3 +143,30 @@ rule m05_hyphy_gard:
             --output {output.json} \
             --rv GDD 2>&1 | tee {log}
         """
+
+# ==========================================================================
+# DEFERRED / DROPPED ITEMS for M05
+# ==========================================================================
+#
+# TODO [M05-1] Clade-Defining SNP Finder (linked to DEV-1 in Snakefile)
+#   What: Script to identify mutations unique to each clade from nt_muts.json
+#         combined with clade labels from Nextclade metadata. Output: clade_snps.tsv
+#         containing per-position SNPs that distinguish clades from each other.
+#   Why deferred: Only needed for DEV-1 (Route B clade-specific primer targets).
+#                 Primary milestone is universal primer detection (Route A).
+#   Priority: Phase 2 — together with DEV-1 and DEV-4 (consensus per clade).
+#
+# DROPPED: HyPhy FEL (Fixed Effects Likelihood)
+#   Original plan included FEL alongside FUBAR for pervasive selection detection.
+#   Decision: Dropped. FUBAR (Bayesian) and FEL (Frequentist) detect the same
+#   biological signal (pervasive selection). FUBAR is faster and performs equally
+#   well for datasets with >20 sequences (our typical range is 50-1000).
+#   FEL is only advantageous for very small datasets (<20 sequences).
+#
+# DROPPED: Standalone SNP Matrix (snp_matrix.csv)
+#   Original plan had a separate SNP matrix extraction step.
+#   Decision: Dropped. This data is already captured by augur ancestral
+#   (nt_muts.json) and augur translate (aa_muts.json) in the Augur pipeline.
+#   Creating a separate CSV would be redundant.
+#
+# ==========================================================================

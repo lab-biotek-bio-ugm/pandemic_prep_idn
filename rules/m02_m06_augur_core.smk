@@ -199,3 +199,28 @@ rule augur_export:
             --title "Pandemic Preparedness: {params.build_name}" \
             --build-url "https://github.com/engkinandatama/pandemic-preparedness" 2> {log}
         """
+
+# ==========================================================================
+# DEFERRED / DROPPED ITEMS for M02-M06
+# ==========================================================================
+#
+# DROPPED: trimAl (M03 — Alignment Trimming)
+#   Original plan included trimAl to remove poorly-aligned columns from MSA.
+#   Decision: Dropped. augur align (--fill-gaps) performs reference-based
+#   alignment which inherently produces cleaner columns than de novo alignment.
+#   Additionally, trimming risks removing conserved regions that are critical
+#   for primer design. For M05 HyPhy input, clean_alignment_for_hyphy.py
+#   already handles codon-level sanitization.
+#
+# TODO [M04-1] Protein Phylogeny (Antigen/Serological Track)
+#   What: Build a separate protein phylogenetic tree from MACSE AA output
+#         using IQ-TREE2 with protein substitution models (e.g., WAG, LG).
+#   Why deferred: Phase 1 focuses on nucleotide-level diagnostics (primer design).
+#                 Protein phylogeny is relevant for serological/antigen-based
+#                 applications (epitope prediction, vaccine strain selection)
+#                 which are out of scope for the current milestone.
+#   Note: Protein/codon data IS used in Phase 1 — but only for HyPhy dN/dS
+#         analysis (mutation pressure scoring), not for building protein trees.
+#   Priority: Phase 2 — when antigen/serological objectives are in scope.
+#
+# ==========================================================================
