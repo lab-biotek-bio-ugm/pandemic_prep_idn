@@ -289,6 +289,8 @@ rule sanitize_metadata:
     params:
         fmt=config["local_input"].get("format", "auto"),
         orig_file=lambda w: config["local_input"]["metadata"] if DATABASE == "local" else ""
+    conda:
+        "../envs/nextstrain.yaml"
     log:
         f"logs/{BUILD}/m01_sanitize_metadata.log"
     shell:
