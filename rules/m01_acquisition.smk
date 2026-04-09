@@ -138,17 +138,22 @@ elif DATABASE == "local":
             """
 
     rule convert_local_metadata:
-        """Convert NCBI Virus CSV metadata to pipeline TSV format."""
+        """Copy or convert local metadata to pipeline working directory.
+        For CSV formats (ncbi_virus_csv): converts to TSV with column mapping.
+        For TSV formats (gisaid_tsv, gisaid_raw, tsv, auto): copies as-is.
+        Column normalization is handled downstream by sanitize_metadata rule.
+        """
         input:
             csv=config["local_input"]["metadata"]
         output:
             tsv=f"results/{BUILD}/m01/metadata.tsv"
         params:
-            fmt=config["local_input"].get("format", "ncbi_virus_csv")
+            fmt=config["local_input"].get("format", "auto")
         log:
             f"logs/{BUILD}/m01_convert_metadata.log"
         run:
             import csv as csvmod
+            import shutil
             import sys
 
             fmt = params.fmt
@@ -192,15 +197,20 @@ elif DATABASE == "local":
                     logf.write(f"Converted {count} NCBI Virus CSV records → {output.tsv}\n")
                     print(f"Converted {count} records from NCBI Virus CSV", file=sys.stderr)
 
-                elif fmt == "tsv":
-                    # --- Already in TSV format, just copy ---
-                    import shutil
+                elif fmt in ("tsv", "gisaid_tsv", "gisaid_raw", "auto"):
+                    # --- TSV-based formats: copy as-is ---
+                    # Column normalization is handled by sanitize_metadata.py
                     shutil.copy2(str(input.csv), str(output.tsv))
-                    logf.write(f"Copied pre-formatted TSV → {output.tsv}\n")
+                    logf.write(f"Copied {fmt} metadata → {output.tsv}\n")
+                    print(f"Copied {fmt} metadata (normalization deferred to sanitizer)",
+                          file=sys.stderr)
 
                 else:
                     logf.write(f"ERROR: Unknown metadata format: {fmt}\n")
-                    raise ValueError(f"Unknown local_input format: '{fmt}'. Use 'ncbi_virus_csv' or 'tsv'.")
+                    raise ValueError(
+                        f"Unknown local_input format: '{fmt}'. "
+                        f"Use 'auto', 'ncbi_virus_csv', 'gisaid_tsv', 'gisaid_raw', or 'tsv'."
+                    )
 
 else:
     raise ValueError(f"Unknown database provider: '{DATABASE}'. Must be 'ncbi' or 'local'.")
@@ -253,11 +263,39 @@ rule run_nextclade:
         """
 
 # ---------------------------------------------------------------------------
+# Sanitize metadata: normalize columns, fill defaults, drop empty IDs
+# ---------------------------------------------------------------------------
+rule sanitize_metadata:
+    """Normalizes metadata from any source (GISAID, NCBI, generic TSV) into
+    a consistent internal format. Applies 3-tier column validation:
+    Tier 1 (strain/date/country) → drop or fill with warning.
+    Tier 2 (region/host/division) → fill silently.
+    Tier 3 (everything else) → pass-through.
+    """
+    input:
+        tsv=f"results/{BUILD}/m01/metadata.tsv"
+    output:
+        tsv=f"results/{BUILD}/m01/metadata_sanitized.tsv",
+        report=f"results/{BUILD}/m01/sanitize_report.json"
+    params:
+        fmt=config["local_input"].get("format", "auto")
+    log:
+        f"logs/{BUILD}/m01_sanitize_metadata.log"
+    shell:
+        """
+        python scripts/sanitize_metadata.py \
+            --input {input.tsv} \
+            --output {output.tsv} \
+            --report {output.report} \
+            --format {params.fmt} 2>&1 | tee {log}
+        """
+
+# ---------------------------------------------------------------------------
 # Enrich metadata with Nextclade clade/lineage/QC columns
 # ---------------------------------------------------------------------------
 rule enrich_metadata:
     input:
-        base=f"results/{BUILD}/m01/metadata.tsv",
+        base=f"results/{BUILD}/m01/metadata_sanitized.tsv",
         nc=f"results/{BUILD}/m01/nextclade.tsv"
     output:
         tsv=f"results/{BUILD}/m01/metadata_enriched.tsv"

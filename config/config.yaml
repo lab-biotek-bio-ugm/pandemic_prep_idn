@@ -23,7 +23,12 @@ ncbi_query:
 local_input:
   sequences: "data/local/sequences.fasta"
   metadata: "data/local/metadata.csv"
-  format: "ncbi_virus_csv"   # Options: ncbi_virus_csv | tsv
+  format: "auto"   # Options: auto | ncbi_virus_csv | gisaid_tsv | gisaid_raw | tsv
+                    #   auto          — detect format from column headers (recommended)
+                    #   ncbi_virus_csv — NCBI Virus CSV download (Accession, Collection_Date...)
+                    #   gisaid_tsv    — GISAID Nextstrain-preprocessed TSV (strain, gisaid_epi_isl...)
+                    #   gisaid_raw    — GISAID raw download (Virus name, Accession ID...)
+                    #   tsv           — Generic TSV with at least 'strain' and 'date' columns
 
 # 4. Quality Control Prefilter (M2 — qc_prefilter)
 qc:
