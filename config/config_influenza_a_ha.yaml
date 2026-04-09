@@ -1,0 +1,51 @@
+# ==============================================================================
+# Pandemic Preparedness Pipeline - Target Configuration Template
+# Target: Influenza A Virus - Segment 4 (HA - Hemagglutinin)
+# ==============================================================================
+
+# 1. Dataset Acquisition
+local_input:
+  # Provide paths to your raw sequence and metadata files here
+  metadata: "data/EpiFlu/Indonesia_EpiFlu_A_HA_Metadata.xls"
+  sequences: "data/EpiFlu/Indonesia_EpiFlu_A_HA_Sequence.fasta"
+  format: "gisaid_epiflu"
+
+reference_id: "NC_002017.1"
+reference_gff: "config/references/flu_a_ha_annotation.gff"
+reference_fasta: "config/references/flu_a_ha_reference.fasta"
+
+# 2. Nextclade Analysis Toggle
+nextclade:
+  # HA genes are usually highly divergent across subtypes (H1, H3, H5, etc.)
+  # If you are aligning mixed subtypes, leave Nextclade disabled and let
+  # the native GISAID clades apply.
+  # If you are focusing strictly on ONE subtype (e.g. H1N1 only), you CAN 
+  # set this to True and specify dataset: "flu_h1n1pdm_ha".
+  enabled: false
+
+# 3. Augur Filter Parameters
+filter:
+  group_by: "country region year month subtype"
+  min_length: 1500 # HA length is ~1700bp, filtering fragments < 1500bp
+  exclude_ambiguous_dates_by: "any"
+
+# 4. Augur Tree Parameters
+tree:
+  method: "iqtree"
+  clock_rate: 0.005 # Substitution rate is higher for surface glycoproteins like HA
+
+# 5. Assay Generation Parameters (M07)
+assay:
+  amplicons:
+    min_length: 80
+    max_length: 250
+    ideal_length: 150
+  tm:
+    min: 58.0
+    max: 62.0
+    ideal: 60.0 # Standard PCR conditions
+  scoring:
+    penalty_gap: 5.0
+    penalty_snp_end: 15.0 
+    penalty_gc_skew: 2.0
+    reward_conserved: 10.0

@@ -1,0 +1,51 @@
+# ==============================================================================
+# Pandemic Preparedness Pipeline - Target Configuration Template
+# Target: Influenza A Virus - Segment 5 (NP - Nucleoprotein)
+# ==============================================================================
+
+# 1. Dataset Acquisition
+local_input:
+  # Provide paths to your raw sequence and metadata files here
+  metadata: "data/EpiFlu/Indonesia_EpiFlu_A_NP_Metadata.xls"
+  sequences: "data/EpiFlu/Indonesia_EpiFlu_A_NP_sequence.fasta"
+  # 'gisaid_epiflu' explicitly maps Isolate_Id to strain and parses Excel format
+  format: "gisaid_epiflu"
+
+reference_id: "NC_002019.1"
+reference_gff: "config/references/flu_a_np_annotation.gff"
+reference_fasta: "config/references/flu_a_np_reference.fasta"
+
+# 2. Nextclade Analysis Toggle
+nextclade:
+  # Nextclade provides excellent datasets for Influenza A HA and NA, but lacks
+  # robust multi-subtype datasets for internal segments like NP.
+  # We disable it here to bypass clade assignment and align directly using MAFFT,
+  # keeping the native GISAID Clades intact.
+  enabled: false
+
+# 3. Augur Filter Parameters
+filter:
+  group_by: "country region year month"
+  min_length: 1200 # NP length is ~1500bp, filtering fragments < 1200bp
+  exclude_ambiguous_dates_by: "any"
+
+# 4. Augur Tree Parameters
+tree:
+  method: "iqtree"
+  clock_rate: 0.003 # substitution rate around ~0.003 for Flu A internal genes
+
+# 5. Assay Generation Parameters (M07)
+assay:
+  amplicons:
+    min_length: 80
+    max_length: 250
+    ideal_length: 150
+  tm:
+    min: 58.0
+    max: 62.0
+    ideal: 60.0 # Standard PCR conditions
+  scoring:
+    penalty_gap: 5.0
+    penalty_snp_end: 15.0 # Stop elongation if SNP at 3' end
+    penalty_gc_skew: 2.0
+    reward_conserved: 10.0 # Favor highly conserved NP regions
