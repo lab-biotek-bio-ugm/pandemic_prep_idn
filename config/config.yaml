@@ -25,7 +25,12 @@ local_input:
   metadata: "data/local/metadata.csv"
   format: "ncbi_virus_csv"   # Options: ncbi_virus_csv | tsv
 
-# 4. Spatio-Temporal Filter (M2 — augur filter)
+# 4. Quality Control Prefilter (M2 — qc_prefilter)
+qc:
+  max_n_content: 5.0              # Max percentage of ambiguous 'N' bases allowed
+  dedup: true                     # Remove identical sequences (MD5 hash)
+
+# 4a. Spatio-Temporal Filter (M2 — augur filter)
 subsampling:
   group_by: "year month"
   sequences_per_group: 10

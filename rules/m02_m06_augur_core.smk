@@ -7,9 +7,34 @@ phylogenetic tree inference, mutational trait analysis, and JSON payload export.
 # Import the global BUILD variable defined in the main Snakefile
 BUILD = config["build_name"]
 
+rule qc_prefilter:
+    """Prefilters raw sequences: removes high N-content and duplicate sequences.
+    Produces a QC report JSON with retention statistics.
+    """
+    input:
+        fasta=f"results/{BUILD}/m01/raw_sequences.fasta"
+    output:
+        fasta=f"results/{BUILD}/m02/prefiltered_sequences.fasta",
+        report=f"results/{BUILD}/m02/qc_report.json"
+    params:
+        max_n_pct=config.get("qc", {}).get("max_n_content", 5.0)
+    conda:
+        "../envs/nextstrain.yaml"
+    log:
+        f"logs/{BUILD}/m02_qc_prefilter.log"
+    shell:
+        """
+        mkdir -p results/{BUILD}/m02
+        python scripts/qc_prefilter.py \
+            --input-fasta {input.fasta} \
+            --output-fasta {output.fasta} \
+            --report {output.report} \
+            --max-n-pct {params.max_n_pct} 2>&1 | tee {log}
+        """
+
 rule augur_filter:
     input:
-        sequences=f"results/{BUILD}/m01/raw_sequences.fasta",
+        sequences=f"results/{BUILD}/m02/prefiltered_sequences.fasta",
         metadata=f"results/{BUILD}/m01/metadata_enriched.tsv"
     output:
         sequences=f"results/{BUILD}/m02/filtered_sequences.fasta"
@@ -23,7 +48,6 @@ rule augur_filter:
         f"logs/{BUILD}/m02_augur_filter.log"
     shell:
         """
-        mkdir -p results/{BUILD}/m02
         augur filter \
             --sequences {input.sequences} \
             --metadata {input.metadata} \
