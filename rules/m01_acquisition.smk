@@ -33,6 +33,12 @@ if DATABASE == "ncbi":
             """
             mkdir -p results/{BUILD}/m01
 
+            echo "================================================================" | tee {log}
+            echo "  WARNING: The NCBI Datasets API pathway is currently"            | tee -a {log}
+            echo "           experimental and might not work as expected."           | tee -a {log}
+            echo "           Consider using 'database: local' instead."              | tee -a {log}
+            echo "================================================================" | tee -a {log}
+
             RELEASED_FLAG=""
             if [ -n "{params.released_after}" ]; then
                 RELEASED_FLAG="--released-after {params.released_after}"
@@ -109,40 +115,6 @@ if DATABASE == "ncbi":
             if writer is None:
                 with open(output.tsv, "w") as fout:
                     fout.write("strain\tvirus\tlocation\tregion\tdate\tdate_submitted\tlength\thost\tcountry\n")
-
-elif DATABASE == "gisaid":
-    # ------------------------------------------------------------------
-    # GISAID EpiCoV pathway (skeleton — requires credentials)
-    # ------------------------------------------------------------------
-    rule download_gisaid_data:
-        output:
-            fasta=f"results/{BUILD}/m01/raw_sequences.fasta",
-            tsv=f"results/{BUILD}/m01/metadata.tsv"
-        params:
-            virus_name=config["gisaid_query"]["virus_name"],
-            location=config["gisaid_query"]["location"],
-            date_from=config["gisaid_query"].get("collection_date_from", "")
-        log:
-            f"logs/{BUILD}/m01_download.log"
-        shell:
-            """
-            echo "================================================================" | tee {log}
-            echo "  GISAID Data Source Selected" | tee -a {log}
-            echo "================================================================" | tee -a {log}
-            echo "" | tee -a {log}
-            echo "  GISAID requires manual data placement or API credentials." | tee -a {log}
-            echo "  Please place your files at:" | tee -a {log}
-            echo "    - {output.fasta}" | tee -a {log}
-            echo "    - {output.tsv}" | tee -a {log}
-            echo "" | tee -a {log}
-            echo "  Download from: https://epicov.org/epi3" | tee -a {log}
-            echo "================================================================" | tee -a {log}
-
-            if [ ! -f "{output.fasta}" ] || [ ! -f "{output.tsv}" ]; then
-                echo "ERROR: GISAID files not found." | tee -a {log}
-                exit 1
-            fi
-            """
 
 elif DATABASE == "local":
     # ------------------------------------------------------------------
@@ -231,7 +203,7 @@ elif DATABASE == "local":
                     raise ValueError(f"Unknown local_input format: '{fmt}'. Use 'ncbi_virus_csv' or 'tsv'.")
 
 else:
-    raise ValueError(f"Unknown database provider: '{DATABASE}'. Must be 'ncbi', 'gisaid', or 'local'.")
+    raise ValueError(f"Unknown database provider: '{DATABASE}'. Must be 'ncbi' or 'local'.")
 
 
 # ==========================================================================

@@ -6,9 +6,8 @@
 build_name: "sars-cov-2-trial"
 
 # 2. Database Provider
-# Options: "ncbi", "gisaid", or "local"
-# - "ncbi"  : Automatic download via NCBI Datasets CLI
-# - "gisaid": Automatic download (requires credentials)
+# Options: "ncbi" or "local"
+# - "ncbi"  : Automatic download via NCBI Datasets CLI (Warning: Under Testing)
 # - "local" : Manual input — place your files in data/local/
 database: "local"
 
@@ -19,19 +18,7 @@ ncbi_query:
   released_after: "2024-10-01"   # Perkecil rentang tanggal untuk testing cepat
   min_length: 29000
 
-# 3b. Data Acquisition — GISAID (used when database = "gisaid")
-# Requires GISAID EpiCoV Access credentials.
-# ⚠️  NEVER commit credentials to git! Use environment variables instead.
-gisaid_query:
-  # credentials_file: "~/.gisaid_credentials.json"   # optional file-based auth
-  # Alternatively set env vars: GISAID_USERNAME, GISAID_PASSWORD
-  virus_name: "hCoV-19"
-  location: "Asia / Indonesia"
-  collection_date_from: "2023-01-01"
-  complete_only: true
-  host: "Human"
-
-# 3c. Data Acquisition — Local Files (used when database = "local")
+# 3b. Data Acquisition — Local Files (used when database = "local")
 # Place your manually downloaded files in data/local/ directory.
 # Supported sources: NCBI Virus web portal, GISAID bulk download, etc.
 local_input:
