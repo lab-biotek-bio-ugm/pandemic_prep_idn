@@ -144,8 +144,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-"""
-Description: QC prefilter script for the pandemic preparedness pipeline.
-Performs N-content filtering and deduplication before augur filter runs.
-Generates a JSON report with statistics for downstream audit.
-"""

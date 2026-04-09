@@ -95,10 +95,7 @@ hyphy:
     - "MEME"
     - "GARD"   # Recombination breakpoint detection (critical for Coronaviruses)
   target_genes:
-    - "S"
-    - "N"
-    - "E"
-    - "M"
+    - "ALL"
 
 # 8. Bridge Configuration (M7 — Conservation & Selection Integration)
 # The Bridge merges conservation data (Track A) with HyPhy evolutionary

@@ -27,6 +27,7 @@ def get_target_genes(config):
     return genes
 
 TARGET_GENES = get_target_genes(config)
+HYPHY_METHODS = config["hyphy"].get("methods", ["FUBAR"])
 
 rule all:
     input:
@@ -34,10 +35,11 @@ rule all:
         f"results/{BUILD}/m02/qc_report.json",
         # M06 Target
         f"results/{BUILD}/nextstrain/auspice_dataset.json",
-        # M05 Targets (HyPhy)
+        # M05 Targets (HyPhy — FUBAR and MEME always, GARD conditional)
         [f"results/{BUILD}/m05/fubar_{gene}.json" for gene in TARGET_GENES],
         [f"results/{BUILD}/m05/meme_{gene}.json" for gene in TARGET_GENES],
-        [f"results/{BUILD}/m05/gard_{gene}.json" for gene in TARGET_GENES],
+        ([f"results/{BUILD}/m05/gard_{gene}.json" for gene in TARGET_GENES]
+         if "GARD" in HYPHY_METHODS else []),
         # M07 Target (Bridge — primer target manifest)
         f"results/{BUILD}/m07/primer_targets_manifest.yaml",
 

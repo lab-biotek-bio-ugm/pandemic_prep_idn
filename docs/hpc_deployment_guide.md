@@ -1,106 +1,179 @@
-# Panduan Lengkap HPC: Development vs Production
-
-Panduan ini mengatur Standar Operasional Prosedur (SOP) untuk memindahkan dan menjalankan pipeline **Pandemic Preparedness** di kluster HPC institusimu. Ada dua mode eksekusi yang bisa kamu gunakan: **Mode Development (Testing)** dan **Mode Production**.
+# Panduan HPC: Pandemic Preparedness Pipeline
+## Server: `bio6000.igf-sequencing.com`
 
 ---
 
-## 🏗️ 1. Persiapan Awal (Wajib untuk Semua Mode)
+## 🏗️ 1. Persiapan Awal (One-Time Setup)
 
-> [!WARNING]  
-> **Home Directory vs Datadrive**  
-> Jangan melakukan komputasi berat atau instalasi environment `conda` di folder `/home/username` karena limitnya sangat kecil. Letakkan data di direktori komputasi (`/data`, `/scratch`, atau `/work`).
+> [!IMPORTANT]
+> **Home vs Datadrive:**  
+> Home (`/home/engkinandatama`) punya quota kecil. Semua data berat WAJIB disimpan di `datadrive`.  
+> Dari screenshot-mu, `datadrive` sudah berupa symlink — artinya admin HPC sudah menyiapkan jalur ini untukmu.
 
-### A. Clone lewat Datadrive
-Masuk pakai SSH ke HPC, lalu *clone* via GitHub:
+### A. Cek lokasi datadrive
+Buka terminal VS Code (Ctrl+`) lalu jalankan:
 ```bash
-# Ganti "/data/your_username" sesuai lokasi yang ditentukan admin HPC
-cd /data/your_username/
-git clone https://github.com/your-username/pandemic-preparedness.git
-cd pandemic-preparedness
+ls -la ~/datadrive
+```
+Catat path asli yang ditunjukkan symlink tersebut (misalnya `/data/engkinandatama` atau `/scratch/engkinandatama`).
+
+### B. Pindahkan cache Conda ke Datadrive
+Miniforge3 sudah terinstal di home, tapi cache packages conda (`~/.conda`) akan membengkak. Pindahkan:
+```bash
+# Pindahkan folder .conda yang sudah ada ke datadrive
+mv ~/.conda ~/datadrive/.conda
+
+# Buat symlink agar conda tetap menemukan cache-nya
+ln -s ~/datadrive/.conda ~/.conda
 ```
 
-### B. Isolasi Cache Snakemake (Conda)
-Agar Snakemake tidak memakan disk space *home directory* kamu saat men-download tools (Auspice/Nextclade), jalankan dua baris ini sekali saja di awal:
+### C. Pastikan Conda aktif
 ```bash
-mkdir -p /data/your_username/.conda
-ln -s /data/your_username/.conda ~/.conda
+# Cek apakah conda sudah di PATH
+conda --version
+
+# Jika belum, aktifkan dulu
+source ~/miniforge3/etc/profile.d/conda.sh
+conda activate base
+```
+
+### D. Install Snakemake (jika belum ada)
+```bash
+conda install -c conda-forge -c bioconda snakemake -y
 ```
 
 ---
 
-## 🧪 2. Mode Development (Testing Interaktif dengan Bash)
+## 📥 2. Clone Repo Private ke Datadrive
 
-> [!TIP]  
-> Gunakan mode ini saat skrip belum 100% jadi, ketika kamu ingin *dry-run*, *troubleshooting* error, atau menjalankan *subset* kecil data (mis. 10 sequences) sambil memantau output langsung dari layar *console/bash*.
+### A. Buat Personal Access Token (PAT) di GitHub
+1. Buka https://github.com/settings/tokens
+2. Klik **"Generate new token (classic)"**
+3. Beri nama: `HPC bio6000`
+4. Centang scope: `repo` (full control)
+5. Klik Generate → **Salin token-nya** (hanya muncul sekali!)
 
-Secara teknis, kamu **tidak boleh** langsung menjalankan beban program berat di *Login Node* (halaman awal saat login ke HPC). Kamu harus "menyewa" *Compute Node* secara interaktif.
+### B. Clone ke datadrive
+```bash
+cd ~/datadrive
+git clone https://github.com/engkinandatama/pandemic-preparedness.git
 
-### Langkah-Langkah Development:
+# Saat diminta password, paste-kan PAT token (bukan password GitHub)
+# Username: engkinandatama
+# Password: ghp_xxxxxxxxxxxx (PAT token)
+```
 
-1. **Meminta Compute Node secara Interaktif (Salloc)**  
-   ```bash
-   salloc --partition=normal --cpus-per-task=4 --mem=12G --time=02:00:00 bash
-   ```  
-   *Penjelasan:* Kamu meminta akses interaktif untuk 4 Core, 12 GB RAM, selama maksimal 2 jam. Layar bash-mu seketika akan terlempar dari komputer "Login" ke komputer "Pekerja".
+### C. Kunci permission folder (agar PI/rekan lab tidak bisa intip)
+```bash
+chmod 700 ~/datadrive/pandemic-preparedness
+```
 
-2. **Test Dry Run Snakemake**  
-   Untuk memverifikasi bahwa *rules* dan integrasi GitHub telah bekerja.
-   ```bash
-   snakemake -np --use-conda
-   ```
-
-3. **Live Testing**  
-   Jalankan eksekusi uji coba seperti lazimnya di laptop.
-   ```bash
-   snakemake --use-conda --cores 4
-   ```
-
-4. **Keluar dari Mode Development**  
-   Saat trial & error selesai, kembalikan core yang kamu sewa.
-   ```bash
-   exit
-   ```
+### D. Masuk ke project
+```bash
+cd ~/datadrive/pandemic-preparedness
+```
 
 ---
 
-## 🚀 3. Mode Production (Otomatis & Skala Besar via SLURM)
+## 🧪 3. Mode Development (Testing Interaktif)
 
-> [!CAUTION]  
-> Gunakan mode ini jika kamu menargetkan pengolahan >1.000 data genom SARS-CoV-2/RSV, yang bisa memakan waktu pengerjaan di atas 8 jam. Kamu hanya *submit job*, tutup laptop-mu, dan biarkan HPC bekerja di balik layar.
+> [!TIP]
+> Gunakan mode ini saat masih building/testing pipeline.  
+> Kamu dapat melihat output langsung di terminal VS Code.
 
-Pada mode ini, kita tidak menggunakan layar interaktif `bash`, melainkan *menitipkan* selembar kerja instruksi (*script*.sh) kepada satpam HPC (SLURM Job Scheduler). 
+### A. Minta Compute Node secara interaktif
+```bash
+# Minta 4 core, 12 GB RAM, maksimal 2 jam
+salloc --partition=normal --cpus-per-task=4 --mem=12G --time=02:00:00
 
-### Langkah-Langkah Production:
+# Jika HPC-mu tidak pakai SLURM, coba PBS:
+# qsub -I -l nodes=1:ppn=4,mem=12gb,walltime=02:00:00
 
-1. **Pastikan File `slurm-run.sh` Siap di Root Folder Project**  
-   ```bash
-   #!/bin/bash
-   #SBATCH --job-name=pandemic_run
-   #SBATCH --output=logs/slurm_%j.out
-   #SBATCH --error=logs/slurm_%j.err
-   #SBATCH --partition=normal         
-   #SBATCH --nodes=1
-   #SBATCH --ntasks=1                 
-   #SBATCH --cpus-per-task=16         # Alokasi Core Besar
-   #SBATCH --mem=32GB                 # Alokasi RAM Besar untuk Evolusi/MSA
-   #SBATCH --time=12:00:00            # Batas waktu maksimal
-   
-   echo "Starting Snakemake on Node: $(hostname)"
-   snakemake --use-conda --cores $SLURM_CPUS_PER_TASK --keep-going --printshellcmds
-   ```
+# Jika tidak ada scheduler sama sekali (kecil kemungkinan), langsung saja
+```
 
-2. **Daftarkan Job (Submission)**  
-   ```bash
-   sbatch slurm-run.sh
-   ```
-   *(Terminal akan merespons misalnya dengan: `Submitted batch job 100234`)*
+> [!NOTE]
+> Jika perintah `salloc` error, tanyakan admin HPC kamu: *"Apakah ada job scheduler di sini? SLURM atau PBS?"*  
+> Kemungkinan nama partisi juga berbeda (bukan `normal` tapi `batch`, `compute`, `short`, dll).
 
-3. **Pantau Status Job (Tanpa Takut Terputus)**  
-   Melihat antrean:
-   ```bash
-   squeue -u your_username
-   ```  
-   Membaca *live output* progress pipeline (bahkan kalau laptopmu habis dimatikan):
-   ```bash
-   tail -f logs/slurm_100234.out
-   ```
+### B. Aktifkan conda (jika belum)
+```bash
+source ~/miniforge3/etc/profile.d/conda.sh
+conda activate base
+```
+
+### C. Dry Run (validasi DAG tanpa eksekusi)
+```bash
+cd ~/datadrive/pandemic-preparedness
+snakemake -np --use-conda
+```
+
+### D. Live Run (eksekusi sungguhan)
+```bash
+snakemake --use-conda --cores 4
+```
+
+### E. Selesai testing → keluar dari compute node
+```bash
+exit
+```
+
+---
+
+## 🚀 4. Mode Production (Nanti, setelah pipeline final)
+
+> [!CAUTION]
+> Gunakan mode ini HANYA jika pipeline sudah selesai dan kamu ingin memproses >1.000 genome semalaman.
+
+### A. Submit job
+```bash
+cd ~/datadrive/pandemic-preparedness
+sbatch slurm-run.sh
+```
+
+### B. Monitor
+```bash
+# Cek status antrean
+squeue -u engkinandatama
+
+# Lihat live output
+tail -f logs/slurm_<JOB_ID>.out
+```
+
+---
+
+## 🔄 5. Sinkronisasi Perubahan (Laptop ↔ HPC)
+
+### Dari Laptop → HPC (setelah edit di laptop)
+```bash
+# Di laptop:
+git add -A && git commit -m "update pipeline" && git push
+
+# Di HPC:
+cd ~/datadrive/pandemic-preparedness
+git pull
+```
+
+### Dari HPC → Laptop (jika edit langsung di HPC via VS Code)
+```bash
+# Di HPC:
+git add -A && git commit -m "fix from hpc testing" && git push
+
+# Di laptop:
+git pull
+```
+
+---
+
+## 📋 Checklist Ringkas
+
+| Langkah | Perintah | Status |
+|---------|----------|--------|
+| Cek datadrive | `ls -la ~/datadrive` | ⬜ |
+| Pindah .conda | `mv ~/.conda ~/datadrive/.conda && ln -s ...` | ⬜ |
+| Cek conda version | `conda --version` | ⬜ |
+| Install snakemake | `conda install snakemake` | ⬜ |
+| Clone repo | `git clone ... ~/datadrive/pandemic-preparedness` | ⬜ |
+| Chmod 700 | `chmod 700 ~/datadrive/pandemic-preparedness` | ⬜ |
+| Dry run | `snakemake -np --use-conda` | ⬜ |
+| Live run | `snakemake --use-conda --cores 4` | ⬜ |

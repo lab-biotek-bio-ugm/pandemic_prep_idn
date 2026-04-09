@@ -5,19 +5,25 @@ to identify and rank Gold Zones for primer design.
 """
 
 BUILD = config["build_name"]
+_HYPHY_METHODS = config["hyphy"].get("methods", ["FUBAR"])
+
+# Build GARD input list conditionally
+_GARD_INPUTS = ([f"results/{BUILD}/m05/gard_{gene}.json" for gene in TARGET_GENES]
+                if "GARD" in _HYPHY_METHODS else [])
 
 rule m07_bridge:
     """Runs the Bridge Builder to produce ranked primer target zones.
     Reads MSA + HyPhy outputs → produces BED, JSON report, YAML manifest.
+    GARD inputs are conditional — if GARD is not in hyphy.methods,
+    M07 still runs using only FUBAR + MEME (recombination penalty = 0).
     """
     input:
         msa=f"results/{BUILD}/m03/aligned.fasta",
         gff=config["references"]["annotation"],
         reference=config["references"]["genome"],
-        # Ensure all HyPhy outputs are available before running
         fubar=[f"results/{BUILD}/m05/fubar_{gene}.json" for gene in TARGET_GENES],
         meme=[f"results/{BUILD}/m05/meme_{gene}.json" for gene in TARGET_GENES],
-        gard=[f"results/{BUILD}/m05/gard_{gene}.json" for gene in TARGET_GENES],
+        gard=_GARD_INPUTS,
     output:
         bed=f"results/{BUILD}/m07/conserved_regions.bed",
         report=f"results/{BUILD}/m07/bridge_report.json",
