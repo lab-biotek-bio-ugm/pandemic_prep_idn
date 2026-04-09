@@ -71,7 +71,7 @@ GISAID_EPIFLU_MAP = {
     "Host": "host",
     "Subtype": "subtype",
     "Lineage": "lineage",
-    "Clade": "GISAID_clade",
+    "Clade": "clade",
     "Submission_Date": "date_submitted",
     "Pathogenicity": "pathogenicity",
 }

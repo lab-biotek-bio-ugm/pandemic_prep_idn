@@ -186,7 +186,7 @@ rule augur_export:
         color_by=(
             "clade lineage country region date"
             if config.get("nextclade", {}).get("enabled", True)
-            else "subtype country region host date"
+            else "subtype clade lineage country region host date"
         )
     conda:
         "../envs/nextstrain.yaml"
