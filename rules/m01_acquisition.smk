@@ -1,14 +1,14 @@
 """
 Module 1: Data Acquisition & QC
-Handles fetching raw viral sequences from NCBI or GISAID, running Nextclade
+Handles fetching raw viral sequences from NCBI or local files, running Nextclade
 for clade/lineage classification + quality control, and formatting
 the metadata into the enriched TSV structure required by Nextstrain Augur.
 
-Data source is selected via config["database"]: "ncbi" or "gisaid"
+Data source is selected via config["database"]: "ncbi" or "local"
 """
 
 BUILD = config["build_name"]
-DATABASE = config["database"]  # "ncbi" or "gisaid"
+DATABASE = config["database"]  # "ncbi" or "local"
 
 # ==========================================================================
 # Source-specific download rules (only one will be active based on config)
@@ -273,3 +273,29 @@ rule enrich_metadata:
             --output {output.tsv} \
             2>&1 | tee {log}
         """
+
+# ==========================================================================
+# DEFERRED ITEMS for M01
+# ==========================================================================
+#
+# TODO [M01-1] Virus Template System (config/templates/)
+#   What: Create per-virus YAML presets (e.g., influenza_a_h1n1.yaml,
+#         sars_cov_2.yaml, rsv_a.yaml) containing pre-filled values for:
+#         - references.genome, references.annotation, references.reference_id
+#         - nextclade.dataset_name
+#         - timetree.clock_rate, timetree.clock_std_dev
+#         - hyphy.target_genes
+#         - subsampling.min_length
+#   Why:  Currently the user must manually change 6+ config parameters when
+#         switching target virus. Templates would make it plug-and-play.
+#   Prereqs: Pipeline must be validated on at least 2 different viruses first.
+#   Priority: Phase 2 — after Influenza A and SARS-CoV-2 runs succeed.
+#
+# DROPPED: BV-BRC / ViPR Database Support
+#   Original plan included BV-BRC (Bacterial and Viral Bioinformatics Resource
+#   Center, successor to ViPR) as a third data source.
+#   Decision: Dropped. BV-BRC data for respiratory viruses is largely a mirror
+#   of NCBI GenBank. Adding it would increase code complexity without providing
+#   unique sequences. NCBI + local files are sufficient for all use cases.
+#
+# ==========================================================================
