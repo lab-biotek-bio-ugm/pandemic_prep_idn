@@ -163,10 +163,15 @@ rule m05_hyphy_gard:
 #   well for datasets with >20 sequences (our typical range is 50-1000).
 #   FEL is only advantageous for very small datasets (<20 sequences).
 #
-# DROPPED: Standalone SNP Matrix (snp_matrix.csv)
-#   Original plan had a separate SNP matrix extraction step.
-#   Decision: Dropped. This data is already captured by augur ancestral
-#   (nt_muts.json) and augur translate (aa_muts.json) in the Augur pipeline.
-#   Creating a separate CSV would be redundant.
+# TODO [M05-2] SNP Matrix (linked to DEV-1 and M05-1)
+#   What: Generate a position × sequence allele matrix from the MSA. Each row
+#         is a genome position, each column is a sequence, each cell is the
+#         nucleotide at that position. This is the raw data the Clade SNP
+#         Finder (M05-1) needs to identify clade-defining mutations.
+#   Why deferred: Only needed when Route B (clade-specific primers) is active.
+#                 Note: augur ancestral (nt_muts.json) gives mutations per tree
+#                 branch, NOT per-position alleles — they are complementary,
+#                 not redundant.
+#   Priority: Phase 2 — together with M05-1 and DEV-4.
 #
 # ==========================================================================
