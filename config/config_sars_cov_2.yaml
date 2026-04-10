@@ -1,0 +1,78 @@
+# =============================================================================
+# Pandemic Preparedness Diagnostic Pipeline — Configuration Profile
+# Target: SARS-CoV-2 (Full Genome)
+# =============================================================================
+
+# 1. Target Identity
+build_name: "sars-cov-2-trial"
+
+# 2. Database Provider
+database: "local"
+
+# 3. Data Acquisition
+local_input:
+  sequences: "data/NCBI-SarCov/NCBI-SarCov-Sequences.fasta"
+  metadata: "data/NCBI-SarCov/NCBI-SarCov-Metadata.csv"
+  format: "ncbi_virus_csv"
+
+# 4. Quality Control Prefilter (M02 — qc_prefilter)
+qc:
+  max_n_content: 5.0              # Max percentage of ambiguous 'N' bases
+  dedup: true                     # Remove identical sequences (MD5 hash)
+
+# 4a. Spatio-Temporal Filter (M02 — augur filter)
+subsampling:
+  group_by: "country year month"
+  sequences_per_group: 20
+  max_sequences: 1000             # Reasonable for trial run
+  min_length: 29000               # Full genome ~29903bp, filter fragments
+
+# 4b. Timetree Parameters (M04 — augur refine)
+timetree:
+  clock_rate: 0.0008              # ~8×10⁻⁴ subs/site/year for SARS-CoV-2
+  clock_std_dev: 0.0004
+
+# 5. File References
+# Reference: Wuhan-Hu-1 (MN908947.3) — official SARS-CoV-2 reference genome
+references:
+  genome: "config/references/sars_cov_2_reference.fasta"
+  annotation: "config/references/sars_cov_2_annotation.gff"
+  reference_id: "MN908947.3"
+
+# 6. Nextclade — Clade/Lineage Classification & QC
+nextclade:
+  enabled: true                   # SARS-CoV-2 has excellent Nextclade datasets
+  dataset_name: "nextstrain/sars-cov-2/wuhan-hu-1/orfs"
+
+# 7. Evolutionary Selection Pressure Engine (M05 — HyPhy)
+hyphy:
+  p_value_threshold: 0.1
+  methods:
+    - "FUBAR"
+    - "MEME"
+    - "GARD"   # Safe: auto-subsamples if needed, ~30kb genome supports this well
+  target_genes:
+    - "ALL"    # S, ORF3a, E, M, ORF6, ORF7a, ORF8, N, ORF10
+
+# 8. Bridge Configuration (M07 — Conservation & Selection Integration)
+bridge:
+  window_size: 200                # Larger windows for 30kb genome
+  min_region_length: 150
+  buffer_bp: 100
+  entropy_threshold: 0.01         # Stricter for well-conserved regions
+  gard_buffer_bp: 100             # GARD is relevant for SARS-CoV-2!
+  include_utr: false              # Focus on coding regions
+  weights:
+    conservation: 0.35
+    purifying: 0.25
+    episodic_penalty: 0.15
+    recombination: 0.25           # Higher weight — recombination is real for CoV
+  tiers:
+    strict:
+      min_conservation: 0.99
+      min_purifying_prob: 0.95
+    moderate:
+      min_conservation: 0.95
+      min_purifying_prob: 0.8
+    survival:
+      min_conservation: 0.90
