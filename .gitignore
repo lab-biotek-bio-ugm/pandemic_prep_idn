@@ -6,6 +6,7 @@ __pycache__/
 .envs/
 results/
 logs/
+docs/quarto-reports/
 
 miniforge3/
 data/

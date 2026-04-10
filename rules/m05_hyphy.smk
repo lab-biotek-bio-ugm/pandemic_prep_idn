@@ -94,6 +94,7 @@ rule m05_hyphy_fubar:
         f"logs/{BUILD}/m05_hyphy_fubar_{{gene}}.log"
     shell:
         """
+        export ENV="CPU={threads}"
         hyphy fubar \
             --alignment {input.alignment} \
             --tree {input.tree} \
@@ -115,6 +116,7 @@ rule m05_hyphy_meme:
         f"logs/{BUILD}/m05_hyphy_meme_{{gene}}.log"
     shell:
         """
+        export ENV="CPU={threads}"
         hyphy meme \
             --alignment {input.alignment} \
             --tree {input.tree} \
@@ -134,13 +136,14 @@ rule m05_hyphy_gard:
     output:
         json=f"results/{BUILD}/m05/gard_{{gene}}.json"
     threads:
-        4
+        16  # GARD needs way more CPU power
     conda:
         "../envs/hyphy_macse.yaml"
     log:
         f"logs/{BUILD}/m05_hyphy_gard_{{gene}}.log"
     shell:
         """
+        export ENV="CPU={threads}"
         python scripts/run_hyphy_gard_safe.py \
             {input.alignment} \
             {output.json} \
