@@ -37,7 +37,7 @@ rule m05_macse_align:
         nt_fasta=f"results/{BUILD}/m05/macse_{{gene}}_NT.fasta",
         aa_fasta=f"results/{BUILD}/m05/macse_{{gene}}_AA.fasta"
     threads:
-        4
+        1  # MACSE is single-threaded (Java)
     conda:
         "../envs/hyphy_macse.yaml"
     log:
@@ -87,15 +87,14 @@ rule m05_hyphy_fubar:
     output:
         json=f"results/{BUILD}/m05/fubar_{{gene}}.json"
     threads:
-        4
+        1  # Standard hyphy FUBAR is single-threaded
     conda:
         "../envs/hyphy_macse.yaml"
     log:
         f"logs/{BUILD}/m05_hyphy_fubar_{{gene}}.log"
     shell:
         """
-        export ENV="CPU={threads}"
-        hyphy fubar \
+        hyphy CPU={threads} fubar \
             --alignment {input.alignment} \
             --tree {input.tree} \
             --output {output.json} 2>&1 | tee {log}
@@ -109,15 +108,14 @@ rule m05_hyphy_meme:
     output:
         json=f"results/{BUILD}/m05/meme_{{gene}}.json"
     threads:
-        4
+        1  # Standard hyphy MEME is single-threaded
     conda:
         "../envs/hyphy_macse.yaml"
     log:
         f"logs/{BUILD}/m05_hyphy_meme_{{gene}}.log"
     shell:
         """
-        export ENV="CPU={threads}"
-        hyphy meme \
+        hyphy CPU={threads} meme \
             --alignment {input.alignment} \
             --tree {input.tree} \
             --output {output.json} 2>&1 | tee {log}
@@ -136,14 +134,13 @@ rule m05_hyphy_gard:
     output:
         json=f"results/{BUILD}/m05/gard_{{gene}}.json"
     threads:
-        16  # GARD needs way more CPU power
+        1  # GARD wrapper calls hyphy internally
     conda:
         "../envs/hyphy_macse.yaml"
     log:
         f"logs/{BUILD}/m05_hyphy_gard_{{gene}}.log"
     shell:
         """
-        export ENV="CPU={threads}"
         python scripts/run_hyphy_gard_safe.py \
             {input.alignment} \
             {output.json} \
