@@ -54,7 +54,8 @@ hyphy:
   methods:
     - "FUBAR"
     - "MEME"
-    - "GARD"
+    # GARD disabled: MP gene (~759bp) too short for c-AIC with 500+ sequences.
+    # - "GARD"
   target_genes:
     - "ALL"
 
