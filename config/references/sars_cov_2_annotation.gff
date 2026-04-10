@@ -1,4 +1,6 @@
 ##gff-version 3
+MN908947.3	RefSeq	gene	266	13465	.	+	0	gene=orf1a;
+MN908947.3	RefSeq	gene	13468	21555	.	+	0	gene=orf1b;
 MN908947.3	RefSeq	gene	21563	25384	.	+	0	gene=S;
 MN908947.3	RefSeq	gene	25393	26220	.	+	0	gene=ORF3a;
 MN908947.3	RefSeq	gene	26245	26472	.	+	0	gene=E;
