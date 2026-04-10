@@ -123,8 +123,11 @@ rule m05_hyphy_meme:
 
 rule m05_hyphy_gard:
     """Runs HyPhy GARD to detect recombination breakpoints within each gene.
-    Critical for Coronaviruses; less so for segmented viruses (Influenza).
-    GARD infers its own phylogenies per partition, so no input tree is needed.
+    Uses a safe wrapper that performs pre-flight checks:
+    - If alignment is too short for c-AIC (alignment_len < ~4×num_seqs),
+      writes empty JSON and exits 0 (soft-fail, pipeline continues).
+    - If GARD crashes at runtime, catches error and soft-fails.
+    Critical for long genomes (SARS-CoV-2); auto-skipped for short segments (Flu).
     """
     input:
         alignment=f"results/{BUILD}/m05/cleaned_{{gene}}_NT.fasta"
@@ -138,9 +141,9 @@ rule m05_hyphy_gard:
         f"logs/{BUILD}/m05_hyphy_gard_{{gene}}.log"
     shell:
         """
-        hyphy gard \
-            --alignment {input.alignment} \
-            --output {output.json} \
+        python scripts/run_hyphy_gard_safe.py \
+            {input.alignment} \
+            {output.json} \
             --rv GDD 2>&1 | tee {log}
         """
 

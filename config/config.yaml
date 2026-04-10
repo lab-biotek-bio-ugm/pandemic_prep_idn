@@ -54,10 +54,7 @@ hyphy:
   methods:
     - "FUBAR"
     - "MEME"
-    # GARD disabled for short segments: needs alignment_length > 2 × num_sequences
-    # for c-AIC. MP gene (759bp, 757 seqs) fails this requirement.
-    # Enable only for long genomes like SARS-CoV-2 (~30kb).
-    # - "GARD"
+    - "GARD"   # Safe: auto-skips if alignment too short for c-AIC
   target_genes:
     - "ALL"
 

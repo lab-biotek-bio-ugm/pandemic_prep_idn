@@ -230,6 +230,12 @@ def parse_gard_json(filepath):
     with open(filepath, "r") as f:
         data = json.load(f)
 
+    # Check if GARD was skipped by the safe wrapper
+    if data.get("skipped", False):
+        print(f"[M07]   GARD  was skipped: {data.get('analysis', {}).get('skip_reason', 'unknown')}",
+              file=sys.stderr)
+        return []
+
     # GARD stores results in "data partitions" (or variants)
     partitions = data.get("data partitions",
                           data.get("dataPartitions", {}))
