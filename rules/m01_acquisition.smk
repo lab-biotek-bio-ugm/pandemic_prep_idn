@@ -10,9 +10,7 @@ Data source is selected via config["database"]: "ncbi" or "local"
 BUILD = config["build_name"]
 DATABASE = config["database"]  # "ncbi" or "local"
 
-# ==========================================================================
 # Source-specific download rules (only one will be active based on config)
-# ==========================================================================
 
 if DATABASE == "ncbi":
     # ------------------------------------------------------------------
@@ -225,15 +223,11 @@ else:
     raise ValueError(f"Unknown database provider: '{DATABASE}'. Must be 'ncbi' or 'local'.")
 
 
-# ==========================================================================
 # Shared rules (run regardless of data source)
-# ==========================================================================
 
 NEXTCLADE_ENABLED = config.get("nextclade", {}).get("enabled", True)
 
-# ---------------------------------------------------------------------------
 # Nextclade dataset download + run (only when enabled)
-# ---------------------------------------------------------------------------
 if NEXTCLADE_ENABLED:
     rule nextclade_dataset:
         output:
@@ -271,9 +265,7 @@ if NEXTCLADE_ENABLED:
                 2>&1 | tee {log}
             """
 
-# ---------------------------------------------------------------------------
 # Sanitize metadata: normalize columns, fill defaults, drop empty IDs
-# ---------------------------------------------------------------------------
 rule sanitize_metadata:
     """Normalizes metadata from any source (GISAID, NCBI, generic TSV) into
     a consistent internal format. Applies 3-tier column validation:
@@ -303,9 +295,7 @@ rule sanitize_metadata:
             --orig-file "{params.orig_file}" 2>&1 | tee {log}
         """
 
-# ---------------------------------------------------------------------------
 # Enrich metadata: with Nextclade (if enabled) or passthrough (if disabled)
-# ---------------------------------------------------------------------------
 if NEXTCLADE_ENABLED:
     rule enrich_metadata:
         input:
@@ -344,9 +334,7 @@ else:
                 f.write("[ENRICH] Nextclade DISABLED — copied sanitized metadata as enriched.\n")
             print("[ENRICH] Nextclade DISABLED — metadata passthrough (no clade/lineage columns).")
 
-# ==========================================================================
 # DEFERRED ITEMS for M01
-# ==========================================================================
 #
 # TODO [M01-1] Virus Template System (config/templates/)
 #   What: Create per-virus YAML presets (e.g., influenza_a_h1n1.yaml,
@@ -368,4 +356,3 @@ else:
 #   of NCBI GenBank. Adding it would increase code complexity without providing
 #   unique sequences. NCBI + local files are sufficient for all use cases.
 #
-# ==========================================================================

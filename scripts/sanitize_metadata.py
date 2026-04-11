@@ -22,9 +22,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-# ============================================================================
 # Column mapping per source format
-# ============================================================================
 
 # GISAID Nextstrain-preprocessed format (already has standard columns)
 GISAID_COLUMN_MAP = {

@@ -49,9 +49,7 @@ include: "rules/m05_hyphy.smk"
 include: "rules/m07_bridge.smk"
 # include: "rules/m08_primerlab.smk"
 
-# ==========================================================================
 # DEFERRED DEVELOPMENT ITEMS — Tracked here to avoid loss across audits.
-# ==========================================================================
 #
 # TODO [DEV-1] Route B: Clade-Specific Primer Targets
 #   What: Add a second route in M07 that identifies clade-defining SNPs
@@ -90,4 +88,3 @@ include: "rules/m07_bridge.smk"
 #                 reference genomes, segment handling) without functional gain.
 #   Priority: Phase 3 — after single-virus pipeline is fully validated.
 #
-# ==========================================================================

@@ -30,9 +30,7 @@ import yaml
 from Bio import SeqIO
 
 
-# ===========================================================================
 # Step 1: Conservation Scanner
-# ===========================================================================
 
 def calculate_entropy(column):
     """Calculate Shannon entropy for a single MSA column.
@@ -113,9 +111,7 @@ def scan_conservation(msa_path, window_size, entropy_threshold, min_region_lengt
     return regions, n_sequences, aln_length
 
 
-# ===========================================================================
 # GFF Parser
-# ===========================================================================
 
 def parse_gff(gff_path):
     """Parse GFF3 file to extract gene and UTR coordinates (0-based half-open)."""
@@ -165,9 +161,7 @@ def find_gene_for_position(pos, genes, utrs):
     return "intergenic", False
 
 
-# ===========================================================================
 # Step 2: HyPhy Score Mapper
-# ===========================================================================
 
 def parse_fubar_json(filepath):
     """Parse HyPhy FUBAR JSON → per-codon purifying probability."""
@@ -330,9 +324,7 @@ def map_hyphy_to_genome(genes, hyphy_dir, target_genes):
     return codon_data, gard_breakpoints
 
 
-# ===========================================================================
 # Step 3: Intersection & Composite Scoring
-# ===========================================================================
 
 GRADE_TEXT = {
     "A": "EXCELLENT — Ideal for universal primer design",
@@ -455,9 +447,7 @@ def score_regions(regions, codon_data, gard_breakpoints, genes, utrs,
     return scored
 
 
-# ===========================================================================
 # Step 4: Output Builder
-# ===========================================================================
 
 def write_bed(regions, ref_id, path):
     """Write BED file for genome browser visualization."""
@@ -540,9 +530,7 @@ def write_manifest(regions, build_name, ref_genome, buffer_bp, path):
     print(f"[M07] Wrote manifest: {path}")
 
 
-# ===========================================================================
 # Main
-# ===========================================================================
 
 def main():
     parser = argparse.ArgumentParser(

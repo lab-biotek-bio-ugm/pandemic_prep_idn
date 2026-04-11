@@ -147,9 +147,7 @@ rule m05_hyphy_gard:
             --rv GDD 2>&1 | tee {log}
         """
 
-# ==========================================================================
 # DEFERRED / DROPPED ITEMS for M05
-# ==========================================================================
 #
 # TODO [M05-1] Clade-Defining SNP Finder (linked to DEV-1 in Snakefile)
 #   What: Script to identify mutations unique to each clade from nt_muts.json
@@ -177,4 +175,3 @@ rule m05_hyphy_gard:
 #                 not redundant.
 #   Priority: Phase 2 — together with M05-1 and DEV-4.
 #
-# ==========================================================================

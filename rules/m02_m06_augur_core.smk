@@ -205,9 +205,7 @@ rule augur_export:
             --build-url "https://github.com/engkinandatama/pandemic-preparedness" 2> {log}
         """
 
-# ==========================================================================
 # DEFERRED / DROPPED ITEMS for M02-M06
-# ==========================================================================
 #
 # DROPPED: trimAl (M03 — Alignment Trimming)
 #   Original plan included trimAl to remove poorly-aligned columns from MSA.
@@ -228,4 +226,3 @@ rule augur_export:
 #         analysis (mutation pressure scoring), not for building protein trees.
 #   Priority: Phase 2 — when antigen/serological objectives are in scope.
 #
-# ==========================================================================
