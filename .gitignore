@@ -12,3 +12,10 @@ miniforge3/
 data/
 ncbi_dataset.zip
 
+
+# AI & Brainstorming Artifacts
+.agents/
+docs/
+plan-docs/
+artifacts/
+
