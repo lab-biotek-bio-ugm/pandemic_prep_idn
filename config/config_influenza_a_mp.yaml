@@ -54,7 +54,7 @@ hyphy:
   methods:
     - "FUBAR"
     - "MEME"
-    - "GARD"   # Safe: auto-skips if alignment too short for c-AIC
+    # - "GARD"   # Dinonaktifkan untuk Influenza A: Hemat waktu karena jarang terjadi Recomb. Internal
   target_genes:
     - "ALL"
 
