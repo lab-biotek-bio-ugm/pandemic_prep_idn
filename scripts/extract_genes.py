@@ -1,17 +1,12 @@
 #!/usr/bin/env python3
 """
-M05a: Gene Extractor
-Extracts unaligned gene nucleotide sequences from a whole-genome MSA based on a reference GFF.
-
-Workflow:
-1. Load multiple sequence alignment (MSA).
-2. Locate the reference sequence within the MSA.
-3. Map the reference sequence's physical coordinates to the MSA column indices.
-4. For each coding sequence (CDS/gene) in the GFF:
-     a) Identify MSA column start and end.
-     b) Slice the MSA for all sequences in those columns.
-     c) Strip gap characters ('-') to produce unaligned, gene-specific FASTA variants.
-5. Save as separate FASTA files ready for Codon-Aware Alignment (MACSE).
+M05a: M03 Direct Slicer & Harsh Masker
+Extracts gene nucleotide sequences directly from the M03 whole-genome MSA.
+Bypasses MACSE by strictly enforcing reading-frame integrity directly on the global alignment:
+1. Pads the extracted alignment slice to a multiple of 3.
+2. Identifies frameshifting indels (codons with 1 or 2 gaps) and masks them with 'NNN'.
+3. Identifies in-frame stop codons and masks them with '---'.
+4. Outputs the cleaned alignment directly for HyPhy (FUBAR/MEME/GARD).
 """
 
 import argparse
@@ -30,7 +25,6 @@ def parse_gff(gff_path):
             parts = line.strip().split("\t")
             if len(parts) < 9: continue
             
-            # Only process 'gene' feature type to avoid duplicate CDS entries
             feat_type = parts[2]
             if feat_type != "gene": continue
             
@@ -39,7 +33,6 @@ def parse_gff(gff_path):
             strand = parts[6]
             attributes = parts[8]
             
-            # Extract gene name strictly from 'gene=' attribute only
             name = None
             for attr in attributes.split(";"):
                 attr = attr.strip()
@@ -62,80 +55,90 @@ def build_coordinate_map(ref_seq_str):
             col_map.append(col_idx)
     return col_map
 
+def apply_harsh_masking(seq_str, strand):
+    """
+    Applies Harsh Masking to ensure reading frame and HyPhy compatibility:
+    - Masks partial gaps (frameshifts) with 'NNN'
+    - Masks stop codons with '---'
+    NOTE: seq_str must be a multiple of 3 in length.
+    """
+    # Reverse complement if on negative strand BEFORE checking codons
+    if strand == "-":
+        seq_str = str(Seq(seq_str).reverse_complement())
+        
+    stop_codons = {"TAA", "TAG", "TGA"}
+    cleaned_seq = []
+    
+    for i in range(0, len(seq_str), 3):
+        codon = seq_str[i:i+3]
+        
+        # Rule 1: Partial gaps (frameshift artifacts)
+        if "-" in codon and codon != "---":
+            cleaned_seq.append("NNN")
+            continue
+            
+        # Rule 2: In-frame Stop Codons
+        if codon in stop_codons:
+            cleaned_seq.append("---")
+            continue
+            
+        # Standard valid codon
+        cleaned_seq.append(codon)
+        
+    return "".join(cleaned_seq)
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--alignment", required=True, help="MSA from augur align (FASTA)")
     parser.add_argument("--gff", required=True, help="Reference GFF annotation")
-    parser.add_argument("--reference-id", required=True, help="ID of the reference sequence in the MSA (e.g., 'MN908947.3')")
-    parser.add_argument("--outdir", required=True, help="Directory to save the extracted unaligned gene FASTAs")
+    parser.add_argument("--reference-id", required=True, help="ID of the reference sequence in the MSA")
+    parser.add_argument("--outdir", required=True, help="Directory to save the cleaned gene alignments")
     args = parser.parse_args()
 
-    # 1. Parse GFF
     print(f"Parsing GFF: {args.gff}")
     genes = parse_gff(args.gff)
     if not genes:
-        print("ERROR: No genes found in GFF", file=sys.stderr)
-        sys.exit(1)
-    print(f"Found {len(genes)} genes: {list(genes.keys())}")
-
-    # 2. Load FASTA
-    print(f"Loading multiple sequence alignment: {args.alignment}")
+        sys.exit("ERROR: No genes found in GFF")
+        
+    print(f"Loading MSA: {args.alignment}")
     records = list(SeqIO.parse(args.alignment, "fasta"))
     print(f"Loaded {len(records)} sequences.")
 
-    # 3. Find reference and map coordinates
-    ref_record = None
-    for r in records:
-        # Exact match or accession-without-version match (e.g., MN908947 matches MN908947.3)
-        if r.id == args.reference_id or r.id.split('.')[0] == args.reference_id:
-            ref_record = r
-            break
-            
+    ref_record = next((r for r in records if r.id == args.reference_id or r.id.split('.')[0] == args.reference_id), None)
     if not ref_record:
-        print(f"ERROR: Reference ID '{args.reference_id}' not found in alignment.", file=sys.stderr)
-        print(f"  Available IDs (first 5): {[r.id for r in records[:5]]}", file=sys.stderr)
-        sys.exit(1)
+        sys.exit(f"ERROR: Reference '{args.reference_id}' not found in MSA.")
         
     print(f"Mapping coordinates against reference: {ref_record.id}")
     col_map = build_coordinate_map(str(ref_record.seq))
 
     os.makedirs(args.outdir, exist_ok=True)
 
-    # 4 & 5. Extract and save unaligned genes
     for gene_name, (start, end, strand) in genes.items():
-        # Clamp gene boundaries to reference length instead of skipping
-        if end > len(col_map):
-            print(f"WARNING: Gene {gene_name} end ({end}) exceeds reference ungapped length ({len(col_map)}). Clamping.")
-            end = len(col_map)
-        
         if start >= len(col_map):
-            print(f"WARNING: Gene {gene_name} start ({start}) exceeds reference length. Skipping.")
             continue
             
+        if end > len(col_map):
+            end = len(col_map)
+        
         msa_start = col_map[start]
+        # In python slicing, end is exclusive. We want to include the base at `end-1`.
         msa_end = col_map[end - 1] + 1
+        
+        slice_width = msa_end - msa_start
+        pad_len = (3 - (slice_width % 3)) % 3
+        canonical_len = slice_width + pad_len
         
         out_records = []
         for r in records:
-            # We don't want the reference included in MACSE (or we do, as a frameshift anchor!)
-            # But usually it's fine.
-            sliced_msa = str(r.seq)[msa_start:msa_end]
+            sliced_msa = str(r.seq)[msa_start:msa_end].upper()
+            sliced_msa += "N" * pad_len
             
-            # Remove gaps to get unaligned raw sequences
-            unaligned_seq = sliced_msa.replace("-", "")
+            cleaned_seq_str = apply_harsh_masking(sliced_msa, strand)
+            out_records.append(SeqRecord(Seq(cleaned_seq_str), id=r.id, description=""))
             
-            # Reverse complement if on negative strand
-            if strand == "-":
-                unaligned_seq = str(Seq(unaligned_seq).reverse_complement())
-                
-            if len(unaligned_seq) == 0:
-                continue # Sequence has no data for this gene
-                
-            out_records.append(SeqRecord(Seq(unaligned_seq), id=r.id, description=""))
-            
-        out_path = os.path.join(args.outdir, f"unaligned_{gene_name}.fasta")
+        out_path = os.path.join(args.outdir, f"cleaned_{gene_name}_NT.fasta")
         SeqIO.write(out_records, out_path, "fasta")
-        print(f"Extracted {len(out_records)} unaligned sequences for {gene_name} -> {out_path}")
+        print(f"Sliced and Masked {len(out_records)} sequences for {gene_name} -> {out_path}")
 
 if __name__ == "__main__":
     main()
