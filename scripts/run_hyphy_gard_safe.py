@@ -150,10 +150,16 @@ def main():
         print(f"[GARD-SAFE] ✓ No subsampling needed ({n_seqs} ≤ {max_safe_seqs})",
               file=sys.stderr)
 
+    threads = 1
+    if "--threads" in sys.argv:
+        t_idx = sys.argv.index("--threads")
+        if t_idx + 1 < len(sys.argv):
+            threads = int(sys.argv[t_idx + 1])
+
     # ---- Step 3: Run GARD ----
-    print(f"[GARD-SAFE] Running HyPhy GARD...", file=sys.stderr)
+    print(f"[GARD-SAFE] Running HyPhy GARD with {threads} threads...", file=sys.stderr)
     cmd = [
-        "hyphy", "gard",
+        "hyphy", f"CPU={threads}", "gard",
         "--alignment", actual_alignment,
         "--output", output,
         "--rv", rv
