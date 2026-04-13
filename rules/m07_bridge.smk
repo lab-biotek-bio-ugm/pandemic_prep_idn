@@ -11,6 +11,17 @@ _HYPHY_METHODS = config["hyphy"].get("methods", ["FUBAR"])
 _GARD_INPUTS = ([f"results/{BUILD}/m05/gard_{gene}.json" for gene in TARGET_GENES]
                 if "GARD" in _HYPHY_METHODS else [])
 
+rule m07_export_config:
+    """Exports the merged Snakemake configuration to a YAML file for python scripts."""
+    output:
+        yaml=f"results/{BUILD}/m07/active_config.yaml"
+    run:
+        import yaml
+        import os
+        os.makedirs(os.path.dirname(output.yaml), exist_ok=True)
+        with open(output.yaml, "w") as f:
+            yaml.dump(config, f, default_flow_style=False)
+
 rule m07_bridge:
     """Runs the Bridge Builder to produce ranked primer target zones.
     Reads MSA + HyPhy outputs → produces BED, JSON report, YAML manifest.
@@ -21,6 +32,7 @@ rule m07_bridge:
         msa=f"results/{BUILD}/m03/aligned.fasta",
         gff=config["references"]["annotation"],
         reference=config["references"]["genome"],
+        config_yaml=f"results/{BUILD}/m07/active_config.yaml",
         fubar=[f"results/{BUILD}/m05/fubar_{gene}.json" for gene in TARGET_GENES],
         meme=[f"results/{BUILD}/m05/meme_{gene}.json" for gene in TARGET_GENES],
         gard=_GARD_INPUTS,
@@ -43,6 +55,6 @@ rule m07_bridge:
             --hyphy-dir {params.hyphy_dir} \
             --reference {input.reference} \
             --outdir results/{params.build_name}/m07 \
-            --config config/config.yaml \
+            --config {input.config_yaml} \
             --build-name {params.build_name} 2>&1 | tee {log}
         """
