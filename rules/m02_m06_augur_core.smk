@@ -33,6 +33,12 @@ rule qc_prefilter:
         """
 
 rule augur_filter:
+    """Spatio-temporal subsampling via augur filter.
+    Uses --subsample-max-sequences to enforce a hard cap on total output.
+    With --group-by, augur distributes the budget evenly across groups.
+    NOTE: --sequences-per-group and --subsample-max-sequences are mutually
+    exclusive in augur — we use the total cap approach.
+    """
     input:
         sequences=f"results/{BUILD}/m02/prefiltered_sequences.fasta",
         metadata=f"results/{BUILD}/m01/metadata_enriched.tsv"
@@ -40,10 +46,9 @@ rule augur_filter:
         sequences=f"results/{BUILD}/m02/filtered_sequences.fasta"
     params:
         group_by=config["subsampling"]["group_by"],
-        seq_per_group=config["subsampling"]["sequences_per_group"],
         max_seq=config["subsampling"]["max_sequences"],
         min_length=config["subsampling"]["min_length"],
-        seed=config.get("hyphy", {}).get("subsample", {}).get("seed", 42)
+        seed=config.get("subsampling", {}).get("seed", 42)
     conda:
         "../envs/nextstrain.yaml"
     log:
@@ -54,7 +59,6 @@ rule augur_filter:
             --sequences {input.sequences} \
             --metadata {input.metadata} \
             --group-by {params.group_by} \
-            --sequences-per-group {params.seq_per_group} \
             --subsample-max-sequences {params.max_seq} \
             --min-length {params.min_length} \
             --subsample-seed {params.seed} \
