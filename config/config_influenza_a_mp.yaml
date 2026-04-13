@@ -4,7 +4,7 @@
 # =============================================================================
 
 # 1. Target Identity
-build_name: "influenza-a-mp-trial"
+build_name: "influenza-a-mp"
 
 # 2. Database Provider
 database: "local"
@@ -12,8 +12,8 @@ database: "local"
 # 3. Data Acquisition
 # Supported sources: NCBI Virus web portal, GISAID bulk download, etc.
 local_input:
-  sequences: "data/EpiFlu/Indonesia_EpiFlu_A_MP_Sequence.fasta"
-  metadata: "data/EpiFlu/MP/EpiFlu_A_MP_Combined_Metadata.csv"
+  sequences: "data/EpiFlu/MP/EpiFlu_A_MP_Combined_Sequence_Cleaned.fasta"
+  metadata: "data/EpiFlu/MP/EpiFlu_A_MP_Combined_Metadata_Cleaned.csv"
   format: "gisaid_epiflu"
 
 # 4. Quality Control Prefilter (M2 — qc_prefilter)
@@ -59,7 +59,7 @@ hyphy:
     - "ALL"
   subsample:
     enabled: true
-    max_sequences: 200          # Influenza genes are shorter, smaller budget is fine
+    max_sequences: 500          # Influenza genes are shorter, smaller budget is fine
     min_sequences: 50
     strategy: "balanced"
     group_by:

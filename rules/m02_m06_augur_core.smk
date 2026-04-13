@@ -33,11 +33,10 @@ rule qc_prefilter:
         """
 
 rule augur_filter:
-    """Spatio-temporal subsampling via augur filter.
-    Uses --subsample-max-sequences to enforce a hard cap on total output.
-    With --group-by, augur distributes the budget evenly across groups.
-    NOTE: --sequences-per-group and --subsample-max-sequences are mutually
-    exclusive in augur — we use the total cap approach.
+    """Spatio-temporal filtering.
+    Adaptive: Uses --subsample-max-sequences if 'max_sequences' is defined,
+    otherwise uses --sequences-per-group if 'sequences_per_group' is defined.
+    Prevents 'mutually exclusive' errors in Augur.
     """
     input:
         sequences=f"results/{BUILD}/m02/prefiltered_sequences.fasta",
@@ -46,9 +45,15 @@ rule augur_filter:
         sequences=f"results/{BUILD}/m02/filtered_sequences.fasta"
     params:
         group_by=config["subsampling"]["group_by"],
-        max_seq=config["subsampling"]["max_sequences"],
         min_length=config["subsampling"]["min_length"],
-        seed=config.get("subsampling", {}).get("seed", 42)
+        seed=config.get("subsampling", {}).get("seed", 42),
+        subsample_flag=lambda wc: (
+            f"--subsample-max-sequences {config['subsampling']['max_sequences']}"
+            if config["subsampling"].get("max_sequences")
+            else f"--sequences-per-group {config['subsampling']['sequences_per_group']}"
+            if config["subsampling"].get("sequences_per_group")
+            else ""
+        )
     conda:
         "../envs/nextstrain.yaml"
     log:
@@ -59,7 +64,7 @@ rule augur_filter:
             --sequences {input.sequences} \
             --metadata {input.metadata} \
             --group-by {params.group_by} \
-            --subsample-max-sequences {params.max_seq} \
+            {params.subsample_flag} \
             --min-length {params.min_length} \
             --subsample-seed {params.seed} \
             --exclude-ambiguous-dates-by any \
