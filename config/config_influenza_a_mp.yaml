@@ -23,9 +23,9 @@ qc:
 
 # 4a. Spatio-Temporal Filter (M2 — augur filter)
 subsampling:
-  group_by: "year month"
-  sequences_per_group: 50         # Pertahankan lebih banyak data flu
-  max_sequences: 500              # Sesuaikan kapasitas RAM
+  group_by: "subtype country year month"
+  sequences_per_group: 5         # Pertahankan lebih banyak data flu
+  max_sequences: 3000              # Sesuaikan kapasitas RAM
   min_length: 800                 # MP segment panjang normalnya ~982 bp
 
 # 4b. Timetree Parameters (M4 — augur refine)

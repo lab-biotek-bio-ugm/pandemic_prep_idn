@@ -41,7 +41,9 @@ rule augur_filter:
     params:
         group_by=config["subsampling"]["group_by"],
         seq_per_group=config["subsampling"]["sequences_per_group"],
-        min_length=config["subsampling"]["min_length"]
+        max_seq=config["subsampling"]["max_sequences"],
+        min_length=config["subsampling"]["min_length"],
+        seed=config.get("hyphy", {}).get("subsample", {}).get("seed", 42)
     conda:
         "../envs/nextstrain.yaml"
     log:
@@ -53,7 +55,9 @@ rule augur_filter:
             --metadata {input.metadata} \
             --group-by {params.group_by} \
             --sequences-per-group {params.seq_per_group} \
+            --subsample-max-sequences {params.max_seq} \
             --min-length {params.min_length} \
+            --subsample-seed {params.seed} \
             --exclude-ambiguous-dates-by any \
             --output-sequences {output.sequences} 2> {log}
         """
