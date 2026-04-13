@@ -1,6 +1,7 @@
 """
 Module 5: Evolutionary Selection Pressure Engine
-Uses MACSE for codon-aware alignment and HyPhy for dN/dS selection analysis.
+Slices coding genes from M03 MSA via GFF coordinates, applies harsh masking,
+then runs HyPhy (FUBAR/MEME/GARD) for dN/dS selection analysis.
 """
 
 BUILD = config["build_name"]

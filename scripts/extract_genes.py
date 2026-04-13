@@ -60,32 +60,37 @@ def apply_harsh_masking(seq_str, strand):
     Applies Harsh Masking to ensure reading frame and HyPhy compatibility:
     - Masks partial gaps (frameshifts) with 'NNN'
     - Masks stop codons with '---'
+    Returns (cleaned_str, n_frameshift_masked, n_stop_masked).
     NOTE: seq_str must be a multiple of 3 in length.
     """
     # Reverse complement if on negative strand BEFORE checking codons
     if strand == "-":
         seq_str = str(Seq(seq_str).reverse_complement())
-        
+
     stop_codons = {"TAA", "TAG", "TGA"}
     cleaned_seq = []
-    
+    n_frameshift = 0
+    n_stop = 0
+
     for i in range(0, len(seq_str), 3):
         codon = seq_str[i:i+3]
-        
+
         # Rule 1: Partial gaps (frameshift artifacts)
         if "-" in codon and codon != "---":
             cleaned_seq.append("NNN")
+            n_frameshift += 1
             continue
-            
+
         # Rule 2: In-frame Stop Codons
         if codon in stop_codons:
             cleaned_seq.append("---")
+            n_stop += 1
             continue
-            
+
         # Standard valid codon
         cleaned_seq.append(codon)
-        
-    return "".join(cleaned_seq)
+
+    return "".join(cleaned_seq), n_frameshift, n_stop
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -116,29 +121,46 @@ def main():
     for gene_name, (start, end, strand) in genes.items():
         if start >= len(col_map):
             continue
-            
+
         if end > len(col_map):
             end = len(col_map)
-        
+
         msa_start = col_map[start]
         # In python slicing, end is exclusive. We want to include the base at `end-1`.
         msa_end = col_map[end - 1] + 1
-        
+
         slice_width = msa_end - msa_start
         pad_len = (3 - (slice_width % 3)) % 3
-        canonical_len = slice_width + pad_len
-        
+        n_codons = (slice_width + pad_len) // 3
+
         out_records = []
+        total_frameshift = 0
+        total_stop = 0
+        skipped_gappy = 0
+
         for r in records:
             sliced_msa = str(r.seq)[msa_start:msa_end].upper()
             sliced_msa += "N" * pad_len
-            
-            cleaned_seq_str = apply_harsh_masking(sliced_msa, strand)
+
+            # Filter: skip sequences that are >90% gaps in this gene region
+            gap_frac = sliced_msa.count("-") / len(sliced_msa)
+            if gap_frac > 0.9:
+                skipped_gappy += 1
+                continue
+
+            cleaned_seq_str, n_fs, n_st = apply_harsh_masking(sliced_msa, strand)
+            total_frameshift += n_fs
+            total_stop += n_st
             out_records.append(SeqRecord(Seq(cleaned_seq_str), id=r.id, description=""))
-            
+
         out_path = os.path.join(args.outdir, f"cleaned_{gene_name}_NT.fasta")
         SeqIO.write(out_records, out_path, "fasta")
-        print(f"Sliced and Masked {len(out_records)} sequences for {gene_name} -> {out_path}")
+
+        # QC statistics
+        print(f"[{gene_name}] {len(out_records)} seqs written, "
+              f"{skipped_gappy} skipped (>90%% gap), "
+              f"{n_codons} codons/seq, "
+              f"masked: {total_frameshift} frameshifts + {total_stop} stop codons -> {out_path}")
 
 if __name__ == "__main__":
     main()
