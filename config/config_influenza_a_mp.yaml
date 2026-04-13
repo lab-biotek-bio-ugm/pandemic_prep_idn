@@ -24,7 +24,7 @@ qc:
 # 4a. Spatio-Temporal Filter (M2 — augur filter)
 subsampling:
   group_by: "subtype country year month"
-  sequences_per_group: 5         # Pertahankan lebih banyak data flu
+  #sequences_per_group: 5         # Pertahankan lebih banyak data flu
   max_sequences: 3000              # Sesuaikan kapasitas RAM
   min_length: 800                 # MP segment panjang normalnya ~982 bp
 
@@ -50,6 +50,7 @@ nextclade:
 
 # 7. Evolutionary Selection Pressure Engine (M5 — HyPhy)
 hyphy:
+  threads: 32
   p_value_threshold: 0.1
   methods:
     - "FUBAR"

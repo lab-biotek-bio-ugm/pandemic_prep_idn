@@ -104,7 +104,7 @@ rule m05_hyphy_fubar:
     output:
         json=f"results/{BUILD}/m05/fubar_{{gene}}.json"
     threads:
-        32
+        config.get("hyphy", {}).get("threads", 32)
     conda:
         "../envs/hyphy_macse.yaml"
     log:
@@ -125,7 +125,7 @@ rule m05_hyphy_meme:
     output:
         json=f"results/{BUILD}/m05/meme_{{gene}}.json"
     threads:
-        32
+        config.get("hyphy", {}).get("threads", 32)
     conda:
         "../envs/hyphy_macse.yaml"
     log:
@@ -151,7 +151,7 @@ rule m05_hyphy_gard:
     output:
         json=f"results/{BUILD}/m05/gard_{{gene}}.json"
     threads:
-        32
+        config.get("hyphy", {}).get("threads", 32)
     conda:
         "../envs/hyphy_macse.yaml"
     log:

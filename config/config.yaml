@@ -46,6 +46,7 @@ nextclade:
 
 # 7. Evolutionary Selection Pressure Engine (M05 — HyPhy)
 hyphy:
+  threads: 32
   p_value_threshold: 0.1
   methods:
     - "FUBAR"
