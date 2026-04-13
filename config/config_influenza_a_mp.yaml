@@ -75,7 +75,7 @@ hyphy:
 
 # 8. Bridge Configuration (M7 — Conservation & Selection Integration)
 bridge:
-  window_size: 100            # Diperkecil karena ukuran gen MP lebih pendek (1000bp)
+  window_size: 150            # Diperkecil karena ukuran gen MP lebih pendek (1000bp)
   min_region_length: 100
   buffer_bp: 50
   entropy_threshold: 0.015    # Sedikit dilonggarkan karena Flu sangat dinamis

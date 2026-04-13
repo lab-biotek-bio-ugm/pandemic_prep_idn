@@ -54,7 +54,7 @@ def calculate_entropy(column):
     return entropy
 
 
-def scan_conservation(records, window_size, entropy_threshold, min_region_length):
+def scan_conservation(records, window_size, entropy_threshold):
     """Scan MSA for conserved regions using sliding-window entropy."""
     if not records:
         print("ERROR: MSA records list is empty", file=sys.stderr)
@@ -70,43 +70,24 @@ def scan_conservation(records, window_size, entropy_threshold, min_region_length
         column = [str(rec.seq[i]).upper() for rec in records]
         entropies.append(calculate_entropy(column))
 
-    # Sliding window average
-    conserved_windows = []
+    # Sliding window average (NO MERGING)
+    regions = []
     for i in range(aln_length - window_size + 1):
         window = entropies[i:i + window_size]
         mean_e = sum(window) / len(window)
         if mean_e < entropy_threshold:
-            conserved_windows.append({"start": i, "end": i + window_size, "mean_entropy": mean_e})
+            regions.append({
+                "start": i,
+                "end": i + window_size,
+                "mean_entropy": mean_e,
+                "conservation_pct": round((1 - mean_e / 2.0) * 100, 2),
+                "length": window_size
+            })
 
-    if not conserved_windows:
+    if not regions:
         print(f"[M07] WARNING: No windows with entropy < {entropy_threshold}")
-        return [], n_sequences, aln_length
 
-    # Merge overlapping/adjacent windows
-    regions = []
-    current = conserved_windows[0].copy()
-
-    for w in conserved_windows[1:]:
-        if w["start"] <= current["end"]:
-            current["end"] = max(current["end"], w["end"])
-            current["mean_entropy"] = min(current["mean_entropy"], w["mean_entropy"])
-        else:
-            if current["end"] - current["start"] >= min_region_length:
-                regions.append(current)
-            current = w.copy()
-
-    if current["end"] - current["start"] >= min_region_length:
-        regions.append(current)
-
-    # Recalculate mean entropy for merged regions
-    for region in regions:
-        region_e = entropies[region["start"]:region["end"]]
-        region["mean_entropy"] = sum(region_e) / len(region_e)
-        # Max DNA entropy = log2(4) = 2.0 → conservation_pct relative to that
-        region["conservation_pct"] = round((1 - region["mean_entropy"] / 2.0) * 100, 2)
-        region["length"] = region["end"] - region["start"]
-
-    print(f"[M07] Found {len(regions)} conserved regions (threshold={entropy_threshold})")
+    print(f"[M07] Found {len(regions)} conserved raw windows (threshold={entropy_threshold})")
     return regions, n_sequences, aln_length
 
 
@@ -446,7 +427,37 @@ def score_regions(regions, codon_data, gard_breakpoints, genes, utrs,
     return scored
 
 
-# Step 4: Output Builder
+def apply_nms(scored_regions, overlap_threshold=0.5):
+    """
+    Applies Non-Maximum Suppression to ranked regions.
+    Drops any region that overlaps more than `overlap_threshold` (0.0 - 1.0)
+    with a higher-ranking accepted region.
+    """
+    scored_regions.sort(key=lambda x: x["composite_score"], reverse=True)
+    kept = []
+    
+    for current in scored_regions:
+        is_suppressed = False
+        for winner in kept:
+            # Check overlap if they are in the same gene
+            if current["gene"] == winner["gene"]:
+                overlap_start = max(current["start"], winner["start"])
+                overlap_end = min(current["end"], winner["end"])
+                if overlap_end > overlap_start:
+                    overlap_len = overlap_end - overlap_start
+                    overlap_ratio = overlap_len / current["length"]
+                    if overlap_ratio > overlap_threshold:
+                        is_suppressed = True
+                        break
+        if not is_suppressed:
+            kept.append(current)
+            
+    # Re-assign ranks based on final kept list
+    for idx, r in enumerate(kept):
+        r["rank"] = idx + 1
+        
+    return kept
+
 
 def write_bed(regions, ref_id, path):
     """Write BED file for genome browser visualization."""
@@ -539,14 +550,13 @@ def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir,
 
     print(f"\n[M07] [{track_name}] Step 1: Conservation Scanner")
     regions, n_seq, aln_len = scan_conservation(
-        records, window_size, entropy_threshold, min_region_length)
+        records, window_size, entropy_threshold)
 
     if not regions:
-        for relaxed in [0.05, 0.1, 0.2, 0.3, 0.5]:
-            print(f"[M07] [{track_name}] WARNING: Relaxing threshold to {relaxed}")
-            regions, _, _ = scan_conservation(records, window_size, relaxed, min_region_length)
-            if regions:
-                break
+        # Rather than looping blindly, scan at an absolutely relaxed threshold
+        # and let the NMS + Scorer handle the grading.
+        print(f"[M07] [{track_name}] WARNING: Relaxing threshold significantly to find candidates (survival mode)")
+        regions, _, _ = scan_conservation(records, window_size, 0.45)
 
     if not regions:
          print(f"[M07] [{track_name}] No conserved regions found even after max relaxation. Skipping.")
@@ -560,8 +570,11 @@ def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir,
     scored = score_regions(regions, codon_data, gard_bps, genes, utrs,
                            weights, tiers_config, gard_buffer_bp)
 
-    grades = {g: sum(1 for r in scored if r["grade"] == g) for g in "ABCD"}
-    print(f"[M07] [{track_name}] Scored {len(scored)} regions: A={grades['A']} B={grades['B']} C={grades['C']} D={grades['D']}")
+    print(f"\n[M07] [{track_name}] Step 3b: Non-Maximum Suppression (NMS)")
+    final_scored = apply_nms(scored, overlap_threshold=0.5)
+
+    grades = {g: sum(1 for r in final_scored if r["grade"] == g) for g in "ABCD"}
+    print(f"[M07] [{track_name}] Scored {len(final_scored)} disjoint/optimal regions: A={grades['A']} B={grades['B']} C={grades['C']} D={grades['D']}")
 
     warnings = []
     if not codon_data:
@@ -580,14 +593,14 @@ def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir,
     print(f"\n[M07] [{track_name}] Step 4: Output Generation")
     sanitized_name = track_name.replace('/', '_').replace(' ', '_')
     prefix = "" if track_name == "Universal" else f"subtype_{sanitized_name}_"
-    write_bed(scored, ref_id, outdir / f"{prefix}conserved_regions.bed")
-    write_report(scored, meta, outdir / f"{prefix}bridge_report.json")
-    write_manifest(scored, build_name, args_reference, buffer_bp,
+    write_bed(final_scored, ref_id, outdir / f"{prefix}conserved_regions.bed")
+    write_report(final_scored, meta, outdir / f"{prefix}bridge_report.json")
+    write_manifest(final_scored, build_name, args_reference, buffer_bp,
                    outdir / f"{prefix}primer_targets_manifest.yaml")
 
-    print(f"\n[M07] [{track_name}] Complete — {len(scored)} candidate regions")
-    if scored:
-        top = scored[0]
+    print(f"\n[M07] [{track_name}] Complete — {len(final_scored)} candidate regions")
+    if final_scored:
+        top = final_scored[0]
         print(f"[M07] [{track_name}] #1: {top['gene']} ({top['start']}-{top['end']}) Grade {top['grade']}, Score {top['composite_score']}")
 
 
