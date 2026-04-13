@@ -542,7 +542,7 @@ def write_manifest(regions, build_name, ref_genome, buffer_bp, path):
 
 
 def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir, 
-                  window_size, entropy_threshold, min_region_length, gard_buffer_bp, 
+                  window_size, entropy_threshold, overlap_threshold, gard_buffer_bp, 
                   weights, tiers_config, ref_id, outdir, build_name, buffer_bp, args_reference):
     print(f"\n[M07] ============================================")
     print(f"[M07]  Track: {track_name}")
@@ -571,7 +571,7 @@ def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir,
                            weights, tiers_config, gard_buffer_bp)
 
     print(f"\n[M07] [{track_name}] Step 3b: Non-Maximum Suppression (NMS)")
-    final_scored = apply_nms(scored, overlap_threshold=0.5)
+    final_scored = apply_nms(scored, overlap_threshold=overlap_threshold)
 
     grades = {g: sum(1 for r in final_scored if r["grade"] == g) for g in "ABCD"}
     print(f"[M07] [{track_name}] Scored {len(final_scored)} disjoint/optimal regions: A={grades['A']} B={grades['B']} C={grades['C']} D={grades['D']}")
@@ -629,18 +629,18 @@ def main():
 
     # Load config
     with open(args.config, "r") as f:
-        full_config = yaml.safe_load(f)
+        config = yaml.safe_load(f)
 
-    bridge = full_config.get("bridge", {})
+    bridge = config.get("bridge", {})
     window_size = bridge.get("window_size", 150)
-    entropy_threshold = bridge.get("entropy_threshold", 0.01)
-    min_region_length = bridge.get("min_region_length", 100)
+    entropy_threshold = bridge.get("entropy_threshold", 0.015)
+    overlap_threshold = bridge.get("overlap_threshold", 0.75)
     buffer_bp = bridge.get("buffer_bp", 100)
     gard_buffer_bp = bridge.get("gard_buffer_bp", 50)
     weights = bridge.get("weights", {})
     tiers_config = bridge.get("tiers", {})
 
-    target_genes = full_config.get("hyphy", {}).get("target_genes", [])
+    target_genes = config.get("hyphy", {}).get("target_genes", [])
     hyphy_dir = Path(args.hyphy_dir)
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
@@ -669,7 +669,7 @@ def main():
 
     # Execute Universal Track
     execute_track("Universal", all_records, genes, utrs, target_genes, hyphy_dir, 
-                  window_size, entropy_threshold, min_region_length, gard_buffer_bp, 
+                  window_size, entropy_threshold, overlap_threshold, gard_buffer_bp, 
                   weights, tiers_config, ref_id, outdir, args.build_name, buffer_bp, args.reference)
 
     # Route B: Subtype-Specific Tracks
@@ -699,7 +699,7 @@ def main():
         for subtype, recs in subtype_groups.items():
             if len(recs) >= 30:  # Minimum coverage to consider a subtype valid
                 execute_track(subtype, recs, genes, utrs, target_genes, hyphy_dir, 
-                              window_size, entropy_threshold, min_region_length, gard_buffer_bp, 
+                              window_size, entropy_threshold, overlap_threshold, gard_buffer_bp, 
                               weights, tiers_config, ref_id, outdir, args.build_name, buffer_bp, args.reference)
             else:
                 print(f"[M07] Skipping subtype {subtype} (only {len(recs)} sequences, needs >=30)")

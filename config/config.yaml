@@ -73,6 +73,7 @@ hyphy:
 bridge:
   window_size: 200                # Larger windows for 30kb genome
   min_region_length: 150
+  overlap_threshold: 0.75
   buffer_bp: 100
   entropy_threshold: 0.01         # Stricter for well-conserved regions
   gard_buffer_bp: 100             # GARD is relevant for SARS-CoV-2!
