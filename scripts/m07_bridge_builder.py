@@ -54,12 +54,11 @@ def calculate_entropy(column):
     return entropy
 
 
-def scan_conservation(msa_path, window_size, entropy_threshold, min_region_length):
+def scan_conservation(records, window_size, entropy_threshold, min_region_length):
     """Scan MSA for conserved regions using sliding-window entropy."""
-    records = list(SeqIO.parse(str(msa_path), "fasta"))
     if not records:
-        print("ERROR: MSA file is empty", file=sys.stderr)
-        sys.exit(1)
+        print("ERROR: MSA records list is empty", file=sys.stderr)
+        return [], 0, 0
 
     n_sequences = len(records)
     aln_length = len(records[0].seq)
@@ -464,10 +463,11 @@ def write_report(regions, meta, path):
     report = {
         "pipeline_version": "1.0",
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "msa_sequences": meta["n_sequences"],
-        "msa_length": meta["aln_length"],
-        "genes_analyzed": meta["genes_analyzed"],
-        "hyphy_genes": meta["hyphy_genes"],
+        "track_name": meta.get("track_name", "Universal"),
+        "msa_sequences": meta.get("n_sequences", 0),
+        "msa_length": meta.get("aln_length", 0),
+        "genes_analyzed": meta.get("genes_analyzed", []),
+        "hyphy_genes": meta.get("hyphy_genes", []),
         "total_conserved_regions": len(regions),
         "grade_summary": {g: sum(1 for r in regions if r["grade"] == g)
                           for g in "ABCD"},
@@ -530,6 +530,67 @@ def write_manifest(regions, build_name, ref_genome, buffer_bp, path):
     print(f"[M07] Wrote manifest: {path}")
 
 
+def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir, 
+                  window_size, entropy_threshold, min_region_length, gard_buffer_bp, 
+                  weights, tiers_config, ref_id, outdir, build_name, buffer_bp, args_reference):
+    print(f"\n[M07] ============================================")
+    print(f"[M07]  Track: {track_name}")
+    print(f"[M07] ============================================")
+
+    print(f"\n[M07] [{track_name}] Step 1: Conservation Scanner")
+    regions, n_seq, aln_len = scan_conservation(
+        records, window_size, entropy_threshold, min_region_length)
+
+    if not regions:
+        for relaxed in [0.05, 0.1, 0.2, 0.3, 0.5]:
+            print(f"[M07] [{track_name}] WARNING: Relaxing threshold to {relaxed}")
+            regions, _, _ = scan_conservation(records, window_size, relaxed, min_region_length)
+            if regions:
+                break
+
+    if not regions:
+         print(f"[M07] [{track_name}] No conserved regions found even after max relaxation. Skipping.")
+         return
+
+    print(f"\n[M07] [{track_name}] Step 2: HyPhy Score Mapper")
+    codon_data, gard_bps = map_hyphy_to_genome(genes, hyphy_dir, target_genes)
+    print(f"[M07] [{track_name}] Mapped {len(codon_data)} positions, {len(gard_bps)} GARD breakpoints")
+
+    print(f"\n[M07] [{track_name}] Step 3: Intersection & Composite Scoring")
+    scored = score_regions(regions, codon_data, gard_bps, genes, utrs,
+                           weights, tiers_config, gard_buffer_bp)
+
+    grades = {g: sum(1 for r in scored if r["grade"] == g) for g in "ABCD"}
+    print(f"[M07] [{track_name}] Scored {len(scored)} regions: A={grades['A']} B={grades['B']} C={grades['C']} D={grades['D']}")
+
+    warnings = []
+    if not codon_data:
+        warnings.append("No HyPhy data loaded. All scores are conservation-only.")
+
+    meta = {
+        "track_name": track_name,
+        "n_sequences": n_seq,
+        "aln_length": aln_len,
+        "genes_analyzed": [g["name"] for g in genes] + [u["name"] for u in utrs],
+        "hyphy_genes": [g for g in target_genes if (hyphy_dir / f"fubar_{g}.json").exists()],
+        "gard_breakpoints": [{"genome_pos": bp["genome_pos"], "gene": bp["gene"]} for bp in gard_bps],
+        "warnings": warnings,
+    }
+
+    print(f"\n[M07] [{track_name}] Step 4: Output Generation")
+    sanitized_name = track_name.replace('/', '_').replace(' ', '_')
+    prefix = "" if track_name == "Universal" else f"subtype_{sanitized_name}_"
+    write_bed(scored, ref_id, outdir / f"{prefix}conserved_regions.bed")
+    write_report(scored, meta, outdir / f"{prefix}bridge_report.json")
+    write_manifest(scored, build_name, args_reference, buffer_bp,
+                   outdir / f"{prefix}primer_targets_manifest.yaml")
+
+    print(f"\n[M07] [{track_name}] Complete — {len(scored)} candidate regions")
+    if scored:
+        top = scored[0]
+        print(f"[M07] [{track_name}] #1: {top['gene']} ({top['start']}-{top['end']}) Grade {top['grade']}, Score {top['composite_score']}")
+
+
 # Main
 
 def main():
@@ -543,6 +604,8 @@ def main():
                         help="Directory containing fubar_*.json, meme_*.json, gard_*.json")
     parser.add_argument("--reference", required=True,
                         help="Reference genome FASTA")
+    parser.add_argument("--metadata", required=False,
+                        help="Metadata TSV file for subtype/clade splitting (Route B)")
     parser.add_argument("--outdir", required=True,
                         help="Output directory for BED, JSON, YAML")
     parser.add_argument("--config", required=True,
@@ -570,6 +633,11 @@ def main():
     outdir.mkdir(parents=True, exist_ok=True)
 
     # Reference ID (strip version suffix for matching)
+    all_records = list(SeqIO.parse(args.msa, "fasta"))
+    if not all_records:
+        print("ERROR: MSA file is empty", file=sys.stderr)
+        sys.exit(1)
+        
     ref_records = list(SeqIO.parse(args.reference, "fasta"))
     ref_id = ref_records[0].id if ref_records else "unknown"
 
@@ -579,86 +647,49 @@ def main():
     print(f"[M07] Reference : {ref_id}")
     print(f"[M07] Window    : {window_size} bp")
     print(f"[M07] Threshold : {entropy_threshold}")
-    print(f"[M07] Weights   : cons={weights.get('conservation', 0.35)}, "
-          f"purify={weights.get('purifying', 0.35)}, "
-          f"episod={weights.get('episodic_penalty', 0.15)}, "
-          f"recomb={weights.get('recombination', 0.15)}")
-
-    # ----- Step 1: Conservation Scanner -----
-    print(f"\n[M07] Step 1: Conservation Scanner")
-    regions, n_seq, aln_len = scan_conservation(
-        args.msa, window_size, entropy_threshold, min_region_length)
-
-    # Fail-safe: relax threshold if nothing found
-    if not regions:
-        for relaxed in [0.05, 0.1, 0.2, 0.3, 0.5]:
-            print(f"[M07] WARNING: No regions at previous threshold. "
-                  f"Relaxing to {relaxed} (survival mode)")
-            regions, _, _ = scan_conservation(
-                args.msa, window_size, relaxed, min_region_length)
-            if regions:
-                break
 
     # ----- Parse GFF -----
     genes, utrs = parse_gff(args.gff)
     print(f"[M07] GFF: {len(genes)} genes, {len(utrs)} UTRs")
-
-    # Resolve "ALL" target genes
     if "ALL" in target_genes:
         target_genes = [g["name"] for g in genes]
 
-    # ----- Step 2: HyPhy Score Mapper -----
-    print(f"\n[M07] Step 2: HyPhy Score Mapper")
-    codon_data, gard_bps = map_hyphy_to_genome(genes, hyphy_dir, target_genes)
-    print(f"[M07] Mapped {len(codon_data)} positions, "
-          f"{len(gard_bps)} GARD breakpoints")
+    # Execute Universal Track
+    execute_track("Universal", all_records, genes, utrs, target_genes, hyphy_dir, 
+                  window_size, entropy_threshold, min_region_length, gard_buffer_bp, 
+                  weights, tiers_config, ref_id, outdir, args.build_name, buffer_bp, args.reference)
 
-    # ----- Step 3: Intersection & Scoring -----
-    print(f"\n[M07] Step 3: Intersection & Composite Scoring")
-    scored = score_regions(regions, codon_data, gard_bps, genes, utrs,
-                           weights, tiers_config, gard_buffer_bp)
-
-    grades = {g: sum(1 for r in scored if r["grade"] == g) for g in "ABCD"}
-    print(f"[M07] Scored {len(scored)} regions: "
-          f"A={grades['A']} B={grades['B']} C={grades['C']} D={grades['D']}")
-
-    # Warnings
-    warnings = []
-    if not scored:
-        warnings.append("No conserved regions found. Check MSA quality or entropy threshold.")
-    if not codon_data:
-        warnings.append("No HyPhy data loaded. All scores are conservation-only.")
-    if gard_bps:
-        warnings.append(f"{len(gard_bps)} recombination breakpoints detected. "
-                        f"Regions near breakpoints are penalized.")
-
-    hyphy_genes_found = [g for g in target_genes
-                         if (hyphy_dir / f"fubar_{g}.json").exists()]
-
-    meta = {
-        "n_sequences": n_seq,
-        "aln_length": aln_len,
-        "genes_analyzed": [g["name"] for g in genes] + [u["name"] for u in utrs],
-        "hyphy_genes": hyphy_genes_found,
-        "gard_breakpoints": [{"genome_pos": bp["genome_pos"], "gene": bp["gene"]}
-                             for bp in gard_bps],
-        "warnings": warnings,
-    }
-
-    # ----- Step 4: Output -----
-    print(f"\n[M07] Step 4: Output Generation")
-    write_bed(scored, ref_id, outdir / "conserved_regions.bed")
-    write_report(scored, meta, outdir / "bridge_report.json")
-    write_manifest(scored, args.build_name, args.reference, buffer_bp,
-                   outdir / "primer_targets_manifest.yaml")
-
-    print(f"\n[M07] ============================================")
-    print(f"[M07]  Complete — {len(scored)} candidate regions")
-    if scored:
-        top = scored[0]
-        print(f"[M07]  #1: {top['gene']} ({top['start']}-{top['end']}) "
-              f"Grade {top['grade']}, Score {top['composite_score']}")
-    print(f"[M07] ============================================")
+    # Route B: Subtype-Specific Tracks
+    if args.metadata and Path(args.metadata).exists():
+        print(f"\n[M07] ============================================")
+        print(f"[M07]  ROUTE B: Subtype Auto-Detection")
+        print(f"[M07] ============================================")
+        import csv
+        from collections import defaultdict
+        
+        strain_to_subtype = {}
+        with open(args.metadata, "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f, delimiter="\t")
+            for row in reader:
+                strain = row.get("strain")
+                subtype = row.get("subtype")
+                if strain and subtype and subtype != "unknown" and subtype != "?":
+                    strain_to_subtype[strain] = subtype
+                    
+        subtype_groups = defaultdict(list)
+        for rec in all_records:
+             rec_id = rec.id.split('|')[0]
+             subtype = strain_to_subtype.get(rec_id)
+             if subtype:
+                 subtype_groups[subtype].append(rec)
+                 
+        for subtype, recs in subtype_groups.items():
+            if len(recs) >= 30:  # Minimum coverage to consider a subtype valid
+                execute_track(subtype, recs, genes, utrs, target_genes, hyphy_dir, 
+                              window_size, entropy_threshold, min_region_length, gard_buffer_bp, 
+                              weights, tiers_config, ref_id, outdir, args.build_name, buffer_bp, args.reference)
+            else:
+                print(f"[M07] Skipping subtype {subtype} (only {len(recs)} sequences, needs >=30)")
 
 
 if __name__ == "__main__":

@@ -33,6 +33,7 @@ rule m07_bridge:
         gff=config["references"]["annotation"],
         reference=config["references"]["genome"],
         config_yaml=f"results/{BUILD}/m07/active_config.yaml",
+        metadata=f"results/{BUILD}/m01/metadata_enriched.tsv",
         fubar=[f"results/{BUILD}/m05/fubar_{gene}.json" for gene in TARGET_GENES],
         meme=[f"results/{BUILD}/m05/meme_{gene}.json" for gene in TARGET_GENES],
         gard=_GARD_INPUTS,
@@ -54,6 +55,7 @@ rule m07_bridge:
             --gff {input.gff} \
             --hyphy-dir {params.hyphy_dir} \
             --reference {input.reference} \
+            --metadata {input.metadata} \
             --outdir results/{params.build_name}/m07 \
             --config {input.config_yaml} \
             --build-name {params.build_name} 2>&1 | tee {log}
