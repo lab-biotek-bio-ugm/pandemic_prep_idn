@@ -32,6 +32,10 @@ timetree:
   clock_rate: 0.0008              # ~8×10⁻⁴ subs/site/year for SARS-CoV-2
   clock_std_dev: 0.0004
 
+# 4c. Augur Engine Parameters (M03 — align, M04 — tree)
+augur:
+  threads: 8                      # Number of Cores to allocate for augur processes
+
 # 5. File References
 # Reference: Wuhan-Hu-1 (MN908947.3) — official SARS-CoV-2 reference genome
 references:

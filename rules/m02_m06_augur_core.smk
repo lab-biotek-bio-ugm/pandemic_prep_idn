@@ -78,7 +78,7 @@ rule augur_align:
     output:
         alignment=f"results/{BUILD}/m03/aligned.fasta"
     threads:
-        8
+        config.get("augur", {}).get("threads", 8)
     conda:
         "../envs/nextstrain.yaml"
     log:
@@ -100,7 +100,7 @@ rule augur_tree:
     output:
         tree=f"results/{BUILD}/m04/tree_raw.nwk"
     threads:
-        8
+        config.get("augur", {}).get("threads", 8)
     conda:
         "../envs/nextstrain.yaml"
     log:

@@ -33,6 +33,10 @@ timetree:
   clock_rate: 0.003               # Flu A internal segment mutation rate
   clock_std_dev: 0.0015
 
+# 4c. Augur Engine Parameters (M3 — align, M4 — tree)
+augur:
+  threads: 16                     # Allocate more threads for heavy IQ-TREE/MAFFT workloads
+
 # 5. File References
 # Reference: A/Puerto Rico/8/1934(H1N1) Segment 7 (NC_002016.1)
 references:
