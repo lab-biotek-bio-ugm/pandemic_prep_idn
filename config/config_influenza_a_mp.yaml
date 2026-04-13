@@ -13,7 +13,7 @@ database: "local"
 # Supported sources: NCBI Virus web portal, GISAID bulk download, etc.
 local_input:
   sequences: "data/EpiFlu/Indonesia_EpiFlu_A_MP_Sequence.fasta"
-  metadata: "data/EpiFlu/Indonesia_EpiFlu_A_MP_Metadata.xls"
+  metadata: "data/EpiFlu/MP/EpiFlu_A_MP_Combined_Metadata.csv"
   format: "gisaid_epiflu"
 
 # 4. Quality Control Prefilter (M2 — qc_prefilter)
