@@ -1,16 +1,68 @@
 """
 Module 5: Evolutionary Selection Pressure Engine
-Slices coding genes from M03 MSA via GFF coordinates, applies harsh masking,
-then runs HyPhy (FUBAR/MEME/GARD) for dN/dS selection analysis.
+Subsamples the M03 MSA for diversity, slices coding genes via GFF coordinates,
+applies harsh masking, then runs HyPhy (FUBAR/MEME/GARD) for dN/dS analysis.
 """
 
 BUILD = config["build_name"]
 HYPHY_METHODS = config["hyphy"].get("methods", ["FUBAR"])
 
-rule m05_extract_genes:
-    """Directly slices genes from M03 MSA and applies Harsh Masking for reading-frame integrity."""
+_SUB_CFG = config["hyphy"].get("subsample", {})
+_SUB_ENABLED = _SUB_CFG.get("enabled", False)
+_SUB_GRP = _SUB_CFG.get("group_by", {})
+
+rule m05_hyphy_subsample:
+    """Diversity-aware subsampling of the global MSA for Track B (HyPhy).
+    Runs ONCE before gene extraction — all genes share the same consistent subset.
+    Adaptive grouping: clade x country x year -> clade x country -> clade -> random.
+    Track A (M07 Bridge entropy scan) still uses the full aligned.fasta.
+    If subsample.enabled is false, copies the full MSA as-is (bypass).
+    """
     input:
         alignment=f"results/{BUILD}/m03/aligned.fasta",
+        metadata=f"results/{BUILD}/m01/metadata_enriched.tsv"
+    output:
+        alignment=f"results/{BUILD}/m05/aligned_hyphy.fasta",
+        report=f"results/{BUILD}/m05/hyphy_subsample_report.json"
+    params:
+        enabled=_SUB_ENABLED,
+        max_seq=_SUB_CFG.get("max_sequences", 300),
+        min_seq=_SUB_CFG.get("min_sequences", 50),
+        strategy=_SUB_CFG.get("strategy", "balanced"),
+        seed=_SUB_CFG.get("seed", 42),
+        clade_flag="" if _SUB_GRP.get("clade", True) else "--no-group-by-clade",
+        country_flag="" if _SUB_GRP.get("country", True) else "--no-group-by-country",
+        year_flag="" if _SUB_GRP.get("year", True) else "--no-group-by-year"
+    conda:
+        "../envs/hyphy_macse.yaml"
+    log:
+        f"logs/{BUILD}/m05_hyphy_subsample.log"
+    shell:
+        """
+        if [ "{params.enabled}" = "True" ]; then
+            python scripts/hyphy_subsample.py \
+                --alignment {input.alignment} \
+                --metadata {input.metadata} \
+                --output {output.alignment} \
+                --report {output.report} \
+                --max-sequences {params.max_seq} \
+                --min-sequences {params.min_seq} \
+                --strategy {params.strategy} \
+                --seed {params.seed} \
+                {params.clade_flag} \
+                {params.country_flag} \
+                {params.year_flag} 2>&1 | tee {log}
+        else
+            echo '[SUBSAMPLE] DISABLED — copying full MSA' | tee {log}
+            cp {input.alignment} {output.alignment}
+            echo '{{"bypass": true, "reason": "subsample.enabled=false"}}' > {output.report}
+        fi
+        """
+
+rule m05_extract_genes:
+    """Slices genes from the subsampled MSA and applies Harsh Masking for reading-frame integrity."""
+    input:
+        alignment=f"results/{BUILD}/m05/aligned_hyphy.fasta",
         gff=config["references"]["annotation"]
     output:
         fastas=[f"results/{BUILD}/m05/cleaned_{gene}_NT.fasta" for gene in TARGET_GENES]
@@ -52,7 +104,7 @@ rule m05_hyphy_fubar:
     output:
         json=f"results/{BUILD}/m05/fubar_{{gene}}.json"
     threads:
-        1  # Standard hyphy FUBAR is single-threaded
+        1
     conda:
         "../envs/hyphy_macse.yaml"
     log:
@@ -73,7 +125,7 @@ rule m05_hyphy_meme:
     output:
         json=f"results/{BUILD}/m05/meme_{{gene}}.json"
     threads:
-        1  # Standard hyphy MEME is single-threaded
+        1
     conda:
         "../envs/hyphy_macse.yaml"
     log:
@@ -89,7 +141,7 @@ rule m05_hyphy_meme:
 rule m05_hyphy_gard:
     """Runs HyPhy GARD to detect recombination breakpoints within each gene.
     Uses a safe wrapper that performs pre-flight checks:
-    - If alignment is too short for c-AIC (alignment_len < ~4×num_seqs),
+    - If alignment is too short for c-AIC (alignment_len < ~4xnum_seqs),
       writes empty JSON and exits 0 (soft-fail, pipeline continues).
     - If GARD crashes at runtime, catches error and soft-fails.
     Critical for long genomes (SARS-CoV-2); auto-skipped for short segments (Flu).
@@ -99,7 +151,7 @@ rule m05_hyphy_gard:
     output:
         json=f"results/{BUILD}/m05/gard_{{gene}}.json"
     threads:
-        1  # GARD wrapper calls hyphy internally
+        1
     conda:
         "../envs/hyphy_macse.yaml"
     log:
@@ -130,7 +182,7 @@ rule m05_hyphy_gard:
 #   FEL is only advantageous for very small datasets (<20 sequences).
 #
 # TODO [M05-2] SNP Matrix (linked to DEV-1 and M05-1)
-#   What: Generate a position × sequence allele matrix from the MSA. Each row
+#   What: Generate a position x sequence allele matrix from the MSA. Each row
 #         is a genome position, each column is a sequence, each cell is the
 #         nucleotide at that position. This is the raw data the Clade SNP
 #         Finder (M05-1) needs to identify clade-defining mutations.

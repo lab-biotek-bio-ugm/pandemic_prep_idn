@@ -53,6 +53,16 @@ hyphy:
     - "GARD"   # Safe: auto-subsamples if needed, ~30kb genome supports this well
   target_genes:
     - "ALL"    # S, ORF3a, E, M, ORF6, ORF7a, ORF8, N, ORF10
+  subsample:
+    enabled: true
+    max_sequences: 300          # Max seqs entering HyPhy per gene
+    min_sequences: 50           # If total <= this, skip subsampling
+    strategy: "balanced"        # "balanced" (adaptive grouping) or "random"
+    group_by:
+      clade: true               # Use Nextclade clade assignment
+      country: true             # Balance across countries
+      year: true                # Balance across years (not months)
+    seed: 42                    # Reproducibility
 
 # 8. Bridge Configuration (M07 — Conservation & Selection Integration)
 bridge:

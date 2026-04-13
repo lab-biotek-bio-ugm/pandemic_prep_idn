@@ -57,6 +57,16 @@ hyphy:
     # - "GARD"   # Dinonaktifkan untuk Influenza A: Hemat waktu karena jarang terjadi Recomb. Internal
   target_genes:
     - "ALL"
+  subsample:
+    enabled: true
+    max_sequences: 200          # Influenza genes are shorter, smaller budget is fine
+    min_sequences: 50
+    strategy: "balanced"
+    group_by:
+      clade: true
+      country: true
+      year: true
+    seed: 42
 
 # 8. Bridge Configuration (M7 — Conservation & Selection Integration)
 bridge:
