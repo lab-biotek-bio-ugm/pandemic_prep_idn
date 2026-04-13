@@ -591,11 +591,13 @@ def main():
 
     # Fail-safe: relax threshold if nothing found
     if not regions:
-        relaxed = 0.05
-        print(f"[M07] WARNING: No regions at {entropy_threshold}. "
-              f"Relaxing to {relaxed} (survival mode)")
-        regions, _, _ = scan_conservation(
-            args.msa, window_size, relaxed, min_region_length)
+        for relaxed in [0.05, 0.1, 0.2, 0.3, 0.5]:
+            print(f"[M07] WARNING: No regions at previous threshold. "
+                  f"Relaxing to {relaxed} (survival mode)")
+            regions, _, _ = scan_conservation(
+                args.msa, window_size, relaxed, min_region_length)
+            if regions:
+                break
 
     # ----- Parse GFF -----
     genes, utrs = parse_gff(args.gff)
