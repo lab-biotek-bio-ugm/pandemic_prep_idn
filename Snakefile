@@ -17,7 +17,7 @@ def get_target_genes(config):
             for line in f:
                 if line.startswith("#"): continue
                 parts = line.strip().split("\t")
-                if len(parts) >= 9 and parts[2] == "gene":
+                if len(parts) >= 9 and parts[2] in ("gene", "CDS"):
                     for attr in parts[8].split(";"):
                         attr = attr.strip()
                         if attr.startswith("gene="):
