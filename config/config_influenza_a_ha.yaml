@@ -3,7 +3,7 @@
 ---
 
 # 1. Target Identity
-build_name: "influenza-a-ha"
+build_name: "influenza-a-ha-H3N2"
 
 # 2. Database Provider
 database: "local"
@@ -20,8 +20,8 @@ local_input:
 # Uses Pandas query syntax. Set enabled to false to skip.
 early_filter:
   enabled: true
-  query: "subtype == 'H5N1' & host == 'Human'" # Only H5N1 human cases
-  min_date: "2010-01-01"                       # Optional
+  query: "subtype == 'A / H3N2'" # GISAID format uses "A / H3N2"
+  min_date: null                      # Optional
   max_date: null                               # Optional
 
 # 4. Quality Control
@@ -31,7 +31,7 @@ qc:
 
 # 4a. Spatio-Temporal Filter (Augur)
 subsampling:
-  group_by: "subtype country year month"
+  group_by: "country year month"
   sequences_per_group: 5         
   max_sequences: null           # Enable if RAM is insufficient
   min_length: 1500                # HA segment normal length is ~1700 bp
@@ -49,16 +49,15 @@ augur:
 
 # 5. File References
 references:
-  # HA Reference depends on the targeted clade.
-  # Ensure the specific H1N1, H3N2, or H5N1 reference fasta/gff are configured here.
-  genome: "config/references/flu_a_ha_reference.fasta"      # <--- ADJUST PATH
-  annotation: "config/references/flu_a_ha_annotation.gff"        # <--- ADJUST PATH
-  reference_id: "NC_026433.1"                         # <--- Example: A/California/07/2009 H1N1
+  # Standard Reference for H3N2 HA: A/New York/392/2004 (NC_007366.1)
+  genome: "config/references/flu_a_h3n2_ha.fasta"      # <--- DOWNLOAD THIS
+  annotation: "config/references/flu_a_h3n2_ha.gff"    # <--- DOWNLOAD THIS
+  reference_id: "NC_007366.1"                         
 
 # 6. Nextclade — Clade/Lineage Classification & QC
 nextclade:
   enabled: true
-  dataset_name: "nextstrain/flu/avian/h5n1/ha/2344b"  # <--- ADJUST BASED ON TARGET SUBTYPE (e.g., H5N1 2.3.4.4b)
+  dataset_name: "nextstrain/flu/h3n2/ha/all-time"
 
 # 7. Evolutionary Selection Pressure Engine (HyPhy)
 hyphy:
