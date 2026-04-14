@@ -1,38 +1,37 @@
 #!/bin/bash
-#SBATCH --job-name=pandemic_run
+#SBATCH --job-name=pandemic_pipeline
 #SBATCH --output=logs/slurm_%j.out
 #SBATCH --error=logs/slurm_%j.err
-#SBATCH --partition=normal         # Sesuaikan dengan nama partisi HPC-mu (batch/compute/dll)
+#SBATCH --partition=normal         # Adjust to your HPC partition name (e.g., batch, compute, etc.)
 #SBATCH --nodes=1
-#SBATCH --ntasks=1                 # Harus 1, Snakemake bertindak sebagai orchestrator tunggal
-#SBATCH --cpus-per-task=16         # Total Cores yang di-request, diteruskan ke Snakemake
-#SBATCH --mem=32GB                 # Optimal untuk MSA & Tree inference (FastTree/IQ-TREE)
-#SBATCH --time=08:00:00            # Batas waktu wall-clock: 8 Jam
+#SBATCH --ntasks=1                 # Fixed at 1: Snakemake acts as the single orchestrator
+#SBATCH --cpus-per-task=16         # Total cores requested, passed to Snakemake
+#SBATCH --mem=32GB                 # Optimal for MSA & Tree inference (FastTree/IQ-TREE)
+#SBATCH --time=08:00:00            # Wall-clock limit: 8 hours
 
-# ==============================================================================
-# Pandemic Preparedness Pipeline - SLURM Job Script
-# ==============================================================================
+# SLURM Execution Template for Pandemic Preparedness Pipeline
+# Note: Use this script if your HPC environment supports the Slurm Workload Manager.
 
-# Pastikan environment kondusif untuk IO speed
+# Standard I/O optimization
 export TMPDIR=/tmp
 
-# Load modul Miniconda (jika HPC menggunakan Lmod environment modules)
-# Hilangkan komentar pada baris di bawah jika direkomendasikan admin
+# Load Miniconda/Anaconda if required by your admin
 # module load miniconda3
 
-echo "======================================================================"
+echo "----------------------------------------------------------------------"
 echo "Starting Snakemake on Node: $(hostname)"
 echo "Allocated Cores: $SLURM_CPUS_PER_TASK"
 echo "Job ID: $SLURM_JOB_ID"
-echo "======================================================================"
+echo "----------------------------------------------------------------------"
 
-# Eksekusi Pipeline (Snakemake otomatis menggunakan jumlah Core dari SLURM)
+# Execute Pipeline
+# Snakemake automatically utilizes the number of cores allocated by SLURM
 snakemake \
   --use-conda \
   --cores $SLURM_CPUS_PER_TASK \
   --keep-going \
   --printshellcmds
 
-echo "======================================================================"
+echo "----------------------------------------------------------------------"
 echo "Pipeline Execution Completed."
-echo "======================================================================"
+echo "----------------------------------------------------------------------"
