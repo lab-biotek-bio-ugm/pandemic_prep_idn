@@ -6,7 +6,6 @@ __pycache__/
 .envs/
 results/
 logs/
-docs/quarto-reports/
 
 miniforge3/
 data/
@@ -15,7 +14,9 @@ ncbi_dataset.zip
 
 # AI & Brainstorming Artifacts
 .agents/
-docs/
 plan-docs/
 artifacts/
 
+# Documentation Sources (Private)
+docs_quarto/
+.quarto/
