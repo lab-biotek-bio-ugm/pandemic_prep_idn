@@ -11,9 +11,18 @@ database: "local"
 # 3. Data Acquisition
 # Supported sources: NCBI Virus web portal, GISAID bulk download, etc.
 local_input:
-  sequences: "data/EpiFlu_A_HA_Sequences.fasta" # <--- ADJUST PATH AS NEEDED
-  metadata: "data/EpiFlu_A_HA_Metadata.csv"     # <--- ADJUST PATH AS NEEDED
+  sequences: "data/EpiFlu_A_HA_Combined_Sequence.fasta" # <--- ADJUST PATH AS NEEDED
+  metadata: "data/EpiFlu_A_HA_Combined_Metadata.csv"     # <--- ADJUST PATH AS NEEDED
   format: "gisaid_epiflu"
+
+# 3a. Early Filtering (Pre-Nextclade)
+# Use this to filter out mixed datasets (e.g. dropping H3N2 when studying H5N1).
+# Uses Pandas query syntax. Set enabled to false to skip.
+early_filter:
+  enabled: true
+  query: "subtype == 'H5N1' & host == 'Human'" # Only H5N1 human cases
+  min_date: "2010-01-01"                       # Optional
+  max_date: null                               # Optional
 
 # 4. Quality Control
 qc:
@@ -24,7 +33,7 @@ qc:
 subsampling:
   group_by: "subtype country year month"
   sequences_per_group: 5         
-  # max_sequences: 1000           # Enable if RAM is insufficient
+  max_sequences: null           # Enable if RAM is insufficient
   min_length: 1500                # HA segment normal length is ~1700 bp
   seed: 42                        
 
@@ -42,8 +51,8 @@ augur:
 references:
   # HA Reference depends on the targeted clade.
   # Ensure the specific H1N1, H3N2, or H5N1 reference fasta/gff are configured here.
-  genome: "config/references/flu_a_ha_ref.fasta"      # <--- ADJUST PATH
-  annotation: "config/references/flu_a_ha.gff"        # <--- ADJUST PATH
+  genome: "config/references/flu_a_ha_reference.fasta"      # <--- ADJUST PATH
+  annotation: "config/references/flu_a_ha_annotation.gff"        # <--- ADJUST PATH
   reference_id: "NC_026433.1"                         # <--- Example: A/California/07/2009 H1N1
 
 # 6. Nextclade — Clade/Lineage Classification & QC
@@ -63,7 +72,7 @@ hyphy:
     - "HA"      # HA-specific target
   subsample:
     enabled: true
-    max_sequences: 400
+    max_sequences: 1000
     min_sequences: 50
     strategy: "balanced"
     group_by:

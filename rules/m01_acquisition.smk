@@ -248,7 +248,7 @@ if NEXTCLADE_ENABLED:
 
     rule run_nextclade:
         input:
-            sequences=f"results/{BUILD}/m01/raw_sequences.fasta",
+            sequences=f"results/{BUILD}/m01/early_filtered_sequences.fasta",
             dataset=f"results/{BUILD}/m01/nextclade_dataset.zip"
         output:
             tsv=f"results/{BUILD}/m01/nextclade.tsv"
@@ -263,7 +263,46 @@ if NEXTCLADE_ENABLED:
                 --output-tsv {output.tsv} \
                 {input.sequences} \
                 2>&1 | tee {log}
+                2>&1 | tee {log}
             """
+
+EARLY_FILTER_ENABLED = config.get("early_filter", {}).get("enabled", False)
+
+rule early_filter_data:
+    """Pre-filters raw sequences and sanitized metadata based on user queries
+    before passing them to downstream systems like Nextclade.
+    """
+    input:
+        sequences=f"results/{BUILD}/m01/raw_sequences.fasta",
+        metadata=f"results/{BUILD}/m01/metadata_sanitized.tsv"
+    output:
+        sequences=f"results/{BUILD}/m01/early_filtered_sequences.fasta",
+        metadata=f"results/{BUILD}/m01/early_filtered_metadata.tsv"
+    params:
+        query=config.get("early_filter", {}).get("query", ""),
+        min_date=config.get("early_filter", {}).get("min_date", ""),
+        max_date=config.get("early_filter", {}).get("max_date", "")
+    conda:
+        "../envs/nextstrain.yaml"
+    log:
+        f"logs/{BUILD}/m01_early_filter.log"
+    shell:
+        """
+        if [ "{EARLY_FILTER_ENABLED}" = "True" ]; then
+            python scripts/early_filter.py \
+                --sequences {input.sequences} \
+                --metadata {input.metadata} \
+                --output-sequences {output.sequences} \
+                --output-metadata {output.metadata} \
+                --query "{params.query}" \
+                --min-date "{params.min_date}" \
+                --max-date "{params.max_date}" 2>&1 | tee {log}
+        else
+            echo "[EARLY FILTER] Disabled in config. Copying raw data as-is." | tee {log}
+            cp {input.sequences} {output.sequences}
+            cp {input.metadata} {output.metadata}
+        fi
+        """
 
 # Sanitize metadata: normalize columns, fill defaults, drop empty IDs
 rule sanitize_metadata:
@@ -299,7 +338,7 @@ rule sanitize_metadata:
 if NEXTCLADE_ENABLED:
     rule enrich_metadata:
         input:
-            base=f"results/{BUILD}/m01/metadata_sanitized.tsv",
+            base=f"results/{BUILD}/m01/early_filtered_metadata.tsv",
             nc=f"results/{BUILD}/m01/nextclade.tsv"
         output:
             tsv=f"results/{BUILD}/m01/metadata_enriched.tsv"
@@ -322,7 +361,7 @@ else:
         so this maintains full compatibility.
         """
         input:
-            base=f"results/{BUILD}/m01/metadata_sanitized.tsv"
+            base=f"results/{BUILD}/m01/early_filtered_metadata.tsv"
         output:
             tsv=f"results/{BUILD}/m01/metadata_enriched.tsv"
         log:
