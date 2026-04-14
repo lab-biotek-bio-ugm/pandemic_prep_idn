@@ -48,8 +48,7 @@ Parameters for the molecular clock used to estimate divergence times.
 This is the core decision-making module. It calculates a `composite_score` to rank potential diagnostic targets.
 
 ### Weighted Scoring (50/25/8/17)
-
-Target stability is prioritized through a balanced weighting system:
+Target stability is prioritized through a balanced weighting system. These weights reflect **Data-Driven Defaults** derived from a **Sensitivity Analysis (Parameter Sweep)** to ensure that identified targets are evolutionarily robust.
 
 1. **Conservation (50%)**: Physical sequence identity across the dataset. Ensures the primer/probe has a high binding probability.
 2. **Purifying Selection (25%)**: Evolutionary restriction. Indicates that mutations in this region are likely deleterious to the virus, ensuring long-term target stability.

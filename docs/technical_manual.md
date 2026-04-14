@@ -1,4 +1,4 @@
-# Technical Manual: Influenza Evolutionary Diagnostic Pipeline
+# Technical Manual: Evolutionary Diagnostic Pipeline for Pandemic Preparedness
 
 This document provides a step-by-step technical explanation of the pipeline's instrumentation, logic, and output validation. It is intended for laboratory bioinformaticians and researchers to ensure scientific reproducibility and ease of maintenance.
 
@@ -131,6 +131,7 @@ The pipeline is structured into 7 core modules (**M01 – M07**), moving from ra
 2.  **Score Integration**: Merges the entropy data with HyPhy selection signals (M05) and Ancestral history (M06).
 3.  **Weighted Ranking**: 
     - **Score** = `Conservation (50%)` + `Purifying (25%)` - `Episodic (8%)` - `Recombination (17%)`.
+    - **Justification**: These weights are not arbitrary constants. They are **Data-Driven Defaults** derived from a **Sensitivity Analysis (Parameter Sweep)** designed to maximize target stability. By penalizing episodic noise and recombination while prioritizing purifying selection, the system selects regions where mutations are most likely to be deleterious to the virus, ensuring long-term assay sensitivity.
 
 ### Key Scripts
 - `scripts/m07_bridge_builder.py`
