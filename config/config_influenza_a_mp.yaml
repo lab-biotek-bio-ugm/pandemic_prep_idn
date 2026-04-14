@@ -1,7 +1,6 @@
-# =============================================================================
 # Pandemic Preparedness Diagnostic Pipeline — Configuration Profile
 # Target: Influenza A (Universal) - MP Segment
-# =============================================================================
+---
 
 # 1. Target Identity
 build_name: "influenza-a-mp"
@@ -16,24 +15,24 @@ local_input:
   metadata: "data/EpiFlu/MP/EpiFlu_A_MP_Combined_Metadata_Cleaned.csv"
   format: "gisaid_epiflu"
 
-# 4. Quality Control Prefilter (M2 — qc_prefilter)
+# 4. Quality Control
 qc:
   max_n_content: 5.0              # Max percentage of ambiguous 'N' bases
   dedup: true                     # Remove identical sequences (MD5 hash)
 
-# 4a. Spatio-Temporal Filter (M2 — augur filter)
+# 4a. Spatio-Temporal Filter (Augur)
 subsampling:
   group_by: "subtype country year month"
-  #sequences_per_group: 5         # Pertahankan lebih banyak data flu
-  max_sequences: 3000              # Sesuaikan kapasitas RAM
-  min_length: 800                 # MP segment panjang normalnya ~982 bp
+  # sequences_per_group: 5        # Keep more data for Flu
+  max_sequences: 3000             # Adjust based on RAM capacity
+  min_length: 800                 # MP segment normal length is ~982 bp
 
-# 4b. Timetree Parameters (M4 — augur refine)
+# 4b. Timetree Parameters (Augur)
 timetree:
   clock_rate: 0.003               # Flu A internal segment mutation rate
   clock_std_dev: 0.0015
 
-# 4c. Augur Engine Parameters (M3 — align, M4 — tree)
+# 4c. Augur Engine Parameters
 augur:
   threads: 16                     # Allocate more threads for heavy IQ-TREE/MAFFT workloads
 
@@ -52,14 +51,14 @@ nextclade:
   enabled: false   # Disabled for MP segment — no compatible Nextclade dataset
   dataset_name: "nextstrain/flu/h1n1pdm/ha/MW626062"
 
-# 7. Evolutionary Selection Pressure Engine (M5 — HyPhy)
+# 7. Evolutionary Selection Pressure Engine (HyPhy)
 hyphy:
   threads: 32
   p_value_threshold: 0.1
   methods:
     - "FUBAR"
     - "MEME"
-    # - "GARD"   # Dinonaktifkan untuk Influenza A: Hemat waktu karena jarang terjadi Recomb. Internal
+    # - "GARD"   # Disabled for Influenza A: internal recombination is rare, saves time
   target_genes:
     - "ALL"
   subsample:
@@ -73,20 +72,20 @@ hyphy:
       year: true
     seed: 42
 
-# 8. Bridge Configuration (M7 — Conservation & Selection Integration)
+# 8. Bridge Configuration (Conservation & Selection Integration)
 bridge:
-  window_size: 150            # Diperkecil karena ukuran gen MP lebih pendek (1000bp)
+  window_size: 150            # Reduced because MP gene size is smaller
   min_region_length: 150
   overlap_threshold: 0.75
   buffer_bp: 50
-  entropy_threshold: 0.015    # Sedikit dilonggarkan karena Flu sangat dinamis
+  entropy_threshold: 0.015    # Relaxed slightly due to Flu dynamics
   gard_buffer_bp: 50
   include_utr: true
   weights:
-    conservation: 0.40        # Konservasi lebih penting untuk Influenza MP
-    purifying: 0.30
-    episodic_penalty: 0.10
-    recombination: 0.20
+    conservation: 0.50        # Updated via Sensitivity Analysis for better stability
+    purifying: 0.25
+    episodic_penalty: 0.08
+    recombination: 0.17
   tiers:
     strict:                   
       min_conservation: 0.98
@@ -96,3 +95,13 @@ bridge:
       min_purifying_prob: 0.7
     survival:                 
       min_conservation: 0.85
+
+# 9. Clade SNP Finder (Discriminative Genotyping)
+# Blueprint feature in planning phase.
+snp_finder:
+  enabled: true
+  min_samples_per_subtype: 30    # Minimum sequences per subtype
+  min_fixation_freq: 0.90        # Minimum frequency for an allele to be fixed
+  min_coverage: 0.80             # Minimum data density ignoring N/Gaps
+  p_value_threshold: 0.01        # Statistics significance threshold
+  group_by: "subtype"            # Metadata column for classification

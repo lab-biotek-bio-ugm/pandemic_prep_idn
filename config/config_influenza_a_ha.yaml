@@ -1,0 +1,107 @@
+# Pandemic Preparedness Diagnostic Pipeline — Configuration Profile
+# Target: Influenza A (Subtype Specific) - HA Segment
+---
+
+# 1. Target Identity
+build_name: "influenza-a-ha"
+
+# 2. Database Provider
+database: "local"
+
+# 3. Data Acquisition
+# Supported sources: NCBI Virus web portal, GISAID bulk download, etc.
+local_input:
+  sequences: "data/EpiFlu_A_HA_Sequences.fasta" # <--- ADJUST PATH AS NEEDED
+  metadata: "data/EpiFlu_A_HA_Metadata.csv"     # <--- ADJUST PATH AS NEEDED
+  format: "gisaid_epiflu"
+
+# 4. Quality Control
+qc:
+  max_n_content: 5.0              # Max percentage of ambiguous 'N' bases
+  dedup: true                     # Remove identical sequences (MD5 hash)
+
+# 4a. Spatio-Temporal Filter (Augur)
+subsampling:
+  group_by: "subtype country year month"
+  sequences_per_group: 5         
+  # max_sequences: 1000           # Enable if RAM is insufficient
+  min_length: 1500                # HA segment normal length is ~1700 bp
+  seed: 42                        
+
+# 4b. Timetree Parameters (Augur)
+timetree:
+  # HA mutates significantly faster than internal genes like MP
+  clock_rate: 0.0035              # ~3.5x10^-3 subs/site/year (Flu HA average)
+  clock_std_dev: 0.0010
+
+# 4c. Augur Engine Parameters
+augur:
+  threads: 8
+
+# 5. File References
+references:
+  # HA Reference depends on the targeted clade.
+  # Ensure the specific H1N1, H3N2, or H5N1 reference fasta/gff are configured here.
+  genome: "config/references/flu_a_ha_ref.fasta"      # <--- ADJUST PATH
+  annotation: "config/references/flu_a_ha.gff"        # <--- ADJUST PATH
+  reference_id: "NC_026433.1"                         # <--- Example: A/California/07/2009 H1N1
+
+# 6. Nextclade — Clade/Lineage Classification & QC
+nextclade:
+  enabled: true
+  dataset_name: "nextstrain/flu/avian/h5n1/ha/2344b"  # <--- ADJUST BASED ON TARGET SUBTYPE (e.g., H5N1 2.3.4.4b)
+
+# 7. Evolutionary Selection Pressure Engine (HyPhy)
+hyphy:
+  threads: 32
+  p_value_threshold: 0.1
+  methods:
+    - "FUBAR"
+    - "MEME"
+    - "GARD"
+  target_genes:
+    - "HA"      # HA-specific target
+  subsample:
+    enabled: true
+    max_sequences: 400
+    min_sequences: 50
+    strategy: "balanced"
+    group_by:
+      clade: true
+      country: true
+      year: true
+    seed: 42
+
+# 8. Bridge Configuration (Conservation & Selection Integration)
+bridge:
+  window_size: 150            
+  min_region_length: 150
+  overlap_threshold: 0.75
+  buffer_bp: 50
+  entropy_threshold: 0.020    # Relaxed compared to MP; HA is highly dynamic
+  gard_buffer_bp: 50
+  include_utr: true
+  weights:
+    conservation: 0.50        # Priority: Primer physical matching
+    purifying: 0.25           # Long-term mutation restriction
+    episodic_penalty: 0.08    # Sudden mutation penalty (critical for HA)
+    recombination: 0.17       # Genetic exchange penalty
+  tiers:
+    strict:                   
+      min_conservation: 0.95
+      min_purifying_prob: 0.9
+    moderate:                 
+      min_conservation: 0.85
+      min_purifying_prob: 0.7
+    survival:                 
+      min_conservation: 0.80
+
+# 9. Clade SNP Finder (Discriminative Genotyping)
+# Blueprint feature in planning phase.
+snp_finder:
+  enabled: true
+  min_samples_per_subtype: 30    # Minimum sequences per subtype
+  min_fixation_freq: 0.90        # Minimum frequency for an allele to be fixed
+  min_coverage: 0.80             # Minimum data density ignoring N/Gaps
+  p_value_threshold: 0.01        # Statistics significance threshold
+  group_by: "subtype"            # Metadata column for classification
