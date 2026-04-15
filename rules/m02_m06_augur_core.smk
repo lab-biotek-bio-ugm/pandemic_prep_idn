@@ -228,6 +228,22 @@ rule augur_export:
 #   for primer design. For M05 HyPhy input, clean_alignment_for_hyphy.py
 #   already handles codon-level sanitization.
 #
+# DROPPED: GARD (M05 — Recombination Detection) for Influenza targets
+#   Original plan included GARD to detect recombination breakpoints in the
+#   alignment and partition the tree accordingly before dN/dS analysis.
+#   Decision: Dropped for all Influenza configurations.
+#   Scientific rationale: Influenza A/B viruses evolve principally via
+#   REASSORTMENT (exchange of whole RNA segments between co-infecting strains),
+#   NOT intra-segment recombination. GARD is designed to detect breakpoints
+#   within a single contiguous sequence — a mechanism that is exceptionally
+#   rare in influenza and biologically contentious for segmented RNA viruses
+#   (Boni et al. 2010; Worobey & Holmes 1999). Running GARD on Influenza HA
+#   produces computationally very expensive analyses that detect mostly noise.
+#   Reassortment signals are instead captured by Nextstrain's phylogenetic
+#   context (segment-level phylogenies) and multi-segment analysis.
+#   GARD remains VALID for non-segmented RNA viruses (e.g., SARS-CoV-2)
+#   and should be re-enabled in those config templates.
+#
 # TODO [M04-1] Protein Phylogeny (Antigen/Serological Track)
 #   What: Build a separate protein phylogenetic tree from MACSE AA output
 #         using IQ-TREE2 with protein substitution models (e.g., WAG, LG).

@@ -64,9 +64,18 @@ hyphy:
   threads: 32
   p_value_threshold: 0.1
   methods:
-    - "FUBAR"
-    - "MEME"
-    - "GARD"
+    - "FUBAR"    # Pervasive/conserved selection pressure
+    - "MEME"     # Episodic/site-specific selection pressure
+    # GARD is intentionally excluded for Influenza.
+    # Scientific rationale: Influenza evolves primarily via REASSORTMENT
+    # (whole-segment exchange between strains), not intra-segment recombination.
+    # GARD detects breakpoints within a single gene segment — a mechanism
+    # that is extremely rare and poorly supported in Influenza HA (Boni et al.
+    # have argued against its biological relevance in segmented RNA viruses).
+    # Running GARD here would be computationally expensive and scientifically
+    # unsound. Reassortment signals are best captured by Nextstrain's
+    # phylogenetic context, not GARD.
+    # Reference: Boni et al. (2010) doi: 10.1098/rsob.130051
   target_genes:
     - "HA"      # HA-specific target
   subsample:
