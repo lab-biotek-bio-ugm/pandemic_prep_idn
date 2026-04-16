@@ -98,11 +98,41 @@ bridge:
   entropy_threshold: 0.020    # Relaxed compared to MP; HA is highly dynamic
   gard_buffer_bp: 50
   include_utr: true
-  weights:
-    conservation: 0.50        # Priority: Primer physical matching
-    purifying: 0.25           # Long-term mutation restriction
-    episodic_penalty: 0.08    # Sudden mutation penalty (critical for HA)
-    recombination: 0.17       # Genetic exchange penalty
+  scoring:
+    core:
+      conservation_weight: 0.66
+      purifying_weight: 0.34
+    multipliers:
+      meme_sites:
+        thresholds:
+          - max_sites: 0
+            multiplier: 1.0
+          - max_sites: 1
+            multiplier: 0.9
+          - max_sites: 3
+            multiplier: 0.7
+        veto_above: 3
+      recombination:
+        near_penalty: 0.5
+      gc_content:
+        ideal_min: 35
+        ideal_max: 60
+        marginal_ranges:
+          - min: 25
+            max: 34
+          - min: 61
+            max: 70
+        marginal_multiplier: 0.7
+        veto_below: 25
+        veto_above: 70
+      conserved_block:
+        entropy_threshold: 0.10
+        ideal_min_len: 35
+        penalty_min_len: 20
+        penalty_multiplier: 0.8
+      homopolymer:
+        max_repeats: 5
+        penalty_multiplier: 0.6
   tiers:
     strict:                   
       min_conservation: 0.95

@@ -1,77 +1,81 @@
 """
-M07 Bridge Builder — Conservation & Selection Pressure Integrator
+M07 Bridge Builder v2.0 — Conservation & Selection Integrator
 
 Merges outputs from two independent analysis tracks:
   Track A (Augur): MSA conservation via Shannon Entropy
   Track B (HyPhy): Evolutionary selection pressure (FUBAR/MEME/GARD)
 
-Produces ranked "Gold Zones" — genomic regions that are both empirically
-conserved AND under active purifying selection — ideal for primer design.
+Version 2.0 introduces 'Core x Multipliers' scoring, allowing dynamic 
+penalties for biomechanical risks (MEME, Recombination, GC Content, 
+Homopolymers, Conserved Blocks) before passing targets to PrimerLab.
 
-Outputs:
-  1. conserved_regions.bed          — BED format for genome browser (IGV)
-  2. bridge_report.json             — Comprehensive analysis report
-  3. primer_targets_manifest.yaml   — Tool-agnostic primer target coordinates
-
-Scoring: composite = w1*(1-entropy) + w2*fubar_purifying + w3*(1-meme_danger) - w4*recomb
-Grade:   A (>=0.90), B (>=0.75), C (>=0.60), D (<0.60)
-Tier:    1 (strict), 2 (moderate), 3 (survival) — fail-safe protocol
-Flags:   coding, has_hyphy_data, near_recombination
+Inputs: MSA, GFF, HyPhy JSONs, Reference Fasta
+Outputs: 
+  - conserved_regions.bed (0-based half-open)
+  - bridge_report.json (0-based half-open)
+  - primer_targets_manifest.yaml (0-based half-open)
+  - entropy_profile.tsv
 """
 
 import argparse
+import csv
 import json
 import math
 import sys
+from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 
 import yaml
 from Bio import SeqIO
 
+# --- Step 1: Conservation & Profile Generation ---
 
-# Step 1: Conservation Scanner
-
-def calculate_entropy(column):
-    """Calculate Shannon entropy for a single MSA column.
-    Returns 0.0 for perfectly conserved, up to 2.0 for maximum diversity (DNA).
-    """
-    bases = [b for b in column if b in "ACGT"]
-    n = len(bases)
-    if n == 0:
-        return 1.0  # Full uncertainty if all gaps/N
-
-    freq = {}
-    for b in bases:
-        freq[b] = freq.get(b, 0) + 1
-
-    entropy = 0.0
-    for count in freq.values():
-        p = count / n
-        if p > 0:
-            entropy -= p * math.log2(p)
-
-    return entropy
-
-
-def scan_conservation(records, window_size, entropy_threshold):
-    """Scan MSA for conserved regions using sliding-window entropy."""
+def build_entropy_profile(records):
+    """Calculates entropy and consensus base for each column in the MSA."""
     if not records:
-        print("ERROR: MSA records list is empty", file=sys.stderr)
         return [], 0, 0
-
+    
     n_sequences = len(records)
     aln_length = len(records[0].seq)
-    print(f"[M07] MSA: {n_sequences} sequences, {aln_length} positions")
-
-    # Per-position entropy
-    entropies = []
+    
+    profile = []
     for i in range(aln_length):
         column = [str(rec.seq[i]).upper() for rec in records]
-        entropies.append(calculate_entropy(column))
+        bases = [b for b in column if b in "ACGT"]
+        n = len(bases)
+        
+        if n == 0:
+            profile.append({"position": i, "consensus_base": "-", "entropy": 1.0})
+            continue
+            
+        counter = Counter(bases)
+        consensus = counter.most_common(1)[0][0]
+        
+        freq = {b: c / n for b, c in counter.items()}
+        entropy = 0.0
+        for p in freq.values():
+            if p > 0:
+                entropy -= p * math.log2(p)
+                
+        profile.append({"position": i, "consensus_base": consensus, "entropy": entropy})
+        
+    return profile, n_sequences, aln_length
 
-    # Sliding window average (NO MERGING)
+def export_entropy_profile(profile, path):
+    """Writes the entropy profile to a TSV file."""
+    with open(path, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=["position", "consensus_base", "entropy"], delimiter="\t")
+        writer.writeheader()
+        writer.writerows(profile)
+    print(f"[M07] Wrote entropy profile: {path}")
+
+def scan_conservation(profile, window_size, entropy_threshold):
+    """Scan pre-computed entropy profile for conserved regions using sliding-window."""
+    aln_length = len(profile)
+    entropies = [p["entropy"] for p in profile]
     regions = []
+    
     for i in range(aln_length - window_size + 1):
         window = entropies[i:i + window_size]
         mean_e = sum(window) / len(window)
@@ -83,15 +87,55 @@ def scan_conservation(records, window_size, entropy_threshold):
                 "conservation_pct": round((1 - mean_e / 2.0) * 100, 2),
                 "length": window_size
             })
-
+            
     if not regions:
         print(f"[M07] WARNING: No windows with entropy < {entropy_threshold}")
-
+        
     print(f"[M07] Found {len(regions)} conserved raw windows (threshold={entropy_threshold})")
-    return regions, n_sequences, aln_length
+    return regions
 
+# --- Biomechanical Scanners ---
 
-# GFF Parser
+def extract_reference_subsequence(ref_seq, start, end):
+    """Extract subsequence from the raw reference genome.
+    Note: if ref lacks gaps relative to MSA, mapping should ideally map column to ref pos.
+    For simplicity, assuming 1:1 loosely aligned or gaps stripped prior.
+    """
+    return str(ref_seq[start:end]).upper()
+
+def calculate_gc_content(sequence):
+    length = len(sequence)
+    if length == 0:
+        return 0.0
+    gc_count = sequence.count('G') + sequence.count('C')
+    return (gc_count / length) * 100.0
+
+def detect_homopolymer(sequence, max_repeats=5):
+    for base in "ACGT":
+        if (base * (max_repeats + 1)) in sequence:
+            return True
+    return False
+
+def find_max_contiguous_block(profile, start, end, threshold=0.10):
+    max_len = 0
+    current_len = 0
+    for i in range(start, end):
+        if profile[i]["entropy"] < threshold:
+            current_len += 1
+            if current_len > max_len:
+                max_len = current_len
+        else:
+            current_len = 0
+    return max_len
+
+def get_mismatch_positions(profile, start, end, threshold=0.10):
+    mismatches = []
+    for i in range(start, end):
+        if profile[i]["entropy"] > threshold:
+            mismatches.append(i)
+    return mismatches
+
+# --- GFF Parser ---
 
 def parse_gff(gff_path):
     """Parse GFF3 file to extract gene and UTR coordinates (0-based half-open)."""
@@ -127,11 +171,7 @@ def parse_gff(gff_path):
 
     return genes, utrs
 
-
 def find_gene_for_position(pos, genes, utrs):
-    """Determine which gene/UTR a genome position falls into.
-    Returns (name, is_coding).
-    """
     for g in genes:
         if g["start"] <= pos < g["end"]:
             return g["name"], True
@@ -140,19 +180,15 @@ def find_gene_for_position(pos, genes, utrs):
             return u["name"], False
     return "intergenic", False
 
-
-# Step 2: HyPhy Score Mapper
+# --- HyPhy Score Mapper ---
 
 def parse_fubar_json(filepath):
-    """Parse HyPhy FUBAR JSON → per-codon purifying probability."""
     with open(filepath, "r") as f:
         data = json.load(f)
-
     mle = data.get("MLE", {})
     headers = mle.get("headers", [])
     rows = mle.get("content", {}).get("0", [])
 
-    # Find Prob[alpha>beta] (purifying selection) column index
     purifying_idx = None
     for i, h in enumerate(headers):
         label = h[0] if isinstance(h, list) else str(h)
@@ -160,26 +196,21 @@ def parse_fubar_json(filepath):
             purifying_idx = i
             break
     if purifying_idx is None:
-        purifying_idx = 5  # FUBAR default layout fallback
+        purifying_idx = 5
 
     results = []
     for i, row in enumerate(rows):
         prob = row[purifying_idx] if purifying_idx < len(row) else 0.5
         results.append({"codon_idx": i, "fubar_purifying_prob": prob})
-
     return results
 
-
 def parse_meme_json(filepath):
-    """Parse HyPhy MEME JSON → per-codon p-value for episodic selection."""
     with open(filepath, "r") as f:
         data = json.load(f)
-
     mle = data.get("MLE", {})
     headers = mle.get("headers", [])
     rows = mle.get("content", {}).get("0", [])
 
-    # Find p-value column
     pval_idx = None
     for i, h in enumerate(headers):
         label = h[0] if isinstance(h, list) else str(h)
@@ -187,37 +218,23 @@ def parse_meme_json(filepath):
             pval_idx = i
             break
     if pval_idx is None:
-        pval_idx = len(headers) - 1  # Last column fallback
+        pval_idx = len(headers) - 1
 
     results = []
     for i, row in enumerate(rows):
         pval = row[pval_idx] if pval_idx < len(row) else 1.0
         results.append({"codon_idx": i, "meme_pvalue": pval})
-
     return results
 
-
 def parse_gard_json(filepath):
-    """Parse HyPhy GARD JSON → breakpoint codon positions.
-    Breakpoints are boundaries between data partitions.
-    """
     with open(filepath, "r") as f:
         data = json.load(f)
-
-    # Check if GARD was skipped by the safe wrapper
     if data.get("skipped", False):
-        print(f"[M07]   GARD  was skipped: {data.get('analysis', {}).get('skip_reason', 'unknown')}",
-              file=sys.stderr)
+        return []
+    partitions = data.get("data partitions", data.get("dataPartitions", {}))
+    if not partitions or len(partitions) <= 1:
         return []
 
-    # GARD stores results in "data partitions" (or variants)
-    partitions = data.get("data partitions",
-                          data.get("dataPartitions", {}))
-
-    if not partitions or len(partitions) <= 1:
-        return []  # Single partition = no recombination detected
-
-    # Collect partition boundaries sorted by key
     boundaries = []
     for key in sorted(partitions.keys(), key=lambda x: int(x) if x.isdigit() else x):
         coverage = partitions[key].get("coverage", [])
@@ -225,17 +242,13 @@ def parse_gard_json(filepath):
             if isinstance(span, list) and len(span) == 2:
                 boundaries.append({"start": span[0], "end": span[1]})
 
-    # Breakpoints are at transitions between consecutive partitions
     breakpoints = []
     for i in range(1, len(boundaries)):
         breakpoints.append(boundaries[i]["start"])
-
     return breakpoints
 
-
 def map_hyphy_to_genome(genes, hyphy_dir, target_genes):
-    """Map per-gene HyPhy codon data back to genome coordinates."""
-    codon_data = {}      # genome_pos → {fubar_purifying_prob, meme_pvalue}
+    codon_data = {}
     gard_breakpoints = []
 
     for gene in genes:
@@ -243,31 +256,19 @@ def map_hyphy_to_genome(genes, hyphy_dir, target_genes):
         if name not in target_genes:
             continue
 
-        gene_start = gene["start"]  # 0-based
-
-        # --- FUBAR ---
+        gene_start = gene["start"]
         fubar_path = hyphy_dir / f"fubar_{name}.json"
         fubar_data = []
         if fubar_path.exists():
-            try:
-                fubar_data = parse_fubar_json(str(fubar_path))
-                print(f"[M07]   FUBAR {name}: {len(fubar_data)} codons")
-            except Exception as e:
-                print(f"[M07]   WARNING: FUBAR parse failed for {name}: {e}",
-                      file=sys.stderr)
+            try: fubar_data = parse_fubar_json(str(fubar_path))
+            except Exception: pass
 
-        # --- MEME ---
         meme_path = hyphy_dir / f"meme_{name}.json"
         meme_data = []
         if meme_path.exists():
-            try:
-                meme_data = parse_meme_json(str(meme_path))
-                print(f"[M07]   MEME  {name}: {len(meme_data)} codons")
-            except Exception as e:
-                print(f"[M07]   WARNING: MEME parse failed for {name}: {e}",
-                      file=sys.stderr)
+            try: meme_data = parse_meme_json(str(meme_path))
+            except Exception: pass
 
-        # --- Map codons → genome positions ---
         n_codons = max(len(fubar_data), len(meme_data), 1)
         for ci in range(n_codons):
             gpos = gene_start + ci * 3
@@ -281,11 +282,9 @@ def map_hyphy_to_genome(genes, hyphy_dir, target_genes):
                 entry["fubar_purifying_prob"] = fubar_data[ci]["fubar_purifying_prob"]
             if ci < len(meme_data):
                 entry["meme_pvalue"] = meme_data[ci]["meme_pvalue"]
-            # Spread codon data across its 3 base positions
             for offset in range(3):
                 codon_data[gpos + offset] = entry
 
-        # --- GARD ---
         gard_path = hyphy_dir / f"gard_{name}.json"
         if gard_path.exists():
             try:
@@ -296,44 +295,80 @@ def map_hyphy_to_genome(genes, hyphy_dir, target_genes):
                         "gene": name,
                         "codon_idx": bp_codon,
                     })
-                print(f"[M07]   GARD  {name}: {len(bp_codons)} breakpoints")
-            except Exception as e:
-                print(f"[M07]   WARNING: GARD parse failed for {name}: {e}",
-                      file=sys.stderr)
+            except Exception: pass
 
     return codon_data, gard_breakpoints
 
+# --- Multipliers Computation ---
 
-# Step 3: Intersection & Composite Scoring
+def compute_meme_multiplier(sites, config):
+    if sites >= config.get("veto_above", 4):
+        return 0.0
+    for t in config.get("thresholds", []):
+        if sites <= t.get("max_sites", 0):
+            return t.get("multiplier", 1.0)
+    return 1.0
+
+def compute_gc_multiplier(gc_pct, config):
+    if gc_pct < config.get("veto_below", 25) or gc_pct > config.get("veto_above", 70):
+        return 0.0
+    if config.get("ideal_min", 35) <= gc_pct <= config.get("ideal_max", 60):
+        return 1.0
+    marginal = config.get("marginal_ranges", [])
+    for m in marginal:
+        if m.get("min", 0) <= gc_pct <= m.get("max", 100):
+            return config.get("marginal_multiplier", 0.7)
+    return 0.0
+
+def compute_block_multiplier(block_len, config):
+    if block_len < config.get("penalty_min_len", 20):
+        return 0.0 # Veto
+    if block_len >= config.get("ideal_min_len", 35):
+        return 1.0
+    return config.get("penalty_multiplier", 0.8)
+
+def compute_homo_multiplier(has_homo, config):
+    return config.get("penalty_multiplier", 0.6) if has_homo else 1.0
+
+# --- Step 3: Intersection & Composite Scoring ---
 
 GRADE_TEXT = {
-    "A": "EXCELLENT — Ideal for universal primer design",
-    "B": "GOOD — Strong candidate, minor concerns",
-    "C": "ACCEPTABLE — Usable with caveats",
-    "D": "CAUTION — Consider alternatives",
+    "S": "SUPERIOR — Gold Standard, zero penalties",
+    "A+": "OUTSTANDING — Phenomenal candidate, trivial divergence",
+    "A": "EXCELLENT — Highly Recommended, minor friction",
+    "A-": "VERY GOOD — Strong metrics with slight caveats",
+    "B+": "GOOD — Safe & Stable, manageable penalties",
+    "B": "ACCEPTABLE — Tolerance limit, requires careful primer design",
+    "C": "HIGH RISK — High chance of reduced efficiency",
+    "D": "REJECTED — Failed critical constraints",
 }
 
-
-def score_regions(regions, codon_data, gard_breakpoints, genes, utrs,
-                  weights, tiers_config, gard_buffer_bp):
-    """Score each conserved region with the composite formula and assign grade/tier."""
-    w1 = weights.get("conservation", 0.35)
-    w2 = weights.get("purifying", 0.35)
-    w3 = weights.get("episodic_penalty", 0.15)
-    w4 = weights.get("recombination", 0.15)
+def score_regions(regions, profile, ref_seq, codon_data, gard_breakpoints, genes, utrs,
+                  scoring_config, tiers_config, gard_buffer_bp):
+    """Score each conserved region using Core x Multipliers."""
+    
+    # Core Weights
+    w_cons = scoring_config.get("core", {}).get("conservation_weight", 0.66)
+    w_fub = scoring_config.get("core", {}).get("purifying_weight", 0.34)
+    
+    # Multiplier Configs
+    mult_cfgs = scoring_config.get("multipliers", {})
+    meme_cfg = mult_cfgs.get("meme", {})
+    rec_cfg = mult_cfgs.get("recombination", {})
+    gc_cfg = mult_cfgs.get("gc_content", {})
+    block_cfg = mult_cfgs.get("conserved_block", {})
+    homo_cfg = mult_cfgs.get("homopolymer", {})
 
     scored = []
 
     for region in regions:
         start, end = region["start"], region["end"]
         mid = (start + end) // 2
-
         gene_name, is_coding = find_gene_for_position(mid, genes, utrs)
 
-        # Gather HyPhy data overlapping this region
+        # 1. Gather HyPhy Data
         fubar_probs, meme_pvals = [], []
         has_hyphy = False
-
         for pos in range(start, end):
             if pos in codon_data:
                 has_hyphy = True
@@ -342,62 +377,73 @@ def score_regions(regions, codon_data, gard_breakpoints, genes, utrs,
 
         avg_fubar = sum(fubar_probs) / len(fubar_probs) if fubar_probs else 0.0
         meme_danger_sites = sum(1 for p in meme_pvals if p < 0.05)
-        meme_danger_pct = meme_danger_sites / len(meme_pvals) if meme_pvals else 0.0
 
-        # Check GARD proximity
+        # Check GARD
         near_recomb = False
-        recomb_penalty = 0.0
         half_len = (end - start) // 2
         for bp in gard_breakpoints:
             if abs(bp["genome_pos"] - mid) <= gard_buffer_bp + half_len:
                 near_recomb = True
-                recomb_penalty = 1.0
                 break
 
-        # --- Composite score ---
-        cons_score = 1.0 - region["mean_entropy"]  # Higher is better
+        # 2. Biomechanical features
+        ref_subseq = extract_reference_subsequence(ref_seq, start, end)
+        gc_pct = calculate_gc_content(ref_subseq)
+        
+        block_t_hr = block_cfg.get("entropy_threshold", 0.10)
+        max_block_len = find_max_contiguous_block(profile, start, end, threshold=block_t_hr)
+        
+        has_homo = detect_homopolymer(ref_subseq, homo_cfg.get("max_repeats", 5))
+        mismatches = get_mismatch_positions(profile, start, end, threshold=block_t_hr)
 
+        # 3. Core Score Calculation
+        # Normalized conservation: DNA entropy max is 2.0 -> Range [0.0, 1.0]
+        cons_norm = 1.0 - (region["mean_entropy"] / 2.0)
+        
         if has_hyphy:
-            composite = (w1 * cons_score
-                         + w2 * avg_fubar
-                         + w3 * (1.0 - meme_danger_pct)
-                         - w4 * recomb_penalty)
+            core = (w_cons * cons_norm) + (w_fub * avg_fubar)
         else:
-            # No HyPhy data (non-coding or gene not in target_genes):
-            # Use conservation-only score, capped so it can't beat full-data A
-            composite = cons_score * 0.95
+            core = cons_norm * 0.95 # Cap non-coding core
 
-        composite = max(0.0, min(1.0, composite))
+        # 4. Multipliers
+        m_meme = compute_meme_multiplier(meme_danger_sites, meme_cfg)
+        m_rec = rec_cfg.get("near_penalty", 0.5) if near_recomb else 1.0
+        m_gc = compute_gc_multiplier(gc_pct, gc_cfg)
+        m_block = compute_block_multiplier(max_block_len, block_cfg)
+        m_homo = compute_homo_multiplier(has_homo, homo_cfg)
 
-        # --- Tier (fail-safe protocol) ---
+        final_score = core * m_meme * m_rec * m_gc * m_block * m_homo
+        final_score = max(0.0, min(1.0, final_score))
+
+        # --- Tier System (Fail-safe checks on raw metrics) ---
         strict = tiers_config.get("strict", {})
         moderate = tiers_config.get("moderate", {})
-        cons_frac = region["conservation_pct"] / 100.0
+        cons_frac = cons_norm # Using normalized score directly
         tier = 3
 
         if has_hyphy:
-            if (cons_frac >= strict.get("min_conservation", 0.99)
+            if (cons_frac >= strict.get("min_conservation", 0.95)
                     and avg_fubar >= strict.get("min_purifying_prob", 0.9)
                     and meme_danger_sites == 0):
                 tier = 1
-            elif (cons_frac >= moderate.get("min_conservation", 0.95)
+            elif (cons_frac >= moderate.get("min_conservation", 0.85)
                   and avg_fubar >= moderate.get("min_purifying_prob", 0.7)):
                 tier = 2
         else:
-            if cons_frac >= strict.get("min_conservation", 0.99):
+            if cons_frac >= strict.get("min_conservation", 0.95):
                 tier = 1
-            elif cons_frac >= moderate.get("min_conservation", 0.95):
+            elif cons_frac >= moderate.get("min_conservation", 0.85):
                 tier = 2
 
-        # --- Grade (quality classification) ---
-        if composite >= 0.90:
-            grade = "A"
-        elif composite >= 0.75:
-            grade = "B"
-        elif composite >= 0.60:
-            grade = "C"
-        else:
-            grade = "D"
+        # --- Grade Classification ---
+        if final_score >= 0.95: grade = "S"
+        elif final_score >= 0.90: grade = "A+"
+        elif final_score >= 0.85: grade = "A"
+        elif final_score >= 0.80: grade = "A-"
+        elif final_score >= 0.75: grade = "B+"
+        elif final_score >= 0.70: grade = "B"
+        elif final_score >= 0.60: grade = "C"
+        else: grade = "D"
 
         scored.append({
             "gene": gene_name,
@@ -408,8 +454,10 @@ def score_regions(regions, codon_data, gard_breakpoints, genes, utrs,
             "mean_entropy": round(region["mean_entropy"], 6),
             "avg_fubar_purifying_prob": round(avg_fubar, 4),
             "meme_episodic_sites": meme_danger_sites,
-            "meme_danger_pct": round(meme_danger_pct, 4),
-            "composite_score": round(composite, 4),
+            "gc_pct": round(gc_pct, 2),
+            "max_block_len": max_block_len,
+            "has_homopolymer": has_homo,
+            "composite_score": round(final_score, 4),
             "tier": tier,
             "grade": grade,
             "recommendation": GRADE_TEXT[grade],
@@ -418,6 +466,14 @@ def score_regions(regions, codon_data, gard_breakpoints, genes, utrs,
                 "has_hyphy_data": has_hyphy,
                 "near_recombination": near_recomb,
             },
+            "multipliers": {
+                "meme": m_meme,
+                "recombination": m_rec,
+                "gc_content": m_gc,
+                "conserved_block": m_block,
+                "homopolymer": m_homo
+            },
+            "mismatch_positions": mismatches
         })
 
     scored.sort(key=lambda r: r["composite_score"], reverse=True)
@@ -426,20 +482,13 @@ def score_regions(regions, codon_data, gard_breakpoints, genes, utrs,
 
     return scored
 
-
 def apply_nms(scored_regions, overlap_threshold=0.5):
-    """
-    Applies Non-Maximum Suppression to ranked regions.
-    Drops any region that overlaps more than `overlap_threshold` (0.0 - 1.0)
-    with a higher-ranking accepted region.
-    """
     scored_regions.sort(key=lambda x: x["composite_score"], reverse=True)
     kept = []
     
     for current in scored_regions:
         is_suppressed = False
         for winner in kept:
-            # Check overlap if they are in the same gene
             if current["gene"] == winner["gene"]:
                 overlap_start = max(current["start"], winner["start"])
                 overlap_end = min(current["end"], winner["end"])
@@ -452,15 +501,12 @@ def apply_nms(scored_regions, overlap_threshold=0.5):
         if not is_suppressed:
             kept.append(current)
             
-    # Re-assign ranks based on final kept list
     for idx, r in enumerate(kept):
         r["rank"] = idx + 1
         
     return kept
 
-
 def write_bed(regions, ref_id, path):
-    """Write BED file for genome browser visualization."""
     with open(path, "w") as f:
         for r in regions:
             rid = f"{r['gene']}_region_{r['rank']}"
@@ -468,11 +514,11 @@ def write_bed(regions, ref_id, path):
                     f"{r['composite_score']}\t+\n")
     print(f"[M07] Wrote BED: {path}")
 
-
 def write_report(regions, meta, path):
-    """Write bridge_report.json with full analysis details."""
     report = {
-        "pipeline_version": "1.0",
+        "pipeline_version": "2.0",
+        "scoring_method": "core_x_multiplier",
+        "coordinate_system": "0-based half-open",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "track_name": meta.get("track_name", "Universal"),
         "msa_sequences": meta.get("n_sequences", 0),
@@ -481,7 +527,7 @@ def write_report(regions, meta, path):
         "hyphy_genes": meta.get("hyphy_genes", []),
         "total_conserved_regions": len(regions),
         "grade_summary": {g: sum(1 for r in regions if r["grade"] == g)
-                          for g in "ABCD"},
+                          for g in ["S", "A+", "A", "A-", "B+", "B", "C", "D"]},
         "tier_summary": {f"tier_{t}": sum(1 for r in regions if r["tier"] == t)
                          for t in (1, 2, 3)},
         "regions": regions,
@@ -492,12 +538,12 @@ def write_report(regions, meta, path):
         json.dump(report, f, indent=2)
     print(f"[M07] Wrote report: {path}")
 
-
 def write_manifest(regions, build_name, ref_genome, buffer_bp, path):
-    """Write primer_targets_manifest.yaml (tool-agnostic)."""
     manifest = {
         "pipeline_run_id": f"{build_name}_bridge",
         "source": "pandemic-preparedness-m07",
+        "pipeline_version": "2.0",
+        "coordinate_system": "0-based half-open",
         "reference_genome": str(ref_genome),
         "buffer_bp": buffer_bp,
         "total_candidates": len(regions),
@@ -525,11 +571,16 @@ def write_manifest(regions, build_name, ref_genome, buffer_bp, path):
                 "end": inc_end,
                 "length": inc_end - inc_start,
             },
-            "metrics": {
+            "biomechanics": {
                 "conservation_pct": r["conservation_pct"],
                 "mean_entropy": r["mean_entropy"],
                 "avg_fubar_purifying_prob": r["avg_fubar_purifying_prob"],
                 "meme_episodic_sites": r["meme_episodic_sites"],
+                "gc_pct": r["gc_pct"],
+                "max_block_len": r["max_block_len"],
+                "has_homopolymer": r["has_homopolymer"],
+                "mismatch_positions": r["mismatch_positions"],
+                "multipliers": r["multipliers"]
             },
             "flags": r["flags"],
             "recommendation": r["recommendation"],
@@ -540,41 +591,47 @@ def write_manifest(regions, build_name, ref_genome, buffer_bp, path):
                   sort_keys=False, allow_unicode=True)
     print(f"[M07] Wrote manifest: {path}")
 
-
 def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir, 
                   window_size, entropy_threshold, overlap_threshold, gard_buffer_bp, 
-                  weights, tiers_config, ref_id, outdir, build_name, buffer_bp, args_reference):
+                  scoring_config, tiers_config, ref_id, ref_seq, outdir, build_name, buffer_bp, args_reference):
     print(f"\n[M07] ============================================")
     print(f"[M07]  Track: {track_name}")
     print(f"[M07] ============================================")
 
-    print(f"\n[M07] [{track_name}] Step 1: Conservation Scanner")
-    regions, n_seq, aln_len = scan_conservation(
-        records, window_size, entropy_threshold)
+    print(f"\n[M07] [{track_name}] Step 1: Generating Entropy Profile")
+    profile, n_seq, aln_len = build_entropy_profile(records)
+    
+    sanitized_name = track_name.replace('/', '_').replace(' ', '_')
+    prefix = "" if track_name == "Universal" else f"subtype_{sanitized_name}_"
+    
+    export_entropy_profile(profile, outdir / f"{prefix}entropy_profile.tsv")
+
+    print(f"\n[M07] [{track_name}] Step 2: Conservation Scanner")
+    regions = scan_conservation(profile, window_size, entropy_threshold)
 
     if not regions:
-        # Rather than looping blindly, scan at an absolutely relaxed threshold
-        # and let the NMS + Scorer handle the grading.
         print(f"[M07] [{track_name}] WARNING: Relaxing threshold significantly to find candidates (survival mode)")
-        regions, _, _ = scan_conservation(records, window_size, 0.45)
+        regions = scan_conservation(profile, window_size, 0.45)
 
     if not regions:
          print(f"[M07] [{track_name}] No conserved regions found even after max relaxation. Skipping.")
          return
 
-    print(f"\n[M07] [{track_name}] Step 2: HyPhy Score Mapper")
+    print(f"\n[M07] [{track_name}] Step 3: HyPhy Score Mapper")
     codon_data, gard_bps = map_hyphy_to_genome(genes, hyphy_dir, target_genes)
     print(f"[M07] [{track_name}] Mapped {len(codon_data)} positions, {len(gard_bps)} GARD breakpoints")
 
-    print(f"\n[M07] [{track_name}] Step 3: Intersection & Composite Scoring")
-    scored = score_regions(regions, codon_data, gard_bps, genes, utrs,
-                           weights, tiers_config, gard_buffer_bp)
+    print(f"\n[M07] [{track_name}] Step 4: Biomechanical Analysis & Core × Multipliers Scoring")
+    scored = score_regions(regions, profile, ref_seq, codon_data, gard_bps, genes, utrs,
+                           scoring_config, tiers_config, gard_buffer_bp)
 
-    print(f"\n[M07] [{track_name}] Step 3b: Non-Maximum Suppression (NMS)")
+    print(f"\n[M07] [{track_name}] Step 5: Non-Maximum Suppression (NMS)")
     final_scored = apply_nms(scored, overlap_threshold=overlap_threshold)
 
-    grades = {g: sum(1 for r in final_scored if r["grade"] == g) for g in "ABCD"}
-    print(f"[M07] [{track_name}] Scored {len(final_scored)} disjoint/optimal regions: A={grades['A']} B={grades['B']} C={grades['C']} D={grades['D']}")
+    grade_keys = ["S", "A+", "A", "A-", "B+", "B", "C", "D"]
+    grades = {g: sum(1 for r in final_scored if r["grade"] == g) for g in grade_keys}
+    grade_str = " ".join([f"{g}={grades[g]}" for g in grade_keys])
+    print(f"[M07] [{track_name}] Scored {len(final_scored)} disjoint/optimal regions: {grade_str}")
 
     warnings = []
     if not codon_data:
@@ -590,9 +647,7 @@ def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir,
         "warnings": warnings,
     }
 
-    print(f"\n[M07] [{track_name}] Step 4: Output Generation")
-    sanitized_name = track_name.replace('/', '_').replace(' ', '_')
-    prefix = "" if track_name == "Universal" else f"subtype_{sanitized_name}_"
+    print(f"\n[M07] [{track_name}] Step 6: Output Generation")
     write_bed(final_scored, ref_id, outdir / f"{prefix}conserved_regions.bed")
     write_report(final_scored, meta, outdir / f"{prefix}bridge_report.json")
     write_manifest(final_scored, build_name, args_reference, buffer_bp,
@@ -604,11 +659,9 @@ def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir,
         print(f"[M07] [{track_name}] #1: {top['gene']} ({top['start']}-{top['end']}) Grade {top['grade']}, Score {top['composite_score']}")
 
 
-# Main
-
 def main():
     parser = argparse.ArgumentParser(
-        description="M07 Bridge Builder — Conservation & Selection Integrator")
+        description="M07 Bridge Builder v2.0 — Core x Multipliers Integrator")
     parser.add_argument("--msa", required=True,
                         help="Aligned FASTA (MSA from augur align / M03)")
     parser.add_argument("--gff", required=True,
@@ -637,27 +690,42 @@ def main():
     overlap_threshold = bridge.get("overlap_threshold", 0.75)
     buffer_bp = bridge.get("buffer_bp", 100)
     gard_buffer_bp = bridge.get("gard_buffer_bp", 50)
-    weights = bridge.get("weights", {})
+    
+    scoring_config = bridge.get("scoring", {})
+    if not scoring_config and "weights" in bridge:
+        print("[M07] WARNING: Falling back to v1.0 weights config. Please update to 'scoring' config block.", file=sys.stderr)
+        # Rudimentary fallback mapping
+        scoring_config = {
+            "core": {
+                "conservation_weight": bridge["weights"].get("conservation", 0.5),
+                "purifying_weight": bridge["weights"].get("purifying", 0.25)
+            },
+            "multipliers": {}
+        }
+        
     tiers_config = bridge.get("tiers", {})
-
     target_genes = config.get("hyphy", {}).get("target_genes", [])
     hyphy_dir = Path(args.hyphy_dir)
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
 
-    # Reference ID (strip version suffix for matching)
     all_records = list(SeqIO.parse(args.msa, "fasta"))
     if not all_records:
         print("ERROR: MSA file is empty", file=sys.stderr)
         sys.exit(1)
         
     ref_records = list(SeqIO.parse(args.reference, "fasta"))
-    ref_id = ref_records[0].id if ref_records else "unknown"
+    if not ref_records:
+         print("ERROR: Reference file is empty", file=sys.stderr)
+         sys.exit(1)
+         
+    ref_seq = str(ref_records[0].seq).upper()
+    ref_id = ref_records[0].id
 
     print("[M07] ============================================")
-    print("[M07]  Bridge Builder — Conservation × Selection")
+    print("[M07]  Bridge Builder v2.0 — Biomechanical Scoring")
     print("[M07] ============================================")
-    print(f"[M07] Reference : {ref_id}")
+    print(f"[M07] Reference : {ref_id} ({len(ref_seq)} bp)")
     print(f"[M07] Window    : {window_size} bp")
     print(f"[M07] Threshold : {entropy_threshold}")
 
@@ -670,16 +738,13 @@ def main():
     # Execute Universal Track
     execute_track("Universal", all_records, genes, utrs, target_genes, hyphy_dir, 
                   window_size, entropy_threshold, overlap_threshold, gard_buffer_bp, 
-                  weights, tiers_config, ref_id, outdir, args.build_name, buffer_bp, args.reference)
+                  scoring_config, tiers_config, ref_id, ref_seq, outdir, args.build_name, buffer_bp, args.reference)
 
     # Route B: Subtype-Specific Tracks
     if args.metadata and Path(args.metadata).exists():
         print(f"\n[M07] ============================================")
         print(f"[M07]  ROUTE B: Subtype Auto-Detection")
         print(f"[M07] ============================================")
-        import csv
-        from collections import defaultdict
-        
         strain_to_subtype = {}
         with open(args.metadata, "r", encoding="utf-8") as f:
             reader = csv.DictReader(f, delimiter="\t")
@@ -689,6 +754,7 @@ def main():
                 if strain and subtype and subtype != "unknown" and subtype != "?":
                     strain_to_subtype[strain] = subtype
                     
+        from collections import defaultdict
         subtype_groups = defaultdict(list)
         for rec in all_records:
              rec_id = rec.id.split('|')[0]
@@ -700,7 +766,7 @@ def main():
             if len(recs) >= 30:  # Minimum coverage to consider a subtype valid
                 execute_track(subtype, recs, genes, utrs, target_genes, hyphy_dir, 
                               window_size, entropy_threshold, overlap_threshold, gard_buffer_bp, 
-                              weights, tiers_config, ref_id, outdir, args.build_name, buffer_bp, args.reference)
+                              scoring_config, tiers_config, ref_id, ref_seq, outdir, args.build_name, buffer_bp, args.reference)
             else:
                 print(f"[M07] Skipping subtype {subtype} (only {len(recs)} sequences, needs >=30)")
 
