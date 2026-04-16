@@ -40,7 +40,7 @@ def fetch_and_curate(subtype, accession, outdir):
     cds_start, cds_end = 0, 0
     
     # Gene record (seluruh panjang transkrip/segmen)
-    gff_lines.append(f"{record.id}\tNCBI\tgene\t1\t{seq_len}\t.\t+\t.\tID=gene-HA;Name=HA")
+    gff_lines.append(f"{record.id}\tNCBI\tgene\t1\t{seq_len}\t.\t+\t.\tID=gene-HA;Name=HA;gene=HA")
 
     for feature in record.features:
         if feature.type == "CDS":
@@ -50,7 +50,7 @@ def fetch_and_curate(subtype, accession, outdir):
             cds_start = feature.location.start + 1
             cds_end = feature.location.end
             phase = "0"
-            gff_lines.append(f"{record.id}\tNCBI\tCDS\t{cds_start}\t{cds_end}\t.\t+\t{phase}\tID=cds-HA;Parent=gene-HA;Name=HA_protein")
+            gff_lines.append(f"{record.id}\tNCBI\tCDS\t{cds_start}\t{cds_end}\t.\t+\t{phase}\tID=cds-HA;Parent=gene-HA;Name=HA_protein;gene=HA")
             
         elif feature.type == "mat_peptide":
             mp_start = feature.location.start + 1

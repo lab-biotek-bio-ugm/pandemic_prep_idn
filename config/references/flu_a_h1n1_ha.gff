@@ -1,6 +1,6 @@
 ##gff-version 3
 ##sequence-region NC_026433.1 1 1701
-NC_026433.1	NCBI	gene	1	1701	.	+	.	ID=gene-HA;Name=HA
-NC_026433.1	NCBI	CDS	1	1701	.	+	0	ID=cds-HA;Parent=gene-HA;Name=HA_protein
+NC_026433.1	NCBI	gene	1	1701	.	+	.	ID=gene-HA;Name=HA;gene=HA
+NC_026433.1	NCBI	CDS	1	1701	.	+	0	ID=cds-HA;Parent=gene-HA;Name=HA_protein;gene=HA
 NC_026433.1	NCBI	mat_peptide	52	1032	.	+	.	ID=mat-HA1;Parent=cds-HA;Name=HA1
 NC_026433.1	NCBI	mat_peptide	1033	1698	.	+	.	ID=mat-HA2;Parent=cds-HA;Name=HA2
