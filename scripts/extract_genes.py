@@ -59,12 +59,15 @@ def parse_gff(gff_path):
             strand = parts[6]
             attributes = parts[8]
 
-            # Extract gene= attribute
+            # Coba ekstrak berbagai variasi atribut penamaan secara hierarkis
             name = None
-            for attr in attributes.split(";"):
-                attr = attr.strip()
-                if attr.startswith("gene="):
-                    name = attr.split("=", 1)[1].strip('"')
+            for key in ["gene=", "Name=", "locus_tag="]:
+                for attr in attributes.split(";"):
+                    attr = attr.strip()
+                    if attr.startswith(key):
+                        name = attr.split("=", 1)[1].strip('"\n\r')
+                        break
+                if name:
                     break
 
             if not name:

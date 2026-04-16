@@ -73,14 +73,26 @@ def fetch_and_curate(subtype, accession, outdir):
 
 
 def main():
-    outdir = Path("config/references")
+    parser = argparse.ArgumentParser(description="Fetch and curate viral reference genomes from NCBI")
+    parser.add_argument("--subtype", help="Virus subtype label (e.g. H5N1, H3N2, MPXV)")
+    parser.add_argument("--accession", help="NCBI GenBank Accession ID (e.g. NC_007362.1)")
+    parser.add_argument("--outdir", default="config/references", help="Output directory path")
+    args = parser.parse_args()
+
+    outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
     
-    print("Mendownload dan mengkurasi referensi Influenza A secara presisi menggunakan Biopython (Entrez)...")
-    for subtype, accession in TARGETS.items():
-        fetch_and_curate(subtype, accession, outdir)
-        
-    print("\nSemua referensi H1N1, H3N2, dan H5N1 berhasil di-download dan di-kurasi GFF-nya!")
+    print("Mendownload dan mengkurasi referensi dari NCBI secara presisi menggunakan Biopython (Entrez)...")
+
+    if args.subtype and args.accession:
+        # Run specific target from CLI
+        fetch_and_curate(args.subtype, args.accession, outdir)
+    else:
+        # Run default targets
+        for subtype, accession in TARGETS.items():
+            fetch_and_curate(subtype, accession, outdir)
+            
+    print("\nProses pengambilan dan kurasi GFF selesai!")
 
 if __name__ == "__main__":
     main()
