@@ -39,8 +39,10 @@ def fetch_and_curate(subtype, accession, outdir):
     cds_found = False
     cds_start, cds_end = 0, 0
     
-    # Gene record (seluruh panjang transkrip/segmen)
-    gff_lines.append(f"{record.id}\tNCBI\tgene\t1\t{seq_len}\t.\t+\t.\tID=gene-HA;Name=HA;gene=HA")
+    # Gene record — structural parent only (NO gene= attribute!)
+    # Augur translate & extract_genes.py scan for gene= or Name= on CDS lines.
+    # If we put gene=HA here, augur will validate this 1760bp span as coding → fail mod3.
+    gff_lines.append(f"{record.id}\tNCBI\tgene\t1\t{seq_len}\t.\t+\t.\tID=gene-HA")
 
     for feature in record.features:
         if feature.type == "CDS":
