@@ -149,7 +149,7 @@ def apply_harsh_masking(seq_str, strand):
     if strand == "-":
         seq_str = str(Seq(seq_str).reverse_complement())
 
-    stop_codons = {"TAA", "TAG", "TGA"}
+    stop_codons = {"TAA", "TAG", "TGA", "UAA", "UAG", "UGA", "TAR", "TRA"}
     cleaned_seq = []
     n_frameshift = 0
     n_stop = 0
@@ -221,13 +221,13 @@ def main():
     for gene_name, segments in gene_segments.items():
         is_spliced = len(segments) > 1
 
-        # Calculate total expected stitched length for QC
-        total_ref_len = sum(
-            min(e, len(col_map)) - max(0, s)
+        # Calculate exact MSA subset length to enforce modulo 3 required by HyPhy length restrictions
+        msa_length = sum(
+            (col_map[min(e, len(col_map)) - 1] + 1) - col_map[max(0, s)]
             for s, e, _ in segments
             if max(0, s) < min(e, len(col_map))
         )
-        pad_len = (3 - (total_ref_len % 3)) % 3
+        pad_len = (3 - (msa_length % 3)) % 3
 
         out_records = []
         total_frameshift = 0
