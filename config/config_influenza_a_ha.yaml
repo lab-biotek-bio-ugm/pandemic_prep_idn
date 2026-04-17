@@ -103,7 +103,7 @@ bridge:
       conservation_weight: 0.66
       purifying_weight: 0.34
     multipliers:
-      meme_sites:
+      meme:
         thresholds:
           - max_sites: 0
             multiplier: 1.0

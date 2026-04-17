@@ -257,7 +257,7 @@ def main():
         out_path = os.path.join(args.outdir, f"cleaned_{gene_name}_NT.fasta")
         SeqIO.write(out_records, out_path, "fasta")
 
-        n_codons = (total_ref_len + pad_len) // 3
+        n_codons = (msa_length + pad_len) // 3
         splice_tag = f" [SPLICED, {len(segments)} exons]" if is_spliced else ""
         print(
             f"[{gene_name}]{splice_tag} {len(out_records)} seqs written, "
