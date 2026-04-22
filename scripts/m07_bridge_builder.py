@@ -1,20 +1,22 @@
 """
-M07 Bridge Builder v2.0 — Conservation & Selection Integrator
+M07 Bridge Builder v2.1 — Conservation & Selection Integrator
 
 Merges outputs from two independent analysis tracks:
   Track A (Augur): MSA conservation via Shannon Entropy
   Track B (HyPhy): Evolutionary selection pressure (FUBAR/MEME/GARD)
 
-Version 2.0 introduces 'Core x Multipliers' scoring, allowing dynamic 
-penalties for biomechanical risks (MEME, Recombination, GC Content, 
-Homopolymers, Conserved Blocks) before passing targets to PrimerLab.
+Version 2.1 adds:
+  - 150 bp reference consensus sequence embedded in all output manifests.
+  - Formal scientific grading annotations (replacing informal descriptors).
+  - Automatic CSV export alongside JSON/YAML for spreadsheet-based review.
 
 Inputs: MSA, GFF, HyPhy JSONs, Reference Fasta
-Outputs: 
-  - conserved_regions.bed (0-based half-open)
-  - bridge_report.json (0-based half-open)
-  - primer_targets_manifest.yaml (0-based half-open)
+Outputs:
+  - conserved_regions.bed       (0-based half-open)
+  - bridge_report.json          (0-based half-open)
+  - primer_targets_manifest.yaml
   - entropy_profile.tsv
+  - candidate_targets_summary.csv  (NEW — flat table for PI/Excel review)
 """
 
 import argparse
@@ -333,14 +335,14 @@ def compute_homo_multiplier(has_homo, config):
 # --- Step 3: Intersection & Composite Scoring ---
 
 GRADE_TEXT = {
-    "S": "SUPERIOR — Gold Standard, zero penalties",
-    "A+": "OUTSTANDING — Phenomenal candidate, trivial divergence",
-    "A": "EXCELLENT — Highly Recommended, minor friction",
-    "A-": "VERY GOOD — Strong metrics with slight caveats",
-    "B+": "GOOD — Safe & Stable, manageable penalties",
-    "B": "ACCEPTABLE — Tolerance limit, requires careful primer design",
-    "C": "HIGH RISK — High chance of reduced efficiency",
-    "D": "REJECTED — Failed critical constraints",
+    "S": "Optimal Target — Composite score ≥0.95; no episodic selection detected; high confidence for universal primer design.",
+    "A+": "High-Priority Target — Composite score ≥0.90; near-optimal conservation; negligible evolutionary risk.",
+    "A": "Recommended Target — Composite score ≥0.85; strong conservation profile; minor multiplier penalties applied.",
+    "A-": "Acceptable Target — Composite score ≥0.80; conserved with minor biomechanical caveats; suitable for validation.",
+    "B+": "Moderate Priority — Composite score ≥0.75; satisfactory conservation; one or more moderate penalties detected.",
+    "B": "Low Priority — Composite score ≥0.70; approaching lower tolerance bounds; requires careful thermodynamic validation.",
+    "C": "At-Risk Target — Composite score ≥0.60; significant penalties (e.g., episodic selection, GC imbalance); not recommended without further review.",
+    "D": "Excluded — Composite score <0.60; failed one or more critical biomechanical or evolutionary constraints.",
 }
 
 def score_regions(regions, profile, ref_seq, codon_data, gard_breakpoints, genes, utrs,
@@ -445,6 +447,11 @@ def score_regions(regions, profile, ref_seq, codon_data, gard_breakpoints, genes
         elif final_score >= 0.60: grade = "C"
         else: grade = "D"
 
+        # Build the consensus sequence from the MSA profile for this window
+        consensus_seq = "".join(
+            profile[i]["consensus_base"] for i in range(start, end)
+        )
+
         scored.append({
             "gene": gene_name,
             "start": start,
@@ -461,6 +468,9 @@ def score_regions(regions, profile, ref_seq, codon_data, gard_breakpoints, genes
             "tier": tier,
             "grade": grade,
             "recommendation": GRADE_TEXT[grade],
+            # Sequences: consensus from MSA columns, and raw from reference
+            "consensus_sequence": consensus_seq,
+            "reference_sequence": ref_subseq,
             "flags": {
                 "coding": is_coding,
                 "has_hyphy_data": has_hyphy,
@@ -591,6 +601,78 @@ def write_manifest(regions, build_name, ref_genome, buffer_bp, path):
                   sort_keys=False, allow_unicode=True)
     print(f"[M07] Wrote manifest: {path}")
 
+
+def write_csv(regions, path):
+    """Export a flat CSV table of scored regions for spreadsheet-based review (PI).
+
+    Each row corresponds to one candidate primer target region. Nested fields
+    (multipliers, flags) are flattened into individual columns.
+    """
+    fieldnames = [
+        "rank",
+        "region_id",
+        "gene",
+        "tier",
+        "grade",
+        "composite_score",
+        "start_0based",
+        "end_0based",
+        "length_bp",
+        "conservation_pct",
+        "mean_entropy",
+        "avg_fubar_purifying_prob",
+        "meme_episodic_sites",
+        "gc_pct",
+        "max_conserved_block_len",
+        "has_homopolymer",
+        "mult_meme",
+        "mult_recombination",
+        "mult_gc_content",
+        "mult_conserved_block",
+        "mult_homopolymer",
+        "flag_coding_region",
+        "flag_has_hyphy_data",
+        "flag_near_recombination",
+        "consensus_sequence",
+        "reference_sequence",
+        "recommendation",
+    ]
+
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        for r in regions:
+            writer.writerow({
+                "rank": r.get("rank", ""),
+                "region_id": f"{r['gene']}_region_{r.get('rank', '')}",
+                "gene": r.get("gene", ""),
+                "tier": r.get("tier", ""),
+                "grade": r.get("grade", ""),
+                "composite_score": r.get("composite_score", ""),
+                "start_0based": r.get("start", ""),
+                "end_0based": r.get("end", ""),
+                "length_bp": r.get("length", ""),
+                "conservation_pct": r.get("conservation_pct", ""),
+                "mean_entropy": r.get("mean_entropy", ""),
+                "avg_fubar_purifying_prob": r.get("avg_fubar_purifying_prob", ""),
+                "meme_episodic_sites": r.get("meme_episodic_sites", ""),
+                "gc_pct": r.get("gc_pct", ""),
+                "max_conserved_block_len": r.get("max_block_len", ""),
+                "has_homopolymer": r.get("has_homopolymer", ""),
+                "mult_meme": r.get("multipliers", {}).get("meme", ""),
+                "mult_recombination": r.get("multipliers", {}).get("recombination", ""),
+                "mult_gc_content": r.get("multipliers", {}).get("gc_content", ""),
+                "mult_conserved_block": r.get("multipliers", {}).get("conserved_block", ""),
+                "mult_homopolymer": r.get("multipliers", {}).get("homopolymer", ""),
+                "flag_coding_region": r.get("flags", {}).get("coding", ""),
+                "flag_has_hyphy_data": r.get("flags", {}).get("has_hyphy_data", ""),
+                "flag_near_recombination": r.get("flags", {}).get("near_recombination", ""),
+                "consensus_sequence": r.get("consensus_sequence", ""),
+                "reference_sequence": r.get("reference_sequence", ""),
+                "recommendation": r.get("recommendation", ""),
+            })
+    print(f"[M07] Wrote CSV summary: {path}")
+
 def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir, 
                   window_size, entropy_threshold, overlap_threshold, gard_buffer_bp, 
                   scoring_config, tiers_config, ref_id, ref_seq, outdir, build_name, buffer_bp, args_reference):
@@ -652,6 +734,7 @@ def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir,
     write_report(final_scored, meta, outdir / f"{prefix}bridge_report.json")
     write_manifest(final_scored, build_name, args_reference, buffer_bp,
                    outdir / f"{prefix}primer_targets_manifest.yaml")
+    write_csv(final_scored, outdir / f"{prefix}candidate_targets_summary.csv")
 
     print(f"\n[M07] [{track_name}] Complete — {len(final_scored)} candidate regions")
     if final_scored:
