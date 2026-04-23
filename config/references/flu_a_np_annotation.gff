@@ -1,2 +1,6 @@
 ##gff-version 3
-NC_002019.1	RefSeq	CDS	46	1542	.	+	0	gene=NP;
+##sequence-region NC_002019.1 1 1565
+NC_002019.1	NCBI	gene	1	1565	.	+	.	ID=gene-NP
+NC_002019.1	NCBI	CDS	46	1542	.	+	0	ID=cds-NP;Parent=gene-NP;Name=NP_protein;gene=NP
+NC_002019.1	NCBI	five_prime_UTR	1	45	.	+	.	ID=utr-5;Parent=gene-NP
+NC_002019.1	NCBI	three_prime_UTR	1543	1565	.	+	.	ID=utr-3;Parent=gene-NP
