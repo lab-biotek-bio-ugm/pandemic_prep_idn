@@ -137,12 +137,16 @@ def get_mismatch_positions(profile, start, end, threshold=0.10):
             mismatches.append(i)
     return mismatches
 
-# --- GFF Parser ---
-
 def parse_gff(gff_path):
-    """Parse GFF3 file to extract gene and UTR coordinates (0-based half-open)."""
+    """Parse GFF3 file to extract gene and UTR coordinates (0-based half-open).
+
+    Resilient parser that handles multiple GFF conventions:
+    - Standard: gene features with gene= or Name= attributes
+    - Fallback: if no named genes found, synthesizes gene regions from CDS features
+    """
     genes = []
     utrs = []
+    cds_by_gene = {}  # fallback: group CDS by gene= attribute
 
     with open(gff_path, "r") as f:
         for line in f:
@@ -157,19 +161,41 @@ def parse_gff(gff_path):
             start = int(parts[3]) - 1  # GFF is 1-based → convert to 0-based
             end = int(parts[4])        # Keep as exclusive end
 
+            # Parse attributes into dict
+            attrs = {}
+            for attr in parts[8].split(";"):
+                attr = attr.strip()
+                if "=" in attr:
+                    key, val = attr.split("=", 1)
+                    attrs[key] = val.strip('"')
+
             if feature_type == "gene":
-                name = ""
-                for attr in parts[8].split(";"):
-                    attr = attr.strip()
-                    if attr.startswith("gene=") or attr.startswith("Name="):
-                        name = attr.split("=", 1)[1].strip('"')
-                        break
+                name = attrs.get("gene") or attrs.get("Name") or ""
                 if name:
                     genes.append({"name": name, "start": start, "end": end, "chrom": chrom})
+
+            elif feature_type == "CDS":
+                gene_name = attrs.get("gene") or attrs.get("Name") or ""
+                if gene_name:
+                    if gene_name not in cds_by_gene:
+                        cds_by_gene[gene_name] = {"starts": [], "ends": [], "chrom": chrom}
+                    cds_by_gene[gene_name]["starts"].append(start)
+                    cds_by_gene[gene_name]["ends"].append(end)
 
             elif feature_type in ("five_prime_UTR", "three_prime_UTR"):
                 utr_name = "5'UTR" if "five" in feature_type else "3'UTR"
                 utrs.append({"name": utr_name, "start": start, "end": end, "chrom": chrom})
+
+    # Fallback: if no named gene features, synthesize from CDS
+    if not genes and cds_by_gene:
+        logging.info("No named 'gene' features found in GFF; synthesizing from CDS entries.")
+        for gene_name, data in cds_by_gene.items():
+            genes.append({
+                "name": gene_name,
+                "start": min(data["starts"]),
+                "end": max(data["ends"]),
+                "chrom": data["chrom"],
+            })
 
     return genes, utrs
 

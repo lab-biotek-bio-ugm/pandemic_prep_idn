@@ -33,8 +33,9 @@ def fetch_and_curate(segment, accession, outdir):
     gff_lines = ["##gff-version 3", f"##sequence-region {record.id} 1 {len(record.seq)}"]
     seq_len = len(record.seq)
     
-    # Create structural parent without gene= to prevent Augur modulo-3 errors on UTRs
-    gff_lines.append(f"{record.id}\tNCBI\tgene\t1\t{seq_len}\t.\t+\t.\tID=gene-{segment}")
+    # Structural parent ID — use unique suffix to avoid colliding with per-gene IDs
+    root_id = f"segment-{segment}"
+    gff_lines.append(f"{record.id}\tNCBI\tgene\t1\t{seq_len}\t.\t+\t.\tID={root_id}")
 
     min_cds_start = seq_len
     max_cds_end = 0
@@ -42,13 +43,13 @@ def fetch_and_curate(segment, accession, outdir):
 
     # Group CDS parts by gene name
     genes_data = {}
-    
+
     for feature in record.features:
         if feature.type == "CDS":
             gene_name = feature.qualifiers.get("gene", ["unknown"])[0]
             if gene_name not in genes_data:
                 genes_data[gene_name] = []
-                
+
             for i, part in enumerate(feature.location.parts):
                 part_start = int(part.start) + 1
                 part_end = int(part.end)
@@ -57,30 +58,27 @@ def fetch_and_curate(segment, accession, outdir):
                     "end": part_end,
                     "part_idx": i + 1
                 })
-                
-    # Write gene and CDS features
+
+    # Write gene and CDS features per detected gene
     for gene_name, parts in genes_data.items():
         gene_start = min(p["start"] for p in parts)
         gene_end = max(p["end"] for p in parts)
-        
-        # Gene feature
+
         gff_lines.append(f"{record.id}\tNCBI\tgene\t{gene_start}\t{gene_end}\t.\t+\t.\tID=gene-{gene_name};gene={gene_name}")
-        
-        # CDS features
+
         for p in parts:
             cds_id = f"cds-{gene_name}_p{p['part_idx']}" if len(parts) > 1 else f"cds-{gene_name}"
             gff_lines.append(f"{record.id}\tNCBI\tCDS\t{p['start']}\t{p['end']}\t.\t+\t0\tID={cds_id};Parent=gene-{gene_name};gene={gene_name}")
-            
-            # Update min/max for UTRs
+
             min_cds_start = min(min_cds_start, p["start"])
             max_cds_end = max(max_cds_end, p["end"])
             cds_found = True
 
     if cds_found:
         if min_cds_start > 1:
-            gff_lines.append(f"{record.id}\tNCBI\tfive_prime_UTR\t1\t{min_cds_start - 1}\t.\t+\t.\tID=utr-5;Parent=gene-{segment}")
+            gff_lines.append(f"{record.id}\tNCBI\tfive_prime_UTR\t1\t{min_cds_start - 1}\t.\t+\t.\tID=utr-5;Parent={root_id}")
         if max_cds_end < seq_len:
-            gff_lines.append(f"{record.id}\tNCBI\tthree_prime_UTR\t{max_cds_end + 1}\t{seq_len}\t.\t+\t.\tID=utr-3;Parent=gene-{segment}")
+            gff_lines.append(f"{record.id}\tNCBI\tthree_prime_UTR\t{max_cds_end + 1}\t{seq_len}\t.\t+\t.\tID=utr-3;Parent={root_id}")
 
     with open(gff_path, "w") as f:
         f.write("\n".join(gff_lines) + "\n")
