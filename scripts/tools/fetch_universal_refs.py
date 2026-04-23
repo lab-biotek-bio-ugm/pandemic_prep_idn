@@ -59,16 +59,36 @@ def fetch_and_curate(segment, accession, outdir):
                     "part_idx": i + 1
                 })
 
-    # Write gene and CDS features per detected gene
+    # Write gene and CDS features per detected gene.
+    # Strategy:
+    #   - Non-spliced genes (1 CDS part): emit a 'gene' feature so augur translate
+    #     can detect and translate them → they appear in auspice (AA mutations).
+    #   - Spliced genes (>1 CDS part, e.g. M2): do NOT emit a 'gene' feature because
+    #     the gene span includes the intron and is NOT a multiple of 3, which causes
+    #     augur translate to crash. For these, we only emit CDS features.
+    #     m07_bridge_builder.py's CDS-fallback auto-detection will synthesize the
+    #     gene region from the CDS entries, so primer design still works.
     for gene_name, parts in genes_data.items():
         gene_start = min(p["start"] for p in parts)
         gene_end = max(p["end"] for p in parts)
+        is_spliced = len(parts) > 1
+        gene_span = gene_end - gene_start + 1
 
-        # Do not output 'gene' feature to avoid augur translate multiple-of-3 error on spliced genes.
-        # Augur and m07_bridge will correctly use the CDS entries.
+        if not is_spliced and gene_span % 3 == 0:
+            # Non-spliced gene: safe for augur translate
+            gene_id = f"gene-{gene_name}"
+            gff_lines.append(f"{record.id}\tNCBI\tgene\t{gene_start}\t{gene_end}\t.\t+\t.\tID={gene_id};gene={gene_name}")
+            parent_id = gene_id
+            print(f"  [{segment}] Gene '{gene_name}': {gene_span} bp (single exon, multiple of 3) -> gene feature added")
+        else:
+            # Spliced gene or non-multiple-of-3: skip gene feature, CDS-only
+            parent_id = root_id
+            reason = "spliced" if is_spliced else f"{gene_span} bp not multiple of 3"
+            print(f"  [{segment}] Gene '{gene_name}': {gene_span} bp ({reason}) -> CDS-only (m07 fallback)")
+
         for p in parts:
-            cds_id = f"cds-{gene_name}_p{p['part_idx']}" if len(parts) > 1 else f"cds-{gene_name}"
-            gff_lines.append(f"{record.id}\tNCBI\tCDS\t{p['start']}\t{p['end']}\t.\t+\t0\tID={cds_id};Parent={root_id};gene={gene_name}")
+            cds_id = f"cds-{gene_name}_p{p['part_idx']}" if is_spliced else f"cds-{gene_name}"
+            gff_lines.append(f"{record.id}\tNCBI\tCDS\t{p['start']}\t{p['end']}\t.\t+\t0\tID={cds_id};Parent={parent_id};gene={gene_name}")
 
             min_cds_start = min(min_cds_start, p["start"])
             max_cds_end = max(max_cds_end, p["end"])
