@@ -1,7 +1,6 @@
 ##gff-version 3
 ##sequence-region NC_002019.1 1 1565
 NC_002019.1	NCBI	gene	1	1565	.	+	.	ID=segment-NP
-NC_002019.1	NCBI	gene	46	1542	.	+	.	ID=gene-NP;gene=NP
-NC_002019.1	NCBI	CDS	46	1542	.	+	0	ID=cds-NP;Parent=gene-NP;gene=NP
+NC_002019.1	NCBI	CDS	46	1542	.	+	0	ID=cds-NP;Parent=segment-NP;gene=NP
 NC_002019.1	NCBI	five_prime_UTR	1	45	.	+	.	ID=utr-5;Parent=segment-NP
 NC_002019.1	NCBI	three_prime_UTR	1543	1565	.	+	.	ID=utr-3;Parent=segment-NP

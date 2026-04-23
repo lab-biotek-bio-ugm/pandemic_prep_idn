@@ -64,11 +64,11 @@ def fetch_and_curate(segment, accession, outdir):
         gene_start = min(p["start"] for p in parts)
         gene_end = max(p["end"] for p in parts)
 
-        gff_lines.append(f"{record.id}\tNCBI\tgene\t{gene_start}\t{gene_end}\t.\t+\t.\tID=gene-{gene_name};gene={gene_name}")
-
+        # Do not output 'gene' feature to avoid augur translate multiple-of-3 error on spliced genes.
+        # Augur and m07_bridge will correctly use the CDS entries.
         for p in parts:
             cds_id = f"cds-{gene_name}_p{p['part_idx']}" if len(parts) > 1 else f"cds-{gene_name}"
-            gff_lines.append(f"{record.id}\tNCBI\tCDS\t{p['start']}\t{p['end']}\t.\t+\t0\tID={cds_id};Parent=gene-{gene_name};gene={gene_name}")
+            gff_lines.append(f"{record.id}\tNCBI\tCDS\t{p['start']}\t{p['end']}\t.\t+\t0\tID={cds_id};Parent={root_id};gene={gene_name}")
 
             min_cds_start = min(min_cds_start, p["start"])
             max_cds_end = max(max_cds_end, p["end"])
