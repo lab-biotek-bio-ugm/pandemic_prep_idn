@@ -99,7 +99,10 @@ rule m05_prune_tree:
         "../scripts/prune_tree.py"
 
 rule m05_hyphy_fubar:
-    """Runs HyPhy FUBAR to detect pervasive positive and negative selection."""
+    """Runs HyPhy FUBAR to detect pervasive positive and negative selection.
+    Cache is purged before every run to prevent dimension mismatch errors
+    caused by stale caches from previous alignments of different sizes.
+    """
     input:
         alignment=f"results/{BUILD}/m05/cleaned_{{gene}}_NT.fasta",
         tree=f"results/{BUILD}/m05/tree_{{gene}}.nwk"
@@ -113,6 +116,11 @@ rule m05_hyphy_fubar:
         f"logs/{BUILD}/m05_hyphy_fubar_{{gene}}.log"
     shell:
         """
+        # Remove any stale FUBAR cache to prevent dimension mismatch errors.
+        # HyPhy loads the cache automatically from the alignment directory;
+        # if the alignment changed, the cached matrix dimensions will be wrong.
+        rm -f {input.alignment}.FUBAR.cache {input.alignment}.FUBAR.json
+
         hyphy CPU={threads} fubar \
             --alignment {input.alignment} \
             --tree {input.tree} \
@@ -120,7 +128,9 @@ rule m05_hyphy_fubar:
         """
 
 rule m05_hyphy_meme:
-    """Runs HyPhy MEME to detect episodic positive selection."""
+    """Runs HyPhy MEME to detect episodic positive selection.
+    Cache is purged before every run for consistency with the FUBAR rule.
+    """
     input:
         alignment=f"results/{BUILD}/m05/cleaned_{{gene}}_NT.fasta",
         tree=f"results/{BUILD}/m05/tree_{{gene}}.nwk"
@@ -134,6 +144,9 @@ rule m05_hyphy_meme:
         f"logs/{BUILD}/m05_hyphy_meme_{{gene}}.log"
     shell:
         """
+        # Remove stale MEME cache files if any.
+        rm -f {input.alignment}.MEME.cache {input.alignment}.MEME.json
+
         hyphy CPU={threads} meme \
             --alignment {input.alignment} \
             --tree {input.tree} \
