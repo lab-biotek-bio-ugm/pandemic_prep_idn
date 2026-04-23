@@ -9,6 +9,7 @@ logs/
 
 miniforge3/
 data/
+dataset/
 ncbi_dataset.zip
 
 

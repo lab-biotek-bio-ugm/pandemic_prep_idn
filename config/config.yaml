@@ -1,96 +1,147 @@
 # Pandemic Preparedness Diagnostic Pipeline — Configuration Profile
-# Target: SARS-CoV-2 (Full Genome)
+# Target: Influenza A (Universal) - MP Segment
 ---
 
-# 1. Target Identity
-build_name: "sars-cov-2-trial"
-
-# 2. Database Provider
+# [GLOBAL] Pipeline Metadata & References
+build_name: "influenza-a-mp-universal"
 database: "local"
 
-# 3. Data Acquisition
-local_input:
-  sequences: "data/NCBI-SarCov/NCBI-SarCov-Sequences.fasta"
-  metadata: "data/NCBI-SarCov/NCBI-SarCov-Metadata.csv"
-  format: "ncbi_virus_csv"
-
-# 4. Quality Control
-qc:
-  max_n_content: 5.0              # Max percentage of ambiguous 'N' bases
-  dedup: true                     # Remove identical sequences (MD5 hash)
-
-# 4a. Spatio-Temporal Filter (Augur)
-subsampling:
-  group_by: "country year month"
-  sequences_per_group: 20
-  max_sequences: 1000             # Reasonable for trial run
-  min_length: 29000               # Full genome ~29903bp, filter fragments
-
-# 4b. Timetree Parameters (Augur)
-timetree:
-  clock_rate: 0.0008              # ~8x10^-4 subs/site/year for SARS-CoV-2
-  clock_std_dev: 0.0004
-
-# 4c. Augur Engine Parameters
-augur:
-  threads: 8
-
-# 5. File References
-# Reference: Wuhan-Hu-1 (MN908947.3) — official SARS-CoV-2 reference genome
 references:
-  genome: "config/references/sars_cov_2_reference.fasta"
-  annotation: "config/references/sars_cov_2_annotation.gff"
-  reference_id: "MN908947.3"
+  reference_id: "NC_002016.1"
+  genome: "config/references/flu_a_mp_reference.fasta"
+  annotation: "config/references/flu_a_mp_annotation.gff"
 
-# 6. Nextclade — Clade/Lineage Classification & QC
-nextclade:
-  enabled: true                   # SARS-CoV-2 has excellent Nextclade datasets
-  dataset_name: "nextstrain/sars-cov-2/wuhan-hu-1/orfs"
+# [M01] Data Acquisition
+local_input:
+  sequences: "dataset/EpiFlu/MP/EpiFlu_A_MP_Combined_Sequence.fasta"
+  metadata: "dataset/EpiFlu/MP/EpiFlu_A_MP_Combined_Metadata.csv"
+  format: "gisaid_epiflu"
 
-# 7. Evolutionary Selection Pressure Engine (HyPhy)
+# [M01a] Early Filtering (Pre-Nextclade)
+# Digunakan untuk memfilter dataset campuran sebelum diproses.
+early_filter:
+  enabled: true
+  query: null                     # Contoh: "subtype == 'A / H1N1'"
+  min_date: "2016-01-01"          # Buang sekuens di bawah tahun ini
+  max_date: "2026-04-01"
+
+# [M02] Quality Control & Spatio-Temporal Filter
+qc:
+  max_n_content: 5.0              # Toleransi maksimal % base N (ambiguitas)
+  dedup: true                     # Hapus sekuens duplikat identik
+
+subsampling:
+  # Pengaturan Dasar (digunakan jika focal dimatikan)
+  group_by: "subtype country year month"
+  sequences_per_group: null
+  max_sequences: 3000
+  min_length: 800
+  seed: 42
+  query: null
+  
+  # Targeted Background Subsampling (Focal vs Contextual)
+  focal:
+    enabled: false
+    query: "country == 'Indonesia'"
+    max_sequences: null
+    sequences_per_group: null
+    group_by: "year month"
+    
+  contextual:
+    query: "country != 'Indonesia'"
+    max_sequences: null
+    sequences_per_group: 10
+    group_by: "subtype country year month"
+
+# [M03] Sequence Alignment
+# Menggunakan Augur Align dengan parameter GLOBAL references
+
+# [M04] Phylogenetic Inference (Tree Builder)
+augur:
+  threads: 16
+
+timetree:
+  clock_rate: 0.003
+  clock_std_dev: 0.0015
+
+# [M05] Evolutionary Selection Pressure (HyPhy)
 hyphy:
   threads: 32
   p_value_threshold: 0.1
   methods:
     - "FUBAR"
     - "MEME"
-    - "GARD"   # Safe: auto-subsamples if needed, ~30kb genome supports this well
   target_genes:
-    - "ALL"    # S, ORF3a, E, M, ORF6, ORF7a, ORF8, N, ORF10
+    - "ALL"
   subsample:
     enabled: true
-    max_sequences: 300          # Max seqs entering HyPhy per gene
-    min_sequences: 50           # If total <= this, skip subsampling
-    strategy: "balanced"        # "balanced" (adaptive grouping) or "random"
+    max_sequences: 2000          
+    min_sequences: 50
+    strategy: "balanced"
     group_by:
-      clade: true               # Use Nextclade clade assignment
-      country: true             # Balance across countries
-      year: true                # Balance across years (not months)
-    seed: 42                    # Reproducibility
+      subtype: true               # Diubah dari Clade ke Subtype karena lebih terstandarisasi
+      country: true
+      year: true
+    seed: 42
 
-# 8. Bridge Configuration (Conservation & Selection Integration)
+# [M06] Annotation & Clade Assignment
+nextclade:
+  enabled: false
+  dataset_name: "nextstrain/flu/h1n1pdm/ha/MW626062"
+
+# [M07] Diagnostic Bridge Builder & SNP Finder
 bridge:
-  window_size: 200                # Larger windows for 30kb genome
+  window_size: 150            
   min_region_length: 150
   overlap_threshold: 0.75
-  buffer_bp: 100
-  entropy_threshold: 0.01         # Stricter for well-conserved regions
-  gard_buffer_bp: 100             # GARD is relevant for SARS-CoV-2!
-  include_utr: false              # Focus on coding regions
-  weights:
-    conservation: 0.35            # Baseline parameters for CoV
-    purifying: 0.25
-    episodic_penalty: 0.15
-    recombination: 0.25           # Higher weight — recombination is real for CoV
+  buffer_bp: 50
+  entropy_threshold: 0.020    # Relaxed compared to MP; HA is highly dynamic
+  gard_buffer_bp: 50
+  include_utr: true
+  scoring:
+    core:
+      conservation_weight: 0.66
+      purifying_weight: 0.34
+    multipliers:
+      meme:
+        thresholds:
+          - max_sites: 0
+            multiplier: 1.0
+          - max_sites: 1
+            multiplier: 0.9
+          - max_sites: 3
+            multiplier: 0.7
+        veto_above: 3
+      recombination:
+        near_penalty: 0.5
+      gc_content:
+        ideal_min: 35
+        ideal_max: 60
+        marginal_ranges:
+          - min: 25
+            max: 34
+          - min: 61
+            max: 70
+        marginal_multiplier: 0.7
+        veto_below: 25
+        veto_above: 70
+      conserved_block:
+        entropy_threshold: 0.10
+        ideal_min_len: 35
+        penalty_min_len: 20
+        penalty_multiplier: 0.8
+      homopolymer:
+        max_repeats: 5
+        penalty_multiplier: 0.6
   tiers:
-    strict:
-      min_conservation: 0.99
-      min_purifying_prob: 0.95
-    moderate:
+    strict:                   
       min_conservation: 0.95
-      min_purifying_prob: 0.8
-    survival:
-      min_conservation: 0.90
+      min_purifying_prob: 0.9
+    moderate:                 
+      min_conservation: 0.85
+      min_purifying_prob: 0.7
+    survival:                 
+      min_conservation: 0.80
 
 # 9. Clade SNP Finder (Discriminative Genotyping)
 # Blueprint feature in planning phase.
@@ -101,3 +152,4 @@ snp_finder:
   min_coverage: 0.80             # Minimum data density ignoring N/Gaps
   p_value_threshold: 0.01        # Statistics significance threshold
   group_by: "subtype"            # Metadata column for classification
+
