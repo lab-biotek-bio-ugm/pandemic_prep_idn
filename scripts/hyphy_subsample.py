@@ -40,6 +40,7 @@ def load_metadata(metadata_path, id_col="strain"):
             date = row.get("date", "") or ""
             year = date[:4] if len(date) >= 4 else "unknown"
             records[strain] = {
+                "subtype": (row.get("subtype") or "unknown").strip() or "unknown",
                 "clade": (row.get("clade") or "unknown").strip() or "unknown",
                 "country": (row.get("country") or "unknown").strip() or "unknown",
                 "year": year,
@@ -73,13 +74,16 @@ def adaptive_subsample(alignment_ids, metadata, max_sequences, seed, group_confi
     """Try grouping levels from most to least specific until quota >= 2.
     Returns (selected_ids, level_used, group_report).
     """
-    use_clade = group_config.get("clade", True)
+    use_subtype = group_config.get("subtype", True)
+    use_clade = group_config.get("clade", False)
     use_country = group_config.get("country", True)
     use_year = group_config.get("year", True)
 
     # Build candidate levels, most specific first
     levels = []
     dims = []
+    if use_subtype:
+        dims.append("subtype")
     if use_clade:
         dims.append("clade")
     if use_country:
@@ -161,6 +165,9 @@ def main():
     parser.add_argument("--strategy", default="balanced",
                         choices=["balanced", "random"],
                         help="Sampling strategy (default: balanced)")
+    parser.add_argument("--group-by-subtype", default=True, action="store_true")
+    parser.add_argument("--no-group-by-subtype", dest="group_by_subtype",
+                        action="store_false")
     parser.add_argument("--group-by-clade", default=True, action="store_true")
     parser.add_argument("--no-group-by-clade", dest="group_by_clade",
                         action="store_false")
@@ -219,6 +226,7 @@ def main():
             group_report = {}
         else:
             group_config = {
+                "subtype": args.group_by_subtype,
                 "clade": args.group_by_clade,
                 "country": args.group_by_country,
                 "year": args.group_by_year,

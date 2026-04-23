@@ -41,7 +41,7 @@ subsampling:
   
   # Targeted Background Subsampling (Focal vs Contextual)
   focal:
-    enabled: false
+    enabled: true
     query: "country == 'Indonesia'"
     max_sequences: null
     sequences_per_group: null

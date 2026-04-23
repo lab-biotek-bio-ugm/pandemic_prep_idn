@@ -40,10 +40,10 @@ def main():
     logger.info(f"Executing: {' '.join(cmd)}")
     
     try:
-        subprocess.run(cmd, check=True, stderr=subprocess.PIPE, text=True)
+        subprocess.run(cmd, check=True)
         logger.info("Early filter completed successfully.")
     except subprocess.CalledProcessError as e:
-        logger.error(f"Augur filter failed:\n{e.stderr}")
+        logger.error("Augur filter failed.")
         sys.exit(1)
 
 if __name__ == "__main__":
