@@ -1,0 +1,155 @@
+# Pandemic Preparedness Diagnostic Pipeline — Configuration Profile
+# Target: Influenza A (Universal) - NP Segment
+---
+
+# [GLOBAL] Pipeline Metadata & References
+build_name: "influenza-a-np-universal"
+database: "local"
+
+references:
+  reference_id: "NC_002019.1"
+  genome: "config/references/flu_a_np_reference.fasta"
+  annotation: "config/references/flu_a_np_annotation.gff"
+
+# [M01] Data Acquisition
+local_input:
+  sequences: "dataset/EpiFlu/NP/EpiFlu_A_NP_Combined_Sequence.fasta"
+  metadata: "dataset/EpiFlu/NP/EpiFlu_A_NP_Combined_Metadata.csv"
+  format: "gisaid_epiflu"
+
+# [M01a] Early Filtering (Pre-Nextclade)
+# Digunakan untuk memfilter dataset campuran sebelum diproses.
+early_filter:
+  enabled: true
+  query: null                     # Contoh: "subtype == 'A / H1N1'"
+  min_date: "2016-01-01"          # Buang sekuens di bawah tahun ini
+  max_date: "2026-04-01"
+
+# [M02] Quality Control & Spatio-Temporal Filter
+qc:
+  max_n_content: 5.0              # Toleransi maksimal % base N (ambiguitas)
+  dedup: true                     # Hapus sekuens duplikat identik
+
+subsampling:
+  # Pengaturan Dasar (digunakan jika focal dimatikan)
+  group_by: "subtype country year month"
+  sequences_per_group: null
+  max_sequences: 3000
+  min_length: 1200
+  seed: 42
+  query: null
+  
+  # Targeted Background Subsampling (Focal vs Contextual)
+  focal:
+    enabled: false
+    query: "country == 'Indonesia'"
+    max_sequences: null
+    sequences_per_group: null
+    group_by: "year month"
+    
+  contextual:
+    query: "country != 'Indonesia'"
+    max_sequences: null
+    sequences_per_group: 10
+    group_by: "subtype country year month"
+
+# [M03] Sequence Alignment
+# Menggunakan Augur Align dengan parameter GLOBAL references
+
+# [M04] Phylogenetic Inference (Tree Builder)
+augur:
+  threads: 16
+
+timetree:
+  clock_rate: 0.003
+  clock_std_dev: 0.0015
+
+# [M05] Evolutionary Selection Pressure (HyPhy)
+hyphy:
+  threads: 32
+  p_value_threshold: 0.1
+  methods:
+    - "FUBAR"
+    - "MEME"
+  target_genes:
+    - "ALL"
+  subsample:
+    enabled: true
+    max_sequences: 2000          
+    min_sequences: 50
+    strategy: "balanced"
+    group_by:
+      subtype: true               # Diubah dari Clade ke Subtype agar konsisten
+      country: true
+      year: true
+    seed: 42
+
+# [M06] Annotation & Clade Assignment
+nextclade:
+  enabled: false
+  dataset_name: "nextstrain/flu/h1n1pdm/ha/MW626062"
+
+# [M07] Diagnostic Bridge Builder & SNP Finder
+bridge:
+  window_size: 150            
+  min_region_length: 150
+  overlap_threshold: 0.75
+  buffer_bp: 50
+  entropy_threshold: 0.020    # Relaxed compared to MP; HA is highly dynamic
+  gard_buffer_bp: 50
+  include_utr: true
+  scoring:
+    core:
+      conservation_weight: 0.66
+      purifying_weight: 0.34
+    multipliers:
+      meme:
+        thresholds:
+          - max_sites: 0
+            multiplier: 1.0
+          - max_sites: 1
+            multiplier: 0.9
+          - max_sites: 3
+            multiplier: 0.7
+        veto_above: 3
+      recombination:
+        near_penalty: 0.5
+      gc_content:
+        ideal_min: 35
+        ideal_max: 60
+        marginal_ranges:
+          - min: 25
+            max: 34
+          - min: 61
+            max: 70
+        marginal_multiplier: 0.7
+        veto_below: 25
+        veto_above: 70
+      conserved_block:
+        entropy_threshold: 0.10
+        ideal_min_len: 35
+        penalty_min_len: 20
+        penalty_multiplier: 0.8
+      homopolymer:
+        max_repeats: 5
+        penalty_multiplier: 0.6
+  tiers:
+    strict:                   
+      min_conservation: 0.95
+      min_purifying_prob: 0.9
+    moderate:                 
+      min_conservation: 0.85
+      min_purifying_prob: 0.7
+    survival:                 
+      min_conservation: 0.80
+
+# 9. Clade SNP Finder (Discriminative Genotyping)
+# Blueprint feature in planning phase.
+snp_finder:
+  enabled: true
+  min_samples_per_subtype: 30    # Minimum sequences per subtype
+  min_fixation_freq: 0.90        # Minimum frequency for an allele to be fixed
+  min_coverage: 0.80             # Minimum data density ignoring N/Gaps
+  p_value_threshold: 0.01        # Statistics significance threshold
+  group_by: "subtype"            # Metadata column for classification
+
