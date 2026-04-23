@@ -89,12 +89,35 @@ def main():
     print(f"[QC] After N-content filter ({args.max_n_pct}%): "
           f"{len(passed_n_filter)} kept, {n_content_removed} removed")
 
+    # --- Phase 2b: Nucleotide character validation ---
+    # Valid IUPAC nucleotide codes: A C G T U R Y S W K M B D H V N - .
+    # Reject any sequence containing characters outside this set (e.g. amino
+    # acid codes E, O, L, F, P, Q, I which indicate protein contamination
+    # or corrupt records from GISAID).
+    VALID_IUPAC = set("ACGTURSYWKMBDHVN-.")
+    invalid_char_removed = 0
+    invalid_char_ids = []
+    passed_char_filter = []
+
+    for record in passed_n_filter:
+        seq_upper = str(record.seq).upper()
+        bad_chars = set(seq_upper) - VALID_IUPAC
+        if bad_chars:
+            invalid_char_removed += 1
+            invalid_char_ids.append(record.id)
+            print(f"[QC]   Removed (invalid chars {bad_chars}): {record.id}")
+        else:
+            passed_char_filter.append(record)
+
+    print(f"[QC] After character validation: "
+          f"{len(passed_char_filter)} kept, {invalid_char_removed} removed")
+
     # --- Phase 3: Deduplication by MD5 hash ---
     seen_hashes = OrderedDict()
     duplicates_removed = 0
     duplicate_ids = []
 
-    for record in passed_n_filter:
+    for record in passed_char_filter:
         h = seq_hash(record)
         if h in seen_hashes:
             duplicates_removed += 1
@@ -122,7 +145,11 @@ def main():
             "n_content": {
                 "max_n_pct": args.max_n_pct,
                 "removed_count": n_content_removed,
-                "removed_ids": n_content_removed_ids[:50],  # Cap at 50 to avoid bloat
+                "removed_ids": n_content_removed_ids[:50],
+            },
+            "invalid_characters": {
+                "removed_count": invalid_char_removed,
+                "removed_ids": invalid_char_ids[:50],
             },
             "deduplication": {
                 "duplicates_removed": duplicates_removed,
