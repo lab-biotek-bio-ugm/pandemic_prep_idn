@@ -40,22 +40,41 @@ def fetch_and_curate(segment, accession, outdir):
     max_cds_end = 0
     cds_found = False
 
+    # Group CDS parts by gene name
+    genes_data = {}
+    
     for feature in record.features:
         if feature.type == "CDS":
             gene_name = feature.qualifiers.get("gene", ["unknown"])[0]
-            
-            for part in feature.location.parts:
-                cds_found = True
+            if gene_name not in genes_data:
+                genes_data[gene_name] = []
+                
+            for i, part in enumerate(feature.location.parts):
                 part_start = int(part.start) + 1
                 part_end = int(part.end)
+                genes_data[gene_name].append({
+                    "start": part_start,
+                    "end": part_end,
+                    "part_idx": i + 1
+                })
                 
-                # Update global min/max for UTRs
-                min_cds_start = min(min_cds_start, part_start)
-                max_cds_end = max(max_cds_end, part_end)
-                
-                phase = "0"
-                # Multi-part CDS (like M2) must share the SAME ID for augur translate to stitch them
-                gff_lines.append(f"{record.id}\tNCBI\tCDS\t{part_start}\t{part_end}\t.\t+\t{phase}\tID=cds-{gene_name};Parent=gene-{segment};Name={gene_name}_protein;gene={gene_name}")
+    # Write gene and CDS features
+    for gene_name, parts in genes_data.items():
+        gene_start = min(p["start"] for p in parts)
+        gene_end = max(p["end"] for p in parts)
+        
+        # Gene feature
+        gff_lines.append(f"{record.id}\tNCBI\tgene\t{gene_start}\t{gene_end}\t.\t+\t.\tID=gene-{gene_name};gene={gene_name}")
+        
+        # CDS features
+        for p in parts:
+            cds_id = f"cds-{gene_name}_p{p['part_idx']}" if len(parts) > 1 else f"cds-{gene_name}"
+            gff_lines.append(f"{record.id}\tNCBI\tCDS\t{p['start']}\t{p['end']}\t.\t+\t0\tID={cds_id};Parent=gene-{gene_name};gene={gene_name}")
+            
+            # Update min/max for UTRs
+            min_cds_start = min(min_cds_start, p["start"])
+            max_cds_end = max(max_cds_end, p["end"])
+            cds_found = True
 
     if cds_found:
         if min_cds_start > 1:

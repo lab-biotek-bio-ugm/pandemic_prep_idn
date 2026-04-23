@@ -6,6 +6,7 @@ __pycache__/
 .envs/
 results/
 logs/
+ssh-output/
 
 miniforge3/
 data/
