@@ -34,42 +34,22 @@ rule qc_prefilter:
 
 rule augur_filter:
     """Spatio-temporal filtering.
-    Adaptive: Uses --subsample-max-sequences if 'max_sequences' is defined,
-    otherwise uses --sequences-per-group if 'sequences_per_group' is defined.
-    Prevents 'mutually exclusive' errors in Augur.
+    Adaptive: Handles global subsampling OR Focal + Contextual subsampling
+    based on the configuration. Wraps augur filter intelligently.
     """
     input:
-        sequences=f"results/{BUILD}/m02/prefiltered_sequences.fasta",
-        metadata=f"results/{BUILD}/m01/metadata_enriched.tsv"
+        sequences=f"results/{{BUILD}}/m02/prefiltered_sequences.fasta",
+        metadata=f"results/{{BUILD}}/m01/metadata_enriched.tsv"
     output:
-        sequences=f"results/{BUILD}/m02/filtered_sequences.fasta"
+        sequences=f"results/{{BUILD}}/m02/filtered_sequences.fasta"
     params:
-        group_by=config["subsampling"]["group_by"],
-        min_length=config["subsampling"]["min_length"],
-        seed=config.get("subsampling", {}).get("seed", 42),
-        subsample_flag=lambda wc: (
-            f"--subsample-max-sequences {config['subsampling']['max_sequences']}"
-            if config["subsampling"].get("max_sequences")
-            else f"--sequences-per-group {config['subsampling']['sequences_per_group']}"
-            if config["subsampling"].get("sequences_per_group")
-            else ""
-        )
+        subsampling=config["subsampling"]
     conda:
         "../envs/nextstrain.yaml"
     log:
-        f"logs/{BUILD}/m02_augur_filter.log"
-    shell:
-        """
-        augur filter \
-            --sequences {input.sequences} \
-            --metadata {input.metadata} \
-            --group-by {params.group_by} \
-            {params.subsample_flag} \
-            --min-length {params.min_length} \
-            --subsample-seed {params.seed} \
-            --exclude-ambiguous-dates-by any \
-            --output-sequences {output.sequences} 2> {log}
-        """
+        f"logs/{{BUILD}}/m02_augur_filter.log"
+    script:
+        "../scripts/m02_filter_wrapper.py"
 
 rule augur_align:
     input:
