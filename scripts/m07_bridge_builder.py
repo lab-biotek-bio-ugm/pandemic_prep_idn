@@ -1,9 +1,21 @@
 """
-M07 Bridge Builder v2.1 — Conservation & Selection Integrator
+M07 Bridge Builder v2.2 — Conservation & Selection Integrator
 
 Merges outputs from two independent analysis tracks:
   Track A (Augur): MSA conservation via Shannon Entropy
   Track B (HyPhy): Evolutionary selection pressure (FUBAR/MEME/GARD)
+
+Version 2.2 adds:
+  - IUPAC-aware consensus sequence (iupac_consensus_sequence).
+    Positions where a minor allele frequency >= IUPAC_THRESHOLD are encoded
+    using standard IUPAC ambiguity codes (R, Y, W, S, K, M, B, D, H, V, N)
+    instead of the majority-vote base. This is critical for RAA primer design
+    where degenerate positions must be known and avoided.
+  - Per-position base frequency data stored in entropy profile TSV.
+  - Three sequence representations now exported in all manifests:
+      consensus_sequence       — majority-vote per column (plain ATGC)
+      iupac_consensus_sequence — IUPAC-encoded where ambiguous
+      reference_sequence       — raw slice from reference genome
 
 Version 2.1 adds:
   - 150 bp reference consensus sequence embedded in all output manifests.
@@ -12,11 +24,11 @@ Version 2.1 adds:
 
 Inputs: MSA, GFF, HyPhy JSONs, Reference Fasta
 Outputs:
-  - conserved_regions.bed       (0-based half-open)
-  - bridge_report.json          (0-based half-open)
+  - conserved_regions.bed             (0-based half-open)
+  - bridge_report.json                (0-based half-open)
   - primer_targets_manifest.yaml
-  - entropy_profile.tsv
-  - candidate_targets_summary.csv  (NEW — flat table for PI/Excel review)
+  - entropy_profile.tsv               (now includes iupac_base + base freqs)
+  - candidate_targets_summary.csv     (flat table for PI/Excel review)
 """
 
 import argparse
@@ -33,41 +45,127 @@ from Bio import SeqIO
 
 # --- Step 1: Conservation & Profile Generation ---
 
+# Minimum minor-allele frequency to trigger IUPAC ambiguity encoding.
+# E.g. 0.20 means: if any base other than the majority occurs in >=20% of
+# sequences at that position, use an IUPAC code instead of majority-only.
+IUPAC_THRESHOLD = 0.20
+
+# Full IUPAC ambiguity lookup: frozenset of observed bases -> IUPAC code.
+# Only 2-base and 3-base combos are listed; 4-base = N.
+_IUPAC_MAP: dict = {
+    frozenset("AG"): "R",  # puRine
+    frozenset("CT"): "Y",  # pYrimidine
+    frozenset("AT"): "W",  # Weak
+    frozenset("CG"): "S",  # Strong
+    frozenset("GT"): "K",  # Keto
+    frozenset("AC"): "M",  # aMino
+    frozenset("CGT"): "B", # not A
+    frozenset("AGT"): "D", # not C
+    frozenset("ACT"): "H", # not G
+    frozenset("ACG"): "V", # not T
+    frozenset("ACGT"): "N",
+}
+
+
+def _to_iupac_base(freq: dict, threshold: float = IUPAC_THRESHOLD) -> str:
+    """Return IUPAC ambiguity code for a position given per-base frequencies.
+
+    If every base other than the majority is below *threshold*, return the
+    majority base (plain A/T/G/C).  If two or more bases each clear the
+    threshold, return the appropriate IUPAC code.  Falls back to 'N' for
+    fully ambiguous positions.
+
+    Args:
+        freq: Dict mapping base (A/T/G/C) to fractional frequency (0-1).
+        threshold: Minor-allele frequency cutoff for IUPAC encoding.
+
+    Returns:
+        Single-character string: plain base or IUPAC ambiguity code.
+    """
+    # Collect bases that are meaningfully present.
+    present = {b for b, f in freq.items() if f >= threshold}
+    if len(present) == 0:
+        return "-"
+    if len(present) == 1:
+        return present.pop()  # unambiguous majority
+    key = frozenset(present)
+    return _IUPAC_MAP.get(key, "N")
+
+
 def build_entropy_profile(records):
-    """Calculates entropy and consensus base for each column in the MSA."""
+    """Calculate Shannon entropy, majority-vote consensus, and IUPAC base
+    for every column in a multiple sequence alignment (MSA).
+
+    Returns a list of per-position dicts with keys:
+        position       — 0-based column index
+        consensus_base — majority-vote base (plain A/T/G/C or '-')
+        iupac_base     — IUPAC-encoded base if minor allele >= IUPAC_THRESHOLD,
+                         else same as consensus_base
+        entropy        — Shannon entropy in bits (0 = fully conserved, 2 = max)
+        freq_A, freq_T, freq_G, freq_C — per-base frequencies (gap-excluded)
+    """
     if not records:
         return [], 0, 0
-    
+
     n_sequences = len(records)
-    aln_length = len(records[0].seq)
-    
+    aln_length  = len(records[0].seq)
+
+    _empty_freq = {"freq_A": 0.0, "freq_T": 0.0, "freq_G": 0.0, "freq_C": 0.0}
+
     profile = []
     for i in range(aln_length):
         column = [str(rec.seq[i]).upper() for rec in records]
-        bases = [b for b in column if b in "ACGT"]
-        n = len(bases)
-        
+        bases  = [b for b in column if b in "ACGT"]
+        n      = len(bases)
+
         if n == 0:
-            profile.append({"position": i, "consensus_base": "-", "entropy": 1.0})
+            profile.append({
+                "position": i,
+                "consensus_base": "-",
+                "iupac_base": "-",
+                "entropy": 1.0,
+                **_empty_freq,
+            })
             continue
-            
+
         counter = Counter(bases)
         consensus = counter.most_common(1)[0][0]
-        
+
         freq = {b: c / n for b, c in counter.items()}
+        iupac = _to_iupac_base(freq)
+
         entropy = 0.0
         for p in freq.values():
             if p > 0:
                 entropy -= p * math.log2(p)
-                
-        profile.append({"position": i, "consensus_base": consensus, "entropy": entropy})
-        
+
+        profile.append({
+            "position":      i,
+            "consensus_base": consensus,
+            "iupac_base":    iupac,
+            "entropy":       entropy,
+            "freq_A":        round(freq.get("A", 0.0), 4),
+            "freq_T":        round(freq.get("T", 0.0), 4),
+            "freq_G":        round(freq.get("G", 0.0), 4),
+            "freq_C":        round(freq.get("C", 0.0), 4),
+        })
+
     return profile, n_sequences, aln_length
 
+
 def export_entropy_profile(profile, path):
-    """Writes the entropy profile to a TSV file."""
+    """Write the full per-position entropy profile to a TSV file.
+
+    Columns: position, consensus_base, iupac_base, entropy,
+             freq_A, freq_T, freq_G, freq_C.
+    """
+    fieldnames = [
+        "position", "consensus_base", "iupac_base", "entropy",
+        "freq_A", "freq_T", "freq_G", "freq_C",
+    ]
     with open(path, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=["position", "consensus_base", "entropy"], delimiter="\t")
+        writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter="\t",
+                                extrasaction="ignore")
         writer.writeheader()
         writer.writerows(profile)
     print(f"[M07] Wrote entropy profile: {path}")
@@ -473,10 +571,22 @@ def score_regions(regions, profile, ref_seq, codon_data, gard_breakpoints, genes
         elif final_score >= 0.60: grade = "C"
         else: grade = "D"
 
-        # Build the consensus sequence from the MSA profile for this window
+        # Build the three sequence representations for this window:
+        #   consensus_sequence       — majority-vote per column (plain ATGC)
+        #   iupac_consensus_sequence — IUPAC-encoded where minor allele >= threshold
+        #   reference_sequence       — raw slice from reference genome
         consensus_seq = "".join(
             profile[i]["consensus_base"] for i in range(start, end)
         )
+        iupac_consensus_seq = "".join(
+            profile[i]["iupac_base"] for i in range(start, end)
+        )
+        # Count IUPAC-ambiguous positions for downstream awareness
+        n_iupac_positions = sum(
+            1 for i in range(start, end)
+            if profile[i]["iupac_base"] not in "ACGT-"
+        )
+        iupac_density = round(n_iupac_positions / max(end - start, 1), 4)
 
         scored.append({
             "gene": gene_name,
@@ -494,8 +604,11 @@ def score_regions(regions, profile, ref_seq, codon_data, gard_breakpoints, genes
             "tier": tier,
             "grade": grade,
             "recommendation": GRADE_TEXT[grade],
-            # Sequences: consensus from MSA columns, and raw from reference
+            # Three sequence representations
             "consensus_sequence": consensus_seq,
+            "iupac_consensus_sequence": iupac_consensus_seq,
+            "iupac_positions": n_iupac_positions,
+            "iupac_density": iupac_density,
             "reference_sequence": ref_subseq,
             "flags": {
                 "coding": is_coding,
@@ -616,7 +729,22 @@ def write_manifest(regions, build_name, ref_genome, buffer_bp, path):
                 "max_block_len": r["max_block_len"],
                 "has_homopolymer": r["has_homopolymer"],
                 "mismatch_positions": r["mismatch_positions"],
-                "multipliers": r["multipliers"]
+                "multipliers": r["multipliers"],
+            },
+            # --- Three sequence representations ---
+            # consensus_sequence       : majority-vote per MSA column (plain ATGC)
+            # iupac_consensus_sequence : IUPAC-encoded where minor allele >= 20%
+            #                           Use this for: understanding variability,
+            #                           choosing excluded_regions in primer design.
+            #                           Do NOT use directly as RAA primer template.
+            # reference_sequence       : raw slice from reference genome (NC_*)
+            "sequences": {
+                "consensus_sequence":        r["consensus_sequence"],
+                "iupac_consensus_sequence":  r["iupac_consensus_sequence"],
+                "reference_sequence":        r["reference_sequence"],
+                "iupac_positions":           r["iupac_positions"],
+                "iupac_density":             r["iupac_density"],
+                "iupac_threshold":           IUPAC_THRESHOLD,
             },
             "flags": r["flags"],
             "recommendation": r["recommendation"],
@@ -648,6 +776,8 @@ def write_csv(regions, path):
         "mean_entropy",
         "avg_fubar_purifying_prob",
         "meme_episodic_sites",
+        "iupac_positions",
+        "iupac_density",
         "gc_pct",
         "max_conserved_block_len",
         "has_homopolymer",
@@ -660,6 +790,7 @@ def write_csv(regions, path):
         "flag_has_hyphy_data",
         "flag_near_recombination",
         "consensus_sequence",
+        "iupac_consensus_sequence",
         "reference_sequence",
         "recommendation",
     ]
@@ -682,6 +813,8 @@ def write_csv(regions, path):
                 "mean_entropy": r.get("mean_entropy", ""),
                 "avg_fubar_purifying_prob": r.get("avg_fubar_purifying_prob", ""),
                 "meme_episodic_sites": r.get("meme_episodic_sites", ""),
+                "iupac_positions": r.get("iupac_positions", ""),
+                "iupac_density": r.get("iupac_density", ""),
                 "gc_pct": r.get("gc_pct", ""),
                 "max_conserved_block_len": r.get("max_block_len", ""),
                 "has_homopolymer": r.get("has_homopolymer", ""),
@@ -694,6 +827,7 @@ def write_csv(regions, path):
                 "flag_has_hyphy_data": r.get("flags", {}).get("has_hyphy_data", ""),
                 "flag_near_recombination": r.get("flags", {}).get("near_recombination", ""),
                 "consensus_sequence": r.get("consensus_sequence", ""),
+                "iupac_consensus_sequence": r.get("iupac_consensus_sequence", ""),
                 "reference_sequence": r.get("reference_sequence", ""),
                 "recommendation": r.get("recommendation", ""),
             })
