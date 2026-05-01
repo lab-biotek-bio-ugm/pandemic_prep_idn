@@ -46,9 +46,10 @@ from Bio import SeqIO
 # --- Step 1: Conservation & Profile Generation ---
 
 # Minimum minor-allele frequency to trigger IUPAC ambiguity encoding.
-# E.g. 0.20 means: if any base other than the majority occurs in >=20% of
-# sequences at that position, use an IUPAC code instead of majority-only.
-IUPAC_THRESHOLD = 0.20
+# Set to 0.15 (15%) for RAA diagnostic sensitivity: a 15% variant means the
+# primer would mismatch on ~15% of circulating strains, which is unacceptable
+# for universal diagnostic assays.  Lower = more positions flagged = safer.
+IUPAC_THRESHOLD = 0.15
 
 # Full IUPAC ambiguity lookup: frozenset of observed bases -> IUPAC code.
 # Only 2-base and 3-base combos are listed; 4-base = N.
