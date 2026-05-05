@@ -49,6 +49,7 @@ from Bio import SeqIO
 # Set to 0.15 (15%) for RAA diagnostic sensitivity: a 15% variant means the
 # primer would mismatch on ~15% of circulating strains, which is unacceptable
 # for universal diagnostic assays.  Lower = more positions flagged = safer.
+# Global parameters will be overridden by args
 IUPAC_THRESHOLD = 0.15
 
 # Full IUPAC ambiguity lookup: frozenset of observed bases -> IUPAC code.
@@ -688,7 +689,7 @@ def write_report(regions, meta, path):
         json.dump(report, f, indent=2)
     print(f"[M07] Wrote report: {path}")
 
-def write_manifest(regions, build_name, ref_genome, buffer_bp, path):
+def write_manifest(regions, build_name, ref_genome, buffer_bp, path, profile, codon_data):
     manifest = {
         "pipeline_run_id": f"{build_name}_bridge",
         "source": "pandemic-preparedness-m07",
@@ -745,7 +746,12 @@ def write_manifest(regions, build_name, ref_genome, buffer_bp, path):
                 "reference_sequence":        r["reference_sequence"],
                 "iupac_positions":           r["iupac_positions"],
                 "iupac_density":             r["iupac_density"],
-                "iupac_threshold":           IUPAC_THRESHOLD,
+                "iupac_threshold":           r["sequences"]["iupac_threshold"],
+            },
+            "positional_scores": {
+                "entropy": [round(profile[i]["entropy"], 4) for i in range(r["start"], r["end"])],
+                "fubar_prob": [round(codon_data.get(i, {}).get("fubar_purifying_prob", 0.5), 4) for i in range(r["start"], r["end"])],
+                "meme_pval": [round(codon_data.get(i, {}).get("meme_pvalue", 1.0), 4) for i in range(r["start"], r["end"])],
             },
             "flags": r["flags"],
             "recommendation": r["recommendation"],
@@ -836,7 +842,8 @@ def write_csv(regions, path):
 
 def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir, 
                   window_size, entropy_threshold, overlap_threshold, gard_buffer_bp, 
-                  scoring_config, tiers_config, ref_id, ref_seq, outdir, build_name, buffer_bp, args_reference):
+                  scoring_config, tiers_config, ref_id, ref_seq, outdir, build_name, buffer_bp, args_reference,
+                  strategy="windowed"):
     print(f"\n[M07] ============================================")
     print(f"[M07]  Track: {track_name}")
     print(f"[M07] ============================================")
@@ -849,16 +856,44 @@ def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir,
     
     export_entropy_profile(profile, outdir / f"{prefix}entropy_profile.tsv")
 
-    print(f"\n[M07] [{track_name}] Step 2: Conservation Scanner")
-    regions = scan_conservation(profile, window_size, entropy_threshold)
+    print(f"\n[M07] [{track_name}] Step 2: Conservation Scanner (Strategy: {strategy})")
+    if strategy == "full_segment":
+        # Strategy: Full Segment — Treat each gene/UTR as a single region
+        regions = []
+        # Add full gene regions
+        for g in genes:
+            regions.append({
+                "start": g["start"],
+                "end": g["end"],
+                "mean_entropy": sum(p["entropy"] for p in profile[g["start"]:g["end"]]) / max(1, (g["end"] - g["start"])),
+                "conservation_pct": 0.0, # Will be recalculated in score_regions
+                "length": g["end"] - g["start"]
+            })
+        # Add full UTR regions
+        for u in utrs:
+            regions.append({
+                "start": u["start"],
+                "end": u["end"],
+                "mean_entropy": sum(p["entropy"] for p in profile[u["start"]:u["end"]]) / max(1, (u["end"] - u["start"])),
+                "conservation_pct": 0.0,
+                "length": u["end"] - u["start"]
+            })
+        # Recalculate conservation_pct for all
+        for r in regions:
+             r["conservation_pct"] = round((1 - r["mean_entropy"] / 2.0) * 100, 2)
+        
+        print(f"[M07] [{track_name}] Created {len(regions)} full-length gene/UTR segments")
+    else:
+        # Strategy: Windowed (Original)
+        regions = scan_conservation(profile, window_size, entropy_threshold)
 
-    if not regions:
-        print(f"[M07] [{track_name}] WARNING: Relaxing threshold significantly to find candidates (survival mode)")
-        regions = scan_conservation(profile, window_size, 0.45)
+        if not regions:
+            print(f"[M07] [{track_name}] WARNING: Relaxing threshold significantly to find candidates (survival mode)")
+            regions = scan_conservation(profile, window_size, 0.45)
 
-    if not regions:
-         print(f"[M07] [{track_name}] No conserved regions found even after max relaxation. Skipping.")
-         return
+        if not regions:
+             print(f"[M07] [{track_name}] No conserved regions found even after max relaxation. Skipping.")
+             return
 
     print(f"\n[M07] [{track_name}] Step 3: HyPhy Score Mapper")
     codon_data, gard_bps = map_hyphy_to_genome(genes, hyphy_dir, target_genes)
@@ -894,7 +929,7 @@ def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir,
     write_bed(final_scored, ref_id, outdir / f"{prefix}conserved_regions.bed")
     write_report(final_scored, meta, outdir / f"{prefix}bridge_report.json")
     write_manifest(final_scored, build_name, args_reference, buffer_bp,
-                   outdir / f"{prefix}primer_targets_manifest.yaml")
+                   outdir / f"{prefix}primer_targets_manifest.yaml", profile, codon_data)
     write_csv(final_scored, outdir / f"{prefix}candidate_targets_summary.csv")
 
     print(f"\n[M07] [{track_name}] Complete — {len(final_scored)} candidate regions")
@@ -922,6 +957,11 @@ def main():
                         help="Pipeline config.yaml path")
     parser.add_argument("--build-name", default="unknown",
                         help="Build name for manifest identification")
+    parser.add_argument("--strategy", default="windowed", choices=["windowed", "full_segment"],
+                        help="Analysis strategy: windowed (slices) or full_segment (global)")
+    parser.add_argument("--min-subtype-count", type=int, default=30,
+                        help="Minimum sequences required to analyze a subtype (default: 30)")
+    parser.add_argument("--iupac-threshold", type=float, default=0.15, help="IUPAC minor frequency threshold")
     args = parser.parse_args()
 
     # Load config
@@ -949,9 +989,11 @@ def main():
         
     tiers_config = bridge.get("tiers", {})
     target_genes = config.get("hyphy", {}).get("target_genes", [])
-    hyphy_dir = Path(args.hyphy_dir)
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
+
+    global IUPAC_THRESHOLD
+    IUPAC_THRESHOLD = args.iupac_threshold
 
     all_records = list(SeqIO.parse(args.msa, "fasta"))
     if not all_records:
@@ -982,7 +1024,8 @@ def main():
     # Execute Universal Track
     execute_track("Universal", all_records, genes, utrs, target_genes, hyphy_dir, 
                   window_size, entropy_threshold, overlap_threshold, gard_buffer_bp, 
-                  scoring_config, tiers_config, ref_id, ref_seq, outdir, args.build_name, buffer_bp, args.reference)
+                  scoring_config, tiers_config, ref_id, ref_seq, outdir, args.build_name, buffer_bp, args.reference,
+                  strategy=args.strategy)
 
     # Route B: Subtype-Specific Tracks
     if args.metadata and Path(args.metadata).exists():
@@ -1007,12 +1050,13 @@ def main():
                  subtype_groups[subtype].append(rec)
                  
         for subtype, recs in subtype_groups.items():
-            if len(recs) >= 30:  # Minimum coverage to consider a subtype valid
+            if len(recs) >= args.min_subtype_count:
                 execute_track(subtype, recs, genes, utrs, target_genes, hyphy_dir, 
                               window_size, entropy_threshold, overlap_threshold, gard_buffer_bp, 
-                              scoring_config, tiers_config, ref_id, ref_seq, outdir, args.build_name, buffer_bp, args.reference)
+                              scoring_config, tiers_config, ref_id, ref_seq, outdir, args.build_name, buffer_bp, args.reference,
+                              strategy=args.strategy)
             else:
-                print(f"[M07] Skipping subtype {subtype} (only {len(recs)} sequences, needs >=30)")
+                print(f"[M07] Skipping subtype {subtype} (only {len(recs)} sequences, needs >={args.min_subtype_count})")
 
 
 if __name__ == "__main__":

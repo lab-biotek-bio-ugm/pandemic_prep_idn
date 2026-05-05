@@ -8,16 +8,19 @@ phylogenetic tree inference, mutational trait analysis, and JSON payload export.
 BUILD = config["build_name"]
 
 rule qc_prefilter:
-    """Prefilters raw sequences: removes high N-content and duplicate sequences.
+    """Prefilters raw sequences: removes high N-content, duplicate sequences,
+    and underrepresented subtypes (n < min_subtype_count).
     Produces a QC report JSON with retention statistics.
     """
     input:
-        fasta=f"results/{BUILD}/m01/raw_sequences.fasta"
+        fasta=f"results/{BUILD}/m01/raw_sequences.fasta",
+        metadata=f"results/{BUILD}/m01/metadata_enriched.tsv"
     output:
         fasta=f"results/{BUILD}/m02/prefiltered_sequences.fasta",
         report=f"results/{BUILD}/m02/qc_report.json"
     params:
-        max_n_pct=config.get("qc", {}).get("max_n_content", 5.0)
+        max_n_pct=config.get("qc", {}).get("max_n_content", 5.0),
+        min_subtype_count=config.get("global_params", {}).get("min_subtype_count", 30)
     conda:
         "../envs/nextstrain.yaml"
     log:
@@ -27,8 +30,10 @@ rule qc_prefilter:
         mkdir -p results/{BUILD}/m02
         python scripts/qc_prefilter.py \
             --input-fasta {input.fasta} \
+            --metadata {input.metadata} \
             --output-fasta {output.fasta} \
             --report {output.report} \
+            --min-subtype-count {params.min_subtype_count} \
             --max-n-pct {params.max_n_pct} 2>&1 | tee {log}
         """
 

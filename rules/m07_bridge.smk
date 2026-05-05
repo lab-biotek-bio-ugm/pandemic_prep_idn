@@ -44,6 +44,9 @@ rule m07_bridge:
     params:
         hyphy_dir=f"results/{BUILD}/m05",
         build_name=BUILD,
+        strategy=config["bridge"].get("strategy", "windowed"),
+        min_subtype_count=config.get("global_params", {}).get("min_subtype_count", 30),
+        iupac_threshold=config.get("global_params", {}).get("iupac_threshold", 0.15)
     conda:
         "../envs/hyphy_macse.yaml"
     log:
@@ -58,5 +61,8 @@ rule m07_bridge:
             --metadata {input.metadata} \
             --outdir results/{params.build_name}/m07 \
             --config {input.config_yaml} \
-            --build-name {params.build_name} 2>&1 | tee {log}
+            --build-name {params.build_name} \
+            --strategy {params.strategy} \
+            --min-subtype-count {params.min_subtype_count} \
+            --iupac-threshold {params.iupac_threshold} 2>&1 | tee {log}
         """
