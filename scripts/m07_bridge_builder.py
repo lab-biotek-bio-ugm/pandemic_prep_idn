@@ -494,6 +494,7 @@ def score_regions(regions, profile, ref_seq, codon_data, gard_breakpoints, genes
         
         if region.get("gene"):
             gene_name = region["gene"]
+            is_coding = True
         else:
             mid = (start + end) // 2
             gene_name, _ = find_gene_for_position(mid, genes, utrs)
