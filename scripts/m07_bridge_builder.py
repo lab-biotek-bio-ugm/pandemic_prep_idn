@@ -746,7 +746,7 @@ def write_manifest(regions, build_name, ref_genome, buffer_bp, path, profile, co
                 "reference_sequence":        r["reference_sequence"],
                 "iupac_positions":           r["iupac_positions"],
                 "iupac_density":             r["iupac_density"],
-                "iupac_threshold":           r["sequences"]["iupac_threshold"],
+                "iupac_threshold":           IUPAC_THRESHOLD,
             },
             "positional_scores": {
                 "entropy": [round(profile[i]["entropy"], 4) for i in range(r["start"], r["end"])],
