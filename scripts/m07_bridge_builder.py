@@ -858,31 +858,20 @@ def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir,
 
     print(f"\n[M07] [{track_name}] Step 2: Conservation Scanner (Strategy: {strategy})")
     if strategy == "full_segment":
-        # Strategy: Full Segment — Treat each gene/UTR as a single region
-        regions = []
-        # Add full gene regions
-        for g in genes:
-            regions.append({
-                "start": g["start"],
-                "end": g["end"],
-                "mean_entropy": sum(p["entropy"] for p in profile[g["start"]:g["end"]]) / max(1, (g["end"] - g["start"])),
-                "conservation_pct": 0.0, # Will be recalculated in score_regions
-                "length": g["end"] - g["start"]
-            })
-        # Add full UTR regions
-        for u in utrs:
-            regions.append({
-                "start": u["start"],
-                "end": u["end"],
-                "mean_entropy": sum(p["entropy"] for p in profile[u["start"]:u["end"]]) / max(1, (u["end"] - u["start"])),
-                "conservation_pct": 0.0,
-                "length": u["end"] - u["start"]
-            })
-        # Recalculate conservation_pct for all
+        # Strategy: Full Segment — Treat the entire reference as a single holistic region
+        regions = [{
+            "start": 0,
+            "end": aln_len,
+            "mean_entropy": sum(p["entropy"] for p in profile) / max(1, aln_len),
+            "conservation_pct": 0.0,
+            "length": aln_len,
+            "gene": "Whole_Segment"
+        }]
+        # Recalculate conservation_pct
         for r in regions:
              r["conservation_pct"] = round((1 - r["mean_entropy"] / 2.0) * 100, 2)
         
-        print(f"[M07] [{track_name}] Created {len(regions)} full-length gene/UTR segments")
+        print(f"[M07] [{track_name}] Created 1 holistic segment spanning entire length ({aln_len} bp)")
     else:
         # Strategy: Windowed (Original)
         regions = scan_conservation(profile, window_size, entropy_threshold)
@@ -1013,7 +1002,9 @@ def main():
     print("[M07]  Bridge Builder v2.0 — Biomechanical Scoring")
     print("[M07] ============================================")
     print(f"[M07] Reference : {ref_id} ({len(ref_seq)} bp)")
-    print(f"[M07] Window    : {window_size} bp")
+    print(f"[M07] Strategy  : {args.strategy}")
+    if args.strategy == "windowed":
+        print(f"[M07] Window    : {window_size} bp")
     print(f"[M07] Threshold : {entropy_threshold}")
 
     # ----- Parse GFF -----
