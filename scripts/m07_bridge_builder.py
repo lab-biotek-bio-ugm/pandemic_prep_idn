@@ -989,6 +989,7 @@ def main():
         
     tiers_config = bridge.get("tiers", {})
     target_genes = config.get("hyphy", {}).get("target_genes", [])
+    hyphy_dir = Path(args.hyphy_dir)
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
 
