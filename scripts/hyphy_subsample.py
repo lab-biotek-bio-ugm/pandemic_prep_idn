@@ -79,6 +79,24 @@ def adaptive_subsample(alignment_ids, metadata, max_sequences, seed, group_confi
     use_country = group_config.get("country", True)
     use_year = group_config.get("year", True)
 
+    # Filter out subtypes with too few sequences
+    min_subtype_count = group_config.get("min_subtype_count", 0)
+    if min_subtype_count > 0:
+        subtype_counts = {}
+        for sid in alignment_ids:
+            meta = metadata.get(sid)
+            if meta:
+                st = meta.get("subtype", "unknown")
+                subtype_counts[st] = subtype_counts.get(st, 0) + 1
+        
+        excluded_subtypes = {st for st, count in subtype_counts.items() if count < min_subtype_count}
+        if excluded_subtypes:
+             print(f"[SUBSAMPLE] Filtering out {len(excluded_subtypes)} subtypes with < {min_subtype_count} sequences: {sorted(excluded_subtypes)}", file=sys.stderr)
+             alignment_ids = [sid for sid in alignment_ids if metadata.get(sid, {}).get("subtype") not in excluded_subtypes]
+             if not alignment_ids:
+                 print("[SUBSAMPLE] ERROR: No sequences remaining after subtype filtering!", file=sys.stderr)
+                 return [], "failed", {"error": "all subtypes filtered out"}
+
     # Build candidate levels, most specific first
     levels = []
     dims = []
@@ -179,6 +197,8 @@ def main():
                         action="store_false")
     parser.add_argument("--seed", type=int, default=42,
                         help="Random seed for reproducibility (default: 42)")
+    parser.add_argument("--min-subtype-count", type=int, default=0,
+                        help="Minimum total sequences for a subtype to be included in HyPhy analysis (default: 0)")
     args = parser.parse_args()
 
     print(f"[SUBSAMPLE] Loading alignment: {args.alignment}")
@@ -230,6 +250,7 @@ def main():
                 "clade": args.group_by_clade,
                 "country": args.group_by_country,
                 "year": args.group_by_year,
+                "min_subtype_count": args.min_subtype_count,
             }
             selected_ids, level, group_report = adaptive_subsample(
                 alignment_ids, metadata, args.max_sequences, args.seed, group_config

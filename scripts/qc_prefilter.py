@@ -44,6 +44,9 @@ def main():
     parser.add_argument("--input-fasta", required=True, help="Input FASTA file")
     parser.add_argument("--output-fasta", required=True, help="Output filtered FASTA file")
     parser.add_argument("--report", required=True, help="Output QC report JSON file")
+    parser.add_argument("--metadata", help="Optional metadata file (CSV/TSV) for subtype filtering")
+    parser.add_argument("--min-subtype-count", type=int, default=30,
+                        help="Minimum number of sequences required per subtype (default: 30)")
     parser.add_argument("--max-n-pct", type=float, default=5.0,
                         help="Maximum allowed N-content percentage (default: 5.0)")
     args = parser.parse_args()
@@ -53,112 +56,169 @@ def main():
         print(f"ERROR: Input file not found: {input_path}", file=sys.stderr)
         sys.exit(1)
 
-    # --- Phase 1: Read all sequences ---
+    # --- Phase 1: Read Metadata (Optional but recommended for subtype filtering) ---
+    blacklist_ids = set()
+    subtype_stats = {}
+    
+    if args.metadata:
+        print(f"[QC] Loading metadata for subtype filtering: {args.metadata}")
+        import csv
+        
+        # 1. Count subtypes
+        counts = {}
+        id_to_subtype = {}
+        
+        # Determine delimiter
+        delim = "\t" if str(args.metadata).endswith(".tsv") else ","
+        
+        try:
+            with open(args.metadata, "r", encoding="utf-8", errors="ignore") as f:
+                reader = csv.DictReader(f, delimiter=delim)
+                
+                # Identify segment ID column (e.g., MP Segment_Id, HA Segment_Id, etc.)
+                id_col = None
+                for col in reader.fieldnames:
+                    if "Segment_Id" in col or "Accession" in col or "Isolate_Id" in col:
+                        id_col = col
+                        break
+                
+                if not id_col:
+                    print(f"WARNING: Could not find ID column in metadata. Subtype filtering might be limited.")
+                
+                for row in reader:
+                    st = row.get("Subtype", "Unknown").strip()
+                    counts[st] = counts.get(st, 0) + 1
+                    
+                    if id_col:
+                        # GISAID IDs often look like "EPI123456|NAME"
+                        raw_id = row.get(id_col, "")
+                        if "|" in raw_id:
+                            sid = raw_id.split("|")[0].strip()
+                            id_to_subtype[sid] = st
+                        elif raw_id:
+                            id_to_subtype[raw_id.strip()] = st
+            
+            # 2. Identify blacklisted subtypes
+            removed_subtypes = []
+            for st, count in counts.items():
+                if count < args.min_subtype_count:
+                    removed_subtypes.append(st)
+                subtype_stats[st] = count
+            
+            print(f"[QC] Subtype Analysis: Found {len(counts)} subtypes.")
+            if removed_subtypes:
+                print(f"[QC]   Blacklisted (n < {args.min_subtype_count}): {removed_subtypes}")
+                
+            # 3. Mark IDs for removal
+            # We don't know the exact FASTA header format yet, so we store subtype info
+            # for the filtering phase below.
+        except Exception as e:
+            print(f"ERROR: Failed to process metadata: {e}")
+
+    # --- Phase 2: Read and Filter sequences ---
     print(f"[QC] Reading sequences from: {input_path}")
-    records = list(SeqIO.parse(str(input_path), "fasta"))
-    total_input = len(records)
-    print(f"[QC] Total input sequences: {total_input}")
-
-    if total_input == 0:
-        print("ERROR: Input FASTA contains no sequences.", file=sys.stderr)
-        sys.exit(1)
-
-    # Collect length stats from the raw input
-    lengths = [len(r.seq) for r in records]
-    length_stats = {
-        "min": min(lengths),
-        "max": max(lengths),
-        "mean": round(sum(lengths) / len(lengths), 1),
-        "median": sorted(lengths)[len(lengths) // 2],
-    }
-
-    # --- Phase 2: N-content filter ---
+    
+    total_input = 0
     n_content_removed = 0
-    n_content_removed_ids = []
-    passed_n_filter = []
+    invalid_char_removed = 0
+    subtype_removed = 0
+    
+    passed_filters = []
+    seen_hashes = OrderedDict()
+    duplicates_removed = 0
+    
+    VALID_IUPAC = set("ACGTURSYWKMBDHVN-.")
+    
+    for record in SeqIO.parse(str(input_path), "fasta"):
+        total_input += 1
+        rid = record.id
+        
+        # A. Subtype Data Availability Filter
+        if args.metadata:
+            # Match FASTA ID to Metadata ID
+            # Fasta IDs can be "EPI123456" or "EPI_ISL_123456" or "EPI123|Name"
+            lookup_id = rid.split("|")[0].strip()
+            st = id_to_subtype.get(lookup_id)
+            
+            if st and counts.get(st, 0) < args.min_subtype_count:
+                subtype_removed += 1
+                if subtype_removed <= 5:
+                    print(f"[QC]   Removed (subtype {st} n={counts[st]}): {rid}")
+                continue
 
-    for record in records:
+        # B. N-content filter
         pct = calculate_n_pct(record)
         if pct > args.max_n_pct:
             n_content_removed += 1
-            n_content_removed_ids.append(record.id)
-            print(f"[QC]   Removed (N={pct:.1f}%): {record.id}")
-        else:
-            passed_n_filter.append(record)
+            if n_content_removed <= 5:
+                print(f"[QC]   Removed (N={pct:.1f}%): {rid}")
+            continue
 
-    print(f"[QC] After N-content filter ({args.max_n_pct}%): "
-          f"{len(passed_n_filter)} kept, {n_content_removed} removed")
-
-    # --- Phase 2b: Nucleotide character validation ---
-    # Valid IUPAC nucleotide codes: A C G T U R Y S W K M B D H V N - .
-    # Reject any sequence containing characters outside this set (e.g. amino
-    # acid codes E, O, L, F, P, Q, I which indicate protein contamination
-    # or corrupt records from GISAID).
-    VALID_IUPAC = set("ACGTURSYWKMBDHVN-.")
-    invalid_char_removed = 0
-    invalid_char_ids = []
-    passed_char_filter = []
-
-    for record in passed_n_filter:
+        # C. Character validation
         seq_upper = str(record.seq).upper()
         bad_chars = set(seq_upper) - VALID_IUPAC
         if bad_chars:
             invalid_char_removed += 1
-            invalid_char_ids.append(record.id)
-            print(f"[QC]   Removed (invalid chars {bad_chars}): {record.id}")
-        else:
-            passed_char_filter.append(record)
+            if invalid_char_removed <= 5:
+                print(f"[QC]   Removed (invalid chars {bad_chars}): {rid}")
+            continue
 
-    print(f"[QC] After character validation: "
-          f"{len(passed_char_filter)} kept, {invalid_char_removed} removed")
-
-    # --- Phase 3: Deduplication by MD5 hash ---
-    seen_hashes = OrderedDict()
-    duplicates_removed = 0
-    duplicate_ids = []
-
-    for record in passed_char_filter:
+        # D. Deduplication
         h = seq_hash(record)
         if h in seen_hashes:
             duplicates_removed += 1
-            duplicate_ids.append(record.id)
         else:
             seen_hashes[h] = record
 
     deduplicated = list(seen_hashes.values())
-    print(f"[QC] After deduplication: "
-          f"{len(deduplicated)} unique, {duplicates_removed} duplicates removed")
+    
+    print(f"[QC] Summary of Filtering:")
+    print(f"[QC]   Total Input: {total_input}")
+    if args.metadata:
+        print(f"[QC]   Removed by Subtype scarcity (<{args.min_subtype_count}): {subtype_removed}")
+    print(f"[QC]   Removed by N-content (>{args.max_n_pct}%): {n_content_removed}")
+    print(f"[QC]   Removed by Invalid Chars: {invalid_char_removed}")
+    print(f"[QC]   Removed by Deduplication: {duplicates_removed}")
+    print(f"[QC]   Final Output: {len(deduplicated)}")
 
-    # --- Phase 4: Write filtered output ---
+    # --- Phase 3: Write filtered output ---
     output_path = Path(args.output_fasta)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     SeqIO.write(deduplicated, str(output_path), "fasta")
     print(f"[QC] Wrote {len(deduplicated)} sequences to: {output_path}")
 
-    # --- Phase 5: Write QC report ---
+    # --- Phase 4: Write QC report ---
     report = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "input_file": str(input_path),
         "input_count": total_input,
-        "length_stats_raw": length_stats,
+        "subtype_filtering": {
+            "metadata_file": args.metadata,
+            "min_count": args.min_subtype_count,
+            "removed_count": subtype_removed,
+            "all_subtypes_found": subtype_stats
+        },
         "filters": {
             "n_content": {
                 "max_n_pct": args.max_n_pct,
                 "removed_count": n_content_removed,
-                "removed_ids": n_content_removed_ids[:50],
             },
             "invalid_characters": {
                 "removed_count": invalid_char_removed,
-                "removed_ids": invalid_char_ids[:50],
             },
             "deduplication": {
                 "duplicates_removed": duplicates_removed,
-                "duplicate_ids": duplicate_ids[:50],
             },
         },
         "output_count": len(deduplicated),
         "retention_pct": round((len(deduplicated) / total_input) * 100, 1) if total_input > 0 else 0,
     }
+
+    report_path = Path(args.report)
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(report_path, "w") as f:
+        json.dump(report, f, indent=2)
+    print(f"[QC] Report written to: {report_path}")
 
     report_path = Path(args.report)
     report_path.parent.mkdir(parents=True, exist_ok=True)
