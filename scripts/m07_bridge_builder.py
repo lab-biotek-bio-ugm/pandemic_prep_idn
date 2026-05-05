@@ -491,8 +491,12 @@ def score_regions(regions, profile, ref_seq, codon_data, gard_breakpoints, genes
 
     for region in regions:
         start, end = region["start"], region["end"]
-        mid = (start + end) // 2
-        gene_name, is_coding = find_gene_for_position(mid, genes, utrs)
+        
+        if region.get("gene"):
+            gene_name = region["gene"]
+        else:
+            mid = (start + end) // 2
+            gene_name, _ = find_gene_for_position(mid, genes, utrs)
 
         # 1. Gather HyPhy Data
         fubar_probs, meme_pvals = [], []
