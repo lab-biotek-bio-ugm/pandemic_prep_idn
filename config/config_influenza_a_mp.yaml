@@ -2,7 +2,14 @@
 # Target: Influenza A (Universal) - MP Segment
 ---
 
-# [GLOBAL] Pipeline Metadata & References
+# [GLOBAL] Pipeline Metadata
+# --- GLOBAL PARAMETERS ---
+# Use this section to control thresholds across all modules (QC, HyPhy, Bridge)
+global_params:
+  min_subtype_count: 30           # Minimum sequences per subtype to be included in any analysis
+  iupac_threshold: 0.15           # Minor allele frequency to trigger IUPAC encoding (0.15 = 15%)
+
+# --- PIPELINE CONFIGURATION ---
 build_name: "influenza-a-mp-universal"
 database: "local"
 
@@ -89,9 +96,9 @@ nextclade:
   enabled: false
   dataset_name: "nextstrain/flu/h1n1pdm/ha/MW626062"
 
-# [M07] Diagnostic Bridge Builder & SNP Finder
 bridge:
-  window_size: 150            
+  strategy: "full_segment"       # "windowed" (slices) or "full_segment" (global)
+  window_size: 150               # [IGNORED if strategy=full_segment] Sliding window size for conservation scan
   min_region_length: 150
   overlap_threshold: 0.75
   buffer_bp: 50
@@ -147,9 +154,10 @@ bridge:
 # Blueprint feature in planning phase.
 snp_finder:
   enabled: true
-  min_samples_per_subtype: 30    # Minimum sequences per subtype
+  overlap_threshold: 0.75        # NMS overlap threshold
+  buffer_bp: 150                 # Included region buffer for Primer3
+  gard_buffer_bp: 50             # Recombination breakpoint penalty buffer
   min_fixation_freq: 0.90        # Minimum frequency for an allele to be fixed
   min_coverage: 0.80             # Minimum data density ignoring N/Gaps
   p_value_threshold: 0.01        # Statistics significance threshold
   group_by: "subtype"            # Metadata column for classification
-
