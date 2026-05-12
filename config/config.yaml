@@ -153,3 +153,16 @@ snp_finder:
   p_value_threshold: 0.01        # Statistics significance threshold
   group_by: "subtype"            # Metadata column for classification
 
+# [M08] PrimerLab Integration
+primerlab:
+  # Path ke repositori primerlab-genomic (untuk memanggil CLI)
+  repo_path: "e:/Project/primerlab-genomic"
+  # Path ke template konfigurasi RAA default
+  template: "e:/Project/primerlab-genomic/primerlab/config/raa_default.yaml"
+  # Pengaturan spesifik untuk desain RAA universal
+  design:
+    num_candidates: 1000
+    vienna_ranking_limit: 50
+    # Kita biarkan window_size null agar PrimerLab memproses 1027bp sekaligus (lebih akurat untuk RAA)
+    window_size: null
+    overlap: 200

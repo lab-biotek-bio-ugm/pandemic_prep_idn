@@ -8,12 +8,19 @@ def generate_payload(manifest_path, template_path, out_dir):
         manifest = yaml.safe_load(f)
         
     # 2. Baca template PrimerLab sebagai TEKS MURNI untuk menjaga komentar dan format
+    # 2. Baca template PrimerLab sebagai TEKS MURNI untuk menjaga komentar dan format
     with open(template_path, 'r') as f:
         template_lines = f.readlines()
         
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     
+    # Optional parameters from CLI
+    num_candidates = getattr(args, "num_candidates", None)
+    vienna_limit = getattr(args, "vienna_limit", None)
+    window_size = getattr(args, "window_size", None)
+    overlap = getattr(args, "overlap", None)
+
     # 3. Ekstrak setiap region kandidat
     for idx, region in enumerate(manifest.get('candidate_regions', [])):
         region_id = region['region_id']
@@ -58,6 +65,20 @@ def generate_payload(manifest_path, template_path, out_dir):
                     out_lines.append(f"{left}{excluded_str}{right}")
                 else:
                     out_lines.append(f"  excluded_regions: {excluded_str}\n")
+            
+            # --- New Overrides ---
+            elif num_candidates is not None and line.strip().startswith("num_candidates:"):
+                comment = line.split("#", 1)[1] if "#" in line else ""
+                out_lines.append(f"  num_candidates: {num_candidates}       # [M08 OVERRIDE]{'#' + comment if comment else ''}\n")
+            elif vienna_limit is not None and line.strip().startswith("vienna_ranking_limit:"):
+                comment = line.split("#", 1)[1] if "#" in line else ""
+                out_lines.append(f"  vienna_ranking_limit: {vienna_limit}   # [M08 OVERRIDE]{'#' + comment if comment else ''}\n")
+            elif window_size is not None and line.strip().startswith("# window_size:"):
+                # Uncomment and override
+                out_lines.append(f"  window_size: {window_size}             # [M08 OVERRIDE]\n")
+            elif overlap is not None and line.strip().startswith("# overlap:"):
+                # Uncomment and override
+                out_lines.append(f"  overlap: {overlap}                 # [M08 OVERRIDE]\n")
             else:
                 out_lines.append(line)
                 
@@ -87,6 +108,13 @@ if __name__ == "__main__":
     parser.add_argument("--manifest", required=True, help="Path to M07 primer_targets_manifest.yaml")
     parser.add_argument("--template", required=True, help="Path to PrimerLab raa_default.yaml")
     parser.add_argument("--outdir", required=True, help="Output directory for generated YAMLs")
+    
+    # Optional Overrides
+    parser.add_argument("--num-candidates", type=int, help="Override number of candidates")
+    parser.add_argument("--vienna-limit", type=int, help="Override ViennaRNA ranking limit")
+    parser.add_argument("--window-size", type=int, help="Enable and override window size")
+    parser.add_argument("--overlap", type=int, help="Override window overlap")
+    
     args = parser.parse_args()
     
     generate_payload(args.manifest, args.template, args.outdir)

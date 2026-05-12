@@ -1,0 +1,23 @@
+# =============================================================================
+# Pandemic Preparedness - PrimerLab Execution Environment
+# =============================================================================
+
+name: primerlab
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+
+dependencies:
+  - python>=3.10
+  - primer3-py>=2.0.0
+  - biopython>=1.80
+  - viennarna>=2.5.0
+  - blast>=2.14.0
+  - pyyaml>=6.0
+  - rich>=13.0.0
+  - tqdm>=4.65.0
+  - openpyxl>=3.1.0
+  - matplotlib>=3.5.0
+  - pip
+  # PrimerLab local installation will be handled in the rule shell via pip install -e

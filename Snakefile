@@ -42,12 +42,14 @@ rule all:
          if "GARD" in HYPHY_METHODS else []),
         # M07 Target (Bridge — primer target manifest)
         f"results/{BUILD}/m07/primer_targets_manifest.yaml",
+        # M08 Target (PrimerLab Results)
+        f"results/{BUILD}/m08/Whole_Segment_region_1/raa_result.json",
 
 include: "rules/m01_acquisition.smk"
 include: "rules/m02_m06_augur_core.smk"
 include: "rules/m05_hyphy.smk"
 include: "rules/m07_bridge.smk"
-# include: "rules/m08_primerlab.smk"
+include: "rules/m08_primerlab.smk"
 
 # DEFERRED DEVELOPMENT ITEMS — Tracked here to avoid loss across audits.
 #
