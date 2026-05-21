@@ -10,7 +10,7 @@ global_params:
   iupac_threshold: 0.15           # Minor allele frequency to trigger IUPAC encoding (0.15 = 15%)
 
 # --- PIPELINE CONFIGURATION ---
-build_name: "influenza-a-mp-universal"
+build_name: "influenza-a-mp-universal-full-final"
 database: "local"
 
 references:
@@ -29,7 +29,7 @@ local_input:
 early_filter:
   enabled: true
   query: null                     # Contoh: "subtype == 'A / H1N1'"
-  min_date: "2016-01-01"          # Buang sekuens di bawah tahun ini
+  min_date: null          # Buang sekuens di bawah tahun ini
   max_date: "2026-04-01"
 
 # [M02] Quality Control & Spatio-Temporal Filter
@@ -40,11 +40,11 @@ qc:
 subsampling:
   # Pengaturan Dasar (digunakan jika focal dimatikan)
   group_by: "subtype country year month"
-  sequences_per_group: null
-  max_sequences: 3000
+  sequences_per_group: 5
+  max_sequences: null
   min_length: 800
   seed: 42
-  query: null
+  query: "country == 'Indonesia'"
   
   # Targeted Background Subsampling (Focal vs Contextual)
   focal:
@@ -52,12 +52,12 @@ subsampling:
     query: "country == 'Indonesia'"
     max_sequences: null
     sequences_per_group: 50
-    group_by: "year month"
+    group_by: "subtype year month"
     
   contextual:
     query: "country != 'Indonesia'"
     max_sequences: null
-    sequences_per_group: 10
+    sequences_per_group: 3
     group_by: "subtype country year month"
 
 # [M03] Sequence Alignment
@@ -98,7 +98,7 @@ nextclade:
 
 bridge:
   strategy: "full_segment"       # "windowed" (slices) or "full_segment" (global)
-  window_size: 150               # [IGNORED if strategy=full_segment] Sliding window size for conservation scan
+  window_size: 300               # [IGNORED if strategy=full_segment] Sliding window size for conservation scan
   min_region_length: 150
   overlap_threshold: 0.75
   buffer_bp: 50
@@ -161,3 +161,25 @@ snp_finder:
   min_coverage: 0.80             # Minimum data density ignoring N/Gaps
   p_value_threshold: 0.01        # Statistics significance threshold
   group_by: "subtype"            # Metadata column for classification
+
+# [M08] PrimerLab Integration
+primerlab:
+  # Path ke repositori primerlab-genomic (Bisa absolute path lokal, git URL, atau biarkan kosong jika sudah diinstall via environment)
+  repo_path: "e:/Project/primerlab-genomic" # Contoh GitHub: "git+https://github.com/USER/primerlab-genomic.git"
+  # Path ke template konfigurasi RAA default
+  template: "config/primerlab_template.yaml"
+  # Pengaturan spesifik untuk desain RAA universal
+  design:
+    num_candidates: 1000
+    search_strategy: "standard"
+    hard_qc_filter: "false"
+    max_search_iterations: 5
+    vienna_ranking_limit: 50
+    # Kita biarkan window_size null agar PrimerLab memproses 1027bp sekaligus (lebih akurat untuk RAA)
+    window_size: null
+    overlap: 200
+    validate: true                # true: jalankan in-silico PCR & probe binding validation
+    blast_offtarget_check: false  # true: cek spesifisitas via BLAST (membutuhkan internet)
+    blast_ranking_limit: 10
+    blast_database: "nt"
+
