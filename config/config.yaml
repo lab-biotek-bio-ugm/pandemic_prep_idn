@@ -155,14 +155,21 @@ snp_finder:
 
 # [M08] PrimerLab Integration
 primerlab:
-  # Path ke repositori primerlab-genomic (untuk memanggil CLI)
-  repo_path: "e:/Project/primerlab-genomic"
+  # Path ke repositori primerlab-genomic (Bisa absolute path lokal, git URL, atau biarkan kosong jika sudah diinstall via environment)
+  repo_path: "e:/Project/primerlab-genomic" # Contoh GitHub: "git+https://github.com/USER/primerlab-genomic.git"
   # Path ke template konfigurasi RAA default
-  template: "e:/Project/primerlab-genomic/primerlab/config/raa_default.yaml"
+  template: "config/primerlab_template.yaml"
   # Pengaturan spesifik untuk desain RAA universal
   design:
     num_candidates: 1000
+    search_strategy: "standard"
+    hard_qc_filter: "false"
+    max_search_iterations: 5
     vienna_ranking_limit: 50
     # Kita biarkan window_size null agar PrimerLab memproses 1027bp sekaligus (lebih akurat untuk RAA)
     window_size: null
     overlap: 200
+    validate: true                # true: jalankan in-silico PCR & probe binding validation
+    blast_offtarget_check: false  # true: cek spesifisitas via BLAST (membutuhkan internet)
+    blast_ranking_limit: 10
+    blast_database: "nt"

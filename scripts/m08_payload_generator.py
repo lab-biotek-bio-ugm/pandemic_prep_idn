@@ -20,6 +20,13 @@ def generate_payload(manifest_path, template_path, out_dir):
     vienna_limit = getattr(args, "vienna_limit", None)
     window_size = getattr(args, "window_size", None)
     overlap = getattr(args, "overlap", None)
+    search_strategy = getattr(args, "search_strategy", None)
+    hard_qc_filter = getattr(args, "hard_qc_filter", None)
+    max_search_iterations = getattr(args, "max_search_iterations", None)
+    validate = getattr(args, "validate", None)
+    blast_check = getattr(args, "blast_check", None)
+    blast_limit = getattr(args, "blast_limit", None)
+    blast_db = getattr(args, "blast_db", None)
 
     # 3. Ekstrak setiap region kandidat
     for idx, region in enumerate(manifest.get('candidate_regions', [])):
@@ -70,9 +77,30 @@ def generate_payload(manifest_path, template_path, out_dir):
             elif num_candidates is not None and line.strip().startswith("num_candidates:"):
                 comment = line.split("#", 1)[1] if "#" in line else ""
                 out_lines.append(f"  num_candidates: {num_candidates}       # [M08 OVERRIDE]{'#' + comment if comment else ''}\n")
+            elif search_strategy is not None and line.strip().startswith("search_strategy:"):
+                comment = line.split("#", 1)[1] if "#" in line else ""
+                out_lines.append(f"  search_strategy: {search_strategy}  # [M08 OVERRIDE]{'#' + comment if comment else ''}\n")
+            elif hard_qc_filter is not None and line.strip().startswith("hard_qc_filter:"):
+                comment = line.split("#", 1)[1] if "#" in line else ""
+                out_lines.append(f"  hard_qc_filter: {str(hard_qc_filter).lower()}       # [M08 OVERRIDE]{'#' + comment if comment else ''}\n")
+            elif max_search_iterations is not None and line.strip().startswith("max_search_iterations:"):
+                comment = line.split("#", 1)[1] if "#" in line else ""
+                out_lines.append(f"  max_search_iterations: {max_search_iterations} # [M08 OVERRIDE]{'#' + comment if comment else ''}\n")
             elif vienna_limit is not None and line.strip().startswith("vienna_ranking_limit:"):
                 comment = line.split("#", 1)[1] if "#" in line else ""
                 out_lines.append(f"  vienna_ranking_limit: {vienna_limit}   # [M08 OVERRIDE]{'#' + comment if comment else ''}\n")
+            elif blast_check is not None and line.strip().startswith("blast_offtarget_check:"):
+                comment = line.split("#", 1)[1] if "#" in line else ""
+                out_lines.append(f"  blast_offtarget_check: {str(blast_check).lower()} # [M08 OVERRIDE]{'#' + comment if comment else ''}\n")
+            elif blast_limit is not None and line.strip().startswith("blast_ranking_limit:"):
+                comment = line.split("#", 1)[1] if "#" in line else ""
+                out_lines.append(f"  blast_ranking_limit: {blast_limit}     # [M08 OVERRIDE]{'#' + comment if comment else ''}\n")
+            elif blast_db is not None and line.strip().startswith("blast_database:"):
+                comment = line.split("#", 1)[1] if "#" in line else ""
+                out_lines.append(f"  blast_database: \"{blast_db}\"         # [M08 OVERRIDE]{'#' + comment if comment else ''}\n")
+            elif validate is not None and line.strip().startswith("auto_validate:"):
+                comment = line.split("#", 1)[1] if "#" in line else ""
+                out_lines.append(f"  auto_validate: {str(validate).lower()} # [M08 OVERRIDE]{'#' + comment if comment else ''}\n")
             elif window_size is not None and line.strip().startswith("# window_size:"):
                 # Uncomment and override
                 out_lines.append(f"  window_size: {window_size}             # [M08 OVERRIDE]\n")
@@ -114,6 +142,13 @@ if __name__ == "__main__":
     parser.add_argument("--vienna-limit", type=int, help="Override ViennaRNA ranking limit")
     parser.add_argument("--window-size", type=int, help="Enable and override window size")
     parser.add_argument("--overlap", type=int, help="Override window overlap")
+    parser.add_argument("--search-strategy", type=str, help="Override search strategy (e.g. standard, diversified)")
+    parser.add_argument("--hard-qc-filter", type=str, help="Override hard qc filter (true/false)")
+    parser.add_argument("--max-search-iterations", type=int, help="Override max search iterations")
+    parser.add_argument("--validate", type=str, help="Override in-silico validation (true/false)")
+    parser.add_argument("--blast-check", type=str, help="Override blast off-target check (true/false)")
+    parser.add_argument("--blast-limit", type=int, help="Override blast ranking limit")
+    parser.add_argument("--blast-db", type=str, help="Override blast database")
     
     args = parser.parse_args()
     
