@@ -38,7 +38,7 @@ parameters:
   target_region: null        # Contoh: {start: 400, length: 150}
   
   # c. Excluded Regions: Daerah yang HARUS DIHINDARI (seleksi episodik/mutasi)
-  excluded_regions: []       # Contoh: [{start: 50, length: 5}, {start: 120, length: 1}]
+  excluded_regions: [{start: 25, length: 3}, {start: 31, length: 3}, {start: 37, length: 3}, {start: 94, length: 3}, {start: 112, length: 3}, {start: 220, length: 3}, {start: 514, length: 3}, {start: 727, length: 3}, {start: 784, length: 3}, {start: 790, length: 3}, {start: 796, length: 3}, {start: 853, length: 3}, {start: 871, length: 3}, {start: 979, length: 3}]       # Contoh: [{start: 50, length: 5}, {start: 120, length: 1}]
   
   # d. Forced Positions: Paksa posisi spesifik (untuk ujung 3' konservatif)
   force_left_start: null     # Paksa Forward mulai di index X
@@ -116,7 +116,7 @@ output:
 
 # --- ADVANCED / HPC SETTINGS ---
 advanced:
-  auto_validate: false       # [NEW] Jalankan validasi in-silico (PCR & probe) setelah desain
+  auto_validate: true       # [NEW] Jalankan validasi in-silico (PCR & probe) setelah desain
   debug: false               # true: tampilkan log teknis Primer3
   timeout: 600               # Waktu tunggu maksimal (detik)
   assay_type: "RT-RAA"
