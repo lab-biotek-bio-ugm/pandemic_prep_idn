@@ -2,12 +2,11 @@ import argparse
 import yaml
 from pathlib import Path
 
-def generate_payload(manifest_path, template_path, out_dir):
+def generate_payload(manifest_path, template_path, out_dir, args=None):
     # 1. Baca manifest M07
     with open(manifest_path, 'r') as f:
         manifest = yaml.safe_load(f)
         
-    # 2. Baca template PrimerLab sebagai TEKS MURNI untuk menjaga komentar dan format
     # 2. Baca template PrimerLab sebagai TEKS MURNI untuk menjaga komentar dan format
     with open(template_path, 'r') as f:
         template_lines = f.readlines()
@@ -15,18 +14,18 @@ def generate_payload(manifest_path, template_path, out_dir):
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     
-    # Optional parameters from CLI
-    num_candidates = getattr(args, "num_candidates", None)
-    vienna_limit = getattr(args, "vienna_limit", None)
-    window_size = getattr(args, "window_size", None)
-    overlap = getattr(args, "overlap", None)
-    search_strategy = getattr(args, "search_strategy", None)
-    hard_qc_filter = getattr(args, "hard_qc_filter", None)
-    max_search_iterations = getattr(args, "max_search_iterations", None)
-    validate = getattr(args, "validate", None)
-    blast_check = getattr(args, "blast_check", None)
-    blast_limit = getattr(args, "blast_limit", None)
-    blast_db = getattr(args, "blast_db", None)
+    # Optional parameters from CLI (args is passed explicitly to avoid NameError)
+    num_candidates = getattr(args, "num_candidates", None) if args else None
+    vienna_limit = getattr(args, "vienna_limit", None) if args else None
+    window_size = getattr(args, "window_size", None) if args else None
+    overlap = getattr(args, "overlap", None) if args else None
+    search_strategy = getattr(args, "search_strategy", None) if args else None
+    hard_qc_filter = getattr(args, "hard_qc_filter", None) if args else None
+    max_search_iterations = getattr(args, "max_search_iterations", None) if args else None
+    validate = getattr(args, "validate", None) if args else None
+    blast_check = getattr(args, "blast_check", None) if args else None
+    blast_limit = getattr(args, "blast_limit", None) if args else None
+    blast_db = getattr(args, "blast_db", None) if args else None
 
     # 3. Ekstrak setiap region kandidat
     for idx, region in enumerate(manifest.get('candidate_regions', [])):
@@ -152,4 +151,4 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     
-    generate_payload(args.manifest, args.template, args.outdir)
+    generate_payload(args.manifest, args.template, args.outdir, args)

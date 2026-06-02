@@ -91,6 +91,7 @@ nextclade:
 
 # [M07] Diagnostic Bridge Builder & SNP Finder
 bridge:
+  strategy: "full_segment"   # Options: windowed (sliding window), full_segment (holistic)
   window_size: 150            
   min_region_length: 150
   overlap_threshold: 0.75

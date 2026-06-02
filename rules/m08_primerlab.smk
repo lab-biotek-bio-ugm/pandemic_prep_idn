@@ -35,6 +35,9 @@ rule m08_generate_payload:
         "../envs/primerlab.yaml"
     shell:
         """
+        #!/usr/bin/env bash
+        set -euo pipefail
+        
         # Build command with optional arguments
         CMD="python scripts/m08_payload_generator.py \
             --manifest {input.manifest} \
@@ -74,6 +77,8 @@ rule m08_run_primerlab:
         "../envs/primerlab.yaml"
     shell:
         """
+        #!/usr/bin/env bash
+        set -euo pipefail
         (
         # Install primerlab if repo_path is provided
         if [ -n "{params.repo_path}" ] && [ "{params.repo_path}" != "conda" ] && [ "{params.repo_path}" != "None" ]; then

@@ -263,7 +263,6 @@ if NEXTCLADE_ENABLED:
                 --output-tsv {output.tsv} \
                 {input.sequences} \
                 2>&1 | tee {log}
-                2>&1 | tee {log}
             """
 
 EARLY_FILTER_ENABLED = config.get("early_filter", {}).get("enabled", False)
