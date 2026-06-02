@@ -84,7 +84,7 @@ rule m08_run_primerlab:
         REPO_PATH="{params.repo_path}"
         if [ -n "$REPO_PATH" ] && [ "$REPO_PATH" != "conda" ] && [ "$REPO_PATH" != "None" ]; then
             if [[ "$REPO_PATH" == git+* ]]; then
-                pip install "$REPO_PATH"
+                pip install --upgrade --no-cache-dir "$REPO_PATH"
             else
                 # If running on Linux and path has Windows drive letter (e.g., e:/Project/...)
                 if [[ "$REPO_PATH" =~ ^[a-zA-Z]:/ ]]; then
