@@ -81,11 +81,28 @@ rule m08_run_primerlab:
         set -euo pipefail
         (
         # Install primerlab if repo_path is provided
-        if [ -n "{params.repo_path}" ] && [ "{params.repo_path}" != "conda" ] && [ "{params.repo_path}" != "None" ]; then
-            if [[ "{params.repo_path}" == git+* ]]; then
-                pip install "{params.repo_path}"
+        REPO_PATH="{params.repo_path}"
+        if [ -n "$REPO_PATH" ] && [ "$REPO_PATH" != "conda" ] && [ "$REPO_PATH" != "None" ]; then
+            if [[ "$REPO_PATH" == git+* ]]; then
+                pip install "$REPO_PATH"
             else
-                pip install -e "{params.repo_path}"
+                # If running on Linux and path has Windows drive letter (e.g., e:/Project/...)
+                if [[ "$REPO_PATH" =~ ^[a-zA-Z]:/ ]]; then
+                    DIR_NAME=$(basename "$REPO_PATH")
+                    PARENT_DIR=$(dirname "$(pwd)")
+                    LOCAL_LINUX_PATH="$PARENT_DIR/$DIR_NAME"
+                    if [ -d "$LOCAL_LINUX_PATH" ]; then
+                        REPO_PATH="$LOCAL_LINUX_PATH"
+                    else
+                        echo "Warning: Windows path $REPO_PATH not found, and fallback $LOCAL_LINUX_PATH does not exist."
+                    fi
+                fi
+                
+                if [ -d "$REPO_PATH" ]; then
+                    pip install -e "$REPO_PATH"
+                else
+                    echo "Skipping editable install because directory does not exist: $REPO_PATH"
+                fi
             fi
         fi
         
