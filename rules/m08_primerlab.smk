@@ -67,7 +67,7 @@ rule m08_run_primerlab:
     input:
         config=f"results/{BUILD}/m08/primerlab_config_Whole_Segment_region_1.yaml"
     output:
-        report=f"results/{BUILD}/m08/Whole_Segment_region_1/raa_result.json"
+        report=f"results/{BUILD}/m08/Whole_Segment_region_1/summary.json"
     log:
         f"logs/{BUILD}/m08/run_primerlab_Whole_Segment_region_1.log"
     params:
