@@ -43,7 +43,7 @@ rule all:
         # M07 Target (Bridge — primer target manifest)
         f"results/{BUILD}/m07/primer_targets_manifest.yaml",
         # M08 Target (PrimerLab Results)
-        f"results/{BUILD}/m08/Whole_Segment_region_1/raa_result.json",
+        f"results/{BUILD}/m08/Whole_Segment_region_1/summary.json",
 
 include: "rules/m01_acquisition.smk"
 include: "rules/m02_m06_augur_core.smk"
