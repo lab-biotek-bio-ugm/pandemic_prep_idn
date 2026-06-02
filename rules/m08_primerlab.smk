@@ -44,17 +44,17 @@ rule m08_generate_payload:
             --template {input.template} \
             --outdir {params.outdir}"
         
-        [[ -n "{params.num_candidates}" ]] && CMD="$CMD --num-candidates {params.num_candidates}"
-        [[ -n "{params.vienna_limit}" ]] && CMD="$CMD --vienna-limit {params.vienna_limit}"
-        [[ -n "{params.window_size}" ]] && CMD="$CMD --window-size {params.window_size}"
-        [[ -n "{params.overlap}" ]] && CMD="$CMD --overlap {params.overlap}"
-        [[ -n "{params.search_strategy}" ]] && CMD="$CMD --search-strategy {params.search_strategy}"
-        [[ -n "{params.hard_qc_filter}" ]] && CMD="$CMD --hard-qc-filter {params.hard_qc_filter}"
-        [[ -n "{params.max_search_iterations}" ]] && CMD="$CMD --max-search-iterations {params.max_search_iterations}"
-        [[ -n "{params.validate}" ]] && CMD="$CMD --validate {params.validate}"
-        [[ -n "{params.blast_check}" ]] && CMD="$CMD --blast-check {params.blast_check}"
-        [[ -n "{params.blast_limit}" ]] && CMD="$CMD --blast-limit {params.blast_limit}"
-        [[ -n "{params.blast_db}" ]] && CMD="$CMD --blast-db {params.blast_db}"
+        [[ -n "{params.num_candidates}" && "{params.num_candidates}" != "None" ]] && CMD="$CMD --num-candidates {params.num_candidates}"
+        [[ -n "{params.vienna_limit}" && "{params.vienna_limit}" != "None" ]] && CMD="$CMD --vienna-limit {params.vienna_limit}"
+        [[ -n "{params.window_size}" && "{params.window_size}" != "None" ]] && CMD="$CMD --window-size {params.window_size}"
+        [[ -n "{params.overlap}" && "{params.overlap}" != "None" ]] && CMD="$CMD --overlap {params.overlap}"
+        [[ -n "{params.search_strategy}" && "{params.search_strategy}" != "None" ]] && CMD="$CMD --search-strategy {params.search_strategy}"
+        [[ -n "{params.hard_qc_filter}" && "{params.hard_qc_filter}" != "None" ]] && CMD="$CMD --hard-qc-filter {params.hard_qc_filter}"
+        [[ -n "{params.max_search_iterations}" && "{params.max_search_iterations}" != "None" ]] && CMD="$CMD --max-search-iterations {params.max_search_iterations}"
+        [[ -n "{params.validate}" && "{params.validate}" != "None" ]] && CMD="$CMD --validate {params.validate}"
+        [[ -n "{params.blast_check}" && "{params.blast_check}" != "None" ]] && CMD="$CMD --blast-check {params.blast_check}"
+        [[ -n "{params.blast_limit}" && "{params.blast_limit}" != "None" ]] && CMD="$CMD --blast-limit {params.blast_limit}"
+        [[ -n "{params.blast_db}" && "{params.blast_db}" != "None" ]] && CMD="$CMD --blast-db {params.blast_db}"
         
         eval $CMD > {log} 2>&1
         """
