@@ -165,7 +165,7 @@ snp_finder:
 # [M08] PrimerLab Integration
 primerlab:
   # Path ke repositori primerlab-genomic (Bisa absolute path lokal, git URL, atau biarkan kosong jika sudah diinstall via environment)
-  repo_path: "git+https://github.com/engkinandatama/primerlab-genomic.git" # Contoh GitHub: "git+https://github.com/USER/primerlab-genomic.git"
+  repo_path: "git+https://github.com/engkinandatama/primerlab-genomic.git@feat/raa-multi-candidate-ranking" # Contoh GitHub: "git+https://github.com/USER/primerlab-genomic.git"
   # Path ke template konfigurasi RAA default
   template: "config/primerlab_template.yaml"
   # Pengaturan spesifik untuk desain RAA universal
