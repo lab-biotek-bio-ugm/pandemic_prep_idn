@@ -71,17 +71,27 @@ def main():
                 
             print(f"Executing: {' '.join(cmd)}")
             
-            # Run command
-            result = subprocess.run(cmd, capture_output=True, text=True)
+            # Run command and stream output in real-time
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1
+            )
             
-            if result.returncode == 0:
+            # Print output line by line as it is generated
+            if process.stdout:
+                for line in process.stdout:
+                    print(f"   {line.strip()}")
+                    sys.stdout.flush()
+                
+            process.wait()
+            
+            if process.returncode == 0:
                 print(f"✅ Candidate #{rank} verification complete.")
-                # Print output snippet
-                for line in result.stdout.strip().split("\n")[-5:]:
-                    print(f"   {line}")
             else:
-                print(f"❌ Candidate #{rank} BLAST verification failed.")
-                print(result.stderr)
+                print(f"❌ Candidate #{rank} BLAST verification failed with exit code {process.returncode}.")
                 
         except Exception as e:
             print(f"❌ Error verifying candidate #{rank}: {e}")
