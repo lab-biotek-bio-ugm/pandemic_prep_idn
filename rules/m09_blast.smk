@@ -22,7 +22,8 @@ rule m09_blast_verification:
         database=config["blast_verification"].get("database", "nt"),
         mode=config["blast_verification"].get("mode", "remote"),
         local_db_path=config["blast_verification"].get("local_db_path"),
-        outdir=f"results/{BUILD}/m09"
+        outdir=f"results/{BUILD}/m09",
+        target=config["references"].get("reference_id")
     conda:
         "../envs/primerlab.yaml"
     shell:
@@ -40,5 +41,6 @@ rule m09_blast_verification:
             --num-candidates {params.num_candidates} \
             --database "$DB_TARGET" \
             --mode {params.mode} \
-            --outdir {params.outdir} > {log} 2>&1
+            --outdir {params.outdir} \
+            --target "{params.target}" > {log} 2>&1
         """
