@@ -14,6 +14,7 @@ def main():
     parser.add_argument("--mode", default="remote", choices=["remote", "local"], help="BLAST mode")
     parser.add_argument("--outdir", required=True, help="Output directory")
     parser.add_argument("--target", default=None, help="Expected target sequence ID (to distinguish from off-targets)")
+    parser.add_argument("--pathogen", default=None, help="Pathogen name keyword (e.g. 'Influenza') to group family hits")
     
     args = parser.parse_args()
     
@@ -66,6 +67,8 @@ def main():
             
             if args.target:
                 cmd.extend(["--target", args.target])
+            if args.pathogen:
+                cmd.extend(["--pathogen", args.pathogen])
             
             if args.mode == "remote":
                 cmd.append("--online")
