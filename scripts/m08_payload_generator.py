@@ -63,14 +63,12 @@ def generate_payload(manifest_path, template_path, out_dir, args=None):
             # Ganti type: auto
             elif line.startswith("  type: auto"):
                 out_lines.append("  type: raw                 # [M08 INJECTED]\n")
-            # Ganti excluded_regions: []
-            elif line.startswith("  excluded_regions: []"):
-                # Pertahankan komentar asli jika ada di sebelah kanan "[]"
-                if "[]" in line:
-                    left, right = line.split("[]", 1)
-                    out_lines.append(f"{left}{excluded_str}{right}")
-                else:
-                    out_lines.append(f"  excluded_regions: {excluded_str}\n")
+            # Ganti excluded_regions
+            elif line.strip().startswith("excluded_regions:"):
+                # Pertahankan komentar asli jika ada
+                comment = line.split("#", 1)[1] if "#" in line else ""
+                indent = line[:line.find("excluded_regions")]
+                out_lines.append(f"{indent}excluded_regions: {excluded_str}       # [M08 INJECTED]{' #' + comment if comment else ''}\n")
             
             # --- New Overrides ---
             elif num_candidates is not None and line.strip().startswith("num_candidates:"):
