@@ -44,12 +44,15 @@ rule all:
         f"results/{BUILD}/m07/primer_targets_manifest.yaml",
         # M08 Target (PrimerLab Results)
         f"results/{BUILD}/m08/Whole_Segment_region_1/summary.json",
+        # M09 Target (BLAST Specificity Verification)
+        f"results/{BUILD}/m09/verification_complete.txt"
 
 include: "rules/m01_acquisition.smk"
 include: "rules/m02_m06_augur_core.smk"
 include: "rules/m05_hyphy.smk"
 include: "rules/m07_bridge.smk"
 include: "rules/m08_primerlab.smk"
+include: "rules/m09_blast.smk"
 
 # DEFERRED DEVELOPMENT ITEMS — Tracked here to avoid loss across audits.
 #

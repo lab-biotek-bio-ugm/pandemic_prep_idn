@@ -187,3 +187,12 @@ primerlab:
     blast_targeted_check: false   # true: hitung coverage primer terpilih terhadap database sekuens target
     blast_targeted_db_path: null  # Path ke file FASTA atau database sekuens target (misal: semua strain Influenza A)
 
+# [M09] BLAST Specificity Verification
+blast_verification:
+  enabled: true
+  num_candidates: 3              # Jumlah kandidat teratas (dari alternatives.json) yang akan di-BLAST
+  database: "nt"                 # Database target (nt, core_nt, dll)
+  mode: "remote"                 # "remote" (NCBI cloud via async) atau "local"
+  local_db_path: null            # Path ke database lokal jika menggunakan mode "local"
+
+
