@@ -30,7 +30,11 @@ rule m08_generate_payload:
         validate=config["primerlab"]["design"].get("validate"),
         blast_check=config["primerlab"]["design"].get("blast_offtarget_check"),
         blast_limit=config["primerlab"]["design"].get("blast_ranking_limit"),
-        blast_db=config["primerlab"]["design"].get("blast_database")
+        blast_db=config["primerlab"]["design"].get("blast_database"),
+        blast_mode=config["primerlab"]["design"].get("blast_mode"),
+        blast_local_db_path=config["primerlab"]["design"].get("blast_local_db_path"),
+        blast_targeted_check=config["primerlab"]["design"].get("blast_targeted_check"),
+        blast_targeted_db_path=config["primerlab"]["design"].get("blast_targeted_db_path")
     conda:
         "../envs/primerlab.yaml"
     shell:
@@ -55,6 +59,10 @@ rule m08_generate_payload:
         [[ -n "{params.blast_check}" && "{params.blast_check}" != "None" ]] && CMD="$CMD --blast-check {params.blast_check}"
         [[ -n "{params.blast_limit}" && "{params.blast_limit}" != "None" ]] && CMD="$CMD --blast-limit {params.blast_limit}"
         [[ -n "{params.blast_db}" && "{params.blast_db}" != "None" ]] && CMD="$CMD --blast-db {params.blast_db}"
+        [[ -n "{params.blast_mode}" && "{params.blast_mode}" != "None" ]] && CMD="$CMD --blast-mode {params.blast_mode}"
+        [[ -n "{params.blast_local_db_path}" && "{params.blast_local_db_path}" != "None" ]] && CMD="$CMD --blast-local-db-path {params.blast_local_db_path}"
+        [[ -n "{params.blast_targeted_check}" && "{params.blast_targeted_check}" != "None" ]] && CMD="$CMD --blast-targeted-check {params.blast_targeted_check}"
+        [[ -n "{params.blast_targeted_db_path}" && "{params.blast_targeted_db_path}" != "None" ]] && CMD="$CMD --blast-targeted-db-path {params.blast_targeted_db_path}"
         
         eval $CMD > {log} 2>&1
         """

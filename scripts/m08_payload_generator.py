@@ -26,6 +26,10 @@ def generate_payload(manifest_path, template_path, out_dir, args=None):
     blast_check = getattr(args, "blast_check", None) if args else None
     blast_limit = getattr(args, "blast_limit", None) if args else None
     blast_db = getattr(args, "blast_db", None) if args else None
+    blast_mode = getattr(args, "blast_mode", None) if args else None
+    blast_local_db_path = getattr(args, "blast_local_db_path", None) if args else None
+    blast_targeted_check = getattr(args, "blast_targeted_check", None) if args else None
+    blast_targeted_db_path = getattr(args, "blast_targeted_db_path", None) if args else None
 
     # 3. Ekstrak setiap region kandidat
     for idx, region in enumerate(manifest.get('candidate_regions', [])):
@@ -95,6 +99,14 @@ def generate_payload(manifest_path, template_path, out_dir, args=None):
             elif blast_db is not None and line.strip().startswith("blast_database:"):
                 comment = line.split("#", 1)[1] if "#" in line else ""
                 out_lines.append(f"  blast_database: \"{blast_db}\"         # [M08 OVERRIDE]{'#' + comment if comment else ''}\n")
+                if blast_mode is not None:
+                    out_lines.append(f"  blast_mode: \"{blast_mode}\"\n")
+                if blast_local_db_path is not None:
+                    out_lines.append(f"  blast_local_db_path: \"{blast_local_db_path}\"\n")
+                if blast_targeted_check is not None:
+                    out_lines.append(f"  blast_targeted_check: {str(blast_targeted_check).lower()}\n")
+                if blast_targeted_db_path is not None:
+                    out_lines.append(f"  blast_targeted_db_path: \"{blast_targeted_db_path}\"\n")
             elif validate is not None and line.strip().startswith("auto_validate:"):
                 comment = line.split("#", 1)[1] if "#" in line else ""
                 out_lines.append(f"  auto_validate: {str(validate).lower()} # [M08 OVERRIDE]{'#' + comment if comment else ''}\n")
@@ -146,6 +158,10 @@ if __name__ == "__main__":
     parser.add_argument("--blast-check", type=str, help="Override blast off-target check (true/false)")
     parser.add_argument("--blast-limit", type=int, help="Override blast ranking limit")
     parser.add_argument("--blast-db", type=str, help="Override blast database")
+    parser.add_argument("--blast-mode", type=str, help="Override blast mode (remote/local)")
+    parser.add_argument("--blast-local-db-path", type=str, help="Override local blast database path")
+    parser.add_argument("--blast-targeted-check", type=str, help="Override blast targeted check (true/false)")
+    parser.add_argument("--blast-targeted-db-path", type=str, help="Override targeted blast database path")
     
     args = parser.parse_args()
     
