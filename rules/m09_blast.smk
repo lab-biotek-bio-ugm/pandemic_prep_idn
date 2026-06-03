@@ -35,7 +35,7 @@ rule m09_blast_verification:
             DB_TARGET="{params.local_db_path}"
         fi
         
-        python scripts/m09_blast_verification.py \
+        python -u scripts/m09_blast_verification.py \
             --alternatives {params.alternatives_file} \
             --num-candidates {params.num_candidates} \
             --database "$DB_TARGET" \
