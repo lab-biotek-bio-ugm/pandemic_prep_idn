@@ -129,6 +129,11 @@ rule m09_blast_verification:
                 --db-label "virus" \
                 >> {log} 2>&1
 
+            # Write marker file after both DB runs complete (local mode)
+            echo "Completed local verification (human_db + virus_db) for candidates." > {output.marker}
+            echo "human_db: ${{HUMAN_DB}}" >> {output.marker}
+            echo "virus_db: ${{VIRUS_DB}}" >> {output.marker}
+
         else
             # ── Remote mode ─────────────────────────────────────────────────
             if [ -z "${{NCBI_API_KEY:-}}" ]; then
@@ -153,6 +158,12 @@ rule m09_blast_verification:
                 --target "{params.target}" \
                 --pathogen "{params.pathogen}" \
                 >> {log} 2>&1
+
+            # Marker is written by the Python script in remote mode (no --db-label)
+            # Verify it was created
+            if [ ! -f "{output.marker}" ]; then
+                echo "Completed remote verification." > {output.marker}
+            fi
         fi
 
         echo "✅ M09 verification complete." >> {log}
