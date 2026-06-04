@@ -178,8 +178,16 @@ primerlab:
 # [M09] BLAST Specificity Verification
 blast_verification:
   enabled: true
-  num_candidates: 3              # Jumlah kandidat teratas (dari alternatives.json) yang akan di-BLAST
-  database: "nt"                 # Database target (nt, core_nt, dll)
-  mode: "remote"                 # "remote" (NCBI cloud via async) atau "local"
-  local_db_path: null            # Path ke database lokal jika menggunakan mode "local"
+  num_candidates: 3              # Jumlah kandidat teratas yang akan di-BLAST
+  mode: "remote"                 # "remote" (NCBI cloud) atau "local" (custom DB lokal)
+  database: "nt"                 # Database target (nt, core_nt, custom_respiratory_db)
+  local_db_path: null            # Path ke database lokal jika mode = local
 
+  # Konfigurasi pembuatan Custom Database (aktifkan jika mode = local)
+  custom_db_build:
+    enabled: false               # Set true untuk membangun database lokal custom
+    output_dir: "resources/blast_db"
+    max_seqs_per_taxon: 500
+    seq_length_min: 500
+    hosts: []                    # Isi dengan host genome entries (lihat config_influenza_a_mp.yaml)
+    virus_taxons: []             # Isi dengan virus taxon entries (lihat config_influenza_a_mp.yaml)

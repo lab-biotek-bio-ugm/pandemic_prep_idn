@@ -13,6 +13,9 @@ data/
 dataset/
 ncbi_dataset.zip
 
+# Custom BLAST database resources (large files, built locally on HPC)
+resources/blast_db/
+
 
 # AI & Brainstorming Artifacts
 .agents/

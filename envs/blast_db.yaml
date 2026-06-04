@@ -1,0 +1,17 @@
+# =============================================================================
+# Blast DB Builder Environment
+# Environment terpisah untuk pembangunan custom BLAST database.
+# Mengandung ncbi-datasets-cli yang tidak selalu ada di environment utama.
+# =============================================================================
+
+name: blast_db_builder
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+
+dependencies:
+  - python>=3.10
+  - blast>=2.14.0          # makeblastdb & blastn
+  - ncbi-datasets-cli      # NCBI Datasets CLI tool untuk download via taxid
+  - pyyaml>=6.0

@@ -190,9 +190,55 @@ primerlab:
 # [M09] BLAST Specificity Verification
 blast_verification:
   enabled: true
-  num_candidates: 3              # Jumlah kandidat teratas (dari alternatives.json) yang akan di-BLAST
-  database: "nt"                 # Database target (nt, core_nt, dll)
-  mode: "remote"                 # "remote" (NCBI cloud via async) atau "local"
-  local_db_path: null            # Path ke database lokal jika menggunakan mode "local"
+  num_candidates: 3              # Jumlah kandidat teratas yang akan di-BLAST
+  mode: "local"                  # "remote" (NCBI cloud) atau "local" (custom DB)
+  database: "custom_respiratory_db"
+  local_db_path: "resources/blast_db" # Root folder db; sub-db dikelola oleh build script
+
+  # Konfigurasi pembuatan Custom Database — TIDAK ADA hardcode di kode Python
+  # Tambah/hapus hosts atau virus_taxons di sini untuk mengubah cakupan database
+  custom_db_build:
+    enabled: true
+    output_dir: "resources/blast_db"  # Di root project, tidak ikut terhapus saat clean results
+    max_seqs_per_taxon: 500            # Batas maks sekuens per taksonomi virus
+    seq_length_min: 500                # Filter sekuens < N bp (buang kontigs pendek)
+
+    # Host genomes (Inang Manusia) — gabungan GRCh38 + T2T-CHM13 untuk cakupan maksimal
+    hosts:
+      - name: "GRCh38"
+        fasta_url: "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/405/GCF_000001405.40_GRCh38.p14/GCF_000001405.40_GRCh38.p14_genomic.fna.gz"
+      - name: "T2T_CHM13"
+        fasta_url: "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/009/914/755/GCF_009914755.1_T2T-CHM13v2.0/GCF_009914755.1_T2T-CHM13v2.0_genomic.fna.gz"
+
+    # Virus taksonomi — gunakan taxid NCBI untuk akurasi, bukan string matching
+    # Tambah virus baru dengan menambahkan entri di sini, tidak perlu ubah kode
+    virus_taxons:
+      - name: "Influenza A virus"
+        taxid: 11520
+      - name: "Influenza B virus"
+        taxid: 11520
+      - name: "Influenza C virus"
+        taxid: 11552
+      - name: "Human orthopneumovirus"           # RSV A+B
+        taxid: 11250
+      - name: "SARS-CoV-2"
+        taxid: 2697049
+      - name: "Human adenovirus"
+        taxid: 10535
+      - name: "Human rhinovirus"
+        taxid: 12110
+      - name: "Human enterovirus"
+        taxid: 138948
+      - name: "Human parainfluenza virus 1"
+        taxid: 12730
+      - name: "Human parainfluenza virus 2"
+        taxid: 11225
+      - name: "Human parainfluenza virus 3"
+        taxid: 11234
+      - name: "Human parainfluenza virus 4"
+        taxid: 11246
+      - name: "Human metapneumovirus"
+        taxid: 162145
+
 
 
