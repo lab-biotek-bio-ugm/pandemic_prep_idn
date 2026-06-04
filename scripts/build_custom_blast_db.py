@@ -198,6 +198,63 @@ def make_blast_db(makeblastdb_path: str, fasta_path: Path, db_out_prefix: Path, 
 
 
 # ---------------------------------------------------------------------------
+# Cleanup
+# ---------------------------------------------------------------------------
+
+def cleanup_intermediates(output_dir: Path, hosts: list, virus_taxons: list):
+    """
+    Remove intermediate files that are no longer needed after BLAST DB is built.
+
+    Removed:
+      - Downloaded genome .gz files (large, can be re-downloaded if needed)
+      - Extracted individual .fna genome files
+      - Individual per-taxon FASTA files (taxon_*.fasta)
+      - human_combined_raw.fasta  (pre-filter combined)
+      - virus_combined_raw.fasta  (pre-filter combined)
+      - virus_combined_filtered.fasta (post-filter, pre-subsample)
+
+    Kept (needed by BLAST at query time):
+      - human_combined_filtered.fasta → makeblastdb input for human_db
+      - virus_combined_subsampled.fasta → makeblastdb input for virus_db
+      - human_db.* / virus_db.* (BLAST index files)
+      - build_complete.txt (cache marker)
+    """
+    log("\n🧹 Membersihkan file intermediate...")
+    removed = 0
+    freed_bytes = 0
+
+    def try_remove(path: Path):
+        nonlocal removed, freed_bytes
+        if path.exists():
+            size = path.stat().st_size
+            path.unlink()
+            freed_bytes += size
+            removed += 1
+            log(f"   🗑 Dihapus: {path.name} ({size/1e6:.1f} MB)")
+        else:
+            log(f"   ✓ Sudah tidak ada: {path.name}")
+
+    # Remove downloaded .gz and extracted .fna files per host
+    for host in hosts:
+        name = host.get("name", "unknown")
+        try_remove(output_dir / f"{name}_genome.fna.gz")
+        try_remove(output_dir / f"{name}_genome.fna")
+
+    # Remove per-taxon individual FASTA files
+    for taxon in virus_taxons:
+        name = taxon.get("name", "unknown")
+        taxid = taxon.get("taxid", "")
+        try_remove(output_dir / f"taxon_{taxid}_{name.replace(' ', '_')}.fasta")
+
+    # Remove combined raw and intermediate FASTA files
+    try_remove(output_dir / "human_combined_raw.fasta")
+    try_remove(output_dir / "virus_combined_raw.fasta")
+    try_remove(output_dir / "virus_combined_filtered.fasta")
+
+    log(f"   ✅ Selesai: {removed} file dihapus, dibebaskan ~{freed_bytes/1e9:.2f} GB")
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -232,6 +289,7 @@ def main():
 
     max_seqs = db_build.get("max_seqs_per_taxon", 500)
     min_len = db_build.get("seq_length_min", 500)
+    do_cleanup = db_build.get("cleanup_intermediates", True)  # Default: hapus file sampah
 
     hosts = db_build.get("hosts", [])
     virus_taxons = db_build.get("virus_taxons", [])
@@ -382,6 +440,15 @@ def main():
     log(f"   Human DB : {human_db_prefix}")
     log(f"   Virus  DB: {virus_db_prefix}")
     log(f"   Marker   : {marker_file}")
+
+    # ------------------------------------------------------------------
+    # Cleanup intermediate files (optional, default: enabled)
+    # ------------------------------------------------------------------
+    if do_cleanup:
+        cleanup_intermediates(output_dir, hosts, virus_taxons)
+    else:
+        log("\nℹ cleanup_intermediates = false, file intermediate TIDAK dihapus.")
+        log("  Untuk menghemat storage, set cleanup_intermediates: true di config.")
 
 
 if __name__ == "__main__":

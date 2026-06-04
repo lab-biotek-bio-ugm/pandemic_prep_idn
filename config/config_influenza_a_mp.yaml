@@ -202,6 +202,7 @@ blast_verification:
     output_dir: "resources/blast_db"  # Di root project, tidak ikut terhapus saat clean results
     max_seqs_per_taxon: 500            # Batas maks sekuens per taksonomi virus
     seq_length_min: 500                # Filter sekuens < N bp (buang kontigs pendek)
+    cleanup_intermediates: true        # Hapus file .gz, .fna, dan FASTA mentah setelah DB selesai dibangun (~hemat 12-15 GB)
 
     # Host genomes (Inang Manusia) — gabungan GRCh38 + T2T-CHM13 untuk cakupan maksimal
     hosts:
