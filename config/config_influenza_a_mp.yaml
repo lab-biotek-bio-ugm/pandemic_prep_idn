@@ -214,9 +214,9 @@ blast_verification:
     # Tambah virus baru dengan menambahkan entri di sini, tidak perlu ubah kode
     virus_taxons:
       - name: "Influenza A virus"
-        taxid: 11520
+        taxid: 11320        # Alphainfluenzavirus influenzae
       - name: "Influenza B virus"
-        taxid: 11520
+        taxid: 11520        # Betainfluenzavirus influenzae
       - name: "Influenza C virus"
         taxid: 11552
       - name: "Human orthopneumovirus"           # RSV A+B
