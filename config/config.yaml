@@ -166,7 +166,7 @@ primerlab:
     search_strategy: "standard"
     hard_qc_filter: "false"
     max_search_iterations: 5
-    vienna_ranking_limit: 50
+    vienna_ranking_limit: 1000
     # Kita biarkan window_size null agar PrimerLab memproses 1027bp sekaligus (lebih akurat untuk RAA)
     window_size: null
     overlap: 200
