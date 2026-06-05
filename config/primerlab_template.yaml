@@ -113,6 +113,7 @@ qc:
 output:
   directory: "primerlab_out" # Folder hasil
   format: json               # Format database hasil (json | csv)
+  num_results_to_export: 100 # Jumlah kandidat yang diexport ke alternatives.json
 
 # --- ADVANCED / HPC SETTINGS ---
 advanced:
