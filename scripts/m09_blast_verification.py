@@ -139,7 +139,7 @@ def main():
 
     # Compile overall summary report and CSV for downstream decisions
     try:
-        compile_summary(str(outdir))
+        compile_summary(str(outdir), args.alternatives)
     except Exception as e:
         print(f"⚠️ Warning: Failed to compile specificity summary: {e}")
 
@@ -150,7 +150,7 @@ def get_grade(score):
     elif score >= 60: return "D"
     else: return "F"
 
-def compile_summary(outdir_path: str):
+def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None):
     """
     Scans output directory, loads JSON results for all candidates,
     and generates master CSV and Markdown reports for comparison.
@@ -158,6 +158,26 @@ def compile_summary(outdir_path: str):
     outdir = Path(outdir_path)
     if not outdir.exists():
         return
+
+    # Load alternatives sequences as fallback
+    alt_sequences = {}
+    if alternatives_path and os.path.exists(alternatives_path):
+        try:
+            with open(alternatives_path, "r") as f:
+                alts = json.load(f)
+            for idx, alt in enumerate(alts):
+                rank = alt.get("final_rank") or (idx + 1)
+                primers = alt.get("primers", {})
+                fwd_seq = primers.get("forward", {}).get("sequence", "")
+                rev_seq = primers.get("reverse", {}).get("sequence", "")
+                probe_seq = primers.get("probe", {}).get("sequence", "")
+                alt_sequences[rank] = {
+                    "fwd": fwd_seq,
+                    "rev": rev_seq,
+                    "probe": probe_seq
+                }
+        except Exception as e:
+            print(f"Warning: Failed to parse alternatives fallback: {e}")
 
     summary_data = []
 
@@ -182,18 +202,31 @@ def compile_summary(outdir_path: str):
             try:
                 with open(human_json, "r") as f:
                     data = json.load(f)
-                fwd_seq = data.get("forward_result", {}).get("primer_seq", "")
-                rev_seq = data.get("reverse_result", {}).get("primer_seq", "")
-                probe_seq = data.get("probe_result", {}).get("primer_seq", "") if data.get("probe_result") else ""
+                fwd_res = data.get("forward_result") or data.get("forward") or {}
+                rev_res = data.get("reverse_result") or data.get("reverse") or {}
+                probe_res = data.get("probe_result") or data.get("probe") or {}
+                fwd_seq = fwd_res.get("primer_seq", "")
+                rev_seq = rev_res.get("primer_seq", "")
+                probe_seq = probe_res.get("primer_seq", "") if probe_res else ""
                 
                 human_score = data.get("combined_score", 0.0)
                 human_grade = get_grade(human_score)
                 human_status = "Specific" if data.get("is_specific", True) else "Low Specificity"
                 
-                fwd_ots = data.get("forward_result", {}).get("offtargets", [])
-                rev_ots = data.get("reverse_result", {}).get("offtargets", [])
-                human_offtargets = len(fwd_ots) + len(rev_ots)
-                human_dangerous = sum(1 for ot in fwd_ots + rev_ots if ot.get("three_prime_involved", False))
+                if "forward_result" in data:
+                    fwd_ots = data.get("forward_result", {}).get("offtargets", [])
+                    rev_ots = data.get("reverse_result", {}).get("offtargets", [])
+                else:
+                    fwd_ots = data.get("forward", {}).get("offtargets", 0)
+                    rev_ots = data.get("reverse", {}).get("offtargets", 0)
+
+                fwd_cnt = len(fwd_ots) if isinstance(fwd_ots, list) else int(fwd_ots)
+                rev_cnt = len(rev_ots) if isinstance(rev_ots, list) else int(rev_ots)
+                human_offtargets = fwd_cnt + rev_cnt
+                
+                fwd_list = fwd_ots if isinstance(fwd_ots, list) else []
+                rev_list = rev_ots if isinstance(rev_ots, list) else []
+                human_dangerous = sum(1 for ot in fwd_list + rev_list if ot.get("three_prime_involved", False))
             except Exception as e:
                 print(f"Warning: Failed to parse human JSON for candidate {rank}: {e}")
 
@@ -204,21 +237,35 @@ def compile_summary(outdir_path: str):
                 with open(virus_json, "r") as f:
                     data = json.load(f)
                 if not fwd_seq:
-                    fwd_seq = data.get("forward_result", {}).get("primer_seq", "")
-                    rev_seq = data.get("reverse_result", {}).get("primer_seq", "")
-                    probe_seq = data.get("probe_result", {}).get("primer_seq", "") if data.get("probe_result") else ""
+                    fwd_res = data.get("forward_result") or data.get("forward") or {}
+                    rev_res = data.get("reverse_result") or data.get("reverse") or {}
+                    probe_res = data.get("probe_result") or data.get("probe") or {}
+                    fwd_seq = fwd_res.get("primer_seq", "")
+                    rev_seq = rev_res.get("primer_seq", "")
+                    probe_seq = probe_res.get("primer_seq", "") if probe_res else ""
                 
                 virus_score = data.get("combined_score", 0.0)
                 virus_grade = get_grade(virus_score)
                 virus_status = "Specific" if data.get("is_specific", True) else "Low Specificity"
                 
-                fwd_ots = data.get("forward_result", {}).get("offtargets", [])
-                rev_ots = data.get("reverse_result", {}).get("offtargets", [])
-                virus_offtargets = len(fwd_ots) + len(rev_ots)
+                if "forward_result" in data:
+                    fwd_ots = data.get("forward_result", {}).get("offtargets", [])
+                    rev_ots = data.get("reverse_result", {}).get("offtargets", [])
+                    fwd_path = data.get("forward_result", {}).get("pathogen_hits", [])
+                    rev_path = data.get("reverse_result", {}).get("pathogen_hits", [])
+                else:
+                    fwd_ots = data.get("forward", {}).get("offtargets", 0)
+                    rev_ots = data.get("reverse", {}).get("offtargets", 0)
+                    fwd_path = data.get("forward", {}).get("pathogen_family_hits", 0)
+                    rev_path = data.get("reverse", {}).get("pathogen_family_hits", 0)
+
+                fwd_cnt = len(fwd_ots) if isinstance(fwd_ots, list) else int(fwd_ots)
+                rev_cnt = len(rev_ots) if isinstance(rev_ots, list) else int(rev_ots)
+                virus_offtargets = fwd_cnt + rev_cnt
                 
-                fwd_path = data.get("forward_result", {}).get("pathogen_hits", [])
-                rev_path = data.get("reverse_result", {}).get("pathogen_hits", [])
-                virus_pathogen = len(fwd_path) + len(rev_path)
+                fwd_path_cnt = len(fwd_path) if isinstance(fwd_path, list) else int(fwd_path)
+                rev_path_cnt = len(rev_path) if isinstance(rev_path, list) else int(rev_path)
+                virus_pathogen = fwd_path_cnt + rev_path_cnt
             except Exception as e:
                 print(f"Warning: Failed to parse virus JSON for candidate {rank}: {e}")
 
@@ -228,24 +275,51 @@ def compile_summary(outdir_path: str):
             try:
                 with open(remote_json, "r") as f:
                     data = json.load(f)
-                fwd_seq = data.get("forward_result", {}).get("primer_seq", "")
-                rev_seq = data.get("reverse_result", {}).get("primer_seq", "")
-                probe_seq = data.get("probe_result", {}).get("primer_seq", "") if data.get("probe_result") else ""
+                fwd_res = data.get("forward_result") or data.get("forward") or {}
+                rev_res = data.get("reverse_result") or data.get("reverse") or {}
+                probe_res = data.get("probe_result") or data.get("probe") or {}
+                fwd_seq = fwd_res.get("primer_seq", "")
+                rev_seq = rev_res.get("primer_seq", "")
+                probe_seq = probe_res.get("primer_seq", "") if probe_res else ""
                 
                 remote_score = data.get("combined_score", 0.0)
                 remote_grade = get_grade(remote_score)
                 remote_status = "Specific" if data.get("is_specific", True) else "Low Specificity"
                 
-                fwd_ots = data.get("forward_result", {}).get("offtargets", [])
-                rev_ots = data.get("reverse_result", {}).get("offtargets", [])
-                remote_offtargets = len(fwd_ots) + len(rev_ots)
-                remote_dangerous = sum(1 for ot in fwd_ots + rev_ots if ot.get("three_prime_involved", False))
+                if "forward_result" in data:
+                    fwd_ots = data.get("forward_result", {}).get("offtargets", [])
+                    rev_ots = data.get("reverse_result", {}).get("offtargets", [])
+                    fwd_path = data.get("forward_result", {}).get("pathogen_hits", [])
+                    rev_path = data.get("reverse_result", {}).get("pathogen_hits", [])
+                else:
+                    fwd_ots = data.get("forward", {}).get("offtargets", 0)
+                    rev_ots = data.get("reverse", {}).get("offtargets", 0)
+                    fwd_path = data.get("forward", {}).get("pathogen_family_hits", 0)
+                    rev_path = data.get("reverse", {}).get("pathogen_family_hits", 0)
+
+                fwd_cnt = len(fwd_ots) if isinstance(fwd_ots, list) else int(fwd_ots)
+                rev_cnt = len(rev_ots) if isinstance(rev_ots, list) else int(rev_ots)
+                remote_offtargets = fwd_cnt + rev_cnt
                 
-                fwd_path = data.get("forward_result", {}).get("pathogen_hits", [])
-                rev_path = data.get("reverse_result", {}).get("pathogen_hits", [])
-                remote_pathogen = len(fwd_path) + len(rev_path)
+                fwd_list = fwd_ots if isinstance(fwd_ots, list) else []
+                rev_list = rev_ots if isinstance(rev_ots, list) else []
+                remote_dangerous = sum(1 for ot in fwd_list + rev_list if ot.get("three_prime_involved", False))
+                
+                fwd_path_cnt = len(fwd_path) if isinstance(fwd_path, list) else int(fwd_path)
+                rev_path_cnt = len(rev_path) if isinstance(rev_path, list) else int(rev_path)
+                remote_pathogen = fwd_path_cnt + rev_path_cnt
             except Exception as e:
                 print(f"Warning: Failed to parse remote JSON for candidate {rank}: {e}")
+
+        # Fallback to alternatives.json if sequences are still empty
+        if not fwd_seq or not rev_seq:
+            fallback = alt_sequences.get(rank, {})
+            if not fwd_seq:
+                fwd_seq = fallback.get("fwd", "")
+            if not rev_seq:
+                rev_seq = fallback.get("rev", "")
+            if not probe_seq:
+                probe_seq = fallback.get("probe", "")
 
         if human_score == "-" and virus_score == "-" and remote_score == "-":
             continue
