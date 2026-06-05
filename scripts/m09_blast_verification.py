@@ -7,6 +7,7 @@ import tempfile
 import csv
 from pathlib import Path
 from datetime import datetime
+from typing import Optional
 
 def main():
     parser = argparse.ArgumentParser(description="M09 Specificity Verification for Top N Candidates")

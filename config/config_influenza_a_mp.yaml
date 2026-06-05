@@ -174,7 +174,7 @@ primerlab:
     search_strategy: "standard"
     hard_qc_filter: "false"
     max_search_iterations: 5
-    vienna_ranking_limit: 50
+    vienna_ranking_limit: 100
     # Kita biarkan window_size null agar PrimerLab memproses 1027bp sekaligus (lebih akurat untuk RAA)
     window_size: null
     overlap: 200
@@ -190,7 +190,7 @@ primerlab:
 # [M09] BLAST Specificity Verification
 blast_verification:
   enabled: true
-  num_candidates: 3              # Jumlah kandidat teratas yang akan di-BLAST
+  num_candidates: 25              # Jumlah kandidat teratas yang akan di-BLAST
   mode: "local"                  # "remote" (NCBI cloud) atau "local" (custom DB)
   database: "custom_respiratory_db"
   local_db_path: "resources/blast_db" # Root folder db; sub-db dikelola oleh build script
