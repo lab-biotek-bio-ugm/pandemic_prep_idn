@@ -52,7 +52,9 @@ rule m09_blast_verification:
         f"logs/{BUILD}/m09/blast_verification.log"
     params:
         alternatives_file=f"results/{BUILD}/m08/Whole_Segment_region_1/alternatives.json",
-        num_candidates=config["blast_verification"].get("num_candidates", 3),
+        num_candidates=config["blast_verification"].get(
+            "num_candidates", config["primerlab"]["design"].get("vienna_ranking_limit", 50)
+        ),
         database=config["blast_verification"].get("database", "nt"),
         mode=config["blast_verification"].get("mode", "remote"),
         local_db_path=config["blast_verification"].get("local_db_path", ""),

@@ -90,6 +90,9 @@ def generate_payload(manifest_path, template_path, out_dir, args=None):
             elif vienna_limit is not None and line.strip().startswith("vienna_ranking_limit:"):
                 comment = line.split("#", 1)[1] if "#" in line else ""
                 out_lines.append(f"  vienna_ranking_limit: {vienna_limit}   # [M08 OVERRIDE]{'#' + comment if comment else ''}\n")
+            elif vienna_limit is not None and line.strip().startswith("num_results_to_export:"):
+                comment = line.split("#", 1)[1] if "#" in line else ""
+                out_lines.append(f"  num_results_to_export: {vienna_limit}   # [M08 OVERRIDE]{'#' + comment if comment else ''}\n")
             elif blast_check is not None and line.strip().startswith("blast_offtarget_check:"):
                 comment = line.split("#", 1)[1] if "#" in line else ""
                 out_lines.append(f"  blast_offtarget_check: {str(blast_check).lower()} # [M08 OVERRIDE]{'#' + comment if comment else ''}\n")
