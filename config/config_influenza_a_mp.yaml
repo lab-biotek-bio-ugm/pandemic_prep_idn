@@ -195,17 +195,12 @@ blast_verification:
   database: "custom_respiratory_db"
   local_db_path: "resources/blast_db" # Root folder db; sub-db dikelola oleh build script
 
-  # ── BLAST Sensitivity & 3' End Analysis ────────────────────────────────────
+  # BLAST Sensitivity and 3 Prime End Analysis
   # Parameter ini mengontrol filter spesifisitas sesuai prinsip biologi molekuler.
   # Default sudah divalidasi untuk primer RAA/PCR panjang ~28-35 bp.
-  qcov_hsp_perc: 60              # Min query coverage % di BLAST.
-                                 # Hit < 60% adalah noise statistik pada genome besar.
-                                 # 60% × 30 bp = 18 bp → threshold Tm untuk inisiasi ekstensi.
-  min_coverage_percent: 30.0     # Backup filter di kode Python (setelah BLAST).
-                                 # Hit di bawah ini tidak masuk ke tabel off-target.
-  three_prime_critical_bp: 8     # N bp terakhir primer yang dianggap kritikal.
-                                 # Hit yang tidak menyentuh 8 bp ujung 3' primer
-                                 # mendapat penalti lebih rendah (polimerase tidak bisa anchor).
+  qcov_hsp_perc: 60              # Min query coverage % di BLAST
+  min_coverage_percent: 30.0     # Backup filter di kode Python (setelah BLAST)
+  three_prime_critical_bp: 8     # N bp terakhir primer yang dianggap kritikal
 
   # Konfigurasi pembuatan Custom Database — TIDAK ADA hardcode di kode Python
   # Tambah/hapus hosts atau virus_taxons di sini untuk mengubah cakupan database
