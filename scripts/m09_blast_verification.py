@@ -4,7 +4,9 @@ import json
 import argparse
 import subprocess
 import tempfile
+import csv
 from pathlib import Path
+from datetime import datetime
 
 def main():
     parser = argparse.ArgumentParser(description="M09 Specificity Verification for Top N Candidates")
@@ -134,6 +136,230 @@ def main():
         print(f"\n🎉 Verification complete. Marker file written: {marker_path}")
     else:
         print(f"\n✅ DB run [{args.db_label}] complete. Marker will be written by Snakemake after all DB runs.")
+
+    # Compile overall summary report and CSV for downstream decisions
+    try:
+        compile_summary(str(outdir))
+    except Exception as e:
+        print(f"⚠️ Warning: Failed to compile specificity summary: {e}")
+
+def get_grade(score):
+    if score >= 90: return "A"
+    elif score >= 80: return "B"
+    elif score >= 70: return "C"
+    elif score >= 60: return "D"
+    else: return "F"
+
+def compile_summary(outdir_path: str):
+    """
+    Scans output directory, loads JSON results for all candidates,
+    and generates master CSV and Markdown reports for comparison.
+    """
+    outdir = Path(outdir_path)
+    if not outdir.exists():
+        return
+
+    summary_data = []
+
+    # Find all candidate subdirectories
+    for cand_dir in sorted(outdir.glob("candidate_*"), key=lambda p: int(p.name.split("_")[1])):
+        rank = int(cand_dir.name.split("_")[1])
+        
+        fwd_seq, rev_seq, probe_seq = "", "", ""
+        
+        human_score, human_grade, human_status = "-", "-", "-"
+        human_offtargets, human_dangerous = "-", "-"
+        
+        virus_score, virus_grade, virus_status = "-", "-", "-"
+        virus_pathogen, virus_offtargets = "-", "-"
+        
+        remote_score, remote_grade, remote_status = "-", "-", "-"
+        remote_offtargets, remote_dangerous, remote_pathogen = "-", "-", "-"
+
+        # Load local human result
+        human_json = cand_dir / "db_human" / "blast_result.json"
+        if human_json.exists():
+            try:
+                with open(human_json, "r") as f:
+                    data = json.load(f)
+                fwd_seq = data.get("forward_result", {}).get("primer_seq", "")
+                rev_seq = data.get("reverse_result", {}).get("primer_seq", "")
+                probe_seq = data.get("probe_result", {}).get("primer_seq", "") if data.get("probe_result") else ""
+                
+                human_score = data.get("combined_score", 0.0)
+                human_grade = get_grade(human_score)
+                human_status = "Specific" if data.get("is_specific", True) else "Low Specificity"
+                
+                fwd_ots = data.get("forward_result", {}).get("offtargets", [])
+                rev_ots = data.get("reverse_result", {}).get("offtargets", [])
+                human_offtargets = len(fwd_ots) + len(rev_ots)
+                human_dangerous = sum(1 for ot in fwd_ots + rev_ots if ot.get("three_prime_involved", False))
+            except Exception as e:
+                print(f"Warning: Failed to parse human JSON for candidate {rank}: {e}")
+
+        # Load local virus result
+        virus_json = cand_dir / "db_virus" / "blast_result.json"
+        if virus_json.exists():
+            try:
+                with open(virus_json, "r") as f:
+                    data = json.load(f)
+                if not fwd_seq:
+                    fwd_seq = data.get("forward_result", {}).get("primer_seq", "")
+                    rev_seq = data.get("reverse_result", {}).get("primer_seq", "")
+                    probe_seq = data.get("probe_result", {}).get("primer_seq", "") if data.get("probe_result") else ""
+                
+                virus_score = data.get("combined_score", 0.0)
+                virus_grade = get_grade(virus_score)
+                virus_status = "Specific" if data.get("is_specific", True) else "Low Specificity"
+                
+                fwd_ots = data.get("forward_result", {}).get("offtargets", [])
+                rev_ots = data.get("reverse_result", {}).get("offtargets", [])
+                virus_offtargets = len(fwd_ots) + len(rev_ots)
+                
+                fwd_path = data.get("forward_result", {}).get("pathogen_hits", [])
+                rev_path = data.get("reverse_result", {}).get("pathogen_hits", [])
+                virus_pathogen = len(fwd_path) + len(rev_path)
+            except Exception as e:
+                print(f"Warning: Failed to parse virus JSON for candidate {rank}: {e}")
+
+        # Load remote result
+        remote_json = cand_dir / "blast_result.json"
+        if remote_json.exists():
+            try:
+                with open(remote_json, "r") as f:
+                    data = json.load(f)
+                fwd_seq = data.get("forward_result", {}).get("primer_seq", "")
+                rev_seq = data.get("reverse_result", {}).get("primer_seq", "")
+                probe_seq = data.get("probe_result", {}).get("primer_seq", "") if data.get("probe_result") else ""
+                
+                remote_score = data.get("combined_score", 0.0)
+                remote_grade = get_grade(remote_score)
+                remote_status = "Specific" if data.get("is_specific", True) else "Low Specificity"
+                
+                fwd_ots = data.get("forward_result", {}).get("offtargets", [])
+                rev_ots = data.get("reverse_result", {}).get("offtargets", [])
+                remote_offtargets = len(fwd_ots) + len(rev_ots)
+                remote_dangerous = sum(1 for ot in fwd_ots + rev_ots if ot.get("three_prime_involved", False))
+                
+                fwd_path = data.get("forward_result", {}).get("pathogen_hits", [])
+                rev_path = data.get("reverse_result", {}).get("pathogen_hits", [])
+                remote_pathogen = len(fwd_path) + len(rev_path)
+            except Exception as e:
+                print(f"Warning: Failed to parse remote JSON for candidate {rank}: {e}")
+
+        if human_score == "-" and virus_score == "-" and remote_score == "-":
+            continue
+
+        is_pass = True
+        if human_score != "-" and isinstance(human_score, float) and human_score < 70.0:
+            is_pass = False
+        if virus_score != "-" and isinstance(virus_score, float) and virus_score < 70.0:
+            is_pass = False
+        if remote_score != "-" and isinstance(remote_score, float) and remote_score < 70.0:
+            is_pass = False
+        
+        status_text = "PASS" if is_pass else "FAIL"
+
+        summary_data.append({
+            "rank": rank,
+            "fwd_seq": fwd_seq,
+            "rev_seq": rev_seq,
+            "probe_seq": probe_seq,
+            "human_score": human_score,
+            "human_grade": human_grade,
+            "human_status": human_status,
+            "human_offtargets": human_offtargets,
+            "human_dangerous": human_dangerous,
+            "virus_score": virus_score,
+            "virus_grade": virus_grade,
+            "virus_status": virus_status,
+            "virus_pathogen": virus_pathogen,
+            "virus_offtargets": virus_offtargets,
+            "remote_score": remote_score,
+            "remote_grade": remote_grade,
+            "remote_status": remote_status,
+            "remote_offtargets": remote_offtargets,
+            "remote_dangerous": remote_dangerous,
+            "remote_pathogen": remote_pathogen,
+            "status": status_text
+        })
+
+    if not summary_data:
+        return
+
+    # Generate CSV
+    csv_path = outdir / "blast_specificity_summary.csv"
+    csv_headers = [
+        "Candidate_Rank", "Forward_Sequence", "Reverse_Sequence", "Probe_Sequence",
+        "Human_Score", "Human_Grade", "Human_Status", "Human_Total_Offtargets", "Human_Dangerous_3Prime_Offtargets",
+        "Virus_Score", "Virus_Grade", "Virus_Status", "Virus_Pathogen_Hits", "Virus_Total_Offtargets",
+        "Remote_Score", "Remote_Grade", "Remote_Status", "Remote_Total_Offtargets", "Remote_Dangerous_3Prime_Offtargets", "Remote_Pathogen_Hits",
+        "Overall_Decision"
+    ]
+    with open(csv_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(csv_headers)
+        for d in summary_data:
+            writer.writerow([
+                f"Candidate_{d['rank']}", d["fwd_seq"], d["rev_seq"], d["probe_seq"],
+                d["human_score"], d["human_grade"], d["human_status"], d["human_offtargets"], d["human_dangerous"],
+                d["virus_score"], d["virus_grade"], d["virus_status"], d["virus_pathogen"], d["virus_offtargets"],
+                d["remote_score"], d["remote_grade"], d["remote_status"], d["remote_offtargets"], d["remote_dangerous"], d["remote_pathogen"],
+                d["status"]
+            ])
+    print(f"📊 Overall Summary CSV generated: {csv_path}")
+
+    # Generate Markdown Report
+    md_path = outdir / "blast_specificity_summary.md"
+    md_lines = [
+        "# 📋 M09 BLAST Specificity Verification Summary",
+        "",
+        f"*Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*",
+        "",
+        "Laporan ringkasan ini membandingkan spesifisitas seluruh kandidat primer hasil pencarian BLAST untuk mempermudah keputusan pemilihan primer selanjutnya.",
+        "",
+        "## Summary Table",
+        ""
+    ]
+
+    is_local_run = any(d["human_score"] != "-" or d["virus_score"] != "-" for d in summary_data)
+    
+    if is_local_run:
+        md_lines.append("| Candidate | Overall | Human Score (Grade) | Human 3' Off-targets | Virus Score (Grade) | Virus Pathogen Hits |")
+        md_lines.append("|-----------|---------|---------------------|----------------------|---------------------|---------------------|")
+        for d in summary_data:
+            h_score_str = f"{d['human_score']} ({d['human_grade']})" if d['human_score'] != "-" else "-"
+            v_score_str = f"{d['virus_score']} ({d['virus_grade']})" if d['virus_score'] != "-" else "-"
+            status_icon = "✅ PASS" if d["status"] == "PASS" else "❌ FAIL"
+            md_lines.append(
+                f"| **Candidate {d['rank']}** | {status_icon} | {h_score_str} | {d['human_dangerous']} | {v_score_str} | {d['virus_pathogen']} |"
+            )
+    else:
+        md_lines.append("| Candidate | Overall | Specificity Score (Grade) | Total Off-targets | Pathogen Hits |")
+        md_lines.append("|-----------|---------|---------------------------|-------------------|---------------|")
+        for d in summary_data:
+            r_score_str = f"{d['remote_score']} ({d['remote_grade']})" if d['remote_score'] != "-" else "-"
+            status_icon = "✅ PASS" if d["status"] == "PASS" else "❌ FAIL"
+            md_lines.append(
+                f"| **Candidate {d['rank']}** | {status_icon} | {r_score_str} | {d['remote_offtargets']} | {d['remote_pathogen']} |"
+            )
+
+    md_lines.append("")
+    md_lines.append("## Detailed Sequences")
+    md_lines.append("")
+    md_lines.append("| Candidate | Forward Primer (5' → 3') | Reverse Primer (5' → 3') | Probe (5' → 3') |")
+    md_lines.append("|-----------|--------------------------|--------------------------|-----------------|")
+    for d in summary_data:
+        probe_seq_str = f"`{d['probe_seq']}`" if d['probe_seq'] else "-"
+        md_lines.append(f"| **Candidate {d['rank']}** | `{d['fwd_seq']}` | `{d['rev_seq']}` | {probe_seq_str} |")
+
+    md_lines.append("")
+    md_lines.append("---")
+    md_lines.append("*Report generated by M09 Spec Summary Compiler*")
+
+    with open(md_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(md_lines))
+    print(f"📝 Overall Summary Markdown report generated: {md_path}")
 
 if __name__ == "__main__":
     main()
