@@ -10,7 +10,7 @@ global_params:
   iupac_threshold: 0.15           # Minor allele frequency to trigger IUPAC encoding (0.15 = 15%)
 
 # --- PIPELINE CONFIGURATION ---
-build_name: "influenza-a-mp-universal-full-final"
+build_name: "influenza-a-mp-universal-ws-final"
 database: "local"
 
 references:
@@ -174,7 +174,7 @@ primerlab:
     search_strategy: "standard"
     hard_qc_filter: "false"
     max_search_iterations: 5
-    vienna_ranking_limit: 100
+    vienna_ranking_limit: 500
     # Kita biarkan window_size null agar PrimerLab memproses 1027bp sekaligus (lebih akurat untuk RAA)
     window_size: null
     overlap: 200
@@ -190,7 +190,7 @@ primerlab:
 # [M09] BLAST Specificity Verification
 blast_verification:
   enabled: true
-  num_candidates: 25              # Jumlah kandidat teratas yang akan di-BLAST
+  num_candidates: 100              # Jumlah kandidat teratas yang akan di-BLAST
   mode: "local"                  # "remote" (NCBI cloud) atau "local" (custom DB)
   database: "custom_respiratory_db"
   local_db_path: "resources/blast_db" # Root folder db; sub-db dikelola oleh build script

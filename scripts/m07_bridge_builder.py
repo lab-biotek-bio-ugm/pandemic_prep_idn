@@ -427,28 +427,27 @@ def map_hyphy_to_genome(genes, hyphy_dir, target_genes):
 
         if fubar_data or meme_data:
             codon_data[name] = {}
+            n_codons = max(len(fubar_data), len(meme_data))
+            for ci in range(n_codons):
+                # Stop mapping if codon coordinates exceed GFF segment lengths (prevent M1/M2 overflow)
+                if ci * 3 + 2 >= len(cds_coords):
+                    break
 
-        n_codons = max(len(fubar_data), len(meme_data), 1)
-        for ci in range(n_codons):
-            # Stop mapping if codon coordinates exceed GFF segment lengths (prevent M1/M2 overflow)
-            if ci * 3 + 2 >= len(cds_coords):
-                break
+                entry = {
+                    "gene": name,
+                    "codon_idx": ci,
+                    "fubar_purifying_prob": 0.5,
+                    "meme_pvalue": 1.0,
+                }
+                if ci < len(fubar_data):
+                    entry["fubar_purifying_prob"] = fubar_data[ci]["fubar_purifying_prob"]
+                if ci < len(meme_data):
+                    entry["meme_pvalue"] = meme_data[ci]["meme_pvalue"]
 
-            entry = {
-                "gene": name,
-                "codon_idx": ci,
-                "fubar_purifying_prob": 0.5,
-                "meme_pvalue": 1.0,
-            }
-            if ci < len(fubar_data):
-                entry["fubar_purifying_prob"] = fubar_data[ci]["fubar_purifying_prob"]
-            if ci < len(meme_data):
-                entry["meme_pvalue"] = meme_data[ci]["meme_pvalue"]
-
-            # Map the 3 nucleotides of this codon to genomic coordinates
-            for offset in range(3):
-                gpos = cds_coords[ci * 3 + offset]
-                codon_data[name][gpos] = entry
+                # Map the 3 nucleotides of this codon to genomic coordinates
+                for offset in range(3):
+                    gpos = cds_coords[ci * 3 + offset]
+                    codon_data[name][gpos] = entry
 
         gard_path = hyphy_dir / f"gard_{name}.json"
         if gard_path.exists():
