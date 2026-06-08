@@ -697,33 +697,39 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
                 rank = d["rank"]
                 amp_start = d["amplicon_start"]
                 amp_end = d["amplicon_end"]
+                # Compute lengths of primer elements
+                fwd_len = d["fwd_end"] - d["fwd_start"] + 1 if (d["fwd_start"] is not None and d["fwd_end"] is not None) else 0
+                rev_len = d["rev_end"] - d["rev_start"] + 1 if (d["rev_start"] is not None and d["rev_end"] is not None) else 0
+                prb_len = d["probe_end"] - d["probe_start"] + 1 if (d["probe_start"] is not None and d["probe_end"] is not None) else 0
+                amp_len = amp_end - amp_start + 1 if (amp_start is not None and amp_end is not None) else 0
+
                 # BUG-3: Only write if coordinates are valid (>= 0 and not None)
                 if amp_start is not None and amp_end is not None and amp_start < amp_end:
                     # GFF3 is 1-based, inclusive coordinates
                     clean_score = _clean_gff_val(d['final_score'])
                     clean_tier = _clean_gff_val(d['tier'])
-                    f.write(f"{target}\tPrimerLab\tamplicon\t{amp_start+1}\t{amp_end}\t.\t+\t.\tID=cand_{rank}_amp;Name=Candidate_{rank}_Amplicon;Score={clean_score};Tier={clean_tier}\n")
+                    f.write(f"{target}\tPrimerLab\tmRNA\t{amp_start+1}\t{amp_end+1}\t{clean_score}\t+\t.\tID=cand_{rank}_amp;Name=Candidate_{rank}_({amp_len}_bp);Score={clean_score};Tier={clean_tier}\n")
                 
                 fwd_start = d["fwd_start"]
                 fwd_end = d["fwd_end"]
                 if fwd_start is not None and fwd_end is not None and fwd_start < fwd_end:
                     clean_tm = _clean_gff_val(d['fwd_tm'])
                     clean_gc = _clean_gff_val(d['fwd_gc'])
-                    f.write(f"{target}\tPrimerLab\tprimer\t{fwd_start+1}\t{fwd_end}\t.\t+\t.\tID=cand_{rank}_F;Name=Candidate_{rank}_Forward;Parent=cand_{rank}_amp;Tm={clean_tm};GC={clean_gc}\n")
+                    f.write(f"{target}\tPrimerLab\texon\t{fwd_start+1}\t{fwd_end+1}\t.\t+\t.\tID=cand_{rank}_F;Name=Fwd_({fwd_len}_bp);Parent=cand_{rank}_amp;Tm={clean_tm};GC={clean_gc}\n")
                 
                 rev_start = d["rev_start"]
                 rev_end = d["rev_end"]
                 if rev_start is not None and rev_end is not None and rev_start < rev_end:
                     clean_tm = _clean_gff_val(d['rev_tm'])
                     clean_gc = _clean_gff_val(d['rev_gc'])
-                    f.write(f"{target}\tPrimerLab\tprimer\t{rev_start+1}\t{rev_end}\t.\t-\t.\tID=cand_{rank}_R;Name=Candidate_{rank}_Reverse;Parent=cand_{rank}_amp;Tm={clean_tm};GC={clean_gc}\n")
+                    f.write(f"{target}\tPrimerLab\texon\t{rev_start+1}\t{rev_end+1}\t.\t-\t.\tID=cand_{rank}_R;Name=Rev_({rev_len}_bp);Parent=cand_{rank}_amp;Tm={clean_tm};GC={clean_gc}\n")
                 
                 prb_start = d["probe_start"]
                 prb_end = d["probe_end"]
                 if prb_start is not None and prb_end is not None and prb_start < prb_end:
                     clean_tm = _clean_gff_val(d['probe_tm'])
                     clean_gc = _clean_gff_val(d['probe_gc'])
-                    f.write(f"{target}\tPrimerLab\tprobe\t{prb_start+1}\t{prb_end}\t.\t+\t.\tID=cand_{rank}_P;Name=Candidate_{rank}_Probe;Parent=cand_{rank}_amp;Tm={clean_tm};GC={clean_gc}\n")
+                    f.write(f"{target}\tPrimerLab\texon\t{prb_start+1}\t{prb_end+1}\t.\t+\t.\tID=cand_{rank}_P;Name=Prb_({prb_len}_bp);Parent=cand_{rank}_amp;Tm={clean_tm};GC={clean_gc}\n")
         print(f"🧬 GFF3 Genomic track generated: {gff_path}")
     except Exception as e:
         print(f"Warning: Failed to generate GFF3: {e}")
@@ -738,22 +744,22 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
                 amp_start = d["amplicon_start"]
                 amp_end = d["amplicon_end"]
                 if amp_start is not None and amp_end is not None and amp_start < amp_end:
-                    f.write(f"{target}\t{amp_start}\t{amp_end}\tCandidate_{rank}_Amplicon\t1000\t+\n")
+                    f.write(f"{target}\t{amp_start}\t{amp_end+1}\tCandidate_{rank}_Amplicon\t1000\t+\n")
                 
                 fwd_start = d["fwd_start"]
                 fwd_end = d["fwd_end"]
                 if fwd_start is not None and fwd_end is not None and fwd_start < fwd_end:
-                    f.write(f"{target}\t{fwd_start}\t{fwd_end}\tCandidate_{rank}_Forward\t800\t+\n")
+                    f.write(f"{target}\t{fwd_start}\t{fwd_end+1}\tCandidate_{rank}_Forward\t800\t+\n")
                 
                 rev_start = d["rev_start"]
                 rev_end = d["rev_end"]
                 if rev_start is not None and rev_end is not None and rev_start < rev_end:
-                    f.write(f"{target}\t{rev_start}\t{rev_end}\tCandidate_{rank}_Reverse\t800\t-\n")
+                    f.write(f"{target}\t{rev_start}\t{rev_end+1}\tCandidate_{rank}_Reverse\t800\t-\n")
                 
                 prb_start = d["probe_start"]
                 prb_end = d["probe_end"]
                 if prb_start is not None and prb_end is not None and prb_start < prb_end:
-                    f.write(f"{target}\t{prb_start}\t{prb_end}\tCandidate_{rank}_Probe\t900\t+\n")
+                    f.write(f"{target}\t{prb_start}\t{prb_end+1}\tCandidate_{rank}_Probe\t900\t+\n")
         print(f"🧬 BED track generated: {bed_path}")
     except Exception as e:
         print(f"Warning: Failed to generate BED: {e}")
@@ -871,7 +877,6 @@ def _generate_igv_session(session_path: Path, gff_path: Path, bed_path: Path,
     """GAP-4: Generate an IGV session XML file that pre-loads all genomic tracks."""
     # Use relative paths from the session file location
     gff_rel = gff_path.name
-    bed_rel = bed_path.name
     
     # Check if M07 BED is available (one directory up, in m07 folder)
     m07_bed = outdir.parent / "m07" / "conserved_regions.bed"
@@ -893,14 +898,12 @@ def _generate_igv_session(session_path: Path, gff_path: Path, bed_path: Path,
     xml_content = f'''<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <Session genome="{genome_val}" hasGeneTrack="false" version="8">
     <Resources>
-        <Resource path="{gff_rel}"/>
-        <Resource path="{bed_rel}"/>{m07_bed_str}
+        <Resource path="{gff_rel}"/>{m07_bed_str}
     </Resources>
     <Panel name="DataPanel" height="300">
-        <Track id="{gff_rel}" name="Primer Candidates (GFF3)" renderer="BASIC_FEATURE" visible="true" displayMode="EXPANDED">
+        <Track id="{gff_rel}" name="Primer Candidates" renderer="BASIC_FEATURE" visible="true" displayMode="EXPANDED">
             <RenderOptions colorByAttribute="Name"/>
         </Track>
-        <Track id="{bed_rel}" name="Primer Candidates (BED)" visible="true" displayMode="COLLAPSED"/>
     </Panel>
 </Session>
 '''
