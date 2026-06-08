@@ -897,10 +897,10 @@ def _generate_igv_session(session_path: Path, gff_path: Path, bed_path: Path,
         <Resource path="{bed_rel}"/>{m07_bed_str}
     </Resources>
     <Panel name="DataPanel" height="300">
-        <Track id="{gff_rel}" name="Primer Candidates (GFF3)" renderer="BASIC_FEATURE" visible="true">
+        <Track id="{gff_rel}" name="Primer Candidates (GFF3)" renderer="BASIC_FEATURE" visible="true" displayMode="EXPANDED">
             <RenderOptions colorByAttribute="Name"/>
         </Track>
-        <Track id="{bed_rel}" name="Primer Candidates (BED)" visible="true"/>
+        <Track id="{bed_rel}" name="Primer Candidates (BED)" visible="true" displayMode="COLLAPSED"/>
     </Panel>
 </Session>
 '''
