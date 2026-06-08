@@ -764,13 +764,18 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
     except Exception as e:
         print(f"Warning: Failed to generate BED: {e}")
 
-    # Generate forbidden regions track
-    forbidden_gff_path = outdir / "forbidden_regions.gff3"
+    # Generate forbidden regions tracks
+    entropy_gff_path = outdir / "high_entropy.gff3"
+    meme_gff_path = outdir / "meme_selection.gff3"
+    gard_gff_path = outdir / "recombination_breakpoints.gff3"
     try:
-        _generate_forbidden_regions(forbidden_gff_path, target, bridge_report_path)
-        print(f"🚫 Forbidden regions GFF3 track generated: {forbidden_gff_path}")
+        _generate_individual_forbidden_tracks(
+            entropy_gff_path, meme_gff_path, gard_gff_path,
+            target, bridge_report_path
+        )
+        print("🚫 Individual forbidden tracks (Entropy, MEME, GARD) generated.")
     except Exception as e:
-        print(f"Warning: Failed to generate forbidden regions: {e}")
+        print(f"Warning: Failed to generate forbidden tracks: {e}")
 
     # --- GAP-4: Generate IGV session XML ---
     igv_session_path = outdir / "igv_session.xml"
@@ -880,15 +885,15 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
         print(f"Warning: Failed to generate premium report: {e}")
 
 
-def _generate_forbidden_regions(gff_path: Path, target: str, bridge_report_path: Optional[str]):
-    """Generate a GFF3 track for forbidden regions (GARD breakpoints, high mutation/entropy zones, and MEME selection sites)."""
+def _generate_individual_forbidden_tracks(entropy_path: Path, meme_path: Path, gard_path: Path,
+                                         target: str, bridge_report_path: Optional[str]):
+    """Generate separate GFF3 tracks for each forbidden category for clean visual grouping in IGV."""
     if not bridge_report_path or not os.path.exists(bridge_report_path):
         return False
 
     gard_breakpoints = _load_gard_breakpoints(bridge_report_path)
-    
-    # Try to find primer_targets_manifest.yaml in the same folder as bridge_report.json
     manifest_path = Path(bridge_report_path).parent / "primer_targets_manifest.yaml"
+    
     high_entropy_blocks = []
     meme_blocks = []
     
@@ -898,16 +903,13 @@ def _generate_forbidden_regions(gff_path: Path, target: str, bridge_report_path:
             with open(manifest_path, "r") as f:
                 manifest = yaml.safe_load(f)
             
-            # Find candidate regions and get positional scores
             for region in manifest.get("candidate_regions", []):
-                # 1. Entropy blocks
+                # 1. Entropy
                 entropy_scores = region.get("positional_scores", {}).get("entropy", [])
                 if entropy_scores:
-                    # Group contiguous positions with entropy >= 0.2
                     in_block = False
                     start_pos = 0
                     max_ent = 0.0
-                    
                     for pos, score in enumerate(entropy_scores):
                         val = float(score) if score is not None else 0.0
                         if val >= 0.2:
@@ -925,7 +927,6 @@ def _generate_forbidden_regions(gff_path: Path, target: str, bridge_report_path:
                                     "max_entropy": round(max_ent, 4)
                                 })
                                 in_block = False
-                                
                     if in_block:
                         high_entropy_blocks.append({
                             "start": start_pos,
@@ -933,14 +934,12 @@ def _generate_forbidden_regions(gff_path: Path, target: str, bridge_report_path:
                             "max_entropy": round(max_ent, 4)
                         })
 
-                # 2. MEME selection sites
+                # 2. MEME
                 meme_scores = region.get("positional_scores", {}).get("meme_pval", [])
                 if meme_scores:
-                    # Group contiguous positions with meme_pval < 0.05 (episodic diversifying selection)
                     in_block = False
                     start_pos = 0
                     min_pval = 1.0
-                    
                     for pos, score in enumerate(meme_scores):
                         val = float(score) if score is not None else 1.0
                         if val < 0.05:
@@ -958,7 +957,6 @@ def _generate_forbidden_regions(gff_path: Path, target: str, bridge_report_path:
                                     "min_pvalue": round(min_pval, 6)
                                 })
                                 in_block = False
-                                
                     if in_block:
                         meme_blocks.append({
                             "start": start_pos,
@@ -966,42 +964,49 @@ def _generate_forbidden_regions(gff_path: Path, target: str, bridge_report_path:
                             "min_pvalue": round(min_pval, 6)
                         })
         except Exception as e:
-            print(f"Warning: Failed to load manifest for forbidden regions: {e}")
-            
-    # If we have no breakpoints, high entropy blocks, or meme blocks, write nothing
-    if not gard_breakpoints and not high_entropy_blocks and not meme_blocks:
-        return False
-        
-    try:
-        with open(gff_path, "w", encoding="utf-8") as f:
-            f.write("##gff-version 3\n")
-            f.write(f"##sequence-region {target} 1 15000\n")
-            
-            # Write GARD breakpoints
-            for idx, bp in enumerate(gard_breakpoints):
-                pos = bp.get("genome_pos")
-                pval = bp.get("p_value", 0.0)
-                if pos is not None:
-                    # GFF3 coordinates are 1-based. End is +1.
-                    f.write(f"{target}\tPrimerLab\trecombination_breakpoint\t{pos+1}\t{pos+1}\t.\t+\t.\tID=gard_bp_{idx};Name=Breakpoint_(p={pval});Note=Recombination breakpoint detected by GARD\n")
-            
-            # Write High Entropy Blocks
-            for idx, block in enumerate(high_entropy_blocks):
-                start = block["start"]
-                end = block["end"]
-                max_ent = block["max_entropy"]
-                f.write(f"{target}\tPrimerLab\thigh_entropy_zone\t{start+1}\t{end+1}\t.\t+\t.\tID=ent_zone_{idx};Name=High_Mutation_({max_ent});Note=Shannon entropy >= 0.2\n")
+            print(f"Warning: Failed to parse manifest for individual tracks: {e}")
 
-            # Write MEME Selection Blocks
-            for idx, block in enumerate(meme_blocks):
-                start = block["start"]
-                end = block["end"]
-                min_pval = block["min_pvalue"]
-                f.write(f"{target}\tPrimerLab\tselection_site\t{start+1}\t{end+1}\t.\t+\t.\tID=meme_site_{idx};Name=MEME_Selection_(p={min_pval});Note=Episodic diversifying selection (p-value < 0.05)\n")
-        return True
-    except Exception as e:
-        print(f"Warning: Failed to write forbidden_regions.gff3: {e}")
-        return False
+    # Write High Entropy GFF3
+    if high_entropy_blocks:
+        try:
+            with open(entropy_path, "w", encoding="utf-8") as f:
+                f.write("##gff-version 3\n")
+                f.write(f"##sequence-region {target} 1 15000\n")
+                for idx, block in enumerate(high_entropy_blocks):
+                    start = block["start"]
+                    end = block["end"]
+                    max_ent = block["max_entropy"]
+                    f.write(f"{target}\tPrimerLab\thigh_entropy_zone\t{start+1}\t{end+1}\t.\t+\t.\tID=ent_zone_{idx};Name=High_Mutation_({max_ent});Note=Shannon entropy >= 0.2\n")
+        except Exception as e:
+            print(f"Warning: Failed to write {entropy_path}: {e}")
+
+    # Write MEME Selection GFF3
+    if meme_blocks:
+        try:
+            with open(meme_path, "w", encoding="utf-8") as f:
+                f.write("##gff-version 3\n")
+                f.write(f"##sequence-region {target} 1 15000\n")
+                for idx, block in enumerate(meme_blocks):
+                    start = block["start"]
+                    end = block["end"]
+                    min_pval = block["min_pvalue"]
+                    f.write(f"{target}\tPrimerLab\tselection_site\t{start+1}\t{end+1}\t.\t+\t.\tID=meme_site_{idx};Name=MEME_Selection_(p={min_pval});Note=Episodic diversifying selection (p-value < 0.05)\n")
+        except Exception as e:
+            print(f"Warning: Failed to write {meme_path}: {e}")
+
+    # Write GARD Breakpoints GFF3
+    if gard_breakpoints:
+        try:
+            with open(gard_path, "w", encoding="utf-8") as f:
+                f.write("##gff-version 3\n")
+                f.write(f"##sequence-region {target} 1 15000\n")
+                for idx, bp in enumerate(gard_breakpoints):
+                    pos = bp.get("genome_pos")
+                    pval = bp.get("p_value", 0.0)
+                    if pos is not None:
+                        f.write(f"{target}\tPrimerLab\trecombination_breakpoint\t{pos+1}\t{pos+1}\t.\t+\t.\tID=gard_bp_{idx};Name=Breakpoint_(p={pval});Note=Recombination breakpoint detected by GARD\n")
+        except Exception as e:
+            print(f"Warning: Failed to write {gard_path}: {e}")
 
 
 def _generate_igv_session(session_path: Path, gff_path: Path, bed_path: Path,
@@ -1017,35 +1022,82 @@ def _generate_igv_session(session_path: Path, gff_path: Path, bed_path: Path,
         m07_bed_str = f'''
         <Resource path="../m07/conserved_regions.bed"/>'''
 
-    # Check if forbidden_regions.gff3 is available
-    forbidden_gff = outdir / "forbidden_regions.gff3"
-    forbidden_str = ""
-    forbidden_track_str = ""
-    if forbidden_gff.exists():
-        forbidden_str = f'''
-        <Resource path="forbidden_regions.gff3"/>'''
-        forbidden_track_str = f'''
-        <Track id="forbidden_regions.gff3" name="Daerah Terlarang (GARD/Mutation)" renderer="BASIC_FEATURE" visible="true" displayMode="EXPANDED" color="255,0,0">
-            <RenderOptions color="255,0,0"/>
+    # Try to find a GFF annotation file in the same folder as reference FASTA
+    ref_gff_rel_str = ""
+    ref_gff_track_str = ""
+    if ref_fasta_path:
+        try:
+            fasta_path = Path(ref_fasta_path)
+            ref_gff_path = None
+            # Look for .gff or .gff3 file with same prefix
+            for ext in [".gff", ".gff3"]:
+                gff_candidate = fasta_path.with_suffix(ext)
+                if gff_candidate.exists():
+                    ref_gff_path = gff_candidate
+                    break
+            if not ref_gff_path:
+                # Check other .gff files in the same folder
+                for f in fasta_path.parent.glob("*.gff*"):
+                    if f.name != gff_path.name:
+                        ref_gff_path = f
+                        break
+            if ref_gff_path and ref_gff_path.exists():
+                rel_ref_gff = os.path.relpath(ref_gff_path, start=outdir).replace("\\", "/")
+                ref_gff_rel_str = f'''
+        <Resource path="{rel_ref_gff}"/>'''
+                ref_gff_track_str = f'''
+        <Track id="{rel_ref_gff}" name="Gene Annotations" renderer="GENE" visible="true" displayMode="EXPANDED" color="0,128,0">
         </Track>'''
+        except Exception:
+            pass
+
+    # Check for individual tracks
+    entropy_gff = outdir / "high_entropy.gff3"
+    meme_gff = outdir / "meme_selection.gff3"
+    gard_gff = outdir / "recombination_breakpoints.gff3"
+
+    resources = [f'<Resource path="{gff_rel}"/>']
+    tracks = [f'<Track id="Reference sequence" name="Reference Sequence" visible="true"/>']
+
+    if ref_gff_rel_str:
+        resources.append(ref_gff_rel_str.strip())
+        tracks.append(ref_gff_track_str.strip())
+
+    if entropy_gff.exists():
+        resources.append('<Resource path="high_entropy.gff3"/>')
+        tracks.append('<Track id="high_entropy.gff3" name="Variasi Tinggi (Entropy &gt;= 0.2)" renderer="BASIC_FEATURE" visible="true" displayMode="EXPANDED" color="255,165,0"><RenderOptions color="255,165,0"/></Track>')
+
+    if meme_gff.exists():
+        resources.append('<Resource path="meme_selection.gff3"/>')
+        tracks.append('<Track id="meme_selection.gff3" name="Tekanan Seleksi (MEME p &lt; 0.05)" renderer="BASIC_FEATURE" visible="true" displayMode="EXPANDED" color="128,0,128"><RenderOptions color="128,0,128"/></Track>')
+
+    if gard_gff.exists():
+        resources.append('<Resource path="recombination_breakpoints.gff3"/>')
+        tracks.append('<Track id="recombination_breakpoints.gff3" name="Breakpoint Rekombinasi (GARD)" renderer="BASIC_FEATURE" visible="true" displayMode="EXPANDED" color="255,0,0"><RenderOptions color="255,0,0"/></Track>')
+
+    if m07_bed.exists():
+        resources.append('<Resource path="../m07/conserved_regions.bed"/>')
+        tracks.append('<Track id="../m07/conserved_regions.bed" name="Conserved Regions (BED)" visible="false"/>')
 
     # Determine genome value
     genome_val = reference_id if reference_id else "NC_002016.1"
     if ref_fasta_path and os.path.exists(ref_fasta_path):
         try:
-            # Compute relative path from the session file directory (outdir)
             rel_ref = os.path.relpath(ref_fasta_path, start=outdir).replace("\\", "/")
             genome_val = rel_ref
         except Exception:
             pass
 
+    resources_xml = "\n        ".join(resources)
+    tracks_xml = "\n        ".join(tracks)
+
     xml_content = f'''<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <Session genome="{genome_val}" hasGeneTrack="false" version="8">
     <Resources>
-        <Resource path="{gff_rel}"/>{forbidden_str}{m07_bed_str}
+        {resources_xml}
     </Resources>
     <Panel name="DataPanel" height="300">
-        <Track id="Reference sequence" name="Reference Sequence" visible="true"/>{forbidden_track_str}
+        {tracks_xml}
         <Track id="{gff_rel}" name="Primer Candidates" renderer="BASIC_FEATURE" visible="true" displayMode="EXPANDED">
             <RenderOptions colorByAttribute="Name"/>
         </Track>
