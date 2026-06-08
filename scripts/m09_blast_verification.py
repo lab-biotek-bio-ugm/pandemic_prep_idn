@@ -140,9 +140,11 @@ def main():
 
     # Compile overall summary report and CSV for downstream decisions
     try:
-        compile_summary(str(outdir), args.alternatives)
+        compile_summary(str(outdir), args.alternatives, args.target)
     except Exception as e:
+        import traceback
         print(f"⚠️ Warning: Failed to compile specificity summary: {e}")
+        traceback.print_exc()
 
 def get_grade(score):
     if score >= 90: return "A"
@@ -151,10 +153,11 @@ def get_grade(score):
     elif score >= 60: return "D"
     else: return "F"
 
-def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None):
+def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None, target_id: Optional[str] = None):
     """
     Scans output directory, loads JSON results for all candidates,
     and generates master CSV and Markdown reports for comparison.
+    Also produces dedicated BED, GFF3, JSON and MD reports specifically for PASSing candidates.
     """
     outdir = Path(outdir_path)
     if not outdir.exists():
@@ -162,6 +165,7 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None):
 
     # Load alternatives sequences as fallback
     alt_sequences = {}
+    alts = []
     if alternatives_path and os.path.exists(alternatives_path):
         try:
             with open(alternatives_path, "r") as f:
@@ -175,7 +179,8 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None):
                 alt_sequences[rank] = {
                     "fwd": fwd_seq,
                     "rev": rev_seq,
-                    "probe": probe_seq
+                    "probe": probe_seq,
+                    "full_alt": alt
                 }
         except Exception as e:
             print(f"Warning: Failed to parse alternatives fallback: {e}")
@@ -313,8 +318,10 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None):
                 print(f"Warning: Failed to parse remote JSON for candidate {rank}: {e}")
 
         # Fallback to alternatives.json if sequences are still empty
+        fallback = alt_sequences.get(rank, {})
+        full_alt = fallback.get("full_alt", {})
+        
         if not fwd_seq or not rev_seq:
-            fallback = alt_sequences.get(rank, {})
             if not fwd_seq:
                 fwd_seq = fallback.get("fwd", "")
             if not rev_seq:
@@ -326,20 +333,69 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None):
             continue
 
         is_pass = True
-        if human_score != "-" and isinstance(human_score, float) and human_score < 70.0:
+        if human_score != "-" and isinstance(human_score, (int, float)) and human_score < 70.0:
             is_pass = False
-        if virus_score != "-" and isinstance(virus_score, float) and virus_score < 70.0:
+        if virus_score != "-" and isinstance(virus_score, (int, float)) and virus_score < 70.0:
             is_pass = False
-        if remote_score != "-" and isinstance(remote_score, float) and remote_score < 70.0:
+        if remote_score != "-" and isinstance(remote_score, (int, float)) and remote_score < 70.0:
             is_pass = False
         
         status_text = "PASS" if is_pass else "FAIL"
+
+        # Load metadata from alternatives.json
+        p3_penalty = full_alt.get("p3_penalty", "-")
+        vienna_penalty = full_alt.get("vienna_penalty", "-")
+        final_score = full_alt.get("final_score", "-")
+        tier = full_alt.get("tier", "-")
+        
+        primers_dict = full_alt.get("primers", {})
+        fwd_info = primers_dict.get("forward", {})
+        rev_info = primers_dict.get("reverse", {})
+        probe_info = primers_dict.get("probe", {})
+        
+        fwd_tm = fwd_info.get("tm", "-")
+        rev_tm = rev_info.get("tm", "-")
+        probe_tm = probe_info.get("tm", "-") if probe_info else "-"
+        
+        fwd_gc = fwd_info.get("gc", "-")
+        rev_gc = rev_info.get("gc", "-")
+        probe_gc = probe_info.get("gc", "-") if probe_info else "-"
+        
+        qc_dict = full_alt.get("qc", {})
+        cross_dimer_dg = qc_dict.get("cross_dimer_dg", "-")
+        dimer_dg = qc_dict.get("dimer_dg", "-")
+        hairpin_dg = qc_dict.get("hairpin_dg", "-")
+        
+        amplicon_dict = full_alt.get("amplicon", {})
+        amplicon_length = amplicon_dict.get("length", "-")
 
         summary_data.append({
             "rank": rank,
             "fwd_seq": fwd_seq,
             "rev_seq": rev_seq,
             "probe_seq": probe_seq,
+            "fwd_start": fwd_info.get("start"),
+            "fwd_end": fwd_info.get("end"),
+            "rev_start": rev_info.get("start"),
+            "rev_end": rev_info.get("end"),
+            "probe_start": probe_info.get("start") if probe_info else None,
+            "probe_end": probe_info.get("end") if probe_info else None,
+            "amplicon_start": amplicon_dict.get("start"),
+            "amplicon_end": amplicon_dict.get("end"),
+            "p3_penalty": p3_penalty,
+            "vienna_penalty": vienna_penalty,
+            "final_score": final_score,
+            "tier": tier,
+            "fwd_tm": fwd_tm,
+            "rev_tm": rev_tm,
+            "probe_tm": probe_tm,
+            "fwd_gc": fwd_gc,
+            "rev_gc": rev_gc,
+            "probe_gc": probe_gc,
+            "cross_dimer_dg": cross_dimer_dg,
+            "dimer_dg": dimer_dg,
+            "hairpin_dg": hairpin_dg,
+            "amplicon_length": amplicon_length,
             "human_score": human_score,
             "human_grade": human_grade,
             "human_status": human_status,
@@ -435,6 +491,150 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None):
     with open(md_path, "w", encoding="utf-8") as f:
         f.write("\n".join(md_lines))
     print(f"📝 Overall Summary Markdown report generated: {md_path}")
+
+    # --- GENERATE DOWNSTREAM CHOSEN CANDIDATES (PASS) FILE AND GENOMIC TRACKS (GFF3 / BED) ---
+    pass_candidates = [d for d in summary_data if d["status"] == "PASS"]
+    if not pass_candidates:
+        print("⚠️ No candidates passed the BLAST specificity threshold (Score >= 70). Skipping final reports.")
+        return
+
+    # 1. Save final_candidates.json
+    json_path = outdir / "final_candidates.json"
+    try:
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(pass_candidates, f, indent=2)
+        print(f"💾 final_candidates.json generated: {json_path}")
+    except Exception as e:
+        print(f"Warning: Failed to generate final_candidates.json: {e}")
+
+    # 2. Save final_candidates.gff3 (Genomic track for IGV/UCSC)
+    target = target_id if target_id else "NC_002016.1"
+    gff_path = outdir / "final_candidates.gff3"
+    try:
+        with open(gff_path, "w", encoding="utf-8") as f:
+            f.write("##gff-version 3\n")
+            f.write(f"##sequence-region {target} 1 15000\n")
+            for d in pass_candidates:
+                rank = d["rank"]
+                amp_start = d["amplicon_start"]
+                amp_end = d["amplicon_end"]
+                # Write Amplicon
+                if amp_start is not None and amp_end is not None:
+                    # GFF3 is 1-based, inclusive coordinates
+                    f.write(f"{target}\tPrimerLab\tamplicon\t{amp_start+1}\t{amp_end}\t.\t+\t.\tID=cand_{rank}_amp;Name=Candidate_{rank}_Amplicon;Score={d['final_score']};Tier={d['tier']}\n")
+                
+                # Write Forward
+                fwd_start = d["fwd_start"]
+                fwd_end = d["fwd_end"]
+                if fwd_start is not None and fwd_end is not None:
+                    f.write(f"{target}\tPrimerLab\tprimer\t{fwd_start+1}\t{fwd_end}\t.\t+\t.\tID=cand_{rank}_F;Name=Candidate_{rank}_Forward;Parent=cand_{rank}_amp;Tm={d['fwd_tm']};GC={d['fwd_gc']}\n")
+                
+                # Write Reverse
+                rev_start = d["rev_start"]
+                rev_end = d["rev_end"]
+                if rev_start is not None and rev_end is not None:
+                    f.write(f"{target}\tPrimerLab\tprimer\t{rev_start+1}\t{rev_end}\t.\t-\t.\tID=cand_{rank}_R;Name=Candidate_{rank}_Reverse;Parent=cand_{rank}_amp;Tm={d['rev_tm']};GC={d['rev_gc']}\n")
+                
+                # Write Probe
+                prb_start = d["probe_start"]
+                prb_end = d["probe_end"]
+                if prb_start is not None and prb_end is not None:
+                    f.write(f"{target}\tPrimerLab\tprobe\t{prb_start+1}\t{prb_end}\t.\t+\t.\tID=cand_{rank}_P;Name=Candidate_{rank}_Probe;Parent=cand_{rank}_amp;Tm={d['probe_tm']};GC={d['probe_gc']}\n")
+        print(f"🧬 GFF3 Genomic track generated: {gff_path}")
+    except Exception as e:
+        print(f"Warning: Failed to generate GFF3: {e}")
+
+    # 3. Save final_candidates.bed (Track for IGV/UCSC)
+    bed_path = outdir / "final_candidates.bed"
+    try:
+        with open(bed_path, "w", encoding="utf-8") as f:
+            f.write('track name="PrimerLab RAA Candidates" description="Verified RAA Primers and Probes" useScore=1\n')
+            for d in pass_candidates:
+                rank = d["rank"]
+                # BED is 0-based start, 1-based exclusive end
+                amp_start = d["amplicon_start"]
+                amp_end = d["amplicon_end"]
+                if amp_start is not None and amp_end is not None:
+                    f.write(f"{target}\t{amp_start}\t{amp_end}\tCandidate_{rank}_Amplicon\t1000\t+\n")
+                
+                fwd_start = d["fwd_start"]
+                fwd_end = d["fwd_end"]
+                if fwd_start is not None and fwd_end is not None:
+                    f.write(f"{target}\t{fwd_start}\t{fwd_end}\tCandidate_{rank}_Forward\t800\t+\n")
+                
+                rev_start = d["rev_start"]
+                rev_end = d["rev_end"]
+                if rev_start is not None and rev_end is not None:
+                    f.write(f"{target}\t{rev_start}\t{rev_end}\tCandidate_{rank}_Reverse\t800\t-\n")
+                
+                prb_start = d["probe_start"]
+                prb_end = d["probe_end"]
+                if prb_start is not None and prb_end is not None:
+                    f.write(f"{target}\t{prb_start}\t{prb_end}\tCandidate_{rank}_Probe\t900\t+\n")
+        print(f"🧬 BED track generated: {bed_path}")
+    except Exception as e:
+        print(f"Warning: Failed to generate BED: {e}")
+
+    # 4. Save final_candidates_report.md (Premium markdown report for human viewing)
+    report_path = outdir / "final_candidates_report.md"
+    try:
+        rep_lines = [
+            "# 🏆 Final Verified RAA Candidates Report",
+            "",
+            f"*Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*",
+            "",
+            "Dokumen ini memuat daftar kandidat primer dan probe yang **LOLOS verifikasi spesifisitas BLAST** (tidak memicu off-target berbahaya) dan memenuhi semua kriteria QC termodinamika.",
+            "",
+            "## Summary of Passed Candidates",
+            "",
+            "| Rank | Tier | Penalty Score | Vienna Dimer dG | Human Score | Virus Pathogen Hits | Amplicon Size | Decision |",
+            "|------|------|---------------|-----------------|-------------|---------------------|---------------|----------|"
+        ]
+        for d in pass_candidates:
+            v_dg = d["cross_dimer_dg"]
+            v_dg_str = f"{v_dg} kcal/mol" if v_dg != "-" else "-"
+            rep_lines.append(
+                f"| Rank {d['rank']} | {d['tier']} | {d['final_score']} | {v_dg_str} | {d['human_score']} | {d['virus_pathogen']} | {d['amplicon_length']} bp | ✅ PASS |"
+            )
+        
+        rep_lines.append("")
+        rep_lines.append("## Detailed Coordinates & Sequences")
+        rep_lines.append("")
+        for d in pass_candidates:
+            rep_lines.extend([
+                f"### 📍 Candidate Rank {d['rank']} (Penalty: {d['final_score']})",
+                "",
+                f"* **Tier**: {d['tier']}",
+                f"* **Amplicon Size**: {d['amplicon_length']} bp (Position: {d['amplicon_start']}-{d['amplicon_end']})",
+                f"* **Thermodynamics**: Dimer dG: {d['dimer_dg']} | Hairpin dG: {d['hairpin_dg']} | Cross-dimer dG: {d['cross_dimer_dg']}",
+                f"* **BLAST Specificity**: Human Score: {d['human_score']} (Off-targets: {d['human_offtargets']}) | Virus Pathogen Hits: {d['virus_pathogen']}",
+                "",
+                "**Sequences:**",
+                f"* **Forward Primer** ({d['fwd_start']}-{d['fwd_end']}): `{d['fwd_seq']}` (Tm: {d['fwd_tm']}°C, GC: {d['fwd_gc']}%)",
+                f"* **Reverse Primer** ({d['rev_start']}-{d['rev_end']}): `{d['rev_seq']}` (Tm: {d['rev_tm']}°C, GC: {d['rev_gc']}%)",
+            ])
+            if d['probe_seq'] and d['probe_seq'] != "-":
+                rep_lines.append(f"* **Probe** ({d['probe_start']}-{d['probe_end']}): `{d['probe_seq']}` (Tm: {d['probe_tm']}°C, GC: {d['probe_gc']}%)")
+            rep_lines.append("")
+            
+        rep_lines.extend([
+            "---",
+            "### 🧬 IGV Integration & Visualization",
+            "Kandidat di atas juga diekspor ke dalam format standar anotasi genomik yang bisa langsung dimasukkan ke genome browser seperti **IGV** atau **UCSC**:",
+            f"* **GFF3 Track**: [final_candidates.gff3](file:///{str(gff_path.absolute()).replace(chr(92), '/')})",
+            f"* **BED Track**: [final_candidates.bed](file:///{str(bed_path.absolute()).replace(chr(92), '/')})",
+            "",
+            "Untuk melakukan visualisasi publikasi jurnal atau di IGV:",
+            "1. Buka **IGV**, load genome/consensus target Anda.",
+            "2. Klik `File -> Load from File...` lalu pilih file `final_candidates.gff3` atau `final_candidates.bed`.",
+            "3. Primer dan Probe akan dirender secara visual sesuai posisi binding situsnya di atas genom target."
+        ])
+        
+        with open(report_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(rep_lines))
+        print(f"🏆 Premium Final Candidates Report generated: {report_path}")
+    except Exception as e:
+        print(f"Warning: Failed to generate premium report: {e}")
 
 if __name__ == "__main__":
     main()
