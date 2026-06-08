@@ -764,6 +764,14 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
     except Exception as e:
         print(f"Warning: Failed to generate BED: {e}")
 
+    # Generate forbidden regions track
+    forbidden_gff_path = outdir / "forbidden_regions.gff3"
+    try:
+        _generate_forbidden_regions(forbidden_gff_path, target, bridge_report_path)
+        print(f"🚫 Forbidden regions GFF3 track generated: {forbidden_gff_path}")
+    except Exception as e:
+        print(f"Warning: Failed to generate forbidden regions: {e}")
+
     # --- GAP-4: Generate IGV session XML ---
     igv_session_path = outdir / "igv_session.xml"
     try:
@@ -872,6 +880,90 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
         print(f"Warning: Failed to generate premium report: {e}")
 
 
+def _generate_forbidden_regions(gff_path: Path, target: str, bridge_report_path: Optional[str]):
+    """Generate a GFF3 track for forbidden regions (GARD breakpoints and high mutation/entropy zones)."""
+    if not bridge_report_path or not os.path.exists(bridge_report_path):
+        return False
+
+    gard_breakpoints = _load_gard_breakpoints(bridge_report_path)
+    
+    # Try to find primer_targets_manifest.yaml in the same folder as bridge_report.json
+    manifest_path = Path(bridge_report_path).parent / "primer_targets_manifest.yaml"
+    high_entropy_blocks = []
+    
+    if manifest_path.exists():
+        try:
+            import yaml
+            with open(manifest_path, "r") as f:
+                manifest = yaml.safe_load(f)
+            
+            # Find candidate regions and get entropy positional scores
+            for region in manifest.get("candidate_regions", []):
+                entropy_scores = region.get("positional_scores", {}).get("entropy", [])
+                if not entropy_scores:
+                    continue
+                
+                # Group contiguous positions with entropy >= 0.2
+                in_block = False
+                start_pos = 0
+                max_ent = 0.0
+                
+                for pos, score in enumerate(entropy_scores):
+                    val = float(score) if score is not None else 0.0
+                    if val >= 0.2:
+                        if not in_block:
+                            in_block = True
+                            start_pos = pos
+                            max_ent = val
+                        else:
+                            max_ent = max(max_ent, val)
+                    else:
+                        if in_block:
+                            high_entropy_blocks.append({
+                                "start": start_pos,
+                                "end": pos - 1,
+                                "max_entropy": round(max_ent, 4)
+                            })
+                            in_block = False
+                            
+                if in_block:
+                    high_entropy_blocks.append({
+                        "start": start_pos,
+                        "end": len(entropy_scores) - 1,
+                        "max_entropy": round(max_ent, 4)
+                    })
+        except Exception as e:
+            print(f"Warning: Failed to load manifest for forbidden regions: {e}")
+            
+    # If we have either breakpoints or high entropy blocks, write the GFF3
+    if not gard_breakpoints and not high_entropy_blocks:
+        return False
+        
+    try:
+        with open(gff_path, "w", encoding="utf-8") as f:
+            f.write("##gff-version 3\n")
+            f.write(f"##sequence-region {target} 1 15000\n")
+            
+            # Write GARD breakpoints
+            for idx, bp in enumerate(gard_breakpoints):
+                pos = bp.get("genome_pos")
+                pval = bp.get("p_value", 0.0)
+                if pos is not None:
+                    # GFF3 coordinates are 1-based. End is +1.
+                    f.write(f"{target}\tPrimerLab\trecombination_breakpoint\t{pos+1}\t{pos+1}\t.\t+\t.\tID=gard_bp_{idx};Name=Breakpoint_(p={pval});Note=Recombination breakpoint detected by GARD\n")
+            
+            # Write High Entropy Blocks
+            for idx, block in enumerate(high_entropy_blocks):
+                start = block["start"]
+                end = block["end"]
+                max_ent = block["max_entropy"]
+                f.write(f"{target}\tPrimerLab\thigh_entropy_zone\t{start+1}\t{end+1}\t.\t+\t.\tID=ent_zone_{idx};Name=High_Mutation_({max_ent});Note=Shannon entropy >= 0.2\n")
+        return True
+    except Exception as e:
+        print(f"Warning: Failed to write forbidden_regions.gff3: {e}")
+        return False
+
+
 def _generate_igv_session(session_path: Path, gff_path: Path, bed_path: Path,
                           reference_id: str, outdir: Path, ref_fasta_path: Optional[str] = None):
     """GAP-4: Generate an IGV session XML file that pre-loads all genomic tracks."""
@@ -884,6 +976,18 @@ def _generate_igv_session(session_path: Path, gff_path: Path, bed_path: Path,
     if m07_bed.exists():
         m07_bed_str = f'''
         <Resource path="../m07/conserved_regions.bed"/>'''
+
+    # Check if forbidden_regions.gff3 is available
+    forbidden_gff = outdir / "forbidden_regions.gff3"
+    forbidden_str = ""
+    forbidden_track_str = ""
+    if forbidden_gff.exists():
+        forbidden_str = f'''
+        <Resource path="forbidden_regions.gff3"/>'''
+        forbidden_track_str = f'''
+        <Track id="forbidden_regions.gff3" name="Daerah Terlarang (GARD/Mutation)" renderer="BASIC_FEATURE" visible="true" displayMode="EXPANDED" color="255,0,0">
+            <RenderOptions color="255,0,0"/>
+        </Track>'''
 
     # Determine genome value
     genome_val = reference_id if reference_id else "NC_002016.1"
@@ -898,10 +1002,10 @@ def _generate_igv_session(session_path: Path, gff_path: Path, bed_path: Path,
     xml_content = f'''<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <Session genome="{genome_val}" hasGeneTrack="false" version="8">
     <Resources>
-        <Resource path="{gff_rel}"/>{m07_bed_str}
+        <Resource path="{gff_rel}"/>{forbidden_str}{m07_bed_str}
     </Resources>
     <Panel name="DataPanel" height="300">
-        <Track id="Reference sequence" name="Reference Sequence" visible="true"/>
+        <Track id="Reference sequence" name="Reference Sequence" visible="true"/>{forbidden_track_str}
         <Track id="{gff_rel}" name="Primer Candidates" renderer="BASIC_FEATURE" visible="true" displayMode="EXPANDED">
             <RenderOptions colorByAttribute="Name"/>
         </Track>
