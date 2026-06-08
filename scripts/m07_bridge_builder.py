@@ -241,13 +241,10 @@ def get_mismatch_positions(profile, start, end, threshold=0.10):
 def parse_gff(gff_path):
     """Parse GFF3 file to extract gene and UTR coordinates (0-based half-open).
 
-    Resilient parser that handles multiple GFF conventions:
-    - Standard: gene features with gene= or Name= attributes
-    - Fallback: if no named genes found, synthesizes gene regions from CDS features
+    Supports spliced genes by grouping CDS segments by name under 'segments' coordinate lists.
     """
-    genes = []
+    features_by_gene = {}  # {gene_name: {"CDS": [], "gene": [], "chrom": chrom, "strand": strand}}
     utrs = []
-    cds_by_gene = {}  # fallback: group CDS by gene= attribute
 
     with open(gff_path, "r") as f:
         for line in f:
@@ -261,6 +258,7 @@ def parse_gff(gff_path):
             feature_type = parts[2]
             start = int(parts[3]) - 1  # GFF is 1-based → convert to 0-based
             end = int(parts[4])        # Keep as exclusive end
+            strand = parts[6]
 
             # Parse attributes into dict
             attrs = {}
@@ -270,43 +268,64 @@ def parse_gff(gff_path):
                     key, val = attr.split("=", 1)
                     attrs[key] = val.strip('"')
 
-            if feature_type == "gene":
-                name = attrs.get("gene") or attrs.get("Name") or ""
-                if name:
-                    genes.append({"name": name, "start": start, "end": end, "chrom": chrom})
-
-            elif feature_type == "CDS":
-                gene_name = attrs.get("gene") or attrs.get("Name") or ""
-                if gene_name:
-                    if gene_name not in cds_by_gene:
-                        cds_by_gene[gene_name] = {"starts": [], "ends": [], "chrom": chrom}
-                    cds_by_gene[gene_name]["starts"].append(start)
-                    cds_by_gene[gene_name]["ends"].append(end)
-
-            elif feature_type in ("five_prime_UTR", "three_prime_UTR"):
+            if feature_type in ("five_prime_UTR", "three_prime_UTR"):
                 utr_name = "5'UTR" if "five" in feature_type else "3'UTR"
                 utrs.append({"name": utr_name, "start": start, "end": end, "chrom": chrom})
+                continue
 
-    # Fallback: if no named gene features, synthesize from CDS
-    if not genes and cds_by_gene:
-        logging.info("No named 'gene' features found in GFF; synthesizing from CDS entries.")
-        for gene_name, data in cds_by_gene.items():
-            genes.append({
-                "name": gene_name,
-                "start": min(data["starts"]),
-                "end": max(data["ends"]),
-                "chrom": data["chrom"],
-            })
+            if feature_type in ("gene", "CDS"):
+                name = attrs.get("gene") or attrs.get("Name") or attrs.get("ID") or ""
+                if not name:
+                    continue
+                if name not in features_by_gene:
+                    features_by_gene[name] = {"CDS": [], "gene": [], "chrom": chrom, "strand": strand}
+                features_by_gene[name][feature_type].append((start, end))
+
+    genes = []
+    for name, data in features_by_gene.items():
+        segs = data["CDS"] if data["CDS"] else data["gene"]
+        if not segs:
+            continue
+        # Sort segments by start coordinate
+        segs.sort(key=lambda x: x[0])
+        
+        gene_start = min(s[0] for s in segs)
+        gene_end = max(s[1] for s in segs)
+        
+        genes.append({
+            "name": name,
+            "start": gene_start,
+            "end": gene_end,
+            "chrom": data["chrom"],
+            "strand": data["strand"],
+            "segments": segs
+        })
 
     return genes, utrs
 
 def find_gene_for_position(pos, genes, utrs):
+    # First check if the position is inside any CDS segment of a gene.
+    # Prioritize genes where the position is actually in a CDS segment,
+    # and if multiple, sort by length (smallest first) to handle overlapping genes.
+    coding_genes = []
     for g in genes:
+        for seg_start, seg_end in g.get("segments", [(g["start"], g["end"])]):
+            if seg_start <= pos < seg_end:
+                coding_genes.append(g)
+                break
+    if coding_genes:
+        coding_genes.sort(key=lambda x: x["end"] - x["start"])
+        return coding_genes[0]["name"], True
+
+    # Fallback to general span (e.g. if position is in UTR or intron)
+    for g in sorted(genes, key=lambda x: x["end"] - x["start"]):
         if g["start"] <= pos < g["end"]:
             return g["name"], True
-    for u in utrs:
+
+    for u in sorted(utrs, key=lambda x: x["end"] - x["start"]):
         if u["start"] <= pos < u["end"]:
             return u["name"], False
+
     return "intergenic", False
 
 # --- HyPhy Score Mapper ---
@@ -377,7 +396,7 @@ def parse_gard_json(filepath):
     return breakpoints
 
 def map_hyphy_to_genome(genes, hyphy_dir, target_genes):
-    codon_data = {}
+    codon_data = {}  # {gene_name: {genomic_pos: entry}}
     gard_breakpoints = []
 
     for gene in genes:
@@ -385,7 +404,15 @@ def map_hyphy_to_genome(genes, hyphy_dir, target_genes):
         if name not in target_genes:
             continue
 
-        gene_start = gene["start"]
+        # Construct cds_coords: consecutive nucleotide coordinates across all CDS segments
+        segments = gene.get("segments", [(gene["start"], gene["end"])])
+        cds_coords = []
+        for start, end in segments:
+            cds_coords.extend(range(start, end))
+
+        if gene.get("strand") == "-":
+            cds_coords.reverse()
+
         fubar_path = hyphy_dir / f"fubar_{name}.json"
         fubar_data = []
         if fubar_path.exists():
@@ -398,9 +425,15 @@ def map_hyphy_to_genome(genes, hyphy_dir, target_genes):
             try: meme_data = parse_meme_json(str(meme_path))
             except Exception: pass
 
+        if fubar_data or meme_data:
+            codon_data[name] = {}
+
         n_codons = max(len(fubar_data), len(meme_data), 1)
         for ci in range(n_codons):
-            gpos = gene_start + ci * 3
+            # Stop mapping if codon coordinates exceed GFF segment lengths (prevent M1/M2 overflow)
+            if ci * 3 + 2 >= len(cds_coords):
+                break
+
             entry = {
                 "gene": name,
                 "codon_idx": ci,
@@ -411,19 +444,23 @@ def map_hyphy_to_genome(genes, hyphy_dir, target_genes):
                 entry["fubar_purifying_prob"] = fubar_data[ci]["fubar_purifying_prob"]
             if ci < len(meme_data):
                 entry["meme_pvalue"] = meme_data[ci]["meme_pvalue"]
+
+            # Map the 3 nucleotides of this codon to genomic coordinates
             for offset in range(3):
-                codon_data[gpos + offset] = entry
+                gpos = cds_coords[ci * 3 + offset]
+                codon_data[name][gpos] = entry
 
         gard_path = hyphy_dir / f"gard_{name}.json"
         if gard_path.exists():
             try:
                 bp_codons = parse_gard_json(str(gard_path))
                 for bp_codon in bp_codons:
-                    gard_breakpoints.append({
-                        "genome_pos": gene_start + bp_codon * 3,
-                        "gene": name,
-                        "codon_idx": bp_codon,
-                    })
+                    if bp_codon * 3 < len(cds_coords):
+                        gard_breakpoints.append({
+                            "genome_pos": cds_coords[bp_codon * 3],
+                            "gene": name,
+                            "codon_idx": bp_codon,
+                        })
             except Exception: pass
 
     return codon_data, gard_breakpoints
@@ -504,11 +541,12 @@ def score_regions(regions, profile, ref_seq, codon_data, gard_breakpoints, genes
         # 1. Gather HyPhy Data
         fubar_probs, meme_pvals = [], []
         has_hyphy = False
+        gene_codon_data = codon_data.get(gene_name, {})
         for pos in range(start, end):
-            if pos in codon_data:
+            if pos in gene_codon_data:
                 has_hyphy = True
-                fubar_probs.append(codon_data[pos]["fubar_purifying_prob"])
-                meme_pvals.append(codon_data[pos]["meme_pvalue"])
+                fubar_probs.append(gene_codon_data[pos]["fubar_purifying_prob"])
+                meme_pvals.append(gene_codon_data[pos]["meme_pvalue"])
 
         avg_fubar = sum(fubar_probs) / len(fubar_probs) if fubar_probs else 0.0
         meme_danger_sites = sum(1 for p in meme_pvals if p < 0.05)
@@ -757,8 +795,8 @@ def write_manifest(regions, build_name, ref_genome, buffer_bp, path, profile, co
             },
             "positional_scores": {
                 "entropy": [round(profile[i]["entropy"], 4) for i in range(r["start"], r["end"])],
-                "fubar_prob": [round(codon_data.get(i, {}).get("fubar_purifying_prob", 0.5), 4) for i in range(r["start"], r["end"])],
-                "meme_pval": [round(codon_data.get(i, {}).get("meme_pvalue", 1.0), 4) for i in range(r["start"], r["end"])],
+                "fubar_prob": [round(codon_data.get(r["gene"], {}).get(i, {}).get("fubar_purifying_prob", 0.5), 4) for i in range(r["start"], r["end"])],
+                "meme_pval": [round(codon_data.get(r["gene"], {}).get(i, {}).get("meme_pvalue", 1.0), 4) for i in range(r["start"], r["end"])],
             },
             "flags": r["flags"],
             "recommendation": r["recommendation"],
@@ -893,7 +931,8 @@ def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir,
 
     print(f"\n[M07] [{track_name}] Step 3: HyPhy Score Mapper")
     codon_data, gard_bps = map_hyphy_to_genome(genes, hyphy_dir, target_genes)
-    print(f"[M07] [{track_name}] Mapped {len(codon_data)} positions, {len(gard_bps)} GARD breakpoints")
+    total_positions = sum(len(codon_data[g]) for g in codon_data)
+    print(f"[M07] [{track_name}] Mapped {total_positions} positions across {len(codon_data)} genes, {len(gard_bps)} GARD breakpoints")
 
     print(f"\n[M07] [{track_name}] Step 4: Biomechanical Analysis & Core × Multipliers Scoring")
     scored = score_regions(regions, profile, ref_seq, codon_data, gard_bps, genes, utrs,

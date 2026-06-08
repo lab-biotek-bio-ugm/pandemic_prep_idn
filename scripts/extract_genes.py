@@ -40,7 +40,8 @@ def parse_gff(gff_path):
               Coordinates are 0-based half-open [start, end).
               Each tuple is one CDS segment. Sorted by start position.
     """
-    gene_segments = defaultdict(list)
+    cds_segments = defaultdict(list)
+    gene_features = {}
 
     with open(gff_path, "r") as f:
         for line in f:
@@ -74,18 +75,20 @@ def parse_gff(gff_path):
                 continue
 
             if feat_type == "CDS":
-                gene_segments[name].append((start, end, strand))
+                cds_segments[name].append((start, end, strand))
             elif feat_type == "gene":
-                # Register gene with placeholder — ensures entry exists
-                # even for genes that only have 'gene' feature (legacy GFFs)
-                if name not in gene_segments:
-                    gene_segments[name] = [(start, end, strand)]
+                gene_features[name] = (start, end, strand)
 
-    # Sort each gene's segments by start position
-    for name in gene_segments:
-        gene_segments[name].sort(key=lambda x: x[0])
+    # Combine: use CDS segments if available, else fallback to gene feature
+    final_segments = {}
+    for name, segs in cds_segments.items():
+        segs.sort(key=lambda x: x[0])
+        final_segments[name] = segs
+    for name, span in gene_features.items():
+        if name not in final_segments:
+            final_segments[name] = [span]
 
-    return dict(gene_segments)
+    return final_segments
 
 
 def build_coordinate_map(ref_seq_str):
