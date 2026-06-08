@@ -901,6 +901,7 @@ def _generate_igv_session(session_path: Path, gff_path: Path, bed_path: Path,
         <Resource path="{gff_rel}"/>{m07_bed_str}
     </Resources>
     <Panel name="DataPanel" height="300">
+        <Track id="Reference sequence" name="Reference Sequence" visible="true"/>
         <Track id="{gff_rel}" name="Primer Candidates" renderer="BASIC_FEATURE" visible="true" displayMode="EXPANDED">
             <RenderOptions colorByAttribute="Name"/>
         </Track>
