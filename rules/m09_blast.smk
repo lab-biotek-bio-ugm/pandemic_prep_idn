@@ -61,6 +61,7 @@ rule m09_blast_verification:
         local_db_path=config["blast_verification"].get("local_db_path", ""),
         outdir=f"results/{BUILD}/m09",
         target=config["references"].get("reference_id"),
+        ref_fasta=config["references"].get("genome", ""),
         pathogen=config["build_name"].split("-")[0],
         custom_db_enabled=_custom_db_enabled(),
         db_output_dir=config.get("blast_verification", {}).get(
@@ -117,6 +118,7 @@ rule m09_blast_verification:
                 --mode local \
                 --outdir {params.outdir} \
                 --target "{params.target}" \
+                --ref-fasta "{params.ref_fasta}" \
                 --pathogen "{params.pathogen}" \
                 --db-label "human" \
                 >> {log} 2>&1
@@ -129,6 +131,7 @@ rule m09_blast_verification:
                 --mode local \
                 --outdir {params.outdir} \
                 --target "{params.target}" \
+                --ref-fasta "{params.ref_fasta}" \
                 --pathogen "{params.pathogen}" \
                 --db-label "virus" \
                 >> {log} 2>&1
@@ -139,6 +142,7 @@ rule m09_blast_verification:
                 --database "unused" \
                 --outdir {params.outdir} \
                 --target "{params.target}" \
+                --ref-fasta "{params.ref_fasta}" \
                 --bridge-report "{params.bridge_report_path}" \
                 --compile-only \
                 >> {log} 2>&1
@@ -170,6 +174,7 @@ rule m09_blast_verification:
                 --mode remote \
                 --outdir {params.outdir} \
                 --target "{params.target}" \
+                --ref-fasta "{params.ref_fasta}" \
                 --pathogen "{params.pathogen}" \
                 --bridge-report "{params.bridge_report_path}" \
                 >> {log} 2>&1

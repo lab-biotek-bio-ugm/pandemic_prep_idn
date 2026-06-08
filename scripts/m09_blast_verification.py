@@ -33,6 +33,10 @@ def main():
         "--bridge-report", default=None,
         help="Path to M07 bridge_report.json for GARD breakpoint cross-check."
     )
+    parser.add_argument(
+        "--ref-fasta", default=None,
+        help="Path to reference genome FASTA file."
+    )
     
     args = parser.parse_args()
 
@@ -43,6 +47,7 @@ def main():
             compile_summary(
                 str(args.outdir), args.alternatives, args.target,
                 bridge_report_path=args.bridge_report,
+                ref_fasta_path=args.ref_fasta,
             )
         except Exception as e:
             import traceback
@@ -185,6 +190,7 @@ def main():
             compile_summary(
                 str(outdir), args.alternatives, args.target,
                 bridge_report_path=args.bridge_report,
+                ref_fasta_path=args.ref_fasta,
             )
         except Exception as e:
             import traceback
@@ -215,6 +221,19 @@ def _safe_coord(val):
         return None
 
 
+def _clean_gff_val(val):
+    """Clean value for GFF3 attribute writing by removing unit suffixes
+    and percent-encoding any reserved characters.
+    """
+    if val is None or val == "-":
+        return "."
+    s = str(val).strip()
+    # Remove common unit suffixes that cause URLDecoder issues in IGV
+    s = s.replace("°C", "").replace("\u00b0C", "").replace("%", "").strip()
+    import urllib.parse
+    return urllib.parse.quote(s)
+
+
 def _load_gard_breakpoints(bridge_report_path: Optional[str]) -> list:
     """POLISH-4: Load GARD breakpoints from bridge_report.json."""
     if not bridge_report_path or not os.path.exists(bridge_report_path):
@@ -241,7 +260,8 @@ def _check_gard_overlap(start, end, gard_breakpoints, buffer=50):
 
 def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
                     target_id: Optional[str] = None,
-                    bridge_report_path: Optional[str] = None):
+                    bridge_report_path: Optional[str] = None,
+                    ref_fasta_path: Optional[str] = None):
     """
     Scans output directory, loads JSON results for all candidates,
     and generates master CSV and Markdown reports for comparison.
@@ -680,22 +700,30 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
                 # BUG-3: Only write if coordinates are valid (>= 0 and not None)
                 if amp_start is not None and amp_end is not None and amp_start < amp_end:
                     # GFF3 is 1-based, inclusive coordinates
-                    f.write(f"{target}\tPrimerLab\tamplicon\t{amp_start+1}\t{amp_end}\t.\t+\t.\tID=cand_{rank}_amp;Name=Candidate_{rank}_Amplicon;Score={d['final_score']};Tier={d['tier']}\n")
+                    clean_score = _clean_gff_val(d['final_score'])
+                    clean_tier = _clean_gff_val(d['tier'])
+                    f.write(f"{target}\tPrimerLab\tamplicon\t{amp_start+1}\t{amp_end}\t.\t+\t.\tID=cand_{rank}_amp;Name=Candidate_{rank}_Amplicon;Score={clean_score};Tier={clean_tier}\n")
                 
                 fwd_start = d["fwd_start"]
                 fwd_end = d["fwd_end"]
                 if fwd_start is not None and fwd_end is not None and fwd_start < fwd_end:
-                    f.write(f"{target}\tPrimerLab\tprimer\t{fwd_start+1}\t{fwd_end}\t.\t+\t.\tID=cand_{rank}_F;Name=Candidate_{rank}_Forward;Parent=cand_{rank}_amp;Tm={d['fwd_tm']};GC={d['fwd_gc']}\n")
+                    clean_tm = _clean_gff_val(d['fwd_tm'])
+                    clean_gc = _clean_gff_val(d['fwd_gc'])
+                    f.write(f"{target}\tPrimerLab\tprimer\t{fwd_start+1}\t{fwd_end}\t.\t+\t.\tID=cand_{rank}_F;Name=Candidate_{rank}_Forward;Parent=cand_{rank}_amp;Tm={clean_tm};GC={clean_gc}\n")
                 
                 rev_start = d["rev_start"]
                 rev_end = d["rev_end"]
                 if rev_start is not None and rev_end is not None and rev_start < rev_end:
-                    f.write(f"{target}\tPrimerLab\tprimer\t{rev_start+1}\t{rev_end}\t.\t-\t.\tID=cand_{rank}_R;Name=Candidate_{rank}_Reverse;Parent=cand_{rank}_amp;Tm={d['rev_tm']};GC={d['rev_gc']}\n")
+                    clean_tm = _clean_gff_val(d['rev_tm'])
+                    clean_gc = _clean_gff_val(d['rev_gc'])
+                    f.write(f"{target}\tPrimerLab\tprimer\t{rev_start+1}\t{rev_end}\t.\t-\t.\tID=cand_{rank}_R;Name=Candidate_{rank}_Reverse;Parent=cand_{rank}_amp;Tm={clean_tm};GC={clean_gc}\n")
                 
                 prb_start = d["probe_start"]
                 prb_end = d["probe_end"]
                 if prb_start is not None and prb_end is not None and prb_start < prb_end:
-                    f.write(f"{target}\tPrimerLab\tprobe\t{prb_start+1}\t{prb_end}\t.\t+\t.\tID=cand_{rank}_P;Name=Candidate_{rank}_Probe;Parent=cand_{rank}_amp;Tm={d['probe_tm']};GC={d['probe_gc']}\n")
+                    clean_tm = _clean_gff_val(d['probe_tm'])
+                    clean_gc = _clean_gff_val(d['probe_gc'])
+                    f.write(f"{target}\tPrimerLab\tprobe\t{prb_start+1}\t{prb_end}\t.\t+\t.\tID=cand_{rank}_P;Name=Candidate_{rank}_Probe;Parent=cand_{rank}_amp;Tm={clean_tm};GC={clean_gc}\n")
         print(f"🧬 GFF3 Genomic track generated: {gff_path}")
     except Exception as e:
         print(f"Warning: Failed to generate GFF3: {e}")
@@ -733,7 +761,7 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
     # --- GAP-4: Generate IGV session XML ---
     igv_session_path = outdir / "igv_session.xml"
     try:
-        _generate_igv_session(igv_session_path, gff_path, bed_path, target, outdir)
+        _generate_igv_session(igv_session_path, gff_path, bed_path, target, outdir, ref_fasta_path=ref_fasta_path)
         print(f"🖥️ IGV session file generated: {igv_session_path}")
     except Exception as e:
         print(f"Warning: Failed to generate IGV session: {e}")
@@ -839,7 +867,7 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
 
 
 def _generate_igv_session(session_path: Path, gff_path: Path, bed_path: Path,
-                          reference_id: str, outdir: Path):
+                          reference_id: str, outdir: Path, ref_fasta_path: Optional[str] = None):
     """GAP-4: Generate an IGV session XML file that pre-loads all genomic tracks."""
     # Use relative paths from the session file location
     gff_rel = gff_path.name
@@ -852,8 +880,18 @@ def _generate_igv_session(session_path: Path, gff_path: Path, bed_path: Path,
         m07_bed_str = f'''
         <Resource path="../m07/conserved_regions.bed"/>'''
 
+    # Determine genome value
+    genome_val = reference_id if reference_id else "NC_002016.1"
+    if ref_fasta_path and os.path.exists(ref_fasta_path):
+        try:
+            # Compute relative path from the session file directory (outdir)
+            rel_ref = os.path.relpath(ref_fasta_path, start=outdir).replace("\\", "/")
+            genome_val = rel_ref
+        except Exception:
+            pass
+
     xml_content = f'''<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<Session genome="{reference_id}" hasGeneTrack="false" version="8">
+<Session genome="{genome_val}" hasGeneTrack="false" version="8">
     <Resources>
         <Resource path="{gff_rel}"/>
         <Resource path="{bed_rel}"/>{m07_bed_str}
