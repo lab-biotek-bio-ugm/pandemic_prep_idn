@@ -881,7 +881,7 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
 
 
 def _generate_forbidden_regions(gff_path: Path, target: str, bridge_report_path: Optional[str]):
-    """Generate a GFF3 track for forbidden regions (GARD breakpoints and high mutation/entropy zones)."""
+    """Generate a GFF3 track for forbidden regions (GARD breakpoints, high mutation/entropy zones, and MEME selection sites)."""
     if not bridge_report_path or not os.path.exists(bridge_report_path):
         return False
 
@@ -890,6 +890,7 @@ def _generate_forbidden_regions(gff_path: Path, target: str, bridge_report_path:
     # Try to find primer_targets_manifest.yaml in the same folder as bridge_report.json
     manifest_path = Path(bridge_report_path).parent / "primer_targets_manifest.yaml"
     high_entropy_blocks = []
+    meme_blocks = []
     
     if manifest_path.exists():
         try:
@@ -897,46 +898,78 @@ def _generate_forbidden_regions(gff_path: Path, target: str, bridge_report_path:
             with open(manifest_path, "r") as f:
                 manifest = yaml.safe_load(f)
             
-            # Find candidate regions and get entropy positional scores
+            # Find candidate regions and get positional scores
             for region in manifest.get("candidate_regions", []):
+                # 1. Entropy blocks
                 entropy_scores = region.get("positional_scores", {}).get("entropy", [])
-                if not entropy_scores:
-                    continue
-                
-                # Group contiguous positions with entropy >= 0.2
-                in_block = False
-                start_pos = 0
-                max_ent = 0.0
-                
-                for pos, score in enumerate(entropy_scores):
-                    val = float(score) if score is not None else 0.0
-                    if val >= 0.2:
-                        if not in_block:
-                            in_block = True
-                            start_pos = pos
-                            max_ent = val
+                if entropy_scores:
+                    # Group contiguous positions with entropy >= 0.2
+                    in_block = False
+                    start_pos = 0
+                    max_ent = 0.0
+                    
+                    for pos, score in enumerate(entropy_scores):
+                        val = float(score) if score is not None else 0.0
+                        if val >= 0.2:
+                            if not in_block:
+                                in_block = True
+                                start_pos = pos
+                                max_ent = val
+                            else:
+                                max_ent = max(max_ent, val)
                         else:
-                            max_ent = max(max_ent, val)
-                    else:
-                        if in_block:
-                            high_entropy_blocks.append({
-                                "start": start_pos,
-                                "end": pos - 1,
-                                "max_entropy": round(max_ent, 4)
-                            })
-                            in_block = False
-                            
-                if in_block:
-                    high_entropy_blocks.append({
-                        "start": start_pos,
-                        "end": len(entropy_scores) - 1,
-                        "max_entropy": round(max_ent, 4)
-                    })
+                            if in_block:
+                                high_entropy_blocks.append({
+                                    "start": start_pos,
+                                    "end": pos - 1,
+                                    "max_entropy": round(max_ent, 4)
+                                })
+                                in_block = False
+                                
+                    if in_block:
+                        high_entropy_blocks.append({
+                            "start": start_pos,
+                            "end": len(entropy_scores) - 1,
+                            "max_entropy": round(max_ent, 4)
+                        })
+
+                # 2. MEME selection sites
+                meme_scores = region.get("positional_scores", {}).get("meme_pval", [])
+                if meme_scores:
+                    # Group contiguous positions with meme_pval < 0.05 (episodic diversifying selection)
+                    in_block = False
+                    start_pos = 0
+                    min_pval = 1.0
+                    
+                    for pos, score in enumerate(meme_scores):
+                        val = float(score) if score is not None else 1.0
+                        if val < 0.05:
+                            if not in_block:
+                                in_block = True
+                                start_pos = pos
+                                min_pval = val
+                            else:
+                                min_pval = min(min_pval, val)
+                        else:
+                            if in_block:
+                                meme_blocks.append({
+                                    "start": start_pos,
+                                    "end": pos - 1,
+                                    "min_pvalue": round(min_pval, 6)
+                                })
+                                in_block = False
+                                
+                    if in_block:
+                        meme_blocks.append({
+                            "start": start_pos,
+                            "end": len(meme_scores) - 1,
+                            "min_pvalue": round(min_pval, 6)
+                        })
         except Exception as e:
             print(f"Warning: Failed to load manifest for forbidden regions: {e}")
             
-    # If we have either breakpoints or high entropy blocks, write the GFF3
-    if not gard_breakpoints and not high_entropy_blocks:
+    # If we have no breakpoints, high entropy blocks, or meme blocks, write nothing
+    if not gard_breakpoints and not high_entropy_blocks and not meme_blocks:
         return False
         
     try:
@@ -958,6 +991,13 @@ def _generate_forbidden_regions(gff_path: Path, target: str, bridge_report_path:
                 end = block["end"]
                 max_ent = block["max_entropy"]
                 f.write(f"{target}\tPrimerLab\thigh_entropy_zone\t{start+1}\t{end+1}\t.\t+\t.\tID=ent_zone_{idx};Name=High_Mutation_({max_ent});Note=Shannon entropy >= 0.2\n")
+
+            # Write MEME Selection Blocks
+            for idx, block in enumerate(meme_blocks):
+                start = block["start"]
+                end = block["end"]
+                min_pval = block["min_pvalue"]
+                f.write(f"{target}\tPrimerLab\tselection_site\t{start+1}\t{end+1}\t.\t+\t.\tID=meme_site_{idx};Name=MEME_Selection_(p={min_pval});Note=Episodic diversifying selection (p-value < 0.05)\n")
         return True
     except Exception as e:
         print(f"Warning: Failed to write forbidden_regions.gff3: {e}")
