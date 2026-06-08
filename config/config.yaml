@@ -176,9 +176,11 @@ primerlab:
     blast_database: "nt"
 
 # [M09] BLAST Specificity Verification
+# Catatan: num_candidates di sini menentukan berapa kandidat teratas yang diverifikasi
+# via BLAST. Idealnya ≤ vienna_ranking_limit di M08. Override di config per-target.
 blast_verification:
   enabled: true
-  num_candidates: 3              # Jumlah kandidat teratas yang akan di-BLAST
+  num_candidates: 25             # Jumlah kandidat teratas yang akan di-BLAST (sync w/ per-target configs)
   mode: "remote"                 # "remote" (NCBI cloud) atau "local" (custom DB lokal)
   database: "nt"                 # Database target (nt, core_nt, custom_respiratory_db)
   local_db_path: null            # Path ke database lokal jika mode = local

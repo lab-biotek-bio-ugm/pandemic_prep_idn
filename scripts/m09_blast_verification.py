@@ -9,6 +9,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import Optional
 
+
 def main():
     parser = argparse.ArgumentParser(description="M09 Specificity Verification for Top N Candidates")
     parser.add_argument("--alternatives", required=True, help="Path to alternatives.json")
@@ -24,8 +25,30 @@ def main():
              "Used to name output subdirs when querying multiple databases in local mode. "
              "If not set, files use default names (blast_result.json, specificity_report.md)."
     )
+    parser.add_argument(
+        "--compile-only", action="store_true",
+        help="Skip BLAST execution; only compile summary reports from existing results."
+    )
+    parser.add_argument(
+        "--bridge-report", default=None,
+        help="Path to M07 bridge_report.json for GARD breakpoint cross-check."
+    )
     
     args = parser.parse_args()
+
+    # --- Compile-only mode: skip BLAST, just compile reports ---
+    if args.compile_only:
+        print("📊 Compile-only mode: generating summary reports from existing results...")
+        try:
+            compile_summary(
+                str(args.outdir), args.alternatives, args.target,
+                bridge_report_path=args.bridge_report,
+            )
+        except Exception as e:
+            import traceback
+            print(f"⚠️ Warning: Failed to compile specificity summary: {e}")
+            traceback.print_exc()
+        return
     
     if not os.path.exists(args.alternatives):
         print(f"❌ Alternatives file not found: {args.alternatives}")
@@ -51,6 +74,7 @@ def main():
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
     
+    skipped_count = 0
     for idx, cand in enumerate(to_process):
         rank = cand.get("final_rank") or (idx + 1)
         print(f"\n--- Processing Candidate #{rank}{db_label_str} ---")
@@ -63,6 +87,19 @@ def main():
         if not fwd or not rev:
             print(f"⚠️ Candidate #{rank} has incomplete primer data. Skipping.")
             continue
+
+        # --- GAP-1: Resume/skip for already-BLASTed candidates ---
+        cand_out_dir = outdir / f"candidate_{rank}"
+        if args.db_label:
+            result_check_dir = cand_out_dir / f"db_{args.db_label}"
+        else:
+            result_check_dir = cand_out_dir
+        
+        result_check_file = result_check_dir / "blast_result.json"
+        if result_check_file.exists():
+            print(f"⏭️ Candidate #{rank}{db_label_str} already verified. Skipping (result exists at {result_check_file}).")
+            skipped_count += 1
+            continue
             
         # Create a temp file containing the primers dict for this candidate
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_f:
@@ -70,7 +107,6 @@ def main():
             temp_json_path = temp_f.name
             
         try:
-            cand_out_dir = outdir / f"candidate_{rank}"
             cand_out_dir.mkdir(parents=True, exist_ok=True)
             
             # When db_label is set, use a subdirectory to avoid overwriting previous db results
@@ -127,6 +163,9 @@ def main():
         finally:
             if os.path.exists(temp_json_path):
                 os.remove(temp_json_path)
+
+    if skipped_count > 0:
+        print(f"\n📌 {skipped_count} candidate(s) skipped (already verified from a previous run).")
                 
     # Write marker file only if this is a standalone run (no db_label / remote mode).
     # In local dual-db mode, the Snakemake shell writes the marker after both db runs.
@@ -138,30 +177,84 @@ def main():
     else:
         print(f"\n✅ DB run [{args.db_label}] complete. Marker will be written by Snakemake after all DB runs.")
 
-    # Compile overall summary report and CSV for downstream decisions
-    try:
-        compile_summary(str(outdir), args.alternatives, args.target)
-    except Exception as e:
-        import traceback
-        print(f"⚠️ Warning: Failed to compile specificity summary: {e}")
-        traceback.print_exc()
+    # --- BUG-1 FIX: Only compile summary if this is a standalone run (no db_label).
+    # In local dual-db mode, compile_summary is called ONCE by Snakemake via --compile-only
+    # AFTER both human and virus runs finish. This prevents partial/duplicate compilation.
+    if not args.db_label:
+        try:
+            compile_summary(
+                str(outdir), args.alternatives, args.target,
+                bridge_report_path=args.bridge_report,
+            )
+        except Exception as e:
+            import traceback
+            print(f"⚠️ Warning: Failed to compile specificity summary: {e}")
+            traceback.print_exc()
+
 
 def get_grade(score):
+    """Assign letter grade based on BLAST specificity score.
+    Higher score = better specificity (0-100 scale).
+    """
     if score >= 90: return "A"
     elif score >= 80: return "B"
     elif score >= 70: return "C"
+    elif score >= 65: return "C-"   # POLISH-1: BORDERLINE zone
     elif score >= 60: return "D"
     else: return "F"
 
-def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None, target_id: Optional[str] = None):
+
+def _safe_coord(val):
+    """BUG-3: Validate and return coordinate, or None if invalid."""
+    if val is None:
+        return None
+    try:
+        v = int(val)
+        return v if v >= 0 else None
+    except (ValueError, TypeError):
+        return None
+
+
+def _load_gard_breakpoints(bridge_report_path: Optional[str]) -> list:
+    """POLISH-4: Load GARD breakpoints from bridge_report.json."""
+    if not bridge_report_path or not os.path.exists(bridge_report_path):
+        return []
+    try:
+        with open(bridge_report_path, "r") as f:
+            data = json.load(f)
+        return data.get("gard_breakpoints", [])
+    except Exception:
+        return []
+
+
+def _check_gard_overlap(start, end, gard_breakpoints, buffer=50):
+    """POLISH-4: Check if a coordinate range overlaps with any GARD breakpoint."""
+    if not gard_breakpoints or start is None or end is None:
+        return False, []
+    overlapping = []
+    for bp in gard_breakpoints:
+        gp = bp.get("genome_pos", -1)
+        if start - buffer <= gp <= end + buffer:
+            overlapping.append(bp)
+    return len(overlapping) > 0, overlapping
+
+
+def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
+                    target_id: Optional[str] = None,
+                    bridge_report_path: Optional[str] = None):
     """
     Scans output directory, loads JSON results for all candidates,
     and generates master CSV and Markdown reports for comparison.
-    Also produces dedicated BED, GFF3, JSON and MD reports specifically for PASSing candidates.
+    Also produces dedicated BED, GFF3, JSON, IGV session and MD reports specifically for PASSing candidates.
     """
     outdir = Path(outdir_path)
     if not outdir.exists():
         return
+
+    # POLISH-4: Load GARD breakpoints for cross-check
+    gard_breakpoints = _load_gard_breakpoints(bridge_report_path)
+    if gard_breakpoints:
+        print(f"📍 Loaded {len(gard_breakpoints)} GARD breakpoints for cross-check.")
 
     # Load alternatives sequences as fallback
     alt_sequences = {}
@@ -332,15 +425,22 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None, t
         if human_score == "-" and virus_score == "-" and remote_score == "-":
             continue
 
+        # --- POLISH-1: BORDERLINE status for scores 65-69.9 ---
         is_pass = True
-        if human_score != "-" and isinstance(human_score, (int, float)) and human_score < 70.0:
-            is_pass = False
-        if virus_score != "-" and isinstance(virus_score, (int, float)) and virus_score < 70.0:
-            is_pass = False
-        if remote_score != "-" and isinstance(remote_score, (int, float)) and remote_score < 70.0:
-            is_pass = False
-        
-        status_text = "PASS" if is_pass else "FAIL"
+        is_borderline = False
+        for score_val in [human_score, virus_score, remote_score]:
+            if score_val != "-" and isinstance(score_val, (int, float)):
+                if score_val < 65.0:
+                    is_pass = False
+                elif score_val < 70.0:
+                    is_borderline = True
+
+        if not is_pass:
+            status_text = "FAIL"
+        elif is_borderline:
+            status_text = "BORDERLINE"
+        else:
+            status_text = "PASS"
 
         # Load metadata from alternatives.json
         p3_penalty = full_alt.get("p3_penalty", "-")
@@ -369,19 +469,49 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None, t
         amplicon_dict = full_alt.get("amplicon", {})
         amplicon_length = amplicon_dict.get("length", "-")
 
+        # --- POLISH-5: Tm_Delta computation ---
+        tm_delta = "-"
+        if isinstance(fwd_tm, (int, float)) and isinstance(rev_tm, (int, float)):
+            tm_delta = round(abs(fwd_tm - rev_tm), 2)
+
+        # --- BUG-3: Validate coordinates ---
+        fwd_start_raw = fwd_info.get("start")
+        fwd_end_raw = fwd_info.get("end")
+        rev_start_raw = rev_info.get("start")
+        rev_end_raw = rev_info.get("end")
+        probe_start_raw = probe_info.get("start") if probe_info else None
+        probe_end_raw = probe_info.get("end") if probe_info else None
+        amp_start_raw = amplicon_dict.get("start")
+        amp_end_raw = amplicon_dict.get("end")
+
+        fwd_start_v = _safe_coord(fwd_start_raw)
+        fwd_end_v = _safe_coord(fwd_end_raw)
+        rev_start_v = _safe_coord(rev_start_raw)
+        rev_end_v = _safe_coord(rev_end_raw)
+        probe_start_v = _safe_coord(probe_start_raw)
+        probe_end_v = _safe_coord(probe_end_raw)
+        amp_start_v = _safe_coord(amp_start_raw)
+        amp_end_v = _safe_coord(amp_end_raw)
+
+        # --- POLISH-4: GARD breakpoint cross-check ---
+        gard_near = False
+        gard_details = []
+        if amp_start_v is not None and amp_end_v is not None:
+            gard_near, gard_details = _check_gard_overlap(amp_start_v, amp_end_v, gard_breakpoints)
+
         summary_data.append({
             "rank": rank,
             "fwd_seq": fwd_seq,
             "rev_seq": rev_seq,
             "probe_seq": probe_seq,
-            "fwd_start": fwd_info.get("start"),
-            "fwd_end": fwd_info.get("end"),
-            "rev_start": rev_info.get("start"),
-            "rev_end": rev_info.get("end"),
-            "probe_start": probe_info.get("start") if probe_info else None,
-            "probe_end": probe_info.get("end") if probe_info else None,
-            "amplicon_start": amplicon_dict.get("start"),
-            "amplicon_end": amplicon_dict.get("end"),
+            "fwd_start": fwd_start_v,
+            "fwd_end": fwd_end_v,
+            "rev_start": rev_start_v,
+            "rev_end": rev_end_v,
+            "probe_start": probe_start_v,
+            "probe_end": probe_end_v,
+            "amplicon_start": amp_start_v,
+            "amplicon_end": amp_end_v,
             "p3_penalty": p3_penalty,
             "vienna_penalty": vienna_penalty,
             "final_score": final_score,
@@ -392,6 +522,7 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None, t
             "fwd_gc": fwd_gc,
             "rev_gc": rev_gc,
             "probe_gc": probe_gc,
+            "tm_delta": tm_delta,
             "cross_dimer_dg": cross_dimer_dg,
             "dimer_dg": dimer_dg,
             "hairpin_dg": hairpin_dg,
@@ -412,19 +543,25 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None, t
             "remote_offtargets": remote_offtargets,
             "remote_dangerous": remote_dangerous,
             "remote_pathogen": remote_pathogen,
-            "status": status_text
+            "status": status_text,
+            "gard_near": gard_near,
+            "gard_details": gard_details,
         })
 
     if not summary_data:
         return
 
-    # Generate CSV
+    # Generate CSV — POLISH-5: includes Tm_Delta column
     csv_path = outdir / "blast_specificity_summary.csv"
     csv_headers = [
         "Candidate_Rank", "Forward_Sequence", "Reverse_Sequence", "Probe_Sequence",
-        "Human_Score", "Human_Grade", "Human_Status", "Human_Total_Offtargets", "Human_Dangerous_3Prime_Offtargets",
-        "Virus_Score", "Virus_Grade", "Virus_Status", "Virus_Pathogen_Hits", "Virus_Total_Offtargets",
-        "Remote_Score", "Remote_Grade", "Remote_Status", "Remote_Total_Offtargets", "Remote_Dangerous_3Prime_Offtargets", "Remote_Pathogen_Hits",
+        "Fwd_Tm", "Rev_Tm", "Tm_Delta", "Fwd_GC", "Rev_GC", "Probe_Tm", "Probe_GC",
+        "PrimerLab_Penalty_Score", "Vienna_Penalty", "Tier",
+        "Amplicon_Length", "Cross_Dimer_dG", "Dimer_dG", "Hairpin_dG",
+        "Human_Specificity_Score", "Human_Grade", "Human_Status", "Human_Total_Offtargets", "Human_Dangerous_3Prime_Offtargets",
+        "Virus_Specificity_Score", "Virus_Grade", "Virus_Status", "Virus_Pathogen_Hits", "Virus_Total_Offtargets",
+        "Remote_Specificity_Score", "Remote_Grade", "Remote_Status", "Remote_Total_Offtargets", "Remote_Dangerous_3Prime_Offtargets", "Remote_Pathogen_Hits",
+        "GARD_Breakpoint_Nearby",
         "Overall_Decision"
     ]
     with open(csv_path, "w", newline="", encoding="utf-8") as f:
@@ -433,9 +570,13 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None, t
         for d in summary_data:
             writer.writerow([
                 f"Candidate_{d['rank']}", d["fwd_seq"], d["rev_seq"], d["probe_seq"],
+                d["fwd_tm"], d["rev_tm"], d["tm_delta"], d["fwd_gc"], d["rev_gc"], d["probe_tm"], d["probe_gc"],
+                d["final_score"], d["vienna_penalty"], d["tier"],
+                d["amplicon_length"], d["cross_dimer_dg"], d["dimer_dg"], d["hairpin_dg"],
                 d["human_score"], d["human_grade"], d["human_status"], d["human_offtargets"], d["human_dangerous"],
                 d["virus_score"], d["virus_grade"], d["virus_status"], d["virus_pathogen"], d["virus_offtargets"],
                 d["remote_score"], d["remote_grade"], d["remote_status"], d["remote_offtargets"], d["remote_dangerous"], d["remote_pathogen"],
+                "YES" if d["gard_near"] else "NO",
                 d["status"]
             ])
     print(f"📊 Overall Summary CSV generated: {csv_path}")
@@ -449,6 +590,12 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None, t
         "",
         "Laporan ringkasan ini membandingkan spesifisitas seluruh kandidat primer hasil pencarian BLAST untuk mempermudah keputusan pemilihan primer selanjutnya.",
         "",
+        # --- BUG-2: Score unit legend ---
+        "> **Scoring Legend:**",
+        "> - **BLAST Specificity Score** (0-100): Makin **tinggi** = makin **spesifik** (baik). ✅",
+        "> - **PrimerLab Penalty Score** (0+): Makin **rendah** = makin **baik** (sedikit penalti). ✅",
+        "> - **PASS** = semua skor BLAST ≥ 70 | **BORDERLINE** = ada skor 65-69.9 | **FAIL** = ada skor < 65",
+        "",
         "## Summary Table",
         ""
     ]
@@ -456,23 +603,35 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None, t
     is_local_run = any(d["human_score"] != "-" or d["virus_score"] != "-" for d in summary_data)
     
     if is_local_run:
-        md_lines.append("| Candidate | Overall | Human Score (Grade) | Human 3' Off-targets | Virus Score (Grade) | Virus Pathogen Hits |")
-        md_lines.append("|-----------|---------|---------------------|----------------------|---------------------|---------------------|")
+        md_lines.append("| Candidate | Overall | PrimerLab Penalty | Tm Δ | Human Score (Grade) | Human 3' Off-targets | Virus Score (Grade) | Virus Pathogen Hits | GARD |")
+        md_lines.append("|-----------|---------|-------------------|------|---------------------|----------------------|---------------------|---------------------|------|")
         for d in summary_data:
             h_score_str = f"{d['human_score']} ({d['human_grade']})" if d['human_score'] != "-" else "-"
             v_score_str = f"{d['virus_score']} ({d['virus_grade']})" if d['virus_score'] != "-" else "-"
-            status_icon = "✅ PASS" if d["status"] == "PASS" else "❌ FAIL"
+            if d["status"] == "PASS":
+                status_icon = "✅ PASS"
+            elif d["status"] == "BORDERLINE":
+                status_icon = "⚠️ BORDERLINE"
+            else:
+                status_icon = "❌ FAIL"
+            gard_flag = "⚠️ YES" if d["gard_near"] else "—"
             md_lines.append(
-                f"| **Candidate {d['rank']}** | {status_icon} | {h_score_str} | {d['human_dangerous']} | {v_score_str} | {d['virus_pathogen']} |"
+                f"| **Candidate {d['rank']}** | {status_icon} | {d['final_score']} | {d['tm_delta']} | {h_score_str} | {d['human_dangerous']} | {v_score_str} | {d['virus_pathogen']} | {gard_flag} |"
             )
     else:
-        md_lines.append("| Candidate | Overall | Specificity Score (Grade) | Total Off-targets | Pathogen Hits |")
-        md_lines.append("|-----------|---------|---------------------------|-------------------|---------------|")
+        md_lines.append("| Candidate | Overall | PrimerLab Penalty | Tm Δ | Specificity Score (Grade) | Total Off-targets | Pathogen Hits | GARD |")
+        md_lines.append("|-----------|---------|-------------------|------|---------------------------|-------------------|---------------|------|")
         for d in summary_data:
             r_score_str = f"{d['remote_score']} ({d['remote_grade']})" if d['remote_score'] != "-" else "-"
-            status_icon = "✅ PASS" if d["status"] == "PASS" else "❌ FAIL"
+            if d["status"] == "PASS":
+                status_icon = "✅ PASS"
+            elif d["status"] == "BORDERLINE":
+                status_icon = "⚠️ BORDERLINE"
+            else:
+                status_icon = "❌ FAIL"
+            gard_flag = "⚠️ YES" if d["gard_near"] else "—"
             md_lines.append(
-                f"| **Candidate {d['rank']}** | {status_icon} | {r_score_str} | {d['remote_offtargets']} | {d['remote_pathogen']} |"
+                f"| **Candidate {d['rank']}** | {status_icon} | {d['final_score']} | {d['tm_delta']} | {r_score_str} | {d['remote_offtargets']} | {d['remote_pathogen']} | {gard_flag} |"
             )
 
     md_lines.append("")
@@ -492,22 +651,22 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None, t
         f.write("\n".join(md_lines))
     print(f"📝 Overall Summary Markdown report generated: {md_path}")
 
-    # --- GENERATE DOWNSTREAM CHOSEN CANDIDATES (PASS) FILE AND GENOMIC TRACKS (GFF3 / BED) ---
-    pass_candidates = [d for d in summary_data if d["status"] == "PASS"]
+    # --- GENERATE DOWNSTREAM CHOSEN CANDIDATES (PASS + BORDERLINE) FILE AND GENOMIC TRACKS ---
+    pass_candidates = [d for d in summary_data if d["status"] in ("PASS", "BORDERLINE")]
     if not pass_candidates:
-        print("⚠️ No candidates passed the BLAST specificity threshold (Score >= 70). Skipping final reports.")
+        print("⚠️ No candidates passed the BLAST specificity threshold (Score >= 65). Skipping final reports.")
         return
 
     # 1. Save final_candidates.json
     json_path = outdir / "final_candidates.json"
     try:
         with open(json_path, "w", encoding="utf-8") as f:
-            json.dump(pass_candidates, f, indent=2)
+            json.dump(pass_candidates, f, indent=2, default=str)
         print(f"💾 final_candidates.json generated: {json_path}")
     except Exception as e:
         print(f"Warning: Failed to generate final_candidates.json: {e}")
 
-    # 2. Save final_candidates.gff3 (Genomic track for IGV/UCSC)
+    # 2. Save final_candidates.gff3 — BUG-3: coordinate validation applied
     target = target_id if target_id else "NC_002016.1"
     gff_path = outdir / "final_candidates.gff3"
     try:
@@ -518,64 +677,68 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None, t
                 rank = d["rank"]
                 amp_start = d["amplicon_start"]
                 amp_end = d["amplicon_end"]
-                # Write Amplicon
-                if amp_start is not None and amp_end is not None:
+                # BUG-3: Only write if coordinates are valid (>= 0 and not None)
+                if amp_start is not None and amp_end is not None and amp_start < amp_end:
                     # GFF3 is 1-based, inclusive coordinates
                     f.write(f"{target}\tPrimerLab\tamplicon\t{amp_start+1}\t{amp_end}\t.\t+\t.\tID=cand_{rank}_amp;Name=Candidate_{rank}_Amplicon;Score={d['final_score']};Tier={d['tier']}\n")
                 
-                # Write Forward
                 fwd_start = d["fwd_start"]
                 fwd_end = d["fwd_end"]
-                if fwd_start is not None and fwd_end is not None:
+                if fwd_start is not None and fwd_end is not None and fwd_start < fwd_end:
                     f.write(f"{target}\tPrimerLab\tprimer\t{fwd_start+1}\t{fwd_end}\t.\t+\t.\tID=cand_{rank}_F;Name=Candidate_{rank}_Forward;Parent=cand_{rank}_amp;Tm={d['fwd_tm']};GC={d['fwd_gc']}\n")
                 
-                # Write Reverse
                 rev_start = d["rev_start"]
                 rev_end = d["rev_end"]
-                if rev_start is not None and rev_end is not None:
+                if rev_start is not None and rev_end is not None and rev_start < rev_end:
                     f.write(f"{target}\tPrimerLab\tprimer\t{rev_start+1}\t{rev_end}\t.\t-\t.\tID=cand_{rank}_R;Name=Candidate_{rank}_Reverse;Parent=cand_{rank}_amp;Tm={d['rev_tm']};GC={d['rev_gc']}\n")
                 
-                # Write Probe
                 prb_start = d["probe_start"]
                 prb_end = d["probe_end"]
-                if prb_start is not None and prb_end is not None:
+                if prb_start is not None and prb_end is not None and prb_start < prb_end:
                     f.write(f"{target}\tPrimerLab\tprobe\t{prb_start+1}\t{prb_end}\t.\t+\t.\tID=cand_{rank}_P;Name=Candidate_{rank}_Probe;Parent=cand_{rank}_amp;Tm={d['probe_tm']};GC={d['probe_gc']}\n")
         print(f"🧬 GFF3 Genomic track generated: {gff_path}")
     except Exception as e:
         print(f"Warning: Failed to generate GFF3: {e}")
 
-    # 3. Save final_candidates.bed (Track for IGV/UCSC)
+    # 3. Save final_candidates.bed — BUG-3: coordinate validation applied
     bed_path = outdir / "final_candidates.bed"
     try:
         with open(bed_path, "w", encoding="utf-8") as f:
             f.write('track name="PrimerLab RAA Candidates" description="Verified RAA Primers and Probes" useScore=1\n')
             for d in pass_candidates:
                 rank = d["rank"]
-                # BED is 0-based start, 1-based exclusive end
                 amp_start = d["amplicon_start"]
                 amp_end = d["amplicon_end"]
-                if amp_start is not None and amp_end is not None:
+                if amp_start is not None and amp_end is not None and amp_start < amp_end:
                     f.write(f"{target}\t{amp_start}\t{amp_end}\tCandidate_{rank}_Amplicon\t1000\t+\n")
                 
                 fwd_start = d["fwd_start"]
                 fwd_end = d["fwd_end"]
-                if fwd_start is not None and fwd_end is not None:
+                if fwd_start is not None and fwd_end is not None and fwd_start < fwd_end:
                     f.write(f"{target}\t{fwd_start}\t{fwd_end}\tCandidate_{rank}_Forward\t800\t+\n")
                 
                 rev_start = d["rev_start"]
                 rev_end = d["rev_end"]
-                if rev_start is not None and rev_end is not None:
+                if rev_start is not None and rev_end is not None and rev_start < rev_end:
                     f.write(f"{target}\t{rev_start}\t{rev_end}\tCandidate_{rank}_Reverse\t800\t-\n")
                 
                 prb_start = d["probe_start"]
                 prb_end = d["probe_end"]
-                if prb_start is not None and prb_end is not None:
+                if prb_start is not None and prb_end is not None and prb_start < prb_end:
                     f.write(f"{target}\t{prb_start}\t{prb_end}\tCandidate_{rank}_Probe\t900\t+\n")
         print(f"🧬 BED track generated: {bed_path}")
     except Exception as e:
         print(f"Warning: Failed to generate BED: {e}")
 
-    # 4. Save final_candidates_report.md (Premium markdown report for human viewing)
+    # --- GAP-4: Generate IGV session XML ---
+    igv_session_path = outdir / "igv_session.xml"
+    try:
+        _generate_igv_session(igv_session_path, gff_path, bed_path, target, outdir)
+        print(f"🖥️ IGV session file generated: {igv_session_path}")
+    except Exception as e:
+        print(f"Warning: Failed to generate IGV session: {e}")
+
+    # 4. Save final_candidates_report.md — POLISH-2: Table format per candidate
     report_path = outdir / "final_candidates_report.md"
     try:
         rep_lines = [
@@ -583,51 +746,89 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None, t
             "",
             f"*Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*",
             "",
-            "Dokumen ini memuat daftar kandidat primer dan probe yang **LOLOS verifikasi spesifisitas BLAST** (tidak memicu off-target berbahaya) dan memenuhi semua kriteria QC termodinamika.",
+            "Dokumen ini memuat daftar kandidat primer dan probe yang **LOLOS verifikasi spesifisitas BLAST** dan memenuhi semua kriteria QC termodinamika.",
             "",
-            "## Summary of Passed Candidates",
+            # BUG-2: Score legend
+            "> **Scoring Guide:**",
+            "> - **PrimerLab Penalty Score** — Makin **rendah** = makin **baik** (0 = sempurna, sedikit penalti).",
+            "> - **BLAST Specificity Score** — Makin **tinggi** = makin **spesifik** (100 = tidak ada off-target).",
+            "> - **Tm Delta** — Selisih Tm antara forward dan reverse (ideal < 2°C).",
             "",
-            "| Rank | Tier | Penalty Score | Vienna Dimer dG | Human Score | Virus Pathogen Hits | Amplicon Size | Decision |",
-            "|------|------|---------------|-----------------|-------------|---------------------|---------------|----------|"
+            "## Summary of Verified Candidates",
+            "",
+            "| Rank | Status | Tier | Penalty Score ↓ | Tm Δ (°C) | Human Score ↑ | Virus Pathogen | Amplicon | GARD |",
+            "|------|--------|------|-----------------|-----------|---------------|----------------|----------|------|"
         ]
         for d in pass_candidates:
-            v_dg = d["cross_dimer_dg"]
-            v_dg_str = f"{v_dg} kcal/mol" if v_dg != "-" else "-"
+            if d["status"] == "PASS":
+                status_icon = "✅ PASS"
+            else:
+                status_icon = "⚠️ BORDER"
+            gard_flag = "⚠️" if d["gard_near"] else "—"
             rep_lines.append(
-                f"| Rank {d['rank']} | {d['tier']} | {d['final_score']} | {v_dg_str} | {d['human_score']} | {d['virus_pathogen']} | {d['amplicon_length']} bp | ✅ PASS |"
+                f"| {d['rank']} | {status_icon} | {d['tier']} | {d['final_score']} | {d['tm_delta']} | {d['human_score']} | {d['virus_pathogen']} | {d['amplicon_length']} bp | {gard_flag} |"
             )
         
         rep_lines.append("")
-        rep_lines.append("## Detailed Coordinates & Sequences")
+        rep_lines.append("## Detailed Candidate Profiles")
         rep_lines.append("")
         for d in pass_candidates:
+            # --- POLISH-2: Compact table per candidate ---
             rep_lines.extend([
-                f"### 📍 Candidate Rank {d['rank']} (Penalty: {d['final_score']})",
+                f"### 📍 Candidate Rank {d['rank']}",
                 "",
-                f"* **Tier**: {d['tier']}",
-                f"* **Amplicon Size**: {d['amplicon_length']} bp (Position: {d['amplicon_start']}-{d['amplicon_end']})",
-                f"* **Thermodynamics**: Dimer dG: {d['dimer_dg']} | Hairpin dG: {d['hairpin_dg']} | Cross-dimer dG: {d['cross_dimer_dg']}",
-                f"* **BLAST Specificity**: Human Score: {d['human_score']} (Off-targets: {d['human_offtargets']}) | Virus Pathogen Hits: {d['virus_pathogen']}",
+                "| Property | Value |",
+                "|----------|-------|",
+                f"| **Status** | {'✅ PASS' if d['status'] == 'PASS' else '⚠️ BORDERLINE'} |",
+                f"| **Tier** | {d['tier']} |",
+                f"| **PrimerLab Penalty Score** ↓ | {d['final_score']} |",
+                f"| **Vienna Penalty** | {d['vienna_penalty']} |",
+                f"| **Amplicon Size** | {d['amplicon_length']} bp ({d['amplicon_start']}–{d['amplicon_end']}) |",
+                f"| **Tm Delta (Fwd-Rev)** | {d['tm_delta']}°C |",
+                f"| **Dimer dG** | {d['dimer_dg']} kcal/mol |",
+                f"| **Hairpin dG** | {d['hairpin_dg']} kcal/mol |",
+                f"| **Cross-dimer dG** | {d['cross_dimer_dg']} kcal/mol |",
+                f"| **Human BLAST Score** ↑ | {d['human_score']} ({d['human_grade']}) |",
+                f"| **Human Off-targets (3' involved)** | {d['human_dangerous']} |",
+                f"| **Virus BLAST Score** ↑ | {d['virus_score']} ({d['virus_grade']}) |",
+                f"| **Virus Pathogen Hits** | {d['virus_pathogen']} |",
+            ])
+            # POLISH-4: GARD warning
+            if d["gard_near"]:
+                rep_lines.append(f"| **⚠️ GARD Breakpoint** | Recombination breakpoint detected nearby: {[bp.get('genome_pos') for bp in d['gard_details']]} |")
+            else:
+                rep_lines.append(f"| **GARD Breakpoint** | — (none nearby) |")
+            rep_lines.extend([
                 "",
-                "**Sequences:**",
-                f"* **Forward Primer** ({d['fwd_start']}-{d['fwd_end']}): `{d['fwd_seq']}` (Tm: {d['fwd_tm']}°C, GC: {d['fwd_gc']}%)",
-                f"* **Reverse Primer** ({d['rev_start']}-{d['rev_end']}): `{d['rev_seq']}` (Tm: {d['rev_tm']}°C, GC: {d['rev_gc']}%)",
+                "**Primer Sequences:**",
+                "",
+                "| Component | Sequence (5'→3') | Position | Tm (°C) | GC (%) |",
+                "|-----------|------------------|----------|---------|--------|",
+                f"| Forward | `{d['fwd_seq']}` | {d['fwd_start']}–{d['fwd_end']} | {d['fwd_tm']} | {d['fwd_gc']} |",
+                f"| Reverse | `{d['rev_seq']}` | {d['rev_start']}–{d['rev_end']} | {d['rev_tm']} | {d['rev_gc']} |",
             ])
             if d['probe_seq'] and d['probe_seq'] != "-":
-                rep_lines.append(f"* **Probe** ({d['probe_start']}-{d['probe_end']}): `{d['probe_seq']}` (Tm: {d['probe_tm']}°C, GC: {d['probe_gc']}%)")
+                rep_lines.append(f"| Probe | `{d['probe_seq']}` | {d['probe_start']}–{d['probe_end']} | {d['probe_tm']} | {d['probe_gc']} |")
             rep_lines.append("")
             
+        # --- POLISH-6: Use relative paths ---
         rep_lines.extend([
             "---",
             "### 🧬 IGV Integration & Visualization",
             "Kandidat di atas juga diekspor ke dalam format standar anotasi genomik yang bisa langsung dimasukkan ke genome browser seperti **IGV** atau **UCSC**:",
-            f"* **GFF3 Track**: [final_candidates.gff3](file:///{str(gff_path.absolute()).replace(chr(92), '/')})",
-            f"* **BED Track**: [final_candidates.bed](file:///{str(bed_path.absolute()).replace(chr(92), '/')})",
             "",
-            "Untuk melakukan visualisasi publikasi jurnal atau di IGV:",
+            "| Format | File | Deskripsi |",
+            "|--------|------|-----------|",
+            "| GFF3 | `final_candidates.gff3` | Anotasi primer/probe/amplicon (1-based) |",
+            "| BED | `final_candidates.bed` | Track BED untuk IGV/UCSC (0-based) |",
+            "| IGV Session | `igv_session.xml` | Session file siap buka di IGV |",
+            "| JSON | `final_candidates.json` | Data mentah untuk analisis lanjutan |",
+            "",
+            "**Cara memuat di IGV:**",
             "1. Buka **IGV**, load genome/consensus target Anda.",
-            "2. Klik `File -> Load from File...` lalu pilih file `final_candidates.gff3` atau `final_candidates.bed`.",
-            "3. Primer dan Probe akan dirender secara visual sesuai posisi binding situsnya di atas genom target."
+            "2. Klik `File → Load from File...` lalu pilih `final_candidates.gff3` atau `final_candidates.bed`.",
+            "3. **Atau** gunakan `File → Open Session...` untuk membuka `igv_session.xml` yang sudah menyertakan semua track.",
+            "4. Primer dan Probe akan dirender secara visual sesuai posisi binding situsnya di atas genom target."
         ])
         
         with open(report_path, "w", encoding="utf-8") as f:
@@ -635,6 +836,39 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None, t
         print(f"🏆 Premium Final Candidates Report generated: {report_path}")
     except Exception as e:
         print(f"Warning: Failed to generate premium report: {e}")
+
+
+def _generate_igv_session(session_path: Path, gff_path: Path, bed_path: Path,
+                          reference_id: str, outdir: Path):
+    """GAP-4: Generate an IGV session XML file that pre-loads all genomic tracks."""
+    # Use relative paths from the session file location
+    gff_rel = gff_path.name
+    bed_rel = bed_path.name
+    
+    # Check if M07 BED is available (one directory up, in m07 folder)
+    m07_bed = outdir.parent / "m07" / "conserved_regions.bed"
+    m07_bed_str = ""
+    if m07_bed.exists():
+        m07_bed_str = f'''
+        <Resource path="../m07/conserved_regions.bed"/>'''
+
+    xml_content = f'''<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<Session genome="{reference_id}" hasGeneTrack="false" version="8">
+    <Resources>
+        <Resource path="{gff_rel}"/>
+        <Resource path="{bed_rel}"/>{m07_bed_str}
+    </Resources>
+    <Panel name="DataPanel" height="300">
+        <Track id="{gff_rel}" name="Primer Candidates (GFF3)" renderer="BASIC_FEATURE" visible="true">
+            <RenderOptions colorByAttribute="Name"/>
+        </Track>
+        <Track id="{bed_rel}" name="Primer Candidates (BED)" visible="true"/>
+    </Panel>
+</Session>
+'''
+    with open(session_path, "w", encoding="utf-8") as f:
+        f.write(xml_content.strip())
+
 
 if __name__ == "__main__":
     main()

@@ -40,11 +40,12 @@ rule m09_blast_verification:
     Runs BLAST off-target queries for top N candidates in alternatives.json
     and exports dedicated specificity_report.md files per candidate.
 
-    Local mode: queries both human_db and virus_db, merging results.
+    Local mode: queries both human_db and virus_db, then compiles a unified summary.
     Remote mode: queries NCBI nt (requires NCBI_API_KEY env var for reliability).
     """
     input:
         alternatives=f"results/{BUILD}/m08/Whole_Segment_region_1/summary.json",
+        bridge_report=f"results/{BUILD}/m07/bridge_report.json",
         db_marker=_get_db_marker()  # Empty list if remote mode → no dependency
     output:
         marker=f"results/{BUILD}/m09/verification_complete.txt"
@@ -64,7 +65,8 @@ rule m09_blast_verification:
         custom_db_enabled=_custom_db_enabled(),
         db_output_dir=config.get("blast_verification", {}).get(
             "custom_db_build", {}
-        ).get("output_dir", "resources/blast_db")
+        ).get("output_dir", "resources/blast_db"),
+        bridge_report_path=f"results/{BUILD}/m07/bridge_report.json"
     conda:
         "../envs/primerlab.yaml"
     shell:
@@ -107,7 +109,7 @@ rule m09_blast_verification:
             echo "   Human DB : ${{HUMAN_DB}}"
             echo "   Virus  DB: ${{VIRUS_DB}}"
 
-            # Run verification against human_db
+            # Run verification against human_db (with resume/skip support)
             python -u scripts/m09_blast_verification.py \
                 --alternatives {params.alternatives_file} \
                 --num-candidates {params.num_candidates} \
@@ -119,7 +121,7 @@ rule m09_blast_verification:
                 --db-label "human" \
                 >> {log} 2>&1
 
-            # Run verification against virus_db
+            # Run verification against virus_db (with resume/skip support)
             python -u scripts/m09_blast_verification.py \
                 --alternatives {params.alternatives_file} \
                 --num-candidates {params.num_candidates} \
@@ -129,6 +131,16 @@ rule m09_blast_verification:
                 --target "{params.target}" \
                 --pathogen "{params.pathogen}" \
                 --db-label "virus" \
+                >> {log} 2>&1
+
+            # BUG-1 FIX: Compile summary ONCE after both DB runs complete
+            python -u scripts/m09_blast_verification.py \
+                --alternatives {params.alternatives_file} \
+                --database "unused" \
+                --outdir {params.outdir} \
+                --target "{params.target}" \
+                --bridge-report "{params.bridge_report_path}" \
+                --compile-only \
                 >> {log} 2>&1
 
             # Write marker file after both DB runs complete (local mode)
@@ -159,6 +171,7 @@ rule m09_blast_verification:
                 --outdir {params.outdir} \
                 --target "{params.target}" \
                 --pathogen "{params.pathogen}" \
+                --bridge-report "{params.bridge_report_path}" \
                 >> {log} 2>&1
 
             # Marker is written by the Python script in remote mode (no --db-label)
@@ -170,4 +183,3 @@ rule m09_blast_verification:
 
         echo "✅ M09 verification complete." >> {log}
         """
-
