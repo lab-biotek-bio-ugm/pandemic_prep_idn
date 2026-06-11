@@ -193,3 +193,10 @@ blast_verification:
     seq_length_min: 500
     hosts: []                    # Isi dengan host genome entries (lihat config_influenza_a_mp.yaml)
     virus_taxons: []             # Isi dengan virus taxon entries (lihat config_influenza_a_mp.yaml)
+
+# [M10] In-silico PCR Coverage Analysis
+insilico_pcr:
+  enabled: true
+  max_mismatch: 3             # Toleransi mismatch maksimal untuk primer & probe
+  num_candidates: 10          # Evaluasi terhadap 10 kandidat teratas dari M09
+

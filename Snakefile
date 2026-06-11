@@ -58,7 +58,9 @@ rule all:
         # M07 Target (Bridge — primer target manifest)
         f"results/{BUILD}/m07/primer_targets_manifest.yaml",
         # Dynamic M08/M09 targets based on m07_bridge checkpoint outputs
-        get_m09_targets
+        get_m09_targets,
+        # M10 Target (In-silico PCR Coverage Analysis)
+        f"results/{BUILD}/m10/coverage_report.md" if config.get("insilico_pcr", {}).get("enabled", False) else []
 
 include: "rules/m01_acquisition.smk"
 include: "rules/m02_m06_augur_core.smk"
@@ -66,6 +68,7 @@ include: "rules/m05_hyphy.smk"
 include: "rules/m07_bridge.smk"
 include: "rules/m08_primerlab.smk"
 include: "rules/m09_blast.smk"
+include: "rules/m10_insilico_pcr.smk"
 include: "rules/build_db.smk"    # Custom local BLAST database builder (conditional on config)
 
 # DEFERRED DEVELOPMENT ITEMS — Tracked here to avoid loss across audits.
