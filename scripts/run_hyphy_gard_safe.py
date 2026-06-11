@@ -105,13 +105,13 @@ def main():
     records, n_seqs, aln_len, n_variable = assess_alignment(alignment)
 
     if n_seqs == 0:
-        print("[GARD-SAFE] ⚠ SKIPPED: Alignment is empty.", file=sys.stderr)
+        print("[GARD-SAFE] [SKIPPED]: Alignment is empty.", file=sys.stderr)
         write_empty_gard_json(output, "Alignment is empty (0 sequences)")
         sys.exit(0)
 
     if n_variable < 10:
         reason = f"Too few variable sites (~{n_variable}). GARD needs sufficient variation."
-        print(f"[GARD-SAFE] ⚠ SKIPPED: {reason}", file=sys.stderr)
+        print(f"[GARD-SAFE] [SKIPPED]: {reason}", file=sys.stderr)
         write_empty_gard_json(output, reason)
         sys.exit(0)
 
@@ -125,7 +125,7 @@ def main():
         reason = (f"Alignment too short for meaningful GARD analysis. "
                   f"{aln_len} sites can support max ~{max_safe_seqs} sequences, "
                   f"but need at least {MIN_SEQS_FOR_GARD}.")
-        print(f"[GARD-SAFE] ⚠ SKIPPED: {reason}", file=sys.stderr)
+        print(f"[GARD-SAFE] [SKIPPED]: {reason}", file=sys.stderr)
         write_empty_gard_json(output, reason)
         sys.exit(0)
 
@@ -134,7 +134,7 @@ def main():
     tmp_file = None
 
     if n_seqs > max_safe_seqs:
-        print(f"[GARD-SAFE] ⚡ Auto-subsampling: {n_seqs} → {max_safe_seqs} sequences "
+        print(f"[GARD-SAFE] [SUBSAMPLING] Auto-subsampling: {n_seqs} -> {max_safe_seqs} sequences "
               f"(seed={seed})", file=sys.stderr)
         subsampled = subsample_alignment(records, max_safe_seqs, seed=seed)
 
@@ -147,7 +147,7 @@ def main():
         tmp_file = tmp_path
         print(f"[GARD-SAFE] Subsampled alignment written to {tmp_path}", file=sys.stderr)
     else:
-        print(f"[GARD-SAFE] ✓ No subsampling needed ({n_seqs} ≤ {max_safe_seqs})",
+        print(f"[GARD-SAFE] [OK] No subsampling needed ({n_seqs} <= {max_safe_seqs})",
               file=sys.stderr)
 
     threads = 1
@@ -168,7 +168,7 @@ def main():
     try:
         result = subprocess.run(cmd, capture_output=False, text=True)
         if result.returncode != 0:
-            print(f"[GARD-SAFE] ⚠ GARD exited with code {result.returncode}",
+            print(f"[GARD-SAFE] [WARNING] GARD exited with code {result.returncode}",
                   file=sys.stderr)
             if not Path(output).exists() or Path(output).stat().st_size == 0:
                 reason = f"GARD runtime failure (exit code {result.returncode})"
@@ -177,12 +177,12 @@ def main():
             sys.exit(0)
     except FileNotFoundError:
         reason = "HyPhy binary not found in PATH"
-        print(f"[GARD-SAFE] ⚠ SKIPPED: {reason}", file=sys.stderr)
+        print(f"[GARD-SAFE] [SKIPPED]: {reason}", file=sys.stderr)
         write_empty_gard_json(output, reason)
         sys.exit(0)
     except Exception as e:
         reason = f"Unexpected error: {str(e)}"
-        print(f"[GARD-SAFE] ⚠ SKIPPED: {reason}", file=sys.stderr)
+        print(f"[GARD-SAFE] [SKIPPED]: {reason}", file=sys.stderr)
         write_empty_gard_json(output, reason)
         sys.exit(0)
     finally:
@@ -209,7 +209,7 @@ def main():
         except Exception:
             pass  # Non-critical annotation, don't fail
 
-    print(f"[GARD-SAFE] ✓ GARD completed successfully.", file=sys.stderr)
+    print(f"[GARD-SAFE] [SUCCESS] GARD completed successfully.", file=sys.stderr)
 
 
 if __name__ == "__main__":
