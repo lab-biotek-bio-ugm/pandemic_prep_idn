@@ -70,13 +70,14 @@ def min_mismatches_sliding_window(probe_seq: str, amplicon_seq: str) -> int:
                 
     return best_mismatch
 
-def run_seqkit_amplicon(fwd: str, rev: str, max_mismatch: int, fasta_path: str) -> dict:
+def run_seqkit_amplicon(fwd: str, rev: str, max_mismatch: int, fasta_path: str, threads: int = 4) -> dict:
     """Run seqkit amplicon and return a dict of seq_id -> amplicon_seq."""
     cmd = [
         "seqkit", "amplicon",
         "-F", fwd,
         "-R", rev,
         "-m", str(max_mismatch),
+        "-j", str(threads),   # seqkit goroutine parallelism
         "--bed",
         str(fasta_path)
     ]
@@ -154,7 +155,16 @@ def main():
     parser.add_argument("--outdir", required=True, help="Output directory")
     parser.add_argument("--max-mismatch", type=int, default=3, help="Max mismatches allowed (default: 3)")
     parser.add_argument("--num-candidates", type=int, default=10, help="Number of candidates to evaluate per region")
+    parser.add_argument("--threads", type=int, default=None,
+                        help="Total CPU threads to use. Splits between seqkit (-j) and candidate parallelism. Default: auto-detect (os.cpu_count).")
     args = parser.parse_args()
+    
+    # Resolve thread allocation
+    total_cpus = args.threads or os.cpu_count() or 8
+    # Give seqkit at least 4 threads per call, rest for candidate parallelism
+    seqkit_threads = max(4, total_cpus // 4)
+    worker_threads = max(1, total_cpus // seqkit_threads)
+    print(f"[M10] Thread config: {total_cpus} total CPUs → {worker_threads} parallel candidates × {seqkit_threads} seqkit threads each")
 
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
@@ -276,11 +286,16 @@ def main():
         
     print(f"Evaluating {len(all_candidates)} candidates across all regions.")
 
-    # 4. PCR Simulation & Probe Binding Check
-    results_list = []
-    summary_data = []
+    # 4. PCR Simulation & Probe Binding Check — fully parallelized
+    # Strategy: run seqkit ONCE per candidate (with max_mismatch), then use sliding-window
+    # mismatch detection to determine exact mismatch level per-sequence. This cuts seqkit
+    # calls from 4× down to 1× per candidate while still reporting per-mismatch breakdown.
 
-    for idx, cand in enumerate(all_candidates):
+    import concurrent.futures
+
+    def _evaluate_candidate(idx_cand):
+        """Worker function: evaluate one candidate. Returns (cand_summary, result_row) or None."""
+        idx, cand = idx_cand
         cand_id = cand.get("cand_id", f"cand_{idx}")
         fwd = cand.get("fwd_seq") or cand.get("forward_primer_seq") or cand.get("fwd")
         rev = cand.get("rev_seq") or cand.get("reverse_primer_seq") or cand.get("rev")
@@ -288,128 +303,113 @@ def main():
         region = cand.get("region", "unknown")
         gene = cand.get("gene", region.split("_region_")[0] if "_region_" in region else region)
         rank = cand.get("rank", idx + 1)
-        
-        if not fwd or not rev:
-            print(f"[SKIP] {cand_id}: missing fwd_seq or rev_seq. Keys available: {list(cand.keys())}")
-            continue
-        
-        print(f"[{idx+1}/{len(all_candidates)}] Simulating PCR for {cand_id}...")
 
-        
-        # Run seqkit amplicon for mismatch 0, 1, 2, 3
-        # We determine the minimum primer mismatch for each sequence.
-        # To optimize, we run mismatch 3 to get all matches, then check matching ones at lower mismatch levels.
-        # This reduces seqkit invocations!
-        matches_m3 = run_seqkit_amplicon(fwd, rev, 3, args.sequences)
-        matches_m2 = run_seqkit_amplicon(fwd, rev, 2, args.sequences)
-        matches_m1 = run_seqkit_amplicon(fwd, rev, 1, args.sequences)
-        matches_m0 = run_seqkit_amplicon(fwd, rev, 0, args.sequences)
-        
-        matched_seqs = set(matches_m3.keys())
-        
-        # Evaluate each sequence's mismatch levels
+        if not fwd or not rev:
+            print(f"[SKIP] {cand_id}: missing fwd_seq or rev_seq.")
+            return None
+
+        print(f"[{idx+1}/{len(all_candidates)}] Simulating PCR for {cand_id} (seqkit -j {seqkit_threads})...")
+
+        # ── Single seqkit call with max_mismatch ──────────────────────────────
+        # seqkit returns amplicons for sequences where BOTH primers bind within max_mismatch.
+        # We then compute per-sequence primer mismatch via Python sliding window for the
+        # matched set to determine per-mismatch-level breakdown.
+        try:
+            matches_max = run_seqkit_amplicon(fwd, rev, args.max_mismatch, args.sequences, seqkit_threads)
+        except Exception as e:
+            print(f"[ERROR] seqkit failed for {cand_id}: {e}")
+            matches_max = {}
+
+        matched_seqs = set(matches_max.keys())
+
+        # ── Per-sequence evaluation ───────────────────────────────────────────
         cand_results = []
         for seq in seq_mappings:
             seq_id = seq["seq_id"]
-            
-            # Primer mismatch level
-            if seq_id in matches_m0:
-                p_mismatch = 0
-            elif seq_id in matches_m1:
-                p_mismatch = 1
-            elif seq_id in matches_m2:
-                p_mismatch = 2
-            elif seq_id in matches_m3:
-                p_mismatch = 3
+
+            if seq_id not in matched_seqs:
+                p_mismatch = 99  # No amplification
+                prb_mismatch = 99
             else:
-                p_mismatch = 99  # No match
-                
-            # Probe mismatch level
-            prb_mismatch = 99
-            if seq_id in matched_seqs:
-                amp_seq = matches_m3[seq_id]
+                amp_seq = matches_max[seq_id]
+                # Compute exact primer mismatch via sliding window (cheap for short primers)
+                fwd_mm = min_mismatches_sliding_window(fwd, amp_seq)
+                rev_mm = min_mismatches_sliding_window(reverse_complement(rev), amp_seq)
+                p_mismatch = max(fwd_mm, rev_mm)  # Worst of the two primers
+                # Probe mismatch
                 if probe:
                     prb_mismatch = min_mismatches_sliding_window(probe, amp_seq)
                 else:
-                    prb_mismatch = 0  # No probe required → 0 mismatch
-            
+                    prb_mismatch = 0
+
             is_amplified = (p_mismatch <= args.max_mismatch)
-            is_detected = is_amplified and (prb_mismatch <= args.max_mismatch)
-            
+            is_detected  = is_amplified and (prb_mismatch <= args.max_mismatch)
+
             cand_results.append({
-                "seq_id": seq_id,
-                "subtype": seq["subtype"],
-                "year": seq["year"],
-                "country": seq["country"],
+                "seq_id":        seq_id,
+                "subtype":       seq["subtype"],
+                "year":          seq["year"],
+                "country":       seq["country"],
                 "primer_mismatch": p_mismatch,
-                "probe_mismatch": prb_mismatch,
-                "is_amplified": is_amplified,
-                "is_detected": is_detected
+                "probe_mismatch":  prb_mismatch,
+                "is_amplified":  is_amplified,
+                "is_detected":   is_detected,
             })
-            
+
         df_res = pd.DataFrame(cand_results)
-        
-        # Calculate global metrics
-        total = len(df_res)
+        total     = len(df_res)
         amplified = df_res["is_amplified"].sum()
-        detected = df_res["is_detected"].sum()
-        amp_pct = round((amplified / total * 100), 2) if total > 0 else 0.0
-        det_pct = round((detected / total * 100), 2) if total > 0 else 0.0
-        
-        print(f"  -> Amplified: {amplified}/{total} ({amp_pct}%), Detected: {detected}/{total} ({det_pct}%)")
-        
-        # Store global results
-        cand_summary = {
-            "cand_id": cand_id,
-            "region": region,
-            "gene": gene,
-            "rank": rank,
-            "fwd_seq": fwd,
-            "rev_seq": rev,
-            "probe_seq": probe,
-            "total_seqs": total,
-            "amplified_seqs": int(amplified),
-            "detected_seqs": int(detected),
-            "amplified_pct": amp_pct,
-            "detected_pct": det_pct,
-            "breakdowns": {}
-        }
-        
-        # Calculate breakdowns by Subtype, Year, Country
+        detected  = df_res["is_detected"].sum()
+        amp_pct = round(amplified / total * 100, 2) if total > 0 else 0.0
+        det_pct = round(detected  / total * 100, 2) if total > 0 else 0.0
+
+        print(f"  [{cand_id}] Amplified: {amplified}/{total} ({amp_pct}%), Detected: {detected}/{total} ({det_pct}%)")
+
+        # ── Breakdown by subtype / year / country ─────────────────────────────
+        breakdowns = {}
         for col in ["subtype", "year", "country"]:
-            grouped = df_res.groupby(col).agg(
-                total=('seq_id', 'count'),
-                amplified=('is_amplified', 'sum'),
-                detected=('is_detected', 'sum')
+            grp = df_res.groupby(col).agg(
+                total=("seq_id", "count"),
+                amplified=("is_amplified", "sum"),
+                detected=("is_detected",  "sum"),
             ).reset_index()
-            grouped['amplified_pct'] = (grouped['amplified'] / grouped['total'] * 100).round(2)
-            grouped['detected_pct'] = (grouped['detected'] / grouped['total'] * 100).round(2)
-            
-            # Sort breakdowns logically
-            if col == "year":
-                grouped = grouped.sort_values(by="year", ascending=False)
-            else:
-                grouped = grouped.sort_values(by="total", ascending=False)
-                
-            cand_summary["breakdowns"][col] = grouped.to_dict(orient="records")
-            
-        summary_data.append(cand_summary)
-        
-        # Flattened row for TSV output
-        results_list.append({
-            "cand_id": cand_id,
-            "region": region,
-            "gene": gene,
-            "rank": rank,
-            "fwd_seq": fwd,
-            "rev_seq": rev,
-            "probe_seq": probe,
-            "total": total,
-            "amplified": int(amplified),
-            "detected": int(detected),
-            "amplified_pct": amp_pct,
-            "detected_pct": det_pct
-        })
+            grp["amplified_pct"] = (grp["amplified"] / grp["total"] * 100).round(2)
+            grp["detected_pct"]  = (grp["detected"]  / grp["total"] * 100).round(2)
+            grp = grp.sort_values("year" if col == "year" else "total",
+                                   ascending=(col == "year"))
+            breakdowns[col] = grp.to_dict(orient="records")
+
+        cand_summary = {
+            "cand_id": cand_id, "region": region, "gene": gene, "rank": rank,
+            "fwd_seq": fwd, "rev_seq": rev, "probe_seq": probe,
+            "total_seqs": total, "amplified_seqs": int(amplified),
+            "detected_seqs": int(detected), "amplified_pct": amp_pct,
+            "detected_pct": det_pct, "breakdowns": breakdowns,
+        }
+        result_row = {
+            "cand_id": cand_id, "region": region, "gene": gene, "rank": rank,
+            "fwd_seq": fwd, "rev_seq": rev, "probe_seq": probe,
+            "total": total, "amplified": int(amplified), "detected": int(detected),
+            "amplified_pct": amp_pct, "detected_pct": det_pct,
+        }
+        return (cand_summary, result_row)
+
+    # ── Run candidates in parallel ────────────────────────────────────────────
+    results_list = []
+    summary_data = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=worker_threads) as pool:
+        futures = {pool.submit(_evaluate_candidate, (i, c)): i
+                   for i, c in enumerate(all_candidates)}
+        for fut in concurrent.futures.as_completed(futures):
+            out = fut.result()
+            if out is not None:
+                cand_summary, result_row = out
+                summary_data.append(cand_summary)
+                results_list.append(result_row)
+
+    # Restore deterministic order (sorted by region then rank)
+    summary_data.sort(key=lambda x: (x["region"], x["rank"]))
+    results_list.sort(key=lambda x: (x["region"],  x["rank"]))
 
     # 5. Output TSV and JSON summaries
     df_summary = pd.DataFrame(results_list)

@@ -61,6 +61,8 @@ rule m10_insilico_pcr:
         num_candidates=config["insilico_pcr"].get("num_candidates", 10),
         outdir="results/{BUILD}/m10",
         m09_dirs=get_m10_m09_dirs
+    threads:
+        workflow.cores
     conda:
         "../envs/m10_insilico.yaml"
     log:
@@ -74,6 +76,7 @@ rule m10_insilico_pcr:
             --gff {input.gff} \
             --outdir {params.outdir} \
             --max-mismatch {params.max_mismatch} \
-            --num-candidates {params.num_candidates} > "{log}" 2>&1
+            --num-candidates {params.num_candidates} \
+            --threads {threads} > "{log}" 2>&1
         """
 
