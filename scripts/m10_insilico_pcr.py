@@ -163,13 +163,33 @@ def main():
     print(f"Loading metadata from {args.metadata}...")
     df_meta = pd.read_csv(args.metadata, sep='\t', dtype=str)
     
-    # Fill empty/na values with default values
-    df_meta['subtype'] = df_meta['subtype'].fillna('Unknown')
-    df_meta['country'] = df_meta['country'].fillna('Unknown')
-    df_meta['date'] = df_meta['date'].fillna('Unknown')
+    # Normalize column names to lowercase to handle case differences (Subtype vs subtype)
+    df_meta.columns = [c.strip().lower() for c in df_meta.columns]
+    
+    # Fill empty/na values with default values (only if column exists)
+    if 'subtype' in df_meta.columns:
+        df_meta['subtype'] = df_meta['subtype'].fillna('Unknown')
+    else:
+        df_meta['subtype'] = 'Unknown'
+        
+    if 'country' in df_meta.columns:
+        df_meta['country'] = df_meta['country'].fillna('Unknown')
+    else:
+        df_meta['country'] = 'Unknown'
+        
+    if 'date' in df_meta.columns:
+        df_meta['date'] = df_meta['date'].fillna('Unknown')
+    else:
+        df_meta['date'] = 'Unknown'
+    
+    # Use 'strain' column as key; fall back to first column if not present
+    if 'strain' not in df_meta.columns:
+        print(f"[WARNING] 'strain' column not found in metadata. Using first column '{df_meta.columns[0]}' as key.")
+        df_meta = df_meta.rename(columns={df_meta.columns[0]: 'strain'})
     
     strain_to_meta = {row['strain']: row.to_dict() for _, row in df_meta.iterrows()}
     print(f"Loaded {len(strain_to_meta)} metadata records.")
+
 
     # 2. Extract FASTA Headers
     print(f"Parsing FASTA headers from {args.sequences}...")
@@ -251,15 +271,20 @@ def main():
     summary_data = []
 
     for idx, cand in enumerate(all_candidates):
-        cand_id = cand["cand_id"]
-        fwd = cand["fwd_seq"]
-        rev = cand["rev_seq"]
-        probe = cand.get("probe_seq", "")
-        region = cand["region"]
-        gene = cand["gene"]
-        rank = cand["rank"]
+        cand_id = cand.get("cand_id", f"cand_{idx}")
+        fwd = cand.get("fwd_seq") or cand.get("forward_primer_seq") or cand.get("fwd")
+        rev = cand.get("rev_seq") or cand.get("reverse_primer_seq") or cand.get("rev")
+        probe = cand.get("probe_seq") or cand.get("probe") or ""
+        region = cand.get("region", "unknown")
+        gene = cand.get("gene", region.split("_region_")[0] if "_region_" in region else region)
+        rank = cand.get("rank", idx + 1)
+        
+        if not fwd or not rev:
+            print(f"[SKIP] {cand_id}: missing fwd_seq or rev_seq. Keys available: {list(cand.keys())}")
+            continue
         
         print(f"[{idx+1}/{len(all_candidates)}] Simulating PCR for {cand_id}...")
+
         
         # Run seqkit amplicon for mismatch 0, 1, 2, 3
         # We determine the minimum primer mismatch for each sequence.
