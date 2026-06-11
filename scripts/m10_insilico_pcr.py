@@ -427,13 +427,13 @@ def main():
             
             # GFF coordinates are 1-based, inclusive
             if amp_start is not None and amp_end is not None:
-                f.write(f"{ref_id}\tPrimerLab_M10\ttranscript\t{amp_start+1}\t{amp_end+1}\t.\t+\t.\tID={cand_id}_amp;Name={cand_id}_({amp_len}_bp);Coverage={det_pct}%;AmpCoverage={amp_pct}%\n")
+                f.write(f"{ref_id}\tPrimerLab_M10\ttranscript\t{amp_start+1}\t{amp_end+1}\t.\t+\t.\tID={cand_id}_amp;Name={cand_id}_({amp_len}_bp);Coverage={det_pct}%;AmpCoverage={amp_pct}%;gene={gene}\n")
             if fwd_start is not None and fwd_end is not None:
-                f.write(f"{ref_id}\tPrimerLab_M10\tprimer\t{fwd_start+1}\t{fwd_end+1}\t.\t+\t.\tID={cand_id}_F;Name={cand_id}_Fwd_({fwd_len}_bp);Parent={cand_id}_amp\n")
+                f.write(f"{ref_id}\tPrimerLab_M10\tprimer\t{fwd_start+1}\t{fwd_end+1}\t.\t+\t.\tID={cand_id}_F;Name={cand_id}_Fwd_({fwd_len}_bp);Parent={cand_id}_amp;gene={gene}\n")
             if rev_start is not None and rev_end is not None:
-                f.write(f"{ref_id}\tPrimerLab_M10\tprimer\t{rev_start+1}\t{rev_end+1}\t.\t-\t.\tID={cand_id}_R;Name={cand_id}_Rev_({rev_len}_bp);Parent={cand_id}_amp\n")
+                f.write(f"{ref_id}\tPrimerLab_M10\tprimer\t{rev_start+1}\t{rev_end+1}\t.\t-\t.\tID={cand_id}_R;Name={cand_id}_Rev_({rev_len}_bp);Parent={cand_id}_amp;gene={gene}\n")
             if prb_start is not None and prb_end is not None:
-                f.write(f"{ref_id}\tPrimerLab_M10\tprobe\t{prb_start+1}\t{prb_end+1}\t.\t+\t.\tID={cand_id}_P;Name={cand_id}_Prb_({prb_len}_bp);Parent={cand_id}_amp\n")
+                f.write(f"{ref_id}\tPrimerLab_M10\tprobe\t{prb_start+1}\t{prb_end+1}\t.\t+\t.\tID={cand_id}_P;Name={cand_id}_Prb_({prb_len}_bp);Parent={cand_id}_amp;gene={gene}\n")
 
     print(f"Wrote GFF3 track to {gff3_path}.")
 
