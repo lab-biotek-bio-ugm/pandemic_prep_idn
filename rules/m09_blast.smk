@@ -124,7 +124,7 @@ rule m09_blast_verification:
                 --gff "{params.gff}" \
                 --pathogen "{params.pathogen}" \
                 --db-label "human" \
-                >> {log} 2>&1
+                >> "{log}" 2>&1
 
             # Run verification against virus_db (with resume/skip support)
             python -u scripts/m09_blast_verification.py \
@@ -138,7 +138,7 @@ rule m09_blast_verification:
                 --gff "{params.gff}" \
                 --pathogen "{params.pathogen}" \
                 --db-label "virus" \
-                >> {log} 2>&1
+                >> "{log}" 2>&1
 
             # BUG-1 FIX: Compile summary ONCE after both DB runs complete
             python -u scripts/m09_blast_verification.py \
@@ -150,7 +150,7 @@ rule m09_blast_verification:
                 --gff "{params.gff}" \
                 --bridge-report "{params.bridge_report_path}" \
                 --compile-only \
-                >> {log} 2>&1
+                >> "{log}" 2>&1
 
             # Write marker file after both DB runs complete (local mode)
             echo "Completed local verification (human_db + virus_db) for candidates." > {output.marker}
@@ -183,7 +183,7 @@ rule m09_blast_verification:
                 --gff "{params.gff}" \
                 --pathogen "{params.pathogen}" \
                 --bridge-report "{params.bridge_report_path}" \
-                >> {log} 2>&1
+                >> "{log}" 2>&1
 
             # Marker is written by the Python script in remote mode (no --db-label)
             # Verify it was created
@@ -192,5 +192,5 @@ rule m09_blast_verification:
             fi
         fi
 
-        echo "✅ M09 verification complete." >> {log}
+        echo "✅ M09 verification complete." >> "{log}"
         """

@@ -74,6 +74,6 @@ rule m10_insilico_pcr:
             --gff {input.gff} \
             --outdir {params.outdir} \
             --max-mismatch {params.max_mismatch} \
-            --num-candidates {params.num_candidates} > {log} 2>&1
+            --num-candidates {params.num_candidates} > "{log}" 2>&1
         """
 
