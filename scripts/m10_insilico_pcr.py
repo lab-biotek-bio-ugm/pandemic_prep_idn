@@ -145,7 +145,9 @@ def parse_year(date_str: str) -> str:
 
 def main():
     parser = argparse.ArgumentParser(description="M10 — In-silico PCR Coverage Analysis")
-    parser.add_argument("--candidates", nargs="+", required=True, help="List of final_candidates.json files from M09")
+    parser.add_argument("--m09-dirs", nargs="+", required=True,
+                        help="List of M09 region output directories (e.g. results/BUILD/m09/M1_region_4). "
+                             "Script will discover final_candidates.json inside each directory at runtime.")
     parser.add_argument("--sequences", required=True, help="Path to raw sequence FASTA database")
     parser.add_argument("--metadata", required=True, help="Path to pipeline metadata TSV")
     parser.add_argument("--gff", required=True, help="Path to GFF3 annotation file")
@@ -199,22 +201,30 @@ def main():
     
     df_seq_map = pd.DataFrame(seq_mappings)
 
-    # 3. Load Candidates
+    # 3. Discover and Load Candidates from M09 directories
+    # We discover final_candidates.json at runtime to handle cases where some regions
+    # had no BLAST-passing candidates (and thus no final_candidates.json was written).
     all_candidates = []
-    for cand_json_path in args.candidates:
-        cand_path = Path(cand_json_path)
+    for m09_dir in args.m09_dirs:
+        region_dir = Path(m09_dir)
+        cand_path = region_dir / "final_candidates.json"
+
         if not cand_path.exists():
-            print(f"Warning: Candidate file {cand_json_path} does not exist. Skipping.")
+            print(f"ℹ️  No final_candidates.json in {region_dir.name} — no BLAST-passing candidates for this region. Skipping.")
             continue
-            
-        # Extract region name from directory path (parent name)
-        region_name = cand_path.parent.name
+
+        # Region name is the directory basename (e.g. M1_region_4)
+        region_name = region_dir.name
         print(f"Loading candidates for region '{region_name}' from {cand_path.name}...")
-        
-        with open(cand_path, "r", encoding="utf-8") as f:
-            candidates = json.load(f)
-            
-        # Limit to top N
+
+        try:
+            with open(cand_path, "r", encoding="utf-8") as f:
+                candidates = json.load(f)
+        except Exception as e:
+            print(f"Warning: Failed to parse {cand_path}: {e}. Skipping.")
+            continue
+
+        # Limit to top N per region
         for idx, c in enumerate(candidates[:args.num_candidates]):
             c["region"] = region_name
             c["gene"] = region_name.split("_region_")[0]
@@ -223,8 +233,16 @@ def main():
             all_candidates.append(c)
 
     if not all_candidates:
-        print("Error: No candidates loaded. Exiting.")
-        sys.exit(1)
+        print("⚠️  No candidates found across all M09 regions. Nothing to evaluate.")
+        print("    This usually means all regions had BLAST specificity scores below the threshold.")
+        # Write empty outputs so Snakemake output targets are satisfied
+        outdir.mkdir(parents=True, exist_ok=True)
+        (outdir / "coverage_summary.tsv").write_text("cand_id\tregion\tgene\trank\tfwd_seq\trev_seq\tprobe_seq\ttotal\tamplified\tdetected\tamplified_pct\tdetected_pct\n")
+        (outdir / "coverage_summary.json").write_text("[]")
+        (outdir / "coverage_report.md").write_text("# M10 In-silico PCR Coverage Report\n\nNo candidates passed BLAST specificity thresholds. No PCR simulation performed.\n")
+        (outdir / "coverage_heatmap.html").write_text("<html><body><h1>No candidates available</h1></body></html>")
+        (outdir / "m10_candidates.gff3").write_text("##gff-version 3\n")
+        sys.exit(0)
         
     print(f"Evaluating {len(all_candidates)} candidates across all regions.")
 
