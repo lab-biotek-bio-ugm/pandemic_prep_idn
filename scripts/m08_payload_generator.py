@@ -59,13 +59,13 @@ def generate_payload(manifest_path, template_path, out_dir, args=None):
         cz_start = cz.get('start', 0)
         cz_len = cz.get('length', 0)
         
+        is_5p_utr = ("5pUTR" in region_id) or ("5'UTR" in region_id) or ("5_prime" in region_id)
+        is_3p_utr = ("3pUTR" in region_id) or ("3'UTR" in region_id) or ("3_prime" in region_id)
+        
         # Tentukan template sekuens, target_region, dan included_region
         if is_full_segment_strategy and full_segment_seq:
             consensus_seq = full_segment_seq
             is_full = (cz_len == len(full_segment_seq) and cz_start == 0)
-            
-            is_5p_utr = ("5pUTR" in region_id) or ("5'UTR" in region_id) or ("5_prime" in region_id)
-            is_3p_utr = ("3pUTR" in region_id) or ("3'UTR" in region_id) or ("3_prime" in region_id)
             
             if is_full:
                 target_region_str = "null"
@@ -133,6 +133,14 @@ def generate_payload(manifest_path, template_path, out_dir, args=None):
                 comment = line.split("#", 1)[1] if "#" in line else ""
                 indent = line[:line.find("excluded_regions")]
                 out_lines.append(f"{indent}excluded_regions: {excluded_str}       # [M08 INJECTED]{' #' + comment if comment else ''}\n")
+            # Ganti max_poly_x jika wilayah UTR
+            elif line.strip().startswith("max_poly_x:"):
+                comment = line.split("#", 1)[1] if "#" in line else ""
+                indent = line[:line.find("max_poly_x")]
+                if is_5p_utr or is_3p_utr:
+                    out_lines.append(f"{indent}max_poly_x: 8       # [M08 INJECTED - RELAXED FOR UTR]{' #' + comment if comment else ''}\n")
+                else:
+                    out_lines.append(line)
             
             # --- New Overrides ---
             elif num_candidates is not None and line.strip().startswith("num_candidates:"):
