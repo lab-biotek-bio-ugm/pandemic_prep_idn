@@ -15,9 +15,9 @@ rule m08_generate_payload:
         manifest=f"results/{BUILD}/m07/primer_targets_manifest.yaml",
         template=config["primerlab"]["template"]
     output:
-        config=f"results/{BUILD}/m08/primerlab_config_Whole_Segment_region_1.yaml"
+        config=f"results/{BUILD}/m08/primerlab_config_{region}.yaml"
     log:
-        f"logs/{BUILD}/m08/generate_payload_Whole_Segment_region_1.log"
+        f"logs/{BUILD}/m08/generate_payload_{region}.log"
     params:
         outdir=f"results/{BUILD}/m08",
         num_candidates=config["primerlab"]["design"].get("num_candidates"),
@@ -73,11 +73,11 @@ rule m08_run_primerlab:
     Installs primerlab in editable mode inside the environment if needed.
     """
     input:
-        config=f"results/{BUILD}/m08/primerlab_config_Whole_Segment_region_1.yaml"
+        config=f"results/{BUILD}/m08/primerlab_config_{region}.yaml"
     output:
-        report=f"results/{BUILD}/m08/Whole_Segment_region_1/summary.json"
+        report=f"results/{BUILD}/m08/{region}/summary.json"
     log:
-        f"logs/{BUILD}/m08/run_primerlab_Whole_Segment_region_1.log"
+        f"logs/{BUILD}/m08/run_primerlab_{region}.log"
     params:
         repo_path=config["primerlab"]["repo_path"],
         validate=config["primerlab"]["design"].get("validate", False)

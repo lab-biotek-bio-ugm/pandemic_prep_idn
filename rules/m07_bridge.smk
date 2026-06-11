@@ -22,7 +22,7 @@ rule m07_export_config:
         with open(output.yaml, "w") as f:
             yaml.dump(config, f, default_flow_style=False)
 
-rule m07_bridge:
+checkpoint m07_bridge:
     """Runs the Bridge Builder to produce ranked primer target zones.
     Reads MSA + HyPhy outputs → produces BED, JSON report, YAML manifest.
     GARD inputs are conditional — if GARD is not in hyphy.methods,

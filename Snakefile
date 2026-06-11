@@ -29,6 +29,21 @@ def get_target_genes(config):
 TARGET_GENES = get_target_genes(config)
 HYPHY_METHODS = config["hyphy"].get("methods", ["FUBAR"])
 
+def get_m09_targets(wildcards):
+    import yaml
+    # Force Snakemake to evaluate checkpoint m07_bridge
+    checkpoint_output = checkpoints.m07_bridge.get(BUILD=BUILD)
+    manifest_path = checkpoint_output.output.manifest
+    
+    with open(manifest_path, "r") as f:
+        manifest = yaml.safe_load(f)
+    
+    regions = [r["region_id"] for r in manifest.get("candidate_regions", [])]
+    return [
+        f"results/{BUILD}/m09/{region}/verification_complete.txt"
+        for region in regions
+    ]
+
 rule all:
     input:
         # M02 Target (QC Report)
@@ -42,10 +57,8 @@ rule all:
          if "GARD" in HYPHY_METHODS else []),
         # M07 Target (Bridge — primer target manifest)
         f"results/{BUILD}/m07/primer_targets_manifest.yaml",
-        # M08 Target (PrimerLab Results)
-        f"results/{BUILD}/m08/Whole_Segment_region_1/summary.json",
-        # M09 Target (BLAST Specificity Verification)
-        f"results/{BUILD}/m09/verification_complete.txt"
+        # Dynamic M08/M09 targets based on m07_bridge checkpoint outputs
+        get_m09_targets
 
 include: "rules/m01_acquisition.smk"
 include: "rules/m02_m06_augur_core.smk"
