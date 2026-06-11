@@ -161,7 +161,16 @@ def main():
 
     # 1. Load Metadata
     print(f"Loading metadata from {args.metadata}...")
-    df_meta = pd.read_csv(args.metadata, sep='\t', dtype=str)
+    
+    # Auto-detect delimiter: sniff first line to decide tab vs comma
+    meta_path = Path(args.metadata)
+    with open(meta_path, 'r', encoding='utf-8', errors='ignore') as _f:
+        _first_line = _f.readline()
+    _sep = '\t' if '\t' in _first_line else ','
+    print(f"[M10] Detected metadata delimiter: {'TAB' if _sep == chr(9) else 'COMMA'}")
+    
+    df_meta = pd.read_csv(args.metadata, sep=_sep, dtype=str, on_bad_lines='warn')
+
     
     # Normalize column names to lowercase to handle case differences (Subtype vs subtype)
     df_meta.columns = [c.strip().lower() for c in df_meta.columns]
@@ -248,8 +257,9 @@ def main():
         for idx, c in enumerate(candidates[:args.num_candidates]):
             c["region"] = region_name
             c["gene"] = region_name.split("_region_")[0]
-            # Create a unique ID for this candidate
-            c["cand_id"] = f"{region_name}_Cand_{c['rank']}"
+            # Create a unique ID for this candidate (use rank or index as fallback)
+            rank_val = c.get('rank', idx + 1)
+            c["cand_id"] = f"{region_name}_Cand_{rank_val}"
             all_candidates.append(c)
 
     if not all_candidates:
