@@ -70,6 +70,23 @@ _IUPAC_MAP: dict = {
 }
 
 
+def sanitize_region_id(gene_name: str) -> str:
+    """Return a shell-safe region_id by replacing characters that break bash
+    quoting or filesystem paths.  Specifically:
+      - single-quote (') -> p  (e.g. 3'UTR -> 3pUTR, 5'UTR -> 5pUTR)
+      - double-quote (") -> removed
+      - whitespace      -> underscore
+      - any remaining non-alphanumeric except - and _ -> removed
+    This is applied at manifest write time so all downstream tools
+    (M08, M09, M10) always receive safe filesystem-friendly names.
+    """
+    import re
+    s = gene_name.replace("'", "p").replace('"', "")
+    s = re.sub(r"\s+", "_", s)
+    s = re.sub(r"[^A-Za-z0-9_\-]", "", s)
+    return s
+
+
 def _to_iupac_base(freq: dict, threshold: float = IUPAC_THRESHOLD) -> str:
     """Return IUPAC ambiguity code for a position given per-base frequencies.
 
@@ -750,7 +767,7 @@ def write_manifest(regions, build_name, ref_genome, buffer_bp, path, profile, co
         inc_end = r["end"] + buffer_bp
 
         manifest["candidate_regions"].append({
-            "region_id": f"{r['gene']}_region_{r['rank']}",
+            "region_id": f"{sanitize_region_id(r['gene'])}_region_{r['rank']}",
             "rank": r["rank"],
             "gene": r["gene"],
             "tier": r["tier"],
@@ -852,7 +869,7 @@ def write_csv(regions, path):
         for r in regions:
             writer.writerow({
                 "rank": r.get("rank", ""),
-                "region_id": f"{r['gene']}_region_{r.get('rank', '')}",
+                "region_id": f"{sanitize_region_id(r['gene'])}_region_{r.get('rank', '')}",
                 "gene": r.get("gene", ""),
                 "tier": r.get("tier", ""),
                 "grade": r.get("grade", ""),

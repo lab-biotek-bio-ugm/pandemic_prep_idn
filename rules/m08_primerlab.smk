@@ -121,6 +121,6 @@ rule m08_run_primerlab:
         fi
         
         # Run design
-        primerlab raa --config {input.config} --out results/{BUILD}/m08 $VALIDATE_FLAG
+        primerlab raa --config "{input.config}" --out results/{BUILD}/m08 $VALIDATE_FLAG
         ) > "{log}" 2>&1
         """
