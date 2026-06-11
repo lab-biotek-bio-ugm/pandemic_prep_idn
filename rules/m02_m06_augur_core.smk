@@ -7,6 +7,50 @@ phylogenetic tree inference, mutational trait analysis, and JSON payload export.
 # Import the global BUILD variable defined in the main Snakefile
 BUILD = config["build_name"]
 
+
+def _parse_cds_genes_from_gff(gff_path):
+    """Extract unique CDS gene names from a GFF3 annotation file.
+
+    Reads CDS features and returns a sorted list of unique gene names.
+    Works for any virus (Influenza A, B, SARS-CoV-2, etc.) as long as
+    the GFF3 has proper 'gene=' or 'Name=' attributes on CDS features.
+    Single-exon genes and spliced genes (multi-CDS) are both captured.
+
+    Returns:
+        list[str]: e.g. ['M1', 'M2'] for Flu-MP, ['ORF1a', 'ORF1b', 'S', ...] for SARS-CoV-2
+    """
+    import re
+    genes = set()
+    try:
+        with open(gff_path) as f:
+            for line in f:
+                if line.startswith("#"):
+                    continue
+                parts = line.strip().split("\t")
+                if len(parts) < 9 or parts[2] != "CDS":
+                    continue
+                attrs = parts[8]
+                # Try gene= then Name= then locus_tag=
+                for key in ("gene", "Name", "locus_tag"):
+                    m = re.search(rf"(?:^|;){key}=([^;]+)", attrs)
+                    if m:
+                        name = m.group(1).strip('"')
+                        # Skip generic IDs like 'cds-M1', 'cds-M2_p1' — extract gene part
+                        # The 'gene=' attribute already gives us the clean name.
+                        genes.add(name)
+                        break
+    except Exception as e:
+        print(f"[WARNING] Could not parse CDS genes from {gff_path}: {e}")
+    return sorted(genes)
+
+
+# Pre-compute CDS gene list from annotation at workflow load time.
+# This means no hardcoded gene names anywhere — swapping the GFF
+# automatically changes which genes appear in Auspice and augur translate.
+_ANNOTATION_GFF = config["references"]["annotation"]
+_CDS_GENES = _parse_cds_genes_from_gff(_ANNOTATION_GFF)
+print(f"[m02-m06] CDS genes detected from annotation: {_CDS_GENES}")
+
 rule qc_prefilter:
     """Prefilters raw sequences: removes high N-content, duplicate sequences,
     and underrepresented subtypes (n < min_subtype_count).
@@ -156,6 +200,11 @@ rule augur_translate:
         reference=config["references"]["annotation"]
     output:
         node_data=f"results/{BUILD}/m06/aa_muts.json"
+    params:
+        # Genes are derived dynamically from the GFF annotation — zero hardcoding.
+        # Flu-A MP  -> "M1 M2" | Flu-B MP -> "BM1 BM2" | SARS-CoV-2 -> "ORF1a ORF1b S E M N ..."
+        # If GFF has no CDS features, genes_flag is empty string and --genes is omitted entirely.
+        genes_flag=("--genes " + " ".join(_CDS_GENES)) if _CDS_GENES else ""
     conda:
         "../envs/nextstrain.yaml"
     log:
@@ -166,7 +215,7 @@ rule augur_translate:
             --tree {input.tree} \
             --ancestral-sequences {input.node_data} \
             --reference-sequence {input.reference} \
-            --genes M1 M2 \
+            {params.genes_flag} \
             --validation-mode warn \
             --output-node-data {output.node_data} 2> {log}
         """
