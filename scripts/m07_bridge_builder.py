@@ -540,12 +540,19 @@ def score_regions(regions, profile, ref_seq, codon_data, gard_breakpoints, genes
         # 1. Gather HyPhy Data
         fubar_probs, meme_pvals = [], []
         has_hyphy = False
-        gene_codon_data = codon_data.get(gene_name, {})
         for pos in range(start, end):
-            if pos in gene_codon_data:
+            overlapping_genes = []
+            for g in genes:
+                gname = g["name"]
+                if gname in codon_data and pos in codon_data[gname]:
+                    overlapping_genes.append(gname)
+            
+            if overlapping_genes:
                 has_hyphy = True
-                fubar_probs.append(gene_codon_data[pos]["fubar_purifying_prob"])
-                meme_pvals.append(gene_codon_data[pos]["meme_pvalue"])
+                val_fubar = max(codon_data[gn][pos]["fubar_purifying_prob"] for gn in overlapping_genes)
+                val_meme = min(codon_data[gn][pos]["meme_pvalue"] for gn in overlapping_genes)
+                fubar_probs.append(val_fubar)
+                meme_pvals.append(val_meme)
 
         avg_fubar = sum(fubar_probs) / len(fubar_probs) if fubar_probs else 0.0
         meme_danger_sites = sum(1 for p in meme_pvals if p < 0.05)
@@ -794,8 +801,24 @@ def write_manifest(regions, build_name, ref_genome, buffer_bp, path, profile, co
             },
             "positional_scores": {
                 "entropy": [round(profile[i]["entropy"], 4) for i in range(r["start"], r["end"])],
-                "fubar_prob": [round(codon_data.get(r["gene"], {}).get(i, {}).get("fubar_purifying_prob", 0.5), 4) for i in range(r["start"], r["end"])],
-                "meme_pval": [round(codon_data.get(r["gene"], {}).get(i, {}).get("meme_pvalue", 1.0), 4) for i in range(r["start"], r["end"])],
+                "fubar_prob": [
+                    round(
+                        max([codon_data[gn][i]["fubar_purifying_prob"] 
+                             for gn in codon_data 
+                             if i in codon_data[gn]] or [0.5]), 
+                        4
+                    ) 
+                    for i in range(r["start"], r["end"])
+                ],
+                "meme_pval": [
+                    round(
+                        min([codon_data[gn][i]["meme_pvalue"] 
+                             for gn in codon_data 
+                             if i in codon_data[gn]] or [1.0]), 
+                        4
+                    ) 
+                    for i in range(r["start"], r["end"])
+                ],
             },
             "flags": r["flags"],
             "recommendation": r["recommendation"],
@@ -902,56 +925,17 @@ def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir,
 
     print(f"\n[M07] [{track_name}] Step 2: Conservation Scanner (Strategy: {strategy})")
     if strategy == "full_segment":
-        # Strategy: Full Segment — Create one region per gene/UTR (preserving gene labels
-        # so codon_data lookups in score_regions work correctly for FUBAR/MEME data).
-        regions = []
-
-        # Build gene-level regions from GFF annotations
-        all_features = []
-        for g in genes:
-            all_features.append({
-                "start": g["start"],
-                "end": min(g["end"], aln_len),
-                "gene": g["name"],
-            })
-        for u in utrs:
-            all_features.append({
-                "start": u["start"],
-                "end": min(u["end"], aln_len),
-                "gene": u["name"],
-            })
-
-        if all_features:
-            all_features.sort(key=lambda x: x["start"])
-            for feat in all_features:
-                s, e = feat["start"], feat["end"]
-                if e <= s:
-                    continue
-                pos_entropies = [profile[i]["entropy"] for i in range(s, e) if i < len(profile)]
-                mean_ent = sum(pos_entropies) / max(1, len(pos_entropies))
-                regions.append({
-                    "start": s,
-                    "end": e,
-                    "mean_entropy": mean_ent,
-                    "conservation_pct": round((1 - mean_ent / 2.0) * 100, 2),
-                    "length": e - s,
-                    "gene": feat["gene"],
-                })
-            print(f"[M07] [{track_name}] Full-segment: created {len(regions)} gene-level regions "
-                  f"({', '.join(r['gene'] for r in regions)})")
-        else:
-            # Fallback: no GFF features found → single holistic region
-            mean_ent = sum(p["entropy"] for p in profile) / max(1, aln_len)
-            regions = [{
-                "start": 0,
-                "end": aln_len,
-                "mean_entropy": mean_ent,
-                "conservation_pct": round((1 - mean_ent / 2.0) * 100, 2),
-                "length": aln_len,
-                "gene": "Whole_Segment",
-            }]
-            print(f"[M07] [{track_name}] WARNING: No GFF genes found — fell back to single "
-                  f"Whole_Segment region ({aln_len} bp)")
+        # Strategy: Full Segment — Create a single holistic region representing the whole segment
+        mean_ent = sum(p["entropy"] for p in profile) / max(1, aln_len)
+        regions = [{
+            "start": 0,
+            "end": aln_len,
+            "mean_entropy": mean_ent,
+            "conservation_pct": round((1 - mean_ent / 2.0) * 100, 2),
+            "length": aln_len,
+            "gene": "Whole_Segment",
+        }]
+        print(f"[M07] [{track_name}] Full-segment: created single Whole_Segment region ({aln_len} bp)")
     else:
         # Strategy: Windowed (Original)
         regions = scan_conservation(profile, window_size, entropy_threshold)
