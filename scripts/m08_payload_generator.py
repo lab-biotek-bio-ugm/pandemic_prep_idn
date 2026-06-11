@@ -57,33 +57,15 @@ def generate_payload(manifest_path, template_path, out_dir, args=None):
         meme_pvals = region['positional_scores']['meme_pval']
         cz = region.get('conserved_zone', {})
         cz_start = cz.get('start', 0)
-        cz_len = cz.get('length', 0)
         
-        is_5p_utr = ("5pUTR" in region_id) or ("5'UTR" in region_id) or ("5_prime" in region_id)
-        is_3p_utr = ("3pUTR" in region_id) or ("3'UTR" in region_id) or ("3_prime" in region_id)
-        
-        # Tentukan template sekuens, target_region, dan included_region
+        # Tentukan template sekuens
         if is_full_segment_strategy and full_segment_seq:
             consensus_seq = full_segment_seq
-            is_full = (cz_len == len(full_segment_seq) and cz_start == 0)
-            
-            if is_full:
-                target_region_str = "null"
-                included_region_str = "null"
-            elif is_5p_utr:
-                included_region_str = "{start: 0, length: 350}"
-                target_region_str = "{start: 35, length: 5}"
-            elif is_3p_utr:
-                included_region_str = f"{{start: {len(full_segment_seq) - 350}, length: 350}}"
-                target_region_str = f"{{start: {len(full_segment_seq) - 40}, length: 5}}"
-            else:
-                # Untuk gen/CDS (seperti M1, M2), batasi pencarian di dalam gen
-                target_region_str = "null"
-                included_region_str = f"{{start: {cz_start}, length: {cz_len}}}"
         else:
             consensus_seq = region['sequences']['consensus_sequence']
-            target_region_str = "null"
-            included_region_str = "null"
+            
+        target_region_str = "null"
+        included_region_str = "null"
             
         # Hitung excluded_regions (relatif terhadap template sekuens)
         excluded_list = []
@@ -133,14 +115,6 @@ def generate_payload(manifest_path, template_path, out_dir, args=None):
                 comment = line.split("#", 1)[1] if "#" in line else ""
                 indent = line[:line.find("excluded_regions")]
                 out_lines.append(f"{indent}excluded_regions: {excluded_str}       # [M08 INJECTED]{' #' + comment if comment else ''}\n")
-            # Ganti max_poly_x jika wilayah UTR
-            elif line.strip().startswith("max_poly_x:"):
-                comment = line.split("#", 1)[1] if "#" in line else ""
-                indent = line[:line.find("max_poly_x")]
-                if is_5p_utr or is_3p_utr:
-                    out_lines.append(f"{indent}max_poly_x: 8       # [M08 INJECTED - RELAXED FOR UTR]{' #' + comment if comment else ''}\n")
-                else:
-                    out_lines.append(line)
             
             # --- New Overrides ---
             elif num_candidates is not None and line.strip().startswith("num_candidates:"):
