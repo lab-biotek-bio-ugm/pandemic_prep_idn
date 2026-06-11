@@ -37,21 +37,26 @@ def main():
         "--ref-fasta", default=None,
         help="Path to reference genome FASTA file."
     )
+    parser.add_argument(
+        "--gff", default=None,
+        help="Path to GFF3 annotation file for the reference genome. Used to generate correct IGV gene tracks."
+    )
     
     args = parser.parse_args()
 
     # --- Compile-only mode: skip BLAST, just compile reports ---
     if args.compile_only:
-        print("📊 Compile-only mode: generating summary reports from existing results...")
+        print("Compile-only mode: generating summary reports from existing results...")
         try:
             compile_summary(
                 str(args.outdir), args.alternatives, args.target,
                 bridge_report_path=args.bridge_report,
                 ref_fasta_path=args.ref_fasta,
+                gff_path=args.gff,
             )
         except Exception as e:
             import traceback
-            print(f"⚠️ Warning: Failed to compile specificity summary: {e}")
+            print(f"Warning: Failed to compile specificity summary: {e}")
             traceback.print_exc()
         return
     
@@ -261,7 +266,8 @@ def _check_gard_overlap(start, end, gard_breakpoints, buffer=50):
 def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
                     target_id: Optional[str] = None,
                     bridge_report_path: Optional[str] = None,
-                    ref_fasta_path: Optional[str] = None):
+                    ref_fasta_path: Optional[str] = None,
+                    gff_path: Optional[str] = None):
     """
     Scans output directory, loads JSON results for all candidates,
     and generates master CSV and Markdown reports for comparison.
@@ -780,8 +786,12 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
     # --- GAP-4: Generate IGV session XML ---
     igv_session_path = outdir / "igv_session.xml"
     try:
-        _generate_igv_session(igv_session_path, gff_path, bed_path, target, outdir, ref_fasta_path=ref_fasta_path)
-        print(f"🖥️ IGV session file generated: {igv_session_path}")
+        _generate_igv_session(
+            igv_session_path, gff_path, bed_path, target, outdir,
+            ref_fasta_path=ref_fasta_path,
+            annotation_gff_path=gff_path,
+        )
+        print(f"IGV session file generated: {igv_session_path}")
     except Exception as e:
         print(f"Warning: Failed to generate IGV session: {e}")
 
@@ -1009,47 +1019,44 @@ def _generate_individual_forbidden_tracks(entropy_path: Path, meme_path: Path, g
             print(f"Warning: Failed to write {gard_path}: {e}")
 
 
-def _generate_igv_session(session_path: Path, gff_path: Path, bed_path: Path,
-                          reference_id: str, outdir: Path, ref_fasta_path: Optional[str] = None):
-    """GAP-4: Generate an IGV session XML file that pre-loads all genomic tracks."""
-    # Use relative paths from the session file location
-    gff_rel = gff_path.name
+def _generate_igv_session(session_path: Path, gff_path, bed_path: Path,
+                          reference_id: str, outdir: Path,
+                          ref_fasta_path: Optional[str] = None,
+                          annotation_gff_path: Optional[str] = None):
+    """GAP-4: Generate an IGV session XML file that pre-loads all genomic tracks.
     
-    # Check if M07 BED is available (one directory up, in m07 folder)
-    m07_bed = outdir.parent / "m07" / "conserved_regions.bed"
-    m07_bed_str = ""
-    if m07_bed.exists():
-        m07_bed_str = f'''
-        <Resource path="../m07/conserved_regions.bed"/>'''
+    Uses annotation_gff_path (explicit GFF for gene annotations) when available.
+    Falls back to searching by filename convention if not provided.
+    """
+    # Use relative paths from the session file location
+    gff_rel = Path(gff_path).name if gff_path else "final_candidates.gff3"
 
-    # Try to find a GFF annotation file in the same folder as reference FASTA
+    # ── Resolve annotation GFF (explicit path wins over filename search) ──
     ref_gff_rel_str = ""
     ref_gff_track_str = ""
-    if ref_fasta_path:
+    resolved_annotation_gff = None
+
+    if annotation_gff_path and os.path.exists(annotation_gff_path):
+        resolved_annotation_gff = Path(annotation_gff_path)
+    elif ref_fasta_path:
+        # Fallback: look for GFF with same stem as FASTA (same directory)
         try:
             fasta_path = Path(ref_fasta_path)
-            ref_gff_path = None
-            # Look for .gff or .gff3 file with same prefix
             for ext in [".gff", ".gff3"]:
-                gff_candidate = fasta_path.with_suffix(ext)
-                if gff_candidate.exists():
-                    ref_gff_path = gff_candidate
+                candidate = fasta_path.with_suffix(ext)
+                if candidate.exists():
+                    resolved_annotation_gff = candidate
                     break
-            if not ref_gff_path:
-                # Check other .gff files in the same folder
-                for f in fasta_path.parent.glob("*.gff*"):
-                    if f.name != gff_path.name:
-                        ref_gff_path = f
-                        break
-            if ref_gff_path and ref_gff_path.exists():
-                rel_ref_gff = os.path.relpath(ref_gff_path, start=outdir).replace("\\", "/")
-                ref_gff_rel_str = f'''
-        <Resource path="{rel_ref_gff}"/>'''
-                ref_gff_track_str = f'''
-        <Track id="{rel_ref_gff}" name="Gene Annotations" renderer="GENE" visible="true" displayMode="EXPANDED" color="0,128,0">
-        </Track>'''
         except Exception:
             pass
+
+    if resolved_annotation_gff and resolved_annotation_gff.exists():
+        rel_ref_gff = os.path.relpath(resolved_annotation_gff, start=outdir).replace("\\", "/")
+        ref_gff_rel_str = f'<Resource path="{rel_ref_gff}"/>'
+        ref_gff_track_str = (
+            f'<Track id="{rel_ref_gff}" name="Gene Annotations (GFF)" renderer="GENE" '
+            f'visible="true" displayMode="EXPANDED" color="0,128,0">\n        </Track>'
+        )
 
     # Check for individual tracks
     entropy_gff = outdir / "high_entropy.gff3"

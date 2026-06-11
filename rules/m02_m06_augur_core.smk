@@ -166,6 +166,7 @@ rule augur_translate:
             --tree {input.tree} \
             --ancestral-sequences {input.node_data} \
             --reference-sequence {input.reference} \
+            --genes M1 M2 \
             --validation-mode warn \
             --output-node-data {output.node_data} 2> {log}
         """
@@ -198,6 +199,7 @@ rule augur_export:
             --metadata {input.metadata} \
             --node-data {input.branch_lengths} {input.nt_muts} {input.aa_muts} \
             --color-by-metadata {params.color_by} \
+            --reference-sequence {config[references][annotation]} \
             --output {output.auspice_json} \
             --title "Pandemic Preparedness: {params.build_name}" \
             --build-url "https://github.com/engkinandatama/pandemic-preparedness" 2> {log}

@@ -46,6 +46,7 @@ rule m09_blast_verification:
     input:
         alternatives=f"results/{BUILD}/m08/Whole_Segment_region_1/summary.json",
         bridge_report=f"results/{BUILD}/m07/bridge_report.json",
+        gff=config["references"]["annotation"],
         db_marker=_get_db_marker()  # Empty list if remote mode → no dependency
     output:
         marker=f"results/{BUILD}/m09/verification_complete.txt"
@@ -67,7 +68,8 @@ rule m09_blast_verification:
         db_output_dir=config.get("blast_verification", {}).get(
             "custom_db_build", {}
         ).get("output_dir", "resources/blast_db"),
-        bridge_report_path=f"results/{BUILD}/m07/bridge_report.json"
+        bridge_report_path=f"results/{BUILD}/m07/bridge_report.json",
+        gff=config["references"]["annotation"]
     conda:
         "../envs/primerlab.yaml"
     shell:
@@ -119,6 +121,7 @@ rule m09_blast_verification:
                 --outdir {params.outdir} \
                 --target "{params.target}" \
                 --ref-fasta "{params.ref_fasta}" \
+                --gff "{params.gff}" \
                 --pathogen "{params.pathogen}" \
                 --db-label "human" \
                 >> {log} 2>&1
@@ -132,6 +135,7 @@ rule m09_blast_verification:
                 --outdir {params.outdir} \
                 --target "{params.target}" \
                 --ref-fasta "{params.ref_fasta}" \
+                --gff "{params.gff}" \
                 --pathogen "{params.pathogen}" \
                 --db-label "virus" \
                 >> {log} 2>&1
@@ -143,6 +147,7 @@ rule m09_blast_verification:
                 --outdir {params.outdir} \
                 --target "{params.target}" \
                 --ref-fasta "{params.ref_fasta}" \
+                --gff "{params.gff}" \
                 --bridge-report "{params.bridge_report_path}" \
                 --compile-only \
                 >> {log} 2>&1
@@ -175,6 +180,7 @@ rule m09_blast_verification:
                 --outdir {params.outdir} \
                 --target "{params.target}" \
                 --ref-fasta "{params.ref_fasta}" \
+                --gff "{params.gff}" \
                 --pathogen "{params.pathogen}" \
                 --bridge-report "{params.bridge_report_path}" \
                 >> {log} 2>&1
