@@ -67,28 +67,24 @@ rule m08_generate_payload:
         eval "$CMD" > "{log}" 2>&1
         """
 
-rule m08_run_primerlab:
+rule m08_install_primerlab:
     """
-    Executes PrimerLab design engine using the generated config.
-    Installs primerlab in editable mode inside the environment if needed.
+    Installs PrimerLab once in editable mode or from remote git repo
+    to prevent race conditions when running parallel designs.
     """
-    input:
-        config=f"results/{BUILD}/m08/primerlab_config_{{region}}.yaml"
     output:
-        report=f"results/{BUILD}/m08/{{region}}/summary.json"
-    log:
-        f"logs/{BUILD}/m08/run_primerlab_{{region}}.log"
+        sentinel=f"results/{BUILD}/m08/.primerlab_installed"
     params:
-        repo_path=config["primerlab"]["repo_path"],
-        validate=config["primerlab"]["design"].get("validate", False)
+        repo_path=config["primerlab"]["repo_path"]
     conda:
         "../envs/primerlab.yaml"
+    log:
+        f"logs/{BUILD}/m08/install_primerlab.log"
     shell:
         """
         #!/usr/bin/env bash
         set -euo pipefail
         (
-        # Install primerlab if repo_path is provided
         REPO_PATH="{params.repo_path}"
         if [ -n "$REPO_PATH" ] && [ "$REPO_PATH" != "conda" ] && [ "$REPO_PATH" != "None" ]; then
             if [[ "$REPO_PATH" == git+* ]]; then
@@ -112,8 +108,33 @@ rule m08_run_primerlab:
                     echo "Skipping editable install because directory does not exist: $REPO_PATH"
                 fi
             fi
+        else
+            echo "Skipping installation as repo_path is not specified or set to conda/None."
         fi
-        
+        touch "{output.sentinel}"
+        ) > "{log}" 2>&1
+        """
+
+rule m08_run_primerlab:
+    """
+    Executes PrimerLab design engine using the generated config.
+    """
+    input:
+        config=f"results/{BUILD}/m08/primerlab_config_{{region}}.yaml",
+        installed=f"results/{BUILD}/m08/.primerlab_installed"
+    output:
+        report=f"results/{BUILD}/m08/{{region}}/summary.json"
+    log:
+        f"logs/{BUILD}/m08/run_primerlab_{{region}}.log"
+    params:
+        validate=config["primerlab"]["design"].get("validate", False)
+    conda:
+        "../envs/primerlab.yaml"
+    shell:
+        """
+        #!/usr/bin/env bash
+        set -euo pipefail
+        (
         # Build validation flag
         VALIDATE_FLAG=""
         if [ "{params.validate}" = "True" ] || [ "{params.validate}" = "true" ]; then

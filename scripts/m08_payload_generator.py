@@ -31,13 +31,47 @@ def generate_payload(manifest_path, template_path, out_dir, args=None):
     blast_targeted_check = getattr(args, "blast_targeted_check", None) if args else None
     blast_targeted_db_path = getattr(args, "blast_targeted_db_path", None) if args else None
 
-    # 3. Ekstrak setiap region kandidat
-    for idx, region in enumerate(manifest.get('candidate_regions', [])):
+    candidate_regions = manifest.get('candidate_regions', [])
+    if not candidate_regions:
+        print("[M08] WARNING: No candidate regions found in manifest.")
+        return
+
+    # 3. Analisis strategi manifest
+    lengths = [len(r['sequences']['consensus_sequence']) for r in candidate_regions]
+    max_len = max(lengths)
+    min_len = min(lengths)
+    is_full_segment_strategy = (max_len - min_len > 100) or (max_len > 500)
+    
+    if is_full_segment_strategy:
+        # Cari sekuens konsensus terpanjang sebagai representasi full segment
+        full_segment_region = max(candidate_regions, key=lambda r: len(r['sequences']['consensus_sequence']))
+        full_segment_seq = full_segment_region['sequences']['consensus_sequence']
+        print(f"[M08] Detected full-segment strategy. Base template sequence length: {len(full_segment_seq)} bp")
+    else:
+        full_segment_seq = None
+        print(f"[M08] Detected windowed strategy. Slices will be designed independently.")
+
+    # 4. Ekstrak setiap region kandidat
+    for idx, region in enumerate(candidate_regions):
         region_id = region['region_id']
         meme_pvals = region['positional_scores']['meme_pval']
-        consensus_seq = region['sequences']['consensus_sequence']
+        cz = region.get('conserved_zone', {})
+        cz_start = cz.get('start', 0)
+        cz_len = cz.get('length', 0)
         
-        # Hitung excluded_regions
+        # Tentukan template sekuens dan target_region
+        if is_full_segment_strategy and full_segment_seq:
+            consensus_seq = full_segment_seq
+            is_full = (cz_len == len(full_segment_seq) and cz_start == 0)
+            if not is_full:
+                target_region_str = f"{{start: {cz_start}, length: {cz_len}}}"
+            else:
+                target_region_str = "null"
+        else:
+            consensus_seq = region['sequences']['consensus_sequence']
+            target_region_str = "null"
+            
+        # Hitung excluded_regions (relatif terhadap template sekuens)
         excluded_list = []
         in_exclusion = False
         start_idx = 0
@@ -49,16 +83,18 @@ def generate_payload(manifest_path, template_path, out_dir, args=None):
                     start_idx = i
             else:
                 if in_exclusion:
-                    excluded_list.append(f"{{start: {start_idx}, length: {i - start_idx}}}")
+                    offset = cz_start if is_full_segment_strategy and full_segment_seq else 0
+                    excluded_list.append(f"{{start: {start_idx + offset}, length: {i - start_idx}}}")
                     in_exclusion = False
                     
         if in_exclusion:
-            excluded_list.append(f"{{start: {start_idx}, length: {len(meme_pvals) - start_idx}}}")
+            offset = cz_start if is_full_segment_strategy and full_segment_seq else 0
+            excluded_list.append(f"{{start: {start_idx + offset}, length: {len(meme_pvals) - start_idx}}}")
             
         # Format menjadi string array YAML satu baris: [{start: X, length: Y}, ...]
         excluded_str = "[" + ", ".join(excluded_list) + "]"
         
-        # 4. Cari dan Ganti Teks (Text Replacement)
+        # 5. Cari dan Ganti Teks (Text Replacement)
         out_lines = []
         for line in template_lines:
             # Ganti sequence: null
@@ -67,6 +103,11 @@ def generate_payload(manifest_path, template_path, out_dir, args=None):
             # Ganti type: auto
             elif line.startswith("  type: auto"):
                 out_lines.append("  type: raw                 # [M08 INJECTED]\n")
+            # Ganti target_region: null
+            elif line.strip().startswith("target_region:"):
+                comment = line.split("#", 1)[1] if "#" in line else ""
+                indent = line[:line.find("target_region")]
+                out_lines.append(f"{indent}target_region: {target_region_str}       # [M08 INJECTED]{' #' + comment if comment else ''}\n")
             # Ganti excluded_regions
             elif line.strip().startswith("excluded_regions:"):
                 # Pertahankan komentar asli jika ada
