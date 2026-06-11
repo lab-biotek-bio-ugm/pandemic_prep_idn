@@ -902,20 +902,56 @@ def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir,
 
     print(f"\n[M07] [{track_name}] Step 2: Conservation Scanner (Strategy: {strategy})")
     if strategy == "full_segment":
-        # Strategy: Full Segment — Treat the entire reference as a single holistic region
-        regions = [{
-            "start": 0,
-            "end": aln_len,
-            "mean_entropy": sum(p["entropy"] for p in profile) / max(1, aln_len),
-            "conservation_pct": 0.0,
-            "length": aln_len,
-            "gene": "Whole_Segment"
-        }]
-        # Recalculate conservation_pct
-        for r in regions:
-             r["conservation_pct"] = round((1 - r["mean_entropy"] / 2.0) * 100, 2)
-        
-        print(f"[M07] [{track_name}] Created 1 holistic segment spanning entire length ({aln_len} bp)")
+        # Strategy: Full Segment — Create one region per gene/UTR (preserving gene labels
+        # so codon_data lookups in score_regions work correctly for FUBAR/MEME data).
+        regions = []
+
+        # Build gene-level regions from GFF annotations
+        all_features = []
+        for g in genes:
+            all_features.append({
+                "start": g["start"],
+                "end": min(g["end"], aln_len),
+                "gene": g["name"],
+            })
+        for u in utrs:
+            all_features.append({
+                "start": u["start"],
+                "end": min(u["end"], aln_len),
+                "gene": u["name"],
+            })
+
+        if all_features:
+            all_features.sort(key=lambda x: x["start"])
+            for feat in all_features:
+                s, e = feat["start"], feat["end"]
+                if e <= s:
+                    continue
+                pos_entropies = [profile[i]["entropy"] for i in range(s, e) if i < len(profile)]
+                mean_ent = sum(pos_entropies) / max(1, len(pos_entropies))
+                regions.append({
+                    "start": s,
+                    "end": e,
+                    "mean_entropy": mean_ent,
+                    "conservation_pct": round((1 - mean_ent / 2.0) * 100, 2),
+                    "length": e - s,
+                    "gene": feat["gene"],
+                })
+            print(f"[M07] [{track_name}] Full-segment: created {len(regions)} gene-level regions "
+                  f"({', '.join(r['gene'] for r in regions)})")
+        else:
+            # Fallback: no GFF features found → single holistic region
+            mean_ent = sum(p["entropy"] for p in profile) / max(1, aln_len)
+            regions = [{
+                "start": 0,
+                "end": aln_len,
+                "mean_entropy": mean_ent,
+                "conservation_pct": round((1 - mean_ent / 2.0) * 100, 2),
+                "length": aln_len,
+                "gene": "Whole_Segment",
+            }]
+            print(f"[M07] [{track_name}] WARNING: No GFF genes found — fell back to single "
+                  f"Whole_Segment region ({aln_len} bp)")
     else:
         # Strategy: Windowed (Original)
         regions = scan_conservation(profile, window_size, entropy_threshold)
