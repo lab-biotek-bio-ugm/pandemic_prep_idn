@@ -61,14 +61,14 @@ def main():
         return
     
     if not os.path.exists(args.alternatives):
-        print(f"❌ Alternatives file not found: {args.alternatives}")
+        print(f"[FAIL] Alternatives file not found: {args.alternatives}")
         sys.exit(1)
         
     with open(args.alternatives, "r") as f:
         candidates = json.load(f)
         
     if not candidates:
-        print("⚠️ No candidate primers found in alternatives.json.")
+        print("[WARNING] No candidate primers found in alternatives.json.")
         if not args.db_label:
             marker_path = Path(args.outdir) / "verification_complete.txt"
             marker_path.parent.mkdir(parents=True, exist_ok=True)
@@ -79,7 +79,7 @@ def main():
     # Limit number of candidates to process
     to_process = candidates[:args.num_candidates]
     db_label_str = f" [{args.db_label} db]" if args.db_label else ""
-    print(f"🚀 Found {len(candidates)} candidates. Processing top {len(to_process)}...{db_label_str}")
+    print(f"Found {len(candidates)} candidates. Processing top {len(to_process)}...{db_label_str}")
     
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
@@ -95,7 +95,7 @@ def main():
         probe = primers.get("probe", {})
         
         if not fwd or not rev:
-            print(f"⚠️ Candidate #{rank} has incomplete primer data. Skipping.")
+            print(f"[WARNING] Candidate #{rank} has incomplete primer data. Skipping.")
             continue
 
         # --- GAP-1: Resume/skip for already-BLASTed candidates ---
@@ -107,7 +107,7 @@ def main():
         
         result_check_file = result_check_dir / "blast_result.json"
         if result_check_file.exists():
-            print(f"⏭️ Candidate #{rank}{db_label_str} already verified. Skipping (result exists at {result_check_file}).")
+            print(f"[SKIP] Candidate #{rank}{db_label_str} already verified. Skipping (result exists at {result_check_file}).")
             skipped_count += 1
             continue
             
@@ -164,18 +164,18 @@ def main():
             process.wait()
             
             if process.returncode == 0:
-                print(f"✅ Candidate #{rank}{db_label_str} verification complete.")
+                print(f"[SUCCESS] Candidate #{rank}{db_label_str} verification complete.")
             else:
-                print(f"❌ Candidate #{rank}{db_label_str} BLAST verification failed with exit code {process.returncode}.")
+                print(f"[FAIL] Candidate #{rank}{db_label_str} BLAST verification failed with exit code {process.returncode}.")
                 
         except Exception as e:
-            print(f"❌ Error verifying candidate #{rank}{db_label_str}: {e}")
+            print(f"[FAIL] Error verifying candidate #{rank}{db_label_str}: {e}")
         finally:
             if os.path.exists(temp_json_path):
                 os.remove(temp_json_path)
 
     if skipped_count > 0:
-        print(f"\n📌 {skipped_count} candidate(s) skipped (already verified from a previous run).")
+        print(f"\n[INFO] {skipped_count} candidate(s) skipped (already verified from a previous run).")
                 
     # Write marker file only if this is a standalone run (no db_label / remote mode).
     # In local dual-db mode, the Snakemake shell writes the marker after both db runs.
@@ -183,9 +183,9 @@ def main():
         marker_path = outdir / "verification_complete.txt"
         with open(marker_path, "w") as f:
             f.write(f"Completed verification for {len(to_process)} candidates at {Path(args.alternatives).name}\n")
-        print(f"\n🎉 Verification complete. Marker file written: {marker_path}")
+        print(f"\nVerification complete. Marker file written: {marker_path}")
     else:
-        print(f"\n✅ DB run [{args.db_label}] complete. Marker will be written by Snakemake after all DB runs.")
+        print(f"\nDB run [{args.db_label}] complete. Marker will be written by Snakemake after all DB runs.")
 
     # --- BUG-1 FIX: Only compile summary if this is a standalone run (no db_label).
     # In local dual-db mode, compile_summary is called ONCE by Snakemake via --compile-only
@@ -199,7 +199,7 @@ def main():
             )
         except Exception as e:
             import traceback
-            print(f"⚠️ Warning: Failed to compile specificity summary: {e}")
+            print(f"[WARNING] Warning: Failed to compile specificity summary: {e}")
             traceback.print_exc()
 
 
@@ -280,7 +280,7 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
     # POLISH-4: Load GARD breakpoints for cross-check
     gard_breakpoints = _load_gard_breakpoints(bridge_report_path)
     if gard_breakpoints:
-        print(f"📍 Loaded {len(gard_breakpoints)} GARD breakpoints for cross-check.")
+        print(f"Loaded {len(gard_breakpoints)} GARD breakpoints for cross-check.")
 
     # Load alternatives sequences as fallback
     alt_sequences = {}
@@ -605,12 +605,12 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
                 "YES" if d["gard_near"] else "NO",
                 d["status"]
             ])
-    print(f"📊 Overall Summary CSV generated: {csv_path}")
+    print(f"Overall Summary CSV generated: {csv_path}")
 
     # Generate Markdown Report
     md_path = outdir / "blast_specificity_summary.md"
     md_lines = [
-        "# 📋 M09 BLAST Specificity Verification Summary",
+        "# M09 BLAST Specificity Verification Summary",
         "",
         f"*Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*",
         "",
@@ -635,12 +635,12 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
             h_score_str = f"{d['human_score']} ({d['human_grade']})" if d['human_score'] != "-" else "-"
             v_score_str = f"{d['virus_score']} ({d['virus_grade']})" if d['virus_score'] != "-" else "-"
             if d["status"] == "PASS":
-                status_icon = "✅ PASS"
+                status_icon = "PASS"
             elif d["status"] == "BORDERLINE":
-                status_icon = "⚠️ BORDERLINE"
+                status_icon = "BORDERLINE"
             else:
-                status_icon = "❌ FAIL"
-            gard_flag = "⚠️ YES" if d["gard_near"] else "—"
+                status_icon = "FAIL"
+            gard_flag = "YES" if d["gard_near"] else "-"
             md_lines.append(
                 f"| **Candidate {d['rank']}** | {status_icon} | {d['final_score']} | {d['tm_delta']} | {h_score_str} | {d['human_dangerous']} | {v_score_str} | {d['virus_pathogen']} | {gard_flag} |"
             )
@@ -650,12 +650,12 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
         for d in summary_data:
             r_score_str = f"{d['remote_score']} ({d['remote_grade']})" if d['remote_score'] != "-" else "-"
             if d["status"] == "PASS":
-                status_icon = "✅ PASS"
+                status_icon = "PASS"
             elif d["status"] == "BORDERLINE":
-                status_icon = "⚠️ BORDERLINE"
+                status_icon = "BORDERLINE"
             else:
-                status_icon = "❌ FAIL"
-            gard_flag = "⚠️ YES" if d["gard_near"] else "—"
+                status_icon = "FAIL"
+            gard_flag = "YES" if d["gard_near"] else "-"
             md_lines.append(
                 f"| **Candidate {d['rank']}** | {status_icon} | {d['final_score']} | {d['tm_delta']} | {r_score_str} | {d['remote_offtargets']} | {d['remote_pathogen']} | {gard_flag} |"
             )
@@ -675,12 +675,12 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
 
     with open(md_path, "w", encoding="utf-8") as f:
         f.write("\n".join(md_lines))
-    print(f"📝 Overall Summary Markdown report generated: {md_path}")
+    print(f"Overall Summary Markdown report generated: {md_path}")
 
     # --- GENERATE DOWNSTREAM CHOSEN CANDIDATES (PASS + BORDERLINE) FILE AND GENOMIC TRACKS ---
     pass_candidates = [d for d in summary_data if d["status"] in ("PASS", "BORDERLINE")]
     if not pass_candidates:
-        print("⚠️ No candidates passed the BLAST specificity threshold (Score >= 65). Skipping final reports.")
+        print("[WARNING] No candidates passed the BLAST specificity threshold (Score >= 65). Skipping final reports.")
         return
 
     # 1. Save final_candidates.json
@@ -688,7 +688,7 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
     try:
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(pass_candidates, f, indent=2, default=str)
-        print(f"💾 final_candidates.json generated: {json_path}")
+        print(f"final_candidates.json generated: {json_path}")
     except Exception as e:
         print(f"Warning: Failed to generate final_candidates.json: {e}")
 
@@ -736,7 +736,7 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
                     clean_tm = _clean_gff_val(d['probe_tm'])
                     clean_gc = _clean_gff_val(d['probe_gc'])
                     f.write(f"{target}\tPrimerLab\texon\t{prb_start+1}\t{prb_end+1}\t.\t+\t.\tID=cand_{rank}_P;Name=Prb_({prb_len}_bp);Parent=cand_{rank}_amp;Tm={clean_tm};GC={clean_gc}\n")
-        print(f"🧬 GFF3 Genomic track generated: {gff_path}")
+        print(f"GFF3 Genomic track generated: {gff_path}")
     except Exception as e:
         print(f"Warning: Failed to generate GFF3: {e}")
 
@@ -766,7 +766,7 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
                 prb_end = d["probe_end"]
                 if prb_start is not None and prb_end is not None and prb_start < prb_end:
                     f.write(f"{target}\t{prb_start}\t{prb_end+1}\tCandidate_{rank}_Probe\t900\t+\n")
-        print(f"🧬 BED track generated: {bed_path}")
+        print(f"BED track generated: {bed_path}")
     except Exception as e:
         print(f"Warning: Failed to generate BED: {e}")
 
@@ -779,7 +779,7 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
             entropy_gff_path, meme_gff_path, gard_gff_path,
             target, bridge_report_path
         )
-        print("🚫 Individual forbidden tracks (Entropy, MEME, GARD) generated.")
+        print("Individual forbidden tracks (Entropy, MEME, GARD) generated.")
     except Exception as e:
         print(f"Warning: Failed to generate forbidden tracks: {e}")
 
@@ -799,7 +799,7 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
     report_path = outdir / "final_candidates_report.md"
     try:
         rep_lines = [
-            "# 🏆 Final Verified RAA Candidates Report",
+            "# Final Verified RAA Candidates Report",
             "",
             f"*Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*",
             "",
@@ -818,10 +818,10 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
         ]
         for d in pass_candidates:
             if d["status"] == "PASS":
-                status_icon = "✅ PASS"
+                status_icon = "PASS"
             else:
-                status_icon = "⚠️ BORDER"
-            gard_flag = "⚠️" if d["gard_near"] else "—"
+                status_icon = "BORDERLINE"
+            gard_flag = "YES" if d["gard_near"] else "-"
             rep_lines.append(
                 f"| {d['rank']} | {status_icon} | {d['tier']} | {d['final_score']} | {d['tm_delta']} | {d['human_score']} | {d['virus_pathogen']} | {d['amplicon_length']} bp | {gard_flag} |"
             )
@@ -832,11 +832,11 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
         for d in pass_candidates:
             # --- POLISH-2: Compact table per candidate ---
             rep_lines.extend([
-                f"### 📍 Candidate Rank {d['rank']}",
+                f"### Candidate Rank {d['rank']}",
                 "",
                 "| Property | Value |",
                 "|----------|-------|",
-                f"| **Status** | {'✅ PASS' if d['status'] == 'PASS' else '⚠️ BORDERLINE'} |",
+                f"| **Status** | {'PASS' if d['status'] == 'PASS' else 'BORDERLINE'} |",
                 f"| **Tier** | {d['tier']} |",
                 f"| **PrimerLab Penalty Score** ↓ | {d['final_score']} |",
                 f"| **Vienna Penalty** | {d['vienna_penalty']} |",
@@ -850,9 +850,8 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
                 f"| **Virus BLAST Score** ↑ | {d['virus_score']} ({d['virus_grade']}) |",
                 f"| **Virus Pathogen Hits** | {d['virus_pathogen']} |",
             ])
-            # POLISH-4: GARD warning
             if d["gard_near"]:
-                rep_lines.append(f"| **⚠️ GARD Breakpoint** | Recombination breakpoint detected nearby: {[bp.get('genome_pos') for bp in d['gard_details']]} |")
+                rep_lines.append(f"| **GARD Breakpoint** | Recombination breakpoint detected nearby: {[bp.get('genome_pos') for bp in d['gard_details']]} |")
             else:
                 rep_lines.append(f"| **GARD Breakpoint** | — (none nearby) |")
             rep_lines.extend([
@@ -871,7 +870,7 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
         # --- POLISH-6: Use relative paths ---
         rep_lines.extend([
             "---",
-            "### 🧬 IGV Integration & Visualization",
+            "### IGV Integration & Visualization",
             "Kandidat di atas juga diekspor ke dalam format standar anotasi genomik yang bisa langsung dimasukkan ke genome browser seperti **IGV** atau **UCSC**:",
             "",
             "| Format | File | Deskripsi |",
@@ -890,7 +889,7 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
         
         with open(report_path, "w", encoding="utf-8") as f:
             f.write("\n".join(rep_lines))
-        print(f"🏆 Premium Final Candidates Report generated: {report_path}")
+        print(f"Final Candidates Report generated: {report_path}")
     except Exception as e:
         print(f"Warning: Failed to generate premium report: {e}")
 
@@ -1030,6 +1029,7 @@ def _generate_igv_session(session_path: Path, gff_path, bed_path: Path,
     """
     # Use relative paths from the session file location
     gff_rel = Path(gff_path).name if gff_path else "final_candidates.gff3"
+    m07_bed = outdir / "../m07/conserved_regions.bed"
 
     # ── Resolve annotation GFF (explicit path wins over filename search) ──
     ref_gff_rel_str = ""

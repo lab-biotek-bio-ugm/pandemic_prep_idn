@@ -210,7 +210,7 @@ def main():
         cand_path = region_dir / "final_candidates.json"
 
         if not cand_path.exists():
-            print(f"ℹ️  No final_candidates.json in {region_dir.name} — no BLAST-passing candidates for this region. Skipping.")
+            print(f"[INFO] No final_candidates.json in {region_dir.name} - no BLAST-passing candidates for this region. Skipping.")
             continue
 
         # Region name is the directory basename (e.g. M1_region_4)
@@ -233,7 +233,7 @@ def main():
             all_candidates.append(c)
 
     if not all_candidates:
-        print("⚠️  No candidates found across all M09 regions. Nothing to evaluate.")
+        print("[WARNING] No candidates found across all M09 regions. Nothing to evaluate.")
         print("    This usually means all regions had BLAST specificity scores below the threshold.")
         # Write empty outputs so Snakemake output targets are satisfied
         outdir.mkdir(parents=True, exist_ok=True)
