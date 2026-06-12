@@ -750,7 +750,20 @@ def write_report(regions, meta, path):
         json.dump(report, f, indent=2)
     print(f"[M07] Wrote report: {path}")
 
-def write_manifest(regions, build_name, ref_genome, buffer_bp, path, profile, codon_data):
+def write_manifest(regions, build_name, ref_genome, buffer_bp, path, profile, codon_data, design_regions=None):
+    """Write the YAML manifest. If design_regions is set (e.g. ['segment-MP']),
+    only export regions whose gene label appears in that list."""
+    if design_regions:
+        filtered = [r for r in regions if r.get("gene", "") in design_regions]
+        if not filtered:
+            print(f"[M07] WARNING: design_regions filter {design_regions} matched no regions. "
+                  f"Exporting all {len(regions)} regions instead.")
+            filtered = regions
+        else:
+            print(f"[M07] design_regions filter: {len(regions)} → {len(filtered)} regions "
+                  f"(kept: {design_regions})")
+        regions = filtered
+
     manifest = {
         "pipeline_run_id": f"{build_name}_bridge",
         "source": "pandemic-preparedness-m07",
@@ -904,7 +917,7 @@ def write_csv(regions, path):
 def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir, 
                   window_size, entropy_threshold, overlap_threshold, gard_buffer_bp, 
                   scoring_config, tiers_config, ref_id, ref_seq, outdir, build_name, buffer_bp, args_reference,
-                  strategy="windowed"):
+                  strategy="windowed", design_regions=None, prefix=""):
     print(f"\n[M07] ============================================")
     print(f"[M07]  Track: {track_name}")
     print(f"[M07] ============================================")
@@ -1016,7 +1029,8 @@ def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir,
     write_bed(final_scored, ref_id, outdir / f"{prefix}conserved_regions.bed")
     write_report(final_scored, meta, outdir / f"{prefix}bridge_report.json")
     write_manifest(final_scored, build_name, args_reference, buffer_bp,
-                   outdir / f"{prefix}primer_targets_manifest.yaml", profile, codon_data)
+                   outdir / f"{prefix}primer_targets_manifest.yaml", profile, codon_data,
+                   design_regions=design_regions)
     write_csv(final_scored, outdir / f"{prefix}candidate_targets_summary.csv")
 
     print(f"\n[M07] [{track_name}] Complete — {len(final_scored)} candidate regions")
@@ -1076,6 +1090,9 @@ def main():
         
     tiers_config = bridge.get("tiers", {})
     target_genes = config.get("hyphy", {}).get("target_genes", [])
+    design_regions = bridge.get("design_regions", None)   # e.g. ["segment-MP"] or null
+    if design_regions:
+        print(f"[M07] design_regions filter active: {design_regions}")
     hyphy_dir = Path(args.hyphy_dir)
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
@@ -1112,10 +1129,10 @@ def main():
         target_genes = [g["name"] for g in genes]
 
     # Execute Universal Track
-    execute_track("Universal", all_records, genes, utrs, target_genes, hyphy_dir, 
-                  window_size, entropy_threshold, overlap_threshold, gard_buffer_bp, 
+    execute_track("Universal", all_records, genes, utrs, target_genes, hyphy_dir,
+                  window_size, entropy_threshold, overlap_threshold, gard_buffer_bp,
                   scoring_config, tiers_config, ref_id, ref_seq, outdir, args.build_name, buffer_bp, args.reference,
-                  strategy=args.strategy)
+                  strategy=args.strategy, design_regions=design_regions)
 
     # Route B: Subtype-Specific Tracks
     if args.metadata and Path(args.metadata).exists():
@@ -1141,10 +1158,10 @@ def main():
                  
         for subtype, recs in subtype_groups.items():
             if len(recs) >= args.min_subtype_count:
-                execute_track(subtype, recs, genes, utrs, target_genes, hyphy_dir, 
-                              window_size, entropy_threshold, overlap_threshold, gard_buffer_bp, 
+                execute_track(subtype, recs, genes, utrs, target_genes, hyphy_dir,
+                              window_size, entropy_threshold, overlap_threshold, gard_buffer_bp,
                               scoring_config, tiers_config, ref_id, ref_seq, outdir, args.build_name, buffer_bp, args.reference,
-                              strategy=args.strategy)
+                              strategy=args.strategy, design_regions=design_regions)
             else:
                 print(f"[M07] Skipping subtype {subtype} (only {len(recs)} sequences, needs >={args.min_subtype_count})")
 

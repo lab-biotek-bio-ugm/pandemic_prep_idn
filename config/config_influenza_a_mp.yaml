@@ -105,6 +105,12 @@ bridge:
   entropy_threshold: 0.020    # Relaxed compared to MP; HA is highly dynamic
   gard_buffer_bp: 50
   include_utr: true
+  # Restrict manifest to these gene labels only (null = export all regions).
+  # segment-MP = full 1027 bp segment including both UTRs → single design target.
+  # UTR regions (~25 bp each) are too short for primer design and are covered by
+  # the full-segment free-search anyway.
+  design_regions:
+    - "segment-MP"
   scoring:
     core:
       conservation_weight: 0.66
