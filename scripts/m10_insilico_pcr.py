@@ -70,6 +70,64 @@ def min_mismatches_sliding_window(probe_seq: str, amplicon_seq: str) -> int:
                 
     return best_mismatch
 
+
+def assess_raa_binding(
+    primer_seq: str,
+    amp_seq: str,
+    critical_3prime_bp: int = 8,
+    max_3prime_mm: int = 1,
+    max_internal_mm: int = 4,
+) -> tuple:
+    """Assess if a primer can bind in RAA/RPA conditions.
+
+    RAA biology:
+    - Recombinase (RecA-like) loads on the primer and drives strand invasion.
+    - INTERNAL mismatches (5' half) are tolerated because recombinase can bypass them.
+    - 3' END mismatches are CRITICAL: polymerase needs accurate 3' annealing for extension.
+
+    Returns:
+        (is_raa_bound, 3prime_mm, internal_mm, total_mm)
+    """
+    primer_len = len(primer_seq)
+    amp_len = len(amp_seq)
+    if amp_len < primer_len:
+        return False, primer_len, primer_len, primer_len
+
+    best_3prime_mm = primer_len
+    best_internal_mm = primer_len
+    best_total_mm = primer_len
+
+    for p_seq in [primer_seq, reverse_complement(primer_seq)]:
+        for i in range(amp_len - primer_len + 1):
+            window = amp_seq[i : i + primer_len]
+            total_mm = 0
+            three_prime_mm = 0
+            internal_mm = 0
+            internal_len = primer_len - critical_3prime_bp
+
+            for j in range(primer_len):
+                mismatch = not match_base(p_seq[j], window[j])
+                if mismatch:
+                    total_mm += 1
+                    # Positions [internal_len .. end] are the 3' end
+                    if j >= internal_len:
+                        three_prime_mm += 1
+                    else:
+                        internal_mm += 1
+
+            if total_mm < best_total_mm:
+                best_total_mm = total_mm
+                best_3prime_mm = three_prime_mm
+                best_internal_mm = internal_mm
+            if best_total_mm == 0:
+                break
+        if best_total_mm == 0:
+            break
+
+    is_raa_bound = (best_3prime_mm <= max_3prime_mm) and (best_internal_mm <= max_internal_mm)
+    return is_raa_bound, best_3prime_mm, best_internal_mm, best_total_mm
+
+
 def run_seqkit_amplicon(fwd: str, rev: str, max_mismatch: int, fasta_path: str, threads: int = 4) -> dict:
     """Run seqkit amplicon and return a dict of seq_id -> amplicon_seq."""
     cmd = [
@@ -153,10 +211,17 @@ def main():
     parser.add_argument("--metadata", required=True, help="Path to pipeline metadata TSV")
     parser.add_argument("--gff", required=True, help="Path to GFF3 annotation file")
     parser.add_argument("--outdir", required=True, help="Output directory")
-    parser.add_argument("--max-mismatch", type=int, default=3, help="Max mismatches allowed (default: 3)")
+    parser.add_argument("--max-mismatch", type=int, default=3, help="Max mismatches allowed for PCR mode (default: 3)")
     parser.add_argument("--num-candidates", type=int, default=10, help="Number of candidates to evaluate per region")
     parser.add_argument("--threads", type=int, default=None,
                         help="Total CPU threads to use. Splits between seqkit (-j) and candidate parallelism. Default: auto-detect (os.cpu_count).")
+    # RAA-specific binding parameters
+    parser.add_argument("--raa-3prime-bp", type=int, default=8,
+                        help="Number of 3' end bases considered critical for RAA binding (default: 8)")
+    parser.add_argument("--raa-max-3prime-mm", type=int, default=1,
+                        help="Max mismatches allowed in the RAA critical 3' region (default: 1)")
+    parser.add_argument("--raa-max-internal-mm", type=int, default=4,
+                        help="Max mismatches allowed in the RAA internal/5' region (default: 4)")
     args = parser.parse_args()
     
     # Resolve thread allocation
@@ -337,55 +402,105 @@ def main():
                 is_amplified = False
                 p_mismatch   = 99
                 prb_mismatch = 99
+                is_raa_amplified  = False
+                raa_3p_mm         = 99
+                raa_int_mm        = 99
+                is_raa_detected   = False
+                raa_probe_mm      = 99
             else:
-                # seqkit confirmed amplification → trust it unconditionally
+                # seqkit confirmed amplification → trust it unconditionally for PCR
                 is_amplified = True
                 amp_seq = matches_max[seq_id]
 
-                # Sliding window: estimate mismatch LEVEL for reporting only
+                # ─ PCR mismatch level (for reporting, not gating) ─
                 fwd_mm = min_mismatches_sliding_window(fwd, amp_seq)
                 rev_mm = min_mismatches_sliding_window(reverse_complement(rev), amp_seq)
-                # Cap at max_mismatch (seqkit guarantees it fits within threshold)
                 p_mismatch = min(max(fwd_mm, rev_mm), args.max_mismatch)
 
-                # Probe mismatch determines is_detected
+                # ─ RAA binding assessment for both primers ─
+                fwd_raa_ok, fwd_3p, fwd_int, _ = assess_raa_binding(
+                    fwd, amp_seq,
+                    critical_3prime_bp=args.raa_3prime_bp,
+                    max_3prime_mm=args.raa_max_3prime_mm,
+                    max_internal_mm=args.raa_max_internal_mm,
+                )
+                rev_raa_ok, rev_3p, rev_int, _ = assess_raa_binding(
+                    reverse_complement(rev), amp_seq,
+                    critical_3prime_bp=args.raa_3prime_bp,
+                    max_3prime_mm=args.raa_max_3prime_mm,
+                    max_internal_mm=args.raa_max_internal_mm,
+                )
+                is_raa_amplified = fwd_raa_ok and rev_raa_ok
+                raa_3p_mm  = max(fwd_3p, rev_3p)
+                raa_int_mm = max(fwd_int, rev_int)
+
+                # ─ Probe mismatch (shared for both PCR & RAA probe detection) ─
                 if probe:
                     prb_mismatch = min_mismatches_sliding_window(probe, amp_seq)
+                    # For RAA: probe (exo-probe) has similar 3' critical region
+                    probe_raa_ok, _, _, _ = assess_raa_binding(
+                        probe, amp_seq,
+                        critical_3prime_bp=args.raa_3prime_bp,
+                        max_3prime_mm=args.raa_max_3prime_mm,
+                        max_internal_mm=args.raa_max_internal_mm,
+                    )
+                    raa_probe_mm = prb_mismatch
                 else:
                     prb_mismatch = 0
+                    probe_raa_ok = True
+                    raa_probe_mm = 0
 
-            is_detected = is_amplified and (prb_mismatch <= args.max_mismatch)
+            is_detected     = is_amplified     and (prb_mismatch <= args.max_mismatch)
+            is_raa_detected = is_raa_amplified and probe_raa_ok
+
 
             cand_results.append({
-                "seq_id":        seq_id,
-                "subtype":       seq["subtype"],
-                "year":          seq["year"],
-                "country":       seq["country"],
-                "primer_mismatch": p_mismatch,
-                "probe_mismatch":  prb_mismatch,
-                "is_amplified":  is_amplified,
-                "is_detected":   is_detected,
+                "seq_id":            seq_id,
+                "subtype":           seq["subtype"],
+                "year":              seq["year"],
+                "country":           seq["country"],
+                "primer_mismatch":   p_mismatch,
+                "probe_mismatch":    prb_mismatch,
+                # PCR
+                "is_amplified":      is_amplified,
+                "is_detected":       is_detected,
+                # RAA
+                "is_raa_amplified":  is_raa_amplified,
+                "raa_3p_mm":         raa_3p_mm,
+                "raa_int_mm":        raa_int_mm,
+                "is_raa_detected":   is_raa_detected,
             })
 
         df_res = pd.DataFrame(cand_results)
         total     = len(df_res)
-        amplified = df_res["is_amplified"].sum()
-        detected  = df_res["is_detected"].sum()
-        amp_pct = round(amplified / total * 100, 2) if total > 0 else 0.0
-        det_pct = round(detected  / total * 100, 2) if total > 0 else 0.0
+        # PCR metrics
+        amplified     = df_res["is_amplified"].sum()
+        detected      = df_res["is_detected"].sum()
+        amp_pct       = round(amplified / total * 100, 2) if total > 0 else 0.0
+        det_pct       = round(detected  / total * 100, 2) if total > 0 else 0.0
+        # RAA metrics
+        raa_amplified = df_res["is_raa_amplified"].sum()
+        raa_detected  = df_res["is_raa_detected"].sum()
+        raa_amp_pct   = round(raa_amplified / total * 100, 2) if total > 0 else 0.0
+        raa_det_pct   = round(raa_detected  / total * 100, 2) if total > 0 else 0.0
 
-        print(f"  [{cand_id}] Amplified: {amplified}/{total} ({amp_pct}%), Detected: {detected}/{total} ({det_pct}%)")
+        print(f"  [{cand_id}] PCR → Amplified: {amplified}/{total} ({amp_pct}%), Detected: {detected}/{total} ({det_pct}%)")
+        print(f"  [{cand_id}] RAA → Amplified: {raa_amplified}/{total} ({raa_amp_pct}%), Detected: {raa_detected}/{total} ({raa_det_pct}%)")
 
         # ── Breakdown by subtype / year / country ─────────────────────────────
         breakdowns = {}
         for col in ["subtype", "year", "country"]:
             grp = df_res.groupby(col).agg(
                 total=("seq_id", "count"),
-                amplified=("is_amplified", "sum"),
-                detected=("is_detected",  "sum"),
+                pcr_amplified=("is_amplified", "sum"),
+                pcr_detected=("is_detected",  "sum"),
+                raa_amplified=("is_raa_amplified", "sum"),
+                raa_detected=("is_raa_detected",  "sum"),
             ).reset_index()
-            grp["amplified_pct"] = (grp["amplified"] / grp["total"] * 100).round(2)
-            grp["detected_pct"]  = (grp["detected"]  / grp["total"] * 100).round(2)
+            grp["pcr_amplified_pct"] = (grp["pcr_amplified"] / grp["total"] * 100).round(2)
+            grp["pcr_detected_pct"]  = (grp["pcr_detected"]  / grp["total"] * 100).round(2)
+            grp["raa_amplified_pct"] = (grp["raa_amplified"] / grp["total"] * 100).round(2)
+            grp["raa_detected_pct"]  = (grp["raa_detected"]  / grp["total"] * 100).round(2)
             grp = grp.sort_values("year" if col == "year" else "total",
                                    ascending=(col == "year"))
             breakdowns[col] = grp.to_dict(orient="records")
@@ -393,15 +508,29 @@ def main():
         cand_summary = {
             "cand_id": cand_id, "region": region, "gene": gene, "rank": rank,
             "fwd_seq": fwd, "rev_seq": rev, "probe_seq": probe,
-            "total_seqs": total, "amplified_seqs": int(amplified),
-            "detected_seqs": int(detected), "amplified_pct": amp_pct,
-            "detected_pct": det_pct, "breakdowns": breakdowns,
+            # PCR
+            "total_seqs": total,
+            "pcr_amplified_seqs": int(amplified), "pcr_amplified_pct": amp_pct,
+            "pcr_detected_seqs":  int(detected),  "pcr_detected_pct":  det_pct,
+            # RAA
+            "raa_amplified_seqs": int(raa_amplified), "raa_amplified_pct": raa_amp_pct,
+            "raa_detected_seqs":  int(raa_detected),  "raa_detected_pct":  raa_det_pct,
+            "raa_params": {
+                "critical_3prime_bp":  args.raa_3prime_bp,
+                "max_3prime_mm":       args.raa_max_3prime_mm,
+                "max_internal_mm":     args.raa_max_internal_mm,
+            },
+            "breakdowns": breakdowns,
         }
         result_row = {
             "cand_id": cand_id, "region": region, "gene": gene, "rank": rank,
-            "fwd_seq": fwd, "rev_seq": rev, "probe_seq": probe,
-            "total": total, "amplified": int(amplified), "detected": int(detected),
-            "amplified_pct": amp_pct, "detected_pct": det_pct,
+            "fwd_seq": fwd, "rev_seq": rev, "probe_seq": probe, "total": total,
+            # PCR
+            "pcr_amplified": int(amplified), "pcr_detected": int(detected),
+            "pcr_amplified_pct": amp_pct,    "pcr_detected_pct": det_pct,
+            # RAA
+            "raa_amplified": int(raa_amplified), "raa_detected": int(raa_detected),
+            "raa_amplified_pct": raa_amp_pct,    "raa_detected_pct": raa_det_pct,
         }
         return (cand_summary, result_row)
 
@@ -453,9 +582,11 @@ def main():
             rank = cand["rank"]
             
             # Find matching coverage data
-            cov_info = next(c for c in summary_data if c["cand_id"] == cand_id)
-            det_pct = cov_info["detected_pct"]
-            amp_pct = cov_info["amplified_pct"]
+            cov_info = next((c for c in summary_data if c["cand_id"] == cand_id), {})
+            det_pct = cov_info.get("pcr_detected_pct", cov_info.get("detected_pct", 0))
+            amp_pct = cov_info.get("pcr_amplified_pct", cov_info.get("amplified_pct", 0))
+            raa_det_pct = cov_info.get("raa_detected_pct", 0)
+            raa_amp_pct = cov_info.get("raa_amplified_pct", 0)
             
             amp_start = cand.get("amplicon_start")
             amp_end = cand.get("amplicon_end")
@@ -471,9 +602,11 @@ def main():
             rev_len = rev_end - rev_start + 1 if (rev_start is not None and rev_end is not None) else 0
             prb_len = prb_end - prb_start + 1 if (prb_start is not None and prb_end is not None) else 0
             
-            # GFF coordinates are 1-based, inclusive
             if amp_start is not None and amp_end is not None:
-                f.write(f"{ref_id}\tPrimerLab_M10\ttranscript\t{amp_start+1}\t{amp_end+1}\t.\t+\t.\tID={cand_id}_amp;Name={cand_id}_({amp_len}_bp);Coverage={det_pct}%;AmpCoverage={amp_pct}%;gene={gene}\n")
+                f.write(f"{ref_id}\tPrimerLab_M10\ttranscript\t{amp_start+1}\t{amp_end+1}\t.\t+\t.\t"
+                        f"ID={cand_id}_amp;Name={cand_id}_({amp_len}_bp);"
+                        f"PCR_AmpCov={amp_pct}%;PCR_DetCov={det_pct}%;"
+                        f"RAA_AmpCov={raa_amp_pct}%;RAA_DetCov={raa_det_pct}%;gene={gene}\n")
             if fwd_start is not None and fwd_end is not None:
                 f.write(f"{ref_id}\tPrimerLab_M10\tprimer\t{fwd_start+1}\t{fwd_end+1}\t.\t+\t.\tID={cand_id}_F;Name={cand_id}_Fwd_({fwd_len}_bp);Parent={cand_id}_amp;gene={gene}\n")
             if rev_start is not None and rev_end is not None:
@@ -772,8 +905,10 @@ def generate_heatmap_dashboard(summary_data: list, output_path: Path):
                         <tr>
                             <th>Subtype</th>
                             <th>Total Seqs</th>
-                            <th>Amplified (%)</th>
-                            <th>Detected (%)</th>
+                            <th>PCR Amp (%)</th>
+                            <th>PCR Det (%)</th>
+                            <th>RAA Amp (%)</th>
+                            <th>RAA Det (%)</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -790,8 +925,10 @@ def generate_heatmap_dashboard(summary_data: list, output_path: Path):
                         <tr>
                             <th>Year</th>
                             <th>Total Seqs</th>
-                            <th>Amplified (%)</th>
-                            <th>Detected (%)</th>
+                            <th>PCR Amp (%)</th>
+                            <th>PCR Det (%)</th>
+                            <th>RAA Amp (%)</th>
+                            <th>RAA Det (%)</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -808,8 +945,10 @@ def generate_heatmap_dashboard(summary_data: list, output_path: Path):
                         <tr>
                             <th>Country</th>
                             <th>Total Seqs</th>
-                            <th>Amplified (%)</th>
-                            <th>Detected (%)</th>
+                            <th>PCR Amp (%)</th>
+                            <th>PCR Det (%)</th>
+                            <th>RAA Amp (%)</th>
+                            <th>RAA Det (%)</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -827,7 +966,9 @@ def generate_heatmap_dashboard(summary_data: list, output_path: Path):
         candidatesData.forEach((cand, idx) => {{
             const option = document.createElement("option");
             option.value = idx;
-            option.textContent = `${{cand.cand_id}} (${{cand.detected_pct}}% det)`;
+            const detPct = cand.pcr_detected_pct ?? cand.detected_pct ?? 0;
+            const raaDetPct = cand.raa_detected_pct ?? "—";
+            option.textContent = `${{cand.cand_id}} (PCR Det: ${{detPct}}%, RAA Det: ${{raaDetPct}}%)`;
             select.appendChild(option);
         }});
 
@@ -866,23 +1007,35 @@ def generate_heatmap_dashboard(summary_data: list, output_path: Path):
                 
                 const tdAmp = document.createElement("td");
                 tdAmp.className = "heatmap-cell";
-                tdAmp.style = getCellColor(row.amplified_pct);
-                tdAmp.textContent = `${{row.amplified_pct}}% (${{row.amplified.toLocaleString()}})`;
+                tdAmp.style = getCellColor(row.pcr_amplified_pct ?? row.amplified_pct ?? 0);
+                tdAmp.textContent = `${{(row.pcr_amplified_pct ?? row.amplified_pct ?? 0)}}%`;
                 tr.appendChild(tdAmp);
-                
+
                 const tdDet = document.createElement("td");
                 tdDet.className = "heatmap-cell";
-                tdDet.style = getCellColor(row.detected_pct);
-                tdDet.textContent = `${{row.detected_pct}}% (${{row.detected.toLocaleString()}})`;
+                tdDet.style = getCellColor(row.pcr_detected_pct ?? row.detected_pct ?? 0);
+                tdDet.textContent = `${{(row.pcr_detected_pct ?? row.detected_pct ?? 0)}}%`;
                 tr.appendChild(tdDet);
-                
+
+                const tdRaaAmp = document.createElement("td");
+                tdRaaAmp.className = "heatmap-cell";
+                tdRaaAmp.style = getCellColor(row.raa_amplified_pct ?? 0);
+                tdRaaAmp.textContent = `${{(row.raa_amplified_pct ?? "-")}}%`;
+                tr.appendChild(tdRaaAmp);
+
+                const tdRaaDet = document.createElement("td");
+                tdRaaDet.className = "heatmap-cell";
+                tdRaaDet.style = getCellColor(row.raa_detected_pct ?? 0);
+                tdRaaDet.textContent = `${{(row.raa_detected_pct ?? "-")}}%`;
+                tr.appendChild(tdRaaDet);
+
                 tbody.appendChild(tr);
             }});
             
             if (tableId === "countryTable" && data.length > 25) {{
                 const tr = document.createElement("tr");
                 const td = document.createElement("td");
-                td.colSpan = 4;
+                td.colSpan = 6;
                 td.style = "text-align: center; color: var(--text-secondary); font-style: italic;";
                 td.textContent = `Showing top 25 countries out of ${{data.length}} total.`;
                 tr.appendChild(td);
@@ -897,8 +1050,12 @@ def generate_heatmap_dashboard(summary_data: list, output_path: Path):
             // Update stats cards
             document.getElementById("statRegionRank").textContent = `${{cand.region}} - Rank ${{cand.rank}}`;
             document.getElementById("statTotalSeqs").textContent = cand.total_seqs.toLocaleString();
-            document.getElementById("statAmpCoverage").textContent = `${{cand.amplified_pct}}%`;
-            document.getElementById("statDetCoverage").textContent = `${{cand.detected_pct}}%`;
+            const pcrAmp = cand.pcr_amplified_pct ?? cand.amplified_pct ?? 0;
+            const raaAmp = cand.raa_amplified_pct ?? "—";
+            document.getElementById("statAmpCoverage").textContent = `PCR: ${{pcrAmp}}% | RAA: ${{raaAmp}}%`;
+            const pcrDet = cand.pcr_detected_pct ?? cand.detected_pct ?? 0;
+            const raaDet = cand.raa_detected_pct ?? "—";
+            document.getElementById("statDetCoverage").textContent = `PCR: ${{pcrDet}}% | RAA: ${{raaDet}}%`;
 
             // Update detailed sequences
             document.getElementById("seqFwd").textContent = cand.fwd_seq;
@@ -924,37 +1081,69 @@ def generate_heatmap_dashboard(summary_data: list, output_path: Path):
     print(f"Generated Heatmap Dashboard: {output_path}")
 
 def generate_markdown_report(summary_data: list, output_path: Path):
-    """Generate an executive summary report of the coverage analysis."""
+    """Generate an executive summary report comparing PCR vs RAA coverage."""
     lines = [
-        "# 📋 In-silico PCR Coverage Analysis Report",
+        "# 📋 In-silico Coverage Analysis Report: PCR vs RAA",
         "",
-        "Laporan ini menyajikan hasil validasi *in-silico* PCR dari kandidat primer-probe yang berhasil lolos BLAST specificity checks terhadap seluruh sekuens input database.",
+        "Laporan ini membandingkan cakupan amplifikasi antara dua mode:",
+        "- **PCR:** Simulasi via `seqkit amplicon`, toleransi mismatch total ≤3",
+        "- **RAA:** Model biologis — 3' end (8 bp) ≤1 mismatch, internal ≤4 mismatch",
         "",
-        "## Overall Summary",
+        "> RAA lebih toleran mismatch internal (recombinase strand invasion), lebih ketat di 3' end.",
         "",
-        "| Candidate ID | Target Region | Forward Sequence (5'-3') | Reverse Sequence (5'-3') | Probe Sequence (5'-3') | Amplification Coverage (%) | Detection Coverage (%) |",
-        "|--------------|---------------|--------------------------|--------------------------|------------------------|--------------------------|------------------------|",
+        "## 📊 Overall Summary — PCR vs RAA",
+        "",
+        "| Candidate ID | Region | PCR Amp (%) | PCR Det (%) | RAA Amp (%) | RAA Det (%) |",
+        "|--------------|--------|-------------|-------------|-------------|-------------|" ,
     ]
-    
+
     for cand in summary_data:
-        probe_str = f"`{cand['probe_seq']}`" if cand['probe_seq'] else "—"
+        pcr_amp = cand.get("pcr_amplified_pct", cand.get("amplified_pct", 0))
+        pcr_det = cand.get("pcr_detected_pct",  cand.get("detected_pct", 0))
+        raa_amp = cand.get("raa_amplified_pct", "n/a")
+        raa_det = cand.get("raa_detected_pct",  "n/a")
         lines.append(
-            f"| **{cand['cand_id']}** | {cand['region']} | `{cand['fwd_seq']}` | `{cand['rev_seq']}` | {probe_str} | **{cand['amplified_pct']}%** | **{cand['detected_pct']}%** |"
+            f"| **{cand['cand_id']}** | {cand['region']} "
+            f"| **{pcr_amp}%** | {pcr_det}% "
+            f"| **{raa_amp}%** | {raa_det}% |"
         )
-        
+
     lines.append("")
-    lines.append("## Detailed Subtype Coverage Breakdown")
+    lines.append("## 🔬 Primer Sequences")
     lines.append("")
-    
+    lines.append("| Candidate ID | Forward (5'→3') | Reverse (5'→3') | Probe (5'→3') |")
+    lines.append("|--------------|-----------------|-----------------|---------------|")
     for cand in summary_data:
+        probe_str = f"`{cand['probe_seq']}`" if cand.get("probe_seq") else "—"
+        lines.append(
+            f"| **{cand['cand_id']}** | `{cand['fwd_seq']}` | `{cand['rev_seq']}` | {probe_str} |"
+        )
+
+    lines.append("")
+    lines.append("## 📈 Detailed Subtype Coverage: PCR vs RAA")
+    lines.append("")
+
+    for cand in summary_data:
+        pcr_amp = cand.get("pcr_amplified_pct", cand.get("amplified_pct", 0))
+        raa_amp = cand.get("raa_amplified_pct", "n/a")
         lines.append(f"### {cand['cand_id']} (Region: {cand['region']})")
         lines.append("")
-        lines.append("| Subtype | Total Sequences | Amplified Coverage (%) | Detection Coverage (%) |")
-        lines.append("|---------|-----------------|------------------------|------------------------|")
-        for sub in cand["breakdowns"]["subtype"]:
-            lines.append(f"| {sub['subtype']} | {sub['total']:,} | {sub['amplified_pct']}% | {sub['detected_pct']}% |")
+        lines.append(f"**Overall:** PCR Amp = {pcr_amp}% | RAA Amp = {raa_amp}%")
         lines.append("")
-        
+        lines.append("| Subtype | N Sequences | PCR Amp (%) | PCR Det (%) | RAA Amp (%) | RAA Det (%) |")
+        lines.append("|---------|-------------|-------------|-------------|-------------|-------------|")
+        for sub in cand["breakdowns"]["subtype"]:
+            pcr_a = sub.get("pcr_amplified_pct", sub.get("amplified_pct", 0))
+            pcr_d = sub.get("pcr_detected_pct",  sub.get("detected_pct", 0))
+            raa_a = sub.get("raa_amplified_pct", "n/a")
+            raa_d = sub.get("raa_detected_pct",  "n/a")
+            lines.append(
+                f"| {sub.get('subtype', '?')} | {sub['total']:,} "
+                f"| {pcr_a}% | {pcr_d}% "
+                f"| {raa_a}% | {raa_d}% |"
+            )
+        lines.append("")
+
     with open(output_path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
     print(f"Generated Markdown Report: {output_path}")

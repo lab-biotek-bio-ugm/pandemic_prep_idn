@@ -60,7 +60,10 @@ rule m10_insilico_pcr:
         max_mismatch=config["insilico_pcr"].get("max_mismatch", 3),
         num_candidates=config["insilico_pcr"].get("num_candidates", 10),
         outdir="results/{BUILD}/m10",
-        m09_dirs=get_m10_m09_dirs
+        m09_dirs=get_m10_m09_dirs,
+        raa_3prime_bp=config["insilico_pcr"].get("raa_3prime_bp", 8),
+        raa_max_3prime_mm=config["insilico_pcr"].get("raa_max_3prime_mm", 1),
+        raa_max_internal_mm=config["insilico_pcr"].get("raa_max_internal_mm", 4)
     threads:
         workflow.cores
     conda:
@@ -77,6 +80,9 @@ rule m10_insilico_pcr:
             --outdir {params.outdir} \
             --max-mismatch {params.max_mismatch} \
             --num-candidates {params.num_candidates} \
+            --raa-3prime-bp {params.raa_3prime_bp} \
+            --raa-max-3prime-mm {params.raa_max_3prime_mm} \
+            --raa-max-internal-mm {params.raa_max_internal_mm} \
             --threads {threads} > "{log}" 2>&1
         """
 
