@@ -39,6 +39,10 @@ def get_m10_m09_dirs(wildcards):
         for region in regions
     ])
 
+def get_m10_threads(wildcards):
+    """Return the number of threads to use. Defaults to 8 if not defined (e.g. during unlock)."""
+    return workflow.cores if (workflow.cores is not None) else 8
+
 rule m10_insilico_pcr:
     """
     Executes in-silico PCR simulation using seqkit amplicon and custom Python scripts
@@ -65,7 +69,7 @@ rule m10_insilico_pcr:
         raa_max_3prime_mm=config["insilico_pcr"].get("raa_max_3prime_mm", 1),
         raa_max_internal_mm=config["insilico_pcr"].get("raa_max_internal_mm", 4)
     threads:
-        workflow.cores if workflow.cores is not None else 8
+        get_m10_threads
     conda:
         "../envs/m10_insilico.yaml"
     log:
