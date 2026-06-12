@@ -65,7 +65,7 @@ rule m10_insilico_pcr:
         raa_max_3prime_mm=config["insilico_pcr"].get("raa_max_3prime_mm", 1),
         raa_max_internal_mm=config["insilico_pcr"].get("raa_max_internal_mm", 4)
     threads:
-        workflow.cores
+        workflow.cores if workflow.cores is not None else 8
     conda:
         "../envs/m10_insilico.yaml"
     log:
