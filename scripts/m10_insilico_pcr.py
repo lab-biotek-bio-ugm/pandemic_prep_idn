@@ -323,27 +323,38 @@ def main():
         matched_seqs = set(matches_max.keys())
 
         # ── Per-sequence evaluation ───────────────────────────────────────────
+        # CRITICAL: seqkit amplicon is the authoritative source for amplification.
+        # Sequences in matched_seqs are DEFINITIVELY amplifiable within max_mismatch.
+        # The sliding window classifies mismatch LEVEL for breakdown reporting ONLY —
+        # it does NOT re-gate amplification. Previously this caused double-filtering
+        # and catastrophically underreported coverage (e.g. H3N2 showed 0.43%).
         cand_results = []
         for seq in seq_mappings:
             seq_id = seq["seq_id"]
 
             if seq_id not in matched_seqs:
-                p_mismatch = 99  # No amplification
+                # seqkit found no amplicon → genuinely not amplifiable
+                is_amplified = False
+                p_mismatch   = 99
                 prb_mismatch = 99
             else:
+                # seqkit confirmed amplification → trust it unconditionally
+                is_amplified = True
                 amp_seq = matches_max[seq_id]
-                # Compute exact primer mismatch via sliding window (cheap for short primers)
+
+                # Sliding window: estimate mismatch LEVEL for reporting only
                 fwd_mm = min_mismatches_sliding_window(fwd, amp_seq)
                 rev_mm = min_mismatches_sliding_window(reverse_complement(rev), amp_seq)
-                p_mismatch = max(fwd_mm, rev_mm)  # Worst of the two primers
-                # Probe mismatch
+                # Cap at max_mismatch (seqkit guarantees it fits within threshold)
+                p_mismatch = min(max(fwd_mm, rev_mm), args.max_mismatch)
+
+                # Probe mismatch determines is_detected
                 if probe:
                     prb_mismatch = min_mismatches_sliding_window(probe, amp_seq)
                 else:
                     prb_mismatch = 0
 
-            is_amplified = (p_mismatch <= args.max_mismatch)
-            is_detected  = is_amplified and (prb_mismatch <= args.max_mismatch)
+            is_detected = is_amplified and (prb_mismatch <= args.max_mismatch)
 
             cand_results.append({
                 "seq_id":        seq_id,
