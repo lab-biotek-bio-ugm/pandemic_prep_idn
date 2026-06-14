@@ -30,6 +30,7 @@ def generate_payload(manifest_path, template_path, out_dir, args=None):
     blast_local_db_path = getattr(args, "blast_local_db_path", None) if args else None
     blast_targeted_check = getattr(args, "blast_targeted_check", None) if args else None
     blast_targeted_db_path = getattr(args, "blast_targeted_db_path", None) if args else None
+    entropy_threshold = getattr(args, "entropy_threshold", 0.20) if args else 0.20
 
     candidate_regions = manifest.get('candidate_regions', [])
     if not candidate_regions:
@@ -67,13 +68,23 @@ def generate_payload(manifest_path, template_path, out_dir, args=None):
         target_region_str = "null"
         included_region_str = "null"
             
+        entropy_scores = region.get('positional_scores', {}).get('entropy', [])
+            
         # Hitung excluded_regions (relatif terhadap template sekuens)
+        # Gabungkan meme_pval < 0.10 dan entropy >= entropy_threshold
         excluded_list = []
         in_exclusion = False
         start_idx = 0
         
-        for i, pval in enumerate(meme_pvals):
-            if pval < 0.10:
+        def check_exclude(pos):
+            is_meme_excl = (pos < len(meme_pvals)) and (meme_pvals[pos] is not None) and (meme_pvals[pos] < 0.10)
+            is_ent_excl = (pos < len(entropy_scores)) and (entropy_scores[pos] is not None) and (entropy_scores[pos] >= entropy_threshold)
+            return is_meme_excl or is_ent_excl
+            
+        total_len = max(len(meme_pvals), len(entropy_scores))
+        
+        for i in range(total_len):
+            if check_exclude(i):
                 if not in_exclusion:
                     in_exclusion = True
                     start_idx = i
@@ -85,7 +96,7 @@ def generate_payload(manifest_path, template_path, out_dir, args=None):
                     
         if in_exclusion:
             offset = cz_start if is_full_segment_strategy and full_segment_seq else 0
-            excluded_list.append(f"{{start: {start_idx + offset}, length: {len(meme_pvals) - start_idx}}}")
+            excluded_list.append(f"{{start: {start_idx + offset}, length: {total_len - start_idx}}}")
             
         # Format menjadi string array YAML satu baris: [{start: X, length: Y}, ...]
         excluded_str = "[" + ", ".join(excluded_list) + "]"
@@ -207,6 +218,7 @@ if __name__ == "__main__":
     parser.add_argument("--blast-local-db-path", type=str, help="Override local blast database path")
     parser.add_argument("--blast-targeted-check", type=str, help="Override blast targeted check (true/false)")
     parser.add_argument("--blast-targeted-db-path", type=str, help="Override targeted blast database path")
+    parser.add_argument("--entropy-threshold", type=float, default=0.20, help="Entropy threshold for exclusion")
     
     args = parser.parse_args()
     

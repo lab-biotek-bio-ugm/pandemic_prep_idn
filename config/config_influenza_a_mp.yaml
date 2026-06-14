@@ -192,6 +192,7 @@ primerlab:
     blast_local_db_path: null     # Path absolut ke database BLAST lokal di server jika menggunakan mode "local"
     blast_targeted_check: false   # true: hitung coverage primer terpilih terhadap database sekuens target
     blast_targeted_db_path: null  # Path ke file FASTA atau database sekuens target (misal: semua strain Influenza A)
+    entropy_threshold: 0.20       # Exclude positions with Shannon entropy >= 0.20 from primer binding sites
 
 # [M09] BLAST Specificity Verification
 blast_verification:

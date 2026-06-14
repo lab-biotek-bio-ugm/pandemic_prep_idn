@@ -34,7 +34,8 @@ rule m08_generate_payload:
         blast_mode=config["primerlab"]["design"].get("blast_mode"),
         blast_local_db_path=config["primerlab"]["design"].get("blast_local_db_path"),
         blast_targeted_check=config["primerlab"]["design"].get("blast_targeted_check"),
-        blast_targeted_db_path=config["primerlab"]["design"].get("blast_targeted_db_path")
+        blast_targeted_db_path=config["primerlab"]["design"].get("blast_targeted_db_path"),
+        entropy_threshold=config["primerlab"]["design"].get("entropy_threshold")
     conda:
         "../envs/primerlab.yaml"
     shell:
@@ -63,6 +64,7 @@ rule m08_generate_payload:
         [[ -n "{params.blast_local_db_path}" && "{params.blast_local_db_path}" != "None" ]] && CMD="$CMD --blast-local-db-path {params.blast_local_db_path}"
         [[ -n "{params.blast_targeted_check}" && "{params.blast_targeted_check}" != "None" ]] && CMD="$CMD --blast-targeted-check {params.blast_targeted_check}"
         [[ -n "{params.blast_targeted_db_path}" && "{params.blast_targeted_db_path}" != "None" ]] && CMD="$CMD --blast-targeted-db-path {params.blast_targeted_db_path}"
+        [[ -n "{params.entropy_threshold}" && "{params.entropy_threshold}" != "None" ]] && CMD="$CMD --entropy-threshold {params.entropy_threshold}"
         
         eval "$CMD" > "{log}" 2>&1
         """
