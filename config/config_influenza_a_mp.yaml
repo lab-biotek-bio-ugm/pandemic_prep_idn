@@ -73,7 +73,10 @@ timetree:
 
 # [M05] Evolutionary Selection Pressure (HyPhy)
 hyphy:
-  threads: 32
+  threads: 8          # 8 is sufficient for short segments (≤2000 seqs × 1027bp).
+                      # HyPhy scales poorly beyond ~8-12 threads for short alignments.
+                      # Keeping threads low allows Snakemake to run more jobs in parallel
+                      # when processing multiple genes or when integrated with other pipelines.
   p_value_threshold: 0.1
   methods:
     - "FUBAR"
