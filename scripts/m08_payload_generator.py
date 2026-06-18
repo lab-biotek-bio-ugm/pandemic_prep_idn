@@ -30,7 +30,11 @@ def generate_payload(manifest_path, template_path, out_dir, args=None):
     blast_local_db_path = getattr(args, "blast_local_db_path", None) if args else None
     blast_targeted_check = getattr(args, "blast_targeted_check", None) if args else None
     blast_targeted_db_path = getattr(args, "blast_targeted_db_path", None) if args else None
-    entropy_threshold = getattr(args, "entropy_threshold", 0.20) if args else 0.20
+    entropy_threshold = getattr(args, "entropy_threshold", 0.50) if args else 0.50
+    # Minimum consecutive excluded positions to form a block — prevents hundreds of tiny
+    # 1-2bp wobble-position blocks from blocking all primer placement in Primer3.
+    # Default 10: only continuous variable stretches ≥10bp (like UTRs) are excluded.
+    min_exclusion_block_length = getattr(args, "min_exclusion_block_length", 10) if args else 10
 
     candidate_regions = manifest.get('candidate_regions', [])
     if not candidate_regions:
@@ -90,13 +94,17 @@ def generate_payload(manifest_path, template_path, out_dir, args=None):
                     start_idx = i
             else:
                 if in_exclusion:
-                    offset = cz_start if is_full_segment_strategy and full_segment_seq else 0
-                    excluded_list.append(f"{{start: {start_idx + offset}, length: {i - start_idx}}}")
+                    block_len = i - start_idx
+                    if block_len >= min_exclusion_block_length:
+                        offset = cz_start if is_full_segment_strategy and full_segment_seq else 0
+                        excluded_list.append(f"{{start: {start_idx + offset}, length: {block_len}}}")
                     in_exclusion = False
                     
         if in_exclusion:
-            offset = cz_start if is_full_segment_strategy and full_segment_seq else 0
-            excluded_list.append(f"{{start: {start_idx + offset}, length: {total_len - start_idx}}}")
+            block_len = total_len - start_idx
+            if block_len >= min_exclusion_block_length:
+                offset = cz_start if is_full_segment_strategy and full_segment_seq else 0
+                excluded_list.append(f"{{start: {start_idx + offset}, length: {block_len}}}")
             
         # Format menjadi string array YAML satu baris: [{start: X, length: Y}, ...]
         excluded_str = "[" + ", ".join(excluded_list) + "]"
@@ -194,7 +202,7 @@ def generate_payload(manifest_path, template_path, out_dir, args=None):
             
         print(f"[M08] Generated PrimerLab YAML config: {out_path}")
         print(f"      - Target Region : {region_id}")
-        print(f"      - Excluded Zones: {len(excluded_list)} blocks (MEME p-val < 0.1)")
+        print(f"      - Excluded Zones: {len(excluded_list)} blocks (entropy>={entropy_threshold} OR meme_pval<0.1, min_block_len={min_exclusion_block_length})")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="M08 Payload Generator for PrimerLab")
@@ -218,7 +226,8 @@ if __name__ == "__main__":
     parser.add_argument("--blast-local-db-path", type=str, help="Override local blast database path")
     parser.add_argument("--blast-targeted-check", type=str, help="Override blast targeted check (true/false)")
     parser.add_argument("--blast-targeted-db-path", type=str, help="Override targeted blast database path")
-    parser.add_argument("--entropy-threshold", type=float, default=0.20, help="Entropy threshold for exclusion")
+    parser.add_argument("--entropy-threshold", type=float, default=0.50, help="Entropy threshold for exclusion (Shannon entropy)")
+    parser.add_argument("--min-exclusion-block-length", type=int, default=10, help="Minimum consecutive excluded positions to form a block (prevents tiny wobble-position blocks from blocking all primers)")
     
     args = parser.parse_args()
     

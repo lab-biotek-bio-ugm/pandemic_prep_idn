@@ -175,6 +175,7 @@ primerlab:
     blast_ranking_limit: 10
     blast_database: "nt"
     entropy_threshold: 0.50       # Exclude positions with Shannon entropy >= 0.50 from primer binding sites
+    min_exclusion_block_length: 10 # Minimum block size to be excluded (prevents tiny wobble-pos blocks)
 
 # [M09] BLAST Specificity Verification
 # Catatan: num_candidates di sini menentukan berapa kandidat teratas yang diverifikasi

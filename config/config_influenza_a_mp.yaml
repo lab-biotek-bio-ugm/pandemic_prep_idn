@@ -198,6 +198,10 @@ primerlab:
     entropy_threshold: 0.50       # Exclude positions with Shannon entropy >= 0.50 from primer binding sites
                                   # 0.50 ~ 30% MAF: strict enough to exclude hypervariable UTRs (~0.8-1.8)
                                   # but lenient enough to keep M1 coding region available for primer design
+    min_exclusion_block_length: 10 # Minimum consecutive excluded positions to form a block.
+                                   # Prevents hundreds of tiny 1-2bp wobble-position blocks from blocking
+                                   # all primer placement. Only large continuous variable stretches (UTRs, etc)
+                                   # will be excluded. Default 10bp.
 
 # [M09] BLAST Specificity Verification
 blast_verification:
