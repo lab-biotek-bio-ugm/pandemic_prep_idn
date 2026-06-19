@@ -111,9 +111,19 @@ def main():
             skipped_count += 1
             continue
             
+        # Prepare primers for BLAST (use majority_sequence if degenerate is present to prevent BLAST IUPAC issues)
+        primers_to_blast = {}
+        for p_type in ["forward", "reverse", "probe"]:
+            p_data = primers.get(p_type)
+            if p_data:
+                p_copy = dict(p_data)
+                if "majority_sequence" in p_copy:
+                    p_copy["sequence"] = p_copy["majority_sequence"]
+                primers_to_blast[p_type] = p_copy
+
         # Create a temp file containing the primers dict for this candidate
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as temp_f:
-            json.dump(primers, temp_f)
+            json.dump(primers_to_blast, temp_f)
             temp_json_path = temp_f.name
             
         try:

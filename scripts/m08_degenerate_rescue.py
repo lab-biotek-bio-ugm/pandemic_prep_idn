@@ -181,6 +181,7 @@ def rescue_primer(primer_dict: dict, iupac_seq: str, consensus_seq: str, max_mul
 
     # Update primer dict
     updated = dict(primer_dict)
+    updated["majority_sequence"] = original_seq
     updated["sequence"] = rescued_seq
     updated["degeneracy_multiplier"] = multiplier
     updated["possible_sequences"] = possible_seqs if multiplier > 1 else []

@@ -128,23 +128,73 @@ def assess_raa_binding(
     return is_raa_bound, best_3prime_mm, best_internal_mm, best_total_mm
 
 
+import tempfile
+import itertools
+
+def is_degenerate(seq: str) -> bool:
+    return any(c.upper() not in {'A', 'T', 'G', 'C', 'U', '-'} for c in seq)
+
+def expand_degenerate_sequence(seq: str) -> list:
+    """Expand a degenerate DNA sequence containing IUPAC codes into all possible combinations."""
+    iupac_dict = {
+        'A': ['A'], 'C': ['C'], 'G': ['G'], 'T': ['T'], 'U': ['T'],
+        'R': ['A', 'G'], 'Y': ['C', 'T'], 'S': ['G', 'C'], 'W': ['A', 'T'],
+        'K': ['G', 'T'], 'M': ['A', 'C'], 'B': ['C', 'G', 'T'], 
+        'D': ['A', 'G', 'T'], 'H': ['A', 'C', 'T'], 'V': ['A', 'C', 'G'],
+        'N': ['A', 'C', 'G', 'T']
+    }
+    bases_lists = [iupac_dict.get(c.upper(), [c]) for c in seq]
+    return [''.join(p) for p in itertools.product(*bases_lists)]
+
 def run_seqkit_amplicon(fwd: str, rev: str, max_mismatch: int, fasta_path: str, threads: int = 4) -> dict:
-    """Run seqkit amplicon and return a dict of seq_id -> amplicon_seq."""
-    cmd = [
-        "seqkit", "amplicon",
-        "-F", fwd,
-        "-R", rev,
-        "-m", str(max_mismatch),
-        "-j", str(threads),   # seqkit goroutine parallelism
-        "--bed",
-        str(fasta_path)
-    ]
+    """Run seqkit amplicon and return a dict of seq_id -> amplicon_seq.
+    Supports degenerate primers by expanding them and using the -p/--primer-file flag.
+    """
+    temp_tsv_path = None
+    
+    if is_degenerate(fwd) or is_degenerate(rev):
+        # Expand degenerate primers
+        fwd_list = expand_degenerate_sequence(fwd)
+        rev_list = expand_degenerate_sequence(rev)
+        
+        # Limit combinations to a safe maximum to avoid exploding complexity
+        combinations = list(itertools.product(fwd_list, rev_list))
+        
+        # Create temp TSV file
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".tsv", delete=False) as temp_f:
+            for idx, (f_comb, r_comb) in enumerate(combinations):
+                temp_f.write(f"comb_{idx}\t{f_comb}\t{r_comb}\n")
+            temp_tsv_path = temp_f.name
+            
+        cmd = [
+            "seqkit", "amplicon",
+            "-p", temp_tsv_path,
+            "-m", str(max_mismatch),
+            "-j", str(threads),
+            "--bed",
+            str(fasta_path)
+        ]
+    else:
+        cmd = [
+            "seqkit", "amplicon",
+            "-F", fwd,
+            "-R", rev,
+            "-m", str(max_mismatch),
+            "-j", str(threads),
+            "--bed",
+            str(fasta_path)
+        ]
     
     try:
         result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
     except subprocess.CalledProcessError as e:
         print(f"Error running seqkit: {e.stderr}", file=sys.stderr)
+        if temp_tsv_path and os.path.exists(temp_tsv_path):
+            os.remove(temp_tsv_path)
         raise e
+    finally:
+        if temp_tsv_path and os.path.exists(temp_tsv_path):
+            os.remove(temp_tsv_path)
         
     matches = {}
     for line in result.stdout.splitlines():
@@ -154,7 +204,9 @@ def run_seqkit_amplicon(fwd: str, rev: str, max_mismatch: int, fasta_path: str, 
         if len(parts) >= 7:
             seq_id = parts[0]
             amp_seq = parts[6]
-            matches[seq_id] = amp_seq
+            # If multiple combinations match, keep the first one (or shortest)
+            if seq_id not in matches or len(amp_seq) < len(matches[seq_id]):
+                matches[seq_id] = amp_seq
     return matches
 
 def get_all_fasta_headers(fasta_path: str) -> list:
