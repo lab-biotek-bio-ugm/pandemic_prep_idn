@@ -1021,75 +1021,28 @@ def _generate_individual_forbidden_tracks(entropy_path: Path, meme_path: Path, g
 def _generate_igv_session(session_path: Path, gff_path, bed_path: Path,
                           reference_id: str, outdir: Path,
                           ref_fasta_path: Optional[str] = None,
-                          annotation_gff_path: Optional[str] = None):
-    """GAP-4: Generate an IGV session XML file that pre-loads all genomic tracks.
-    
-    Uses annotation_gff_path (explicit GFF for gene annotations) when available.
-    Falls back to searching by filename convention if not provided.
+                          annotation_gff_path: Optional[str] = None,
+                          consensus_fasta_path: Optional[str] = None):
+    """GAP-4: Generate an IGV session XML file with two-panel layout.
+
+    Panel layout (top to bottom):
+    ── STICKY PANEL (top) ─────────────────────────────────────
+      1. Reference Sequence            (always, auto-rendered by IGV)
+      2. Gene Annotations / CDS        (GFF from reference, if available)
+      3. Consensus Sequence            (FASTA from M07/M08, if available)
+      4. Shannon Entropy (High Var.)   (orange, high_entropy.gff3)
+      5. MEME Episodic Selection       (purple, meme_selection.gff3, if available)
+      6. GARD Recombination Breakpoints(red, recombination_breakpoints.gff3, if available)
+      7. Conserved Regions (M07)       (blue, conserved_regions.bed, if available)
+    ── CANDIDATE PANEL (bottom) ───────────────────────────────
+      8. Primer Candidates             (green, final_candidates.gff3)
+
+    The two-panel approach keeps the reference/annotation tracks visible
+    as a fixed legend while independently scrolling the candidate panel.
     """
-    # Use relative paths from the session file location
     gff_rel = Path(gff_path).name if gff_path else "final_candidates.gff3"
-    m07_bed = outdir / "../m07/conserved_regions.bed"
 
-    # ── Resolve annotation GFF (explicit path wins over filename search) ──
-    ref_gff_rel_str = ""
-    ref_gff_track_str = ""
-    resolved_annotation_gff = None
-
-    if annotation_gff_path and os.path.exists(annotation_gff_path):
-        resolved_annotation_gff = Path(annotation_gff_path)
-    elif ref_fasta_path:
-        # Fallback: look for GFF with same stem as FASTA (same directory)
-        try:
-            fasta_path = Path(ref_fasta_path)
-            for ext in [".gff", ".gff3"]:
-                candidate = fasta_path.with_suffix(ext)
-                if candidate.exists():
-                    resolved_annotation_gff = candidate
-                    break
-        except Exception:
-            pass
-
-    if resolved_annotation_gff and resolved_annotation_gff.exists():
-        rel_ref_gff = os.path.relpath(resolved_annotation_gff, start=outdir).replace("\\", "/")
-        # Only add annotation GFF track if it's a DIFFERENT file from the primer candidates GFF
-        # (avoids duplicating the same file as both 'Gene Annotations' and 'Primer Candidates')
-        if rel_ref_gff != gff_rel:
-            ref_gff_rel_str = f'<Resource path="{rel_ref_gff}"/>'
-            ref_gff_track_str = (
-                f'<Track id="{rel_ref_gff}" name="Gene Annotations (GFF)" renderer="GENE" '
-                f'visible="true" displayMode="EXPANDED" color="0,128,0">\n        </Track>'
-            )
-
-    # Check for individual optional tracks
-    entropy_gff = outdir / "high_entropy.gff3"
-    meme_gff = outdir / "meme_selection.gff3"
-    gard_gff = outdir / "recombination_breakpoints.gff3"
-
-    resources = [f'<Resource path="{gff_rel}"/>']  # primer candidates GFF is always first
-    tracks = [f'<Track id="Reference sequence" name="Reference Sequence" visible="true"/>']
-
-    if ref_gff_rel_str:
-        resources.append(ref_gff_rel_str.strip())
-        tracks.append(ref_gff_track_str.strip())
-
-    if entropy_gff.exists():
-        resources.append('<Resource path="high_entropy.gff3"/>')
-        tracks.append('<Track id="high_entropy.gff3" name="Variasi Tinggi (Entropy &gt;= 0.2)" renderer="BASIC_FEATURE" visible="true" displayMode="EXPANDED" color="255,165,0"><RenderOptions color="255,165,0"/></Track>')
-
-    if meme_gff.exists():
-        resources.append('<Resource path="meme_selection.gff3"/>')
-        tracks.append('<Track id="meme_selection.gff3" name="Tekanan Seleksi (MEME p &lt; 0.05)" renderer="BASIC_FEATURE" visible="true" displayMode="EXPANDED" color="128,0,128"><RenderOptions color="128,0,128"/></Track>')
-
-    if gard_gff.exists():
-        resources.append('<Resource path="recombination_breakpoints.gff3"/>')
-        tracks.append('<Track id="recombination_breakpoints.gff3" name="Breakpoint Rekombinasi (GARD)" renderer="BASIC_FEATURE" visible="true" displayMode="EXPANDED" color="255,0,0"><RenderOptions color="255,0,0"/></Track>')
-
-    if m07_bed.exists():
-        resources.append('<Resource path="../m07/conserved_regions.bed"/>')
-        tracks.append('<Track id="../m07/conserved_regions.bed" name="Conserved Regions (BED)" visible="false"/>')
-
-    # Determine genome value
+    # ── Resolve reference genome path ──────────────────────────────────────────
     genome_val = reference_id if reference_id else "NC_002016.1"
     if ref_fasta_path and os.path.exists(ref_fasta_path):
         try:
@@ -1098,25 +1051,142 @@ def _generate_igv_session(session_path: Path, gff_path, bed_path: Path,
         except Exception:
             pass
 
+    # ── Resolve annotation GFF (gene/CDS track) ───────────────────────────────
+    resolved_annotation_gff = None
+    if annotation_gff_path and os.path.exists(annotation_gff_path):
+        resolved_annotation_gff = Path(annotation_gff_path)
+    elif ref_fasta_path:
+        try:
+            fasta_path = Path(ref_fasta_path)
+            for ext in [".gff3", ".gff"]:
+                cand = fasta_path.with_suffix(ext)
+                if cand.exists():
+                    resolved_annotation_gff = cand
+                    break
+        except Exception:
+            pass
+
+    # ── Resolve consensus FASTA (from M07 output or M05 aligned FASTA) ────────
+    resolved_consensus_fasta = None
+    if consensus_fasta_path and os.path.exists(consensus_fasta_path):
+        resolved_consensus_fasta = Path(consensus_fasta_path)
+    else:
+        # Search in common relative paths
+        for candidate_path in [
+            outdir / "../m07/consensus_sequence.fasta",
+            outdir / "../m07/consensus.fasta",
+            outdir / "../m05/aligned_hyphy.fasta",
+            outdir / "../../m05/aligned_hyphy.fasta",
+        ]:
+            if candidate_path.exists():
+                resolved_consensus_fasta = candidate_path.resolve()
+                break
+
+    # ── Build resource list (all files that need to be declared) ──────────────
+    resources = [f'<Resource path="{gff_rel}"/>']  # primer candidates GFF always declared
+
+    sticky_tracks = [
+        '<Track id="Reference sequence" name="①  Reference Sequence" visible="true" height="50"/>'
+    ]
+
+    # Gene annotations / CDS
+    if resolved_annotation_gff and resolved_annotation_gff.exists():
+        rel_ref_gff = os.path.relpath(resolved_annotation_gff, start=outdir).replace("\\", "/")
+        if rel_ref_gff != gff_rel:  # guard: don't duplicate primer candidates GFF
+            resources.append(f'<Resource path="{rel_ref_gff}"/>')
+            sticky_tracks.append(
+                f'<Track id="{rel_ref_gff}" name="②  Gene Annotations / CDS" renderer="GENE" '
+                f'visible="true" displayMode="EXPANDED" color="0,100,180" height="60">\n        </Track>'
+            )
+
+    # Consensus sequence FASTA
+    if resolved_consensus_fasta and resolved_consensus_fasta.exists():
+        rel_cons = os.path.relpath(resolved_consensus_fasta, start=outdir).replace("\\", "/")
+        resources.append(f'<Resource path="{rel_cons}"/>')
+        sticky_tracks.append(
+            f'<Track id="{rel_cons}" name="③  Consensus Sequence (MSA)" renderer="SEQUENCE" '
+            f'visible="true" displayMode="COLLAPSED" height="30">\n        </Track>'
+        )
+
+    # Shannon Entropy track
+    entropy_gff = outdir / "high_entropy.gff3"
+    if entropy_gff.exists():
+        resources.append('<Resource path="high_entropy.gff3"/>')
+        sticky_tracks.append(
+            '<Track id="high_entropy.gff3" name="④  Variasi Tinggi (Shannon Entropy ≥ 0.2)" '
+            'renderer="BASIC_FEATURE" visible="true" displayMode="EXPANDED" color="220,120,0" height="50">'
+            '<RenderOptions color="220,120,0"/></Track>'
+        )
+
+    # MEME episodic selection track
+    meme_gff = outdir / "meme_selection.gff3"
+    if meme_gff.exists():
+        resources.append('<Resource path="meme_selection.gff3"/>')
+        sticky_tracks.append(
+            '<Track id="meme_selection.gff3" name="⑤  Seleksi Episodik (MEME p &lt; 0.05)" '
+            'renderer="BASIC_FEATURE" visible="true" displayMode="EXPANDED" color="128,0,128" height="50">'
+            '<RenderOptions color="128,0,128"/></Track>'
+        )
+
+    # GARD recombination breakpoints track
+    gard_gff = outdir / "recombination_breakpoints.gff3"
+    if gard_gff.exists():
+        resources.append('<Resource path="recombination_breakpoints.gff3"/>')
+        sticky_tracks.append(
+            '<Track id="recombination_breakpoints.gff3" name="⑥  Breakpoint Rekombinasi (GARD)" '
+            'renderer="BASIC_FEATURE" visible="true" displayMode="EXPANDED" color="200,0,0" height="40">'
+            '<RenderOptions color="200,0,0"/></Track>'
+        )
+
+    # Conserved regions from M07 BED
+    m07_bed = outdir / "../m07/conserved_regions.bed"
+    if m07_bed.exists():
+        resources.append('<Resource path="../m07/conserved_regions.bed"/>')
+        sticky_tracks.append(
+            '<Track id="../m07/conserved_regions.bed" name="⑦  Conserved Regions (M07 BED)" '
+            'renderer="BASIC_FEATURE" visible="true" displayMode="EXPANDED" color="0,150,100" height="40">'
+            '</Track>'
+        )
+
+    # ── Build XML ──────────────────────────────────────────────────────────────
     resources_xml = "\n        ".join(resources)
-    tracks_xml = "\n        ".join(tracks)
+    sticky_xml    = "\n        ".join(sticky_tracks)
 
     xml_content = f'''<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <Session genome="{genome_val}" hasGeneTrack="false" version="8">
     <Resources>
         {resources_xml}
     </Resources>
-    <Panel name="DataPanel" height="300">
-        {tracks_xml}
-        <Track id="{gff_rel}" name="Primer Candidates" renderer="BASIC_FEATURE" visible="true" displayMode="EXPANDED">
-            <RenderOptions colorByAttribute="Name"/>
+
+    <!--
+      ═══════════════════════════════════════════════════════════
+       PANEL 1 (STICKY / LEGEND) — scrolls horizontally together
+       with Panel 2, but can be independently resized vertically.
+       Acts as a fixed legend for interpreting primer candidates.
+      ═══════════════════════════════════════════════════════════
+    -->
+    <Panel name="DataPanel" height="320">
+        {sticky_xml}
+    </Panel>
+
+    <!--
+      ═══════════════════════════════════════════════════════════
+       PANEL 2 (PRIMER CANDIDATES) — placed at the bottom so
+       candidates are always read against the sticky legend above.
+      ═══════════════════════════════════════════════════════════
+    -->
+    <Panel name="FeaturePanel" height="250">
+        <Track id="{gff_rel}" name="⑧  Primer Candidates (F=forward / R=reverse / P=probe)" renderer="GENE" visible="true" displayMode="EXPANDED" color="0,160,80">
+            <RenderOptions colorByAttribute="type"/>
         </Track>
     </Panel>
-</Session>
-'''
+
+</Session>'''
+
     with open(session_path, "w", encoding="utf-8") as f:
         f.write(xml_content.strip())
 
 
 if __name__ == "__main__":
     main()
+
