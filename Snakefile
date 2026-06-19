@@ -35,14 +35,15 @@ def get_pipeline_targets(wildcards):
         f"results/{BUILD}/m02/qc_report.json",
         # M06 Target
         f"results/{BUILD}/nextstrain/auspice_dataset.json",
-        # M05 Targets (HyPhy — FUBAR and MEME always, GARD conditional)
-        [f"results/{BUILD}/m05/fubar_{gene}.json" for gene in TARGET_GENES],
-        [f"results/{BUILD}/m05/meme_{gene}.json" for gene in TARGET_GENES],
-        ([f"results/{BUILD}/m05/gard_{gene}.json" for gene in TARGET_GENES]
-         if "GARD" in HYPHY_METHODS else []),
         # M07 Target (Bridge — primer target manifest)
         f"results/{BUILD}/m07/primer_targets_manifest.yaml",
     ]
+    
+    # M05 Targets (HyPhy — FUBAR and MEME always, GARD conditional)
+    targets.extend([f"results/{BUILD}/m05/fubar_{gene}.json" for gene in TARGET_GENES])
+    targets.extend([f"results/{BUILD}/m05/meme_{gene}.json" for gene in TARGET_GENES])
+    if "GARD" in HYPHY_METHODS:
+        targets.extend([f"results/{BUILD}/m05/gard_{gene}.json" for gene in TARGET_GENES])
     
     # Active modes
     modes = ["non_degenerate"]
