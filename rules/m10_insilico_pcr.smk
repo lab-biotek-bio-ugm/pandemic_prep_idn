@@ -96,7 +96,7 @@ def get_m10_compare_inputs(wildcards):
     }
     
     # Optional degenerate summary input
-    deg_enabled = config.get("primerlab", {}).get("degenerate", {}).get("enabled", False)
+    deg_enabled = config.get("primerlab", {}).get("design", {}).get("degenerate", {}).get("enabled", False)
     if deg_enabled:
         inputs["degenerate"] = f"results/{BUILD}/m10/degenerate/coverage_summary.json"
         

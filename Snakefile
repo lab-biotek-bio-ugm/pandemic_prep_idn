@@ -47,7 +47,7 @@ def get_pipeline_targets(wildcards):
     
     # Active modes
     modes = ["non_degenerate"]
-    deg_enabled = config.get("primerlab", {}).get("degenerate", {}).get("enabled", False)
+    deg_enabled = config.get("primerlab", {}).get("design", {}).get("degenerate", {}).get("enabled", False)
     if deg_enabled:
         modes.append("degenerate")
         

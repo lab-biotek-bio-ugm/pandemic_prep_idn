@@ -170,10 +170,10 @@ rule m08_degenerate_rescue:
         f"logs/{BUILD}/m08/degenerate_rescue_{{region}}.log"
     params:
         outdir=f"results/{BUILD}/m08/degenerate/{{region}}",
-        maf_threshold=config["primerlab"].get("degenerate", {}).get("maf_threshold", 0.10),
-        max_multiplier=config["primerlab"].get("degenerate", {}).get("max_multiplier", 16),
-        thermo_mode=config["primerlab"].get("degenerate", {}).get("thermo_eval_mode", "worst_case"),
-        vienna_temp=config["primerlab"].get("degenerate", {}).get("vienna_temp", 37.0)
+        maf_threshold=config["primerlab"].get("design", {}).get("degenerate", {}).get("maf_threshold", 0.10),
+        max_multiplier=config["primerlab"].get("design", {}).get("degenerate", {}).get("max_multiplier", 16),
+        thermo_mode=config["primerlab"].get("design", {}).get("degenerate", {}).get("thermo_eval_mode", "worst_case"),
+        vienna_temp=config["primerlab"].get("design", {}).get("degenerate", {}).get("vienna_temp", 37.0)
     conda:
         "../envs/primerlab.yaml"
     shell:
