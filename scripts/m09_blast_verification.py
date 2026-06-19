@@ -1052,18 +1052,21 @@ def _generate_igv_session(session_path: Path, gff_path, bed_path: Path,
 
     if resolved_annotation_gff and resolved_annotation_gff.exists():
         rel_ref_gff = os.path.relpath(resolved_annotation_gff, start=outdir).replace("\\", "/")
-        ref_gff_rel_str = f'<Resource path="{rel_ref_gff}"/>'
-        ref_gff_track_str = (
-            f'<Track id="{rel_ref_gff}" name="Gene Annotations (GFF)" renderer="GENE" '
-            f'visible="true" displayMode="EXPANDED" color="0,128,0">\n        </Track>'
-        )
+        # Only add annotation GFF track if it's a DIFFERENT file from the primer candidates GFF
+        # (avoids duplicating the same file as both 'Gene Annotations' and 'Primer Candidates')
+        if rel_ref_gff != gff_rel:
+            ref_gff_rel_str = f'<Resource path="{rel_ref_gff}"/>'
+            ref_gff_track_str = (
+                f'<Track id="{rel_ref_gff}" name="Gene Annotations (GFF)" renderer="GENE" '
+                f'visible="true" displayMode="EXPANDED" color="0,128,0">\n        </Track>'
+            )
 
-    # Check for individual tracks
+    # Check for individual optional tracks
     entropy_gff = outdir / "high_entropy.gff3"
     meme_gff = outdir / "meme_selection.gff3"
     gard_gff = outdir / "recombination_breakpoints.gff3"
 
-    resources = [f'<Resource path="{gff_rel}"/>']
+    resources = [f'<Resource path="{gff_rel}"/>']  # primer candidates GFF is always first
     tracks = [f'<Track id="Reference sequence" name="Reference Sequence" visible="true"/>']
 
     if ref_gff_rel_str:
