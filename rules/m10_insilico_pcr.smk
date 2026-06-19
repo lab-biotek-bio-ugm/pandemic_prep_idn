@@ -12,7 +12,7 @@ def get_m10_input_markers(wildcards):
     """
     import yaml
     # Force Snakemake to evaluate checkpoint m07_bridge
-    checkpoint_output = checkpoints.m07_bridge.get(BUILD=wildcards.BUILD)
+    checkpoint_output = checkpoints.m07_bridge.get(BUILD=BUILD)
     manifest_path = checkpoint_output.output.manifest
     
     with open(manifest_path, "r") as f:
@@ -20,14 +20,14 @@ def get_m10_input_markers(wildcards):
     
     regions = [r["region_id"] for r in manifest.get("candidate_regions", [])]
     return [
-        f"results/{wildcards.BUILD}/m09/{wildcards.mode}/{region}/verification_complete.txt"
+        f"results/{BUILD}/m09/{wildcards.mode}/{region}/verification_complete.txt"
         for region in regions
     ]
 
 def get_m10_m09_dirs(wildcards):
     """Return list of m09 region subdirectory paths for Python script to discover candidates."""
     import yaml
-    checkpoint_output = checkpoints.m07_bridge.get(BUILD=wildcards.BUILD)
+    checkpoint_output = checkpoints.m07_bridge.get(BUILD=BUILD)
     manifest_path = checkpoint_output.output.manifest
     
     with open(manifest_path, "r") as f:
@@ -35,7 +35,7 @@ def get_m10_m09_dirs(wildcards):
     
     regions = [r["region_id"] for r in manifest.get("candidate_regions", [])]
     return " ".join([
-        f"results/{wildcards.BUILD}/m09/{wildcards.mode}/{region}"
+        f"results/{BUILD}/m09/{wildcards.mode}/{region}"
         for region in regions
     ])
 
@@ -92,13 +92,13 @@ rule m10_insilico_pcr:
 
 def get_m10_compare_inputs(wildcards):
     inputs = {
-        "non_degenerate": f"results/{wildcards.BUILD}/m10/non_degenerate/coverage_summary.json"
+        "non_degenerate": f"results/{BUILD}/m10/non_degenerate/coverage_summary.json"
     }
     
     # Optional degenerate summary input
     deg_enabled = config.get("primerlab", {}).get("degenerate", {}).get("enabled", False)
     if deg_enabled:
-        inputs["degenerate"] = f"results/{wildcards.BUILD}/m10/degenerate/coverage_summary.json"
+        inputs["degenerate"] = f"results/{BUILD}/m10/degenerate/coverage_summary.json"
         
     return inputs
 

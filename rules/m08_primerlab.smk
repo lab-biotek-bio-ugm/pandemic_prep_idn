@@ -194,9 +194,9 @@ rule m08_degenerate_rescue:
 
 def get_m08_finalize_inputs(wildcards):
     if wildcards.mode == "degenerate":
-        return f"results/{wildcards.BUILD}/m08/degenerate/{wildcards.region}/.degenerate_rescued"
+        return f"results/{BUILD}/m08/degenerate/{wildcards.region}/.degenerate_rescued"
     else:
-        return f"results/{wildcards.BUILD}/m08/non_degenerate/{wildcards.region}/summary.json"
+        return f"results/{BUILD}/m08/non_degenerate/{wildcards.region}/summary.json"
 
 rule m08_finalize_design:
     """
