@@ -11,28 +11,29 @@ import sys
 from pathlib import Path
 
 def generate_html_report(non_deg_data: list, deg_data: list, output_path: Path, build_name: str, has_degenerate: bool):
-    # Parse candidates
-    non_deg_map = {c["cand_id"]: c for c in non_deg_data}
-    deg_map = {c["cand_id"]: c for c in deg_data} if deg_data else {}
-
-    # Compile table rows
-    all_cand_ids = sorted(list(set(list(non_deg_map.keys()) + list(deg_map.keys()))))
-    
     rows_html = []
     
-    # We want to display side-by-side comparison for each candidate slot (by rank or ID)
-    for idx, cand_id in enumerate(all_cand_ids):
-        nd_cand = non_deg_map.get(cand_id)
-        d_cand = deg_map.get(cand_id)
+    # We want to display side-by-side comparison for each candidate slot by Rank
+    max_ranks = max(len(non_deg_data), len(deg_data)) if (non_deg_data and deg_data) else (len(non_deg_data) if non_deg_data else (len(deg_data) if deg_data else 0))
+    
+    for idx in range(max_ranks):
+        nd_cand = non_deg_data[idx] if (non_deg_data and idx < len(non_deg_data)) else None
+        d_cand = deg_data[idx] if (has_degenerate and deg_data and idx < len(deg_data)) else None
         
-        # Check if we have both or just one
-        nd_seqs = f"<b>F:</b> {nd_cand['fwd_seq']}<br><b>R:</b> {nd_cand['rev_seq']}"
-        if nd_cand.get("probe_seq"):
-            nd_seqs += f"<br><b>P:</b> {nd_cand['probe_seq']}"
+        nd_id = nd_cand['cand_id'] if nd_cand else '-'
+        d_id = d_cand['cand_id'] if d_cand else '-'
+        
+        if nd_cand:
+            nd_seqs = f"<b>F:</b> {nd_cand['fwd_seq']}<br><b>R:</b> {nd_cand['rev_seq']}"
+            if nd_cand.get("probe_seq"):
+                nd_seqs += f"<br><b>P:</b> {nd_cand['probe_seq']}"
+            nd_cov = f"{nd_cand['raa_detected_pct']}% ({nd_cand['raa_detected_seqs']}/{nd_cand['total_seqs']})"
+            nd_amp = f"{nd_cand['raa_amplified_pct']}%"
+        else:
+            nd_seqs = '-'
+            nd_cov = '-'
+            nd_amp = '-'
             
-        nd_cov = f"{nd_cand['raa_detected_pct']}% ({nd_cand['raa_detected_seqs']}/{nd_cand['total_seqs']})"
-        nd_amp = f"{nd_cand['raa_amplified_pct']}%"
-        
         if has_degenerate and d_cand:
             d_seqs = f"<b>F:</b> {d_cand['fwd_seq']}<br><b>R:</b> {d_cand['rev_seq']}"
             if d_cand.get("probe_seq"):
@@ -42,22 +43,28 @@ def generate_html_report(non_deg_data: list, deg_data: list, output_path: Path, 
             d_amp = f"{d_cand['raa_amplified_pct']}%"
             
             # Highlight coverage increase
-            diff = d_cand['raa_detected_pct'] - nd_cand['raa_detected_pct']
-            if diff > 0:
-                badge = f'<span class="badge positive">+{diff:.2f}%</span>'
-            elif diff < 0:
-                badge = f'<span class="badge negative">{diff:.2f}%</span>'
+            if nd_cand:
+                diff = d_cand['raa_detected_pct'] - nd_cand['raa_detected_pct']
+                if diff > 0:
+                    badge = f'<span class="badge positive">+{diff:.2f}%</span>'
+                elif diff < 0:
+                    badge = f'<span class="badge negative">{diff:.2f}%</span>'
+                else:
+                    badge = '<span class="badge neutral">0.00%</span>'
             else:
-                badge = '<span class="badge neutral">0.00%</span>'
+                badge = '-'
         else:
-            d_seqs = '<span class="disabled">Degenerate Mode Disabled</span>'
+            if not has_degenerate:
+                d_seqs = '<span class="disabled">Degenerate Mode Disabled</span>'
+            else:
+                d_seqs = '-'
             d_cov = '-'
             d_amp = '-'
             badge = '-'
 
         rows_html.append(f"""
         <tr>
-            <td class="cand-id">Rank {idx + 1}<br><small>{cand_id}</small></td>
+            <td class="cand-id">Rank {idx + 1}<br><small>ND: {nd_id}<br>D: {d_id}</small></td>
             <td class="seq-cell">{nd_seqs}</td>
             <td class="center-cell highlight-nd">{nd_amp}</td>
             <td class="center-cell highlight-nd"><b>{nd_cov}</b></td>
@@ -70,45 +77,48 @@ def generate_html_report(non_deg_data: list, deg_data: list, output_path: Path, 
 
     # Subtype breakdown comparison for Rank 1
     subtype_rows_html = []
-    if all_cand_ids:
-        r1_id = all_cand_ids[0]
-        nd_r1 = non_deg_map.get(r1_id)
-        d_r1 = deg_map.get(r1_id) if has_degenerate else None
+    nd_r1 = non_deg_data[0] if (non_deg_data and len(non_deg_data) > 0) else None
+    d_r1 = deg_data[0] if (has_degenerate and deg_data and len(deg_data) > 0) else None
+    
+    nd_subtypes = {s["subtype"]: s for s in nd_r1["breakdowns"]["subtype"]} if (nd_r1 and "breakdowns" in nd_r1 and "subtype" in nd_r1["breakdowns"]) else {}
+    d_subtypes = {s["subtype"]: s for s in d_r1["breakdowns"]["subtype"]} if (d_r1 and "breakdowns" in d_r1 and "subtype" in d_r1["breakdowns"]) else {}
+    
+    all_subtypes = sorted(list(set(list(nd_subtypes.keys()) + list(d_subtypes.keys()))))
+    for st in all_subtypes:
+        nd_st = nd_subtypes.get(st)
+        d_st = d_subtypes.get(st)
         
-        nd_subtypes = {s["subtype"]: s for s in nd_r1["breakdowns"]["subtype"]} if nd_r1 else {}
-        d_subtypes = {s["subtype"]: s for s in d_r1["breakdowns"]["subtype"]} if d_r1 else {}
+        nd_pct = f"{nd_st['raa_detected_pct']}%" if nd_st else "0.0%"
+        nd_abs = f"({nd_st['raa_detected']}/{nd_st['total']})" if nd_st else "-"
         
-        all_subtypes = sorted(list(set(list(nd_subtypes.keys()) + list(d_subtypes.keys()))))
-        for st in all_subtypes:
-            nd_st = nd_subtypes.get(st)
-            d_st = d_subtypes.get(st)
+        if has_degenerate and d_st:
+            d_pct = f"{d_st['raa_detected_pct']}%"
+            d_abs = f"({d_st['raa_detected']}/{d_st['total']})"
             
-            nd_pct = f"{nd_st['raa_detected_pct']}%" if nd_st else "0.0%"
-            nd_abs = f"({nd_st['raa_detected']}/{nd_st['total']})" if nd_st else "-"
+            # Hitung selisih
+            nd_pct_val = nd_st['raa_detected_pct'] if nd_st else 0.0
+            diff = d_st['raa_detected_pct'] - nd_pct_val
             
-            if has_degenerate and d_st:
-                d_pct = f"{d_st['raa_detected_pct']}%"
-                d_abs = f"({d_st['raa_detected']}/{d_st['total']})"
-                diff = d_st['raa_detected_pct'] - nd_st['raa_detected_pct'] if nd_st else d_st['raa_detected_pct']
-                if diff > 0:
-                    badge = f'<span class="badge positive">+{diff:.2f}%</span>'
-                elif diff < 0:
-                    badge = f'<span class="badge negative">{diff:.2f}%</span>'
-                else:
-                    badge = '<span class="badge neutral">0.00%</span>'
+            if diff > 0:
+                badge = f'<span class="badge positive">+{diff:.2f}%</span>'
+            elif diff < 0:
+                badge = f'<span class="badge negative">{diff:.2f}%</span>'
             else:
-                d_pct = "-"
-                d_abs = "-"
-                badge = "-"
+                badge = '<span class="badge neutral">0.00%</span>'
+        else:
+            d_pct = "-"
+            d_abs = "-"
+            badge = "-"
 
-            subtype_rows_html.append(f"""
-            <tr>
-                <td><b>{st}</b></td>
-                <td class="center-cell highlight-nd">{nd_pct} <small class="text-muted">{nd_abs}</small></td>
-                <td class="center-cell highlight-d">{d_pct} <small class="text-muted">{d_abs}</small></td>
-                <td class="center-cell">{badge}</td>
-            </tr>
-            """)
+        subtype_rows_html.append(f"""
+        <tr>
+            <td><b>{st}</b></td>
+            <td class="center-cell highlight-nd">{nd_pct} <small class="text-muted">{nd_abs}</small></td>
+            <td class="center-cell highlight-d">{d_pct} <small class="text-muted">{d_abs}</small></td>
+            <td class="center-cell">{badge}</td>
+        </tr>
+        """)
+
 
     # HTML Page Template
     html_content = f"""<!DOCTYPE html>
