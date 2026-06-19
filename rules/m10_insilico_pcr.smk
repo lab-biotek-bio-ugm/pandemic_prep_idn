@@ -20,7 +20,7 @@ def get_m10_input_markers(wildcards):
     
     regions = [r["region_id"] for r in manifest.get("candidate_regions", [])]
     return [
-        f"results/{wildcards.BUILD}/m09/{region}/verification_complete.txt"
+        f"results/{wildcards.BUILD}/m09/{wildcards.mode}/{region}/verification_complete.txt"
         for region in regions
     ]
 
@@ -35,7 +35,7 @@ def get_m10_m09_dirs(wildcards):
     
     regions = [r["region_id"] for r in manifest.get("candidate_regions", [])]
     return " ".join([
-        f"results/{wildcards.BUILD}/m09/{region}"
+        f"results/{wildcards.BUILD}/m09/{wildcards.mode}/{region}"
         for region in regions
     ])
 
@@ -55,15 +55,15 @@ rule m10_insilico_pcr:
         metadata=config["local_input"]["metadata"],
         gff=config["references"]["annotation"]
     output:
-        summary_tsv="results/{BUILD}/m10/coverage_summary.tsv",
-        summary_json="results/{BUILD}/m10/coverage_summary.json",
-        report_md="results/{BUILD}/m10/coverage_report.md",
-        heatmap_html="results/{BUILD}/m10/coverage_heatmap.html",
-        gff3_track="results/{BUILD}/m10/m10_candidates.gff3"
+        summary_tsv="results/{BUILD}/m10/{mode}/coverage_summary.tsv",
+        summary_json="results/{BUILD}/m10/{mode}/coverage_summary.json",
+        report_md="results/{BUILD}/m10/{mode}/coverage_report.md",
+        heatmap_html="results/{BUILD}/m10/{mode}/coverage_heatmap.html",
+        gff3_track="results/{BUILD}/m10/{mode}/m10_candidates.gff3"
     params:
         max_mismatch=config["insilico_pcr"].get("max_mismatch", 3),
         num_candidates=config["insilico_pcr"].get("num_candidates", 10),
-        outdir="results/{BUILD}/m10",
+        outdir="results/{BUILD}/m10/{mode}",
         m09_dirs=get_m10_m09_dirs,
         raa_3prime_bp=config["insilico_pcr"].get("raa_3prime_bp", 8),
         raa_max_3prime_mm=config["insilico_pcr"].get("raa_max_3prime_mm", 1),
@@ -73,7 +73,7 @@ rule m10_insilico_pcr:
     conda:
         "../envs/m10_insilico.yaml"
     log:
-        "logs/{BUILD}/m10/insilico_pcr.log"
+        "logs/{BUILD}/m10/insilico_pcr_{mode}.log"
     shell:
         """
         python scripts/m10_insilico_pcr.py \
@@ -90,3 +90,41 @@ rule m10_insilico_pcr:
             --threads {threads} > "{log}" 2>&1
         """
 
+def get_m10_compare_inputs(wildcards):
+    inputs = {
+        "non_degenerate": f"results/{wildcards.BUILD}/m10/non_degenerate/coverage_summary.json"
+    }
+    
+    # Optional degenerate summary input
+    deg_enabled = config.get("primerlab", {}).get("degenerate", {}).get("enabled", False)
+    if deg_enabled:
+        inputs["degenerate"] = f"results/{wildcards.BUILD}/m10/degenerate/coverage_summary.json"
+        
+    return inputs
+
+rule m10_compare_runs:
+    """
+    Compares the coverage and thermodynamic results between the non-degenerate and
+    degenerate tracks, generating a unified visual HTML comparison report.
+    """
+    input:
+        unpack(get_m10_compare_inputs)
+    output:
+        report=f"results/{BUILD}/m10/comparison_report.html",
+        marker=f"results/{BUILD}/m10/comparison_complete.txt"
+    log:
+        f"logs/{BUILD}/m10/compare_runs.log"
+    params:
+        build_name=BUILD,
+        deg_summary=lambda wildcards, input: getattr(input, "degenerate", "")
+    conda:
+        "../envs/m10_insilico.yaml"
+    shell:
+        """
+        python scripts/m10_compare_runs.py \
+            --non-degenerate-summary {input.non_degenerate} \
+            --degenerate-summary "{params.deg_summary}" \
+            --output-report {output.report} \
+            --output-marker {output.marker} \
+            --build-name "{params.build_name}" > "{log}" 2>&1
+        """

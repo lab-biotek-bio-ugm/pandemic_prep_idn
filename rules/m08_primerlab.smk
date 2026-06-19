@@ -15,11 +15,11 @@ rule m08_generate_payload:
         manifest=f"results/{BUILD}/m07/primer_targets_manifest.yaml",
         template=config["primerlab"]["template"]
     output:
-        config=f"results/{BUILD}/m08/primerlab_config_{{region}}.yaml"
+        config=f"results/{BUILD}/m08/{{mode}}/primerlab_config_{{region}}.yaml"
     log:
-        f"logs/{BUILD}/m08/generate_payload_{{region}}.log"
+        f"logs/{BUILD}/m08/generate_payload_{{mode}}_{{region}}.log"
     params:
-        outdir=f"results/{BUILD}/m08",
+        outdir=f"results/{BUILD}/m08/{{mode}}",
         num_candidates=config["primerlab"]["design"].get("num_candidates"),
         vienna_limit=config["primerlab"]["design"].get("vienna_ranking_limit"),
         window_size=config["primerlab"]["design"].get("window_size"),
@@ -48,7 +48,8 @@ rule m08_generate_payload:
         CMD="python scripts/m08_payload_generator.py \
             --manifest {input.manifest} \
             --template {input.template} \
-            --outdir {params.outdir}"
+            --outdir {params.outdir} \
+            --mode {wildcards.mode}"
         
         [[ -n "{params.num_candidates}" && "{params.num_candidates}" != "None" ]] && CMD="$CMD --num-candidates {params.num_candidates}"
         [[ -n "{params.vienna_limit}" && "{params.vienna_limit}" != "None" ]] && CMD="$CMD --vienna-limit {params.vienna_limit}"
@@ -124,13 +125,16 @@ rule m08_run_primerlab:
     Executes PrimerLab design engine using the generated config.
     """
     input:
-        config=f"results/{BUILD}/m08/primerlab_config_{{region}}.yaml",
+        config=f"results/{BUILD}/m08/{{mode}}/primerlab_config_{{region}}.yaml",
         installed=f"results/{BUILD}/m08/.primerlab_installed"
     output:
-        report=f"results/{BUILD}/m08/{{region}}/summary.json"
+        report=f"results/{BUILD}/m08/{{mode}}/{{region}}/summary.json",
+        alternatives=f"results/{BUILD}/m08/{{mode}}/{{region}}/alternatives.json",
+        best_primers=f"results/{BUILD}/m08/{{mode}}/{{region}}/best_primers.json"
     log:
-        f"logs/{BUILD}/m08/run_primerlab_{{region}}.log"
+        f"logs/{BUILD}/m08/run_primerlab_{{mode}}_{{region}}.log"
     params:
+        outdir=f"results/{BUILD}/m08/{{mode}}",
         validate=config["primerlab"]["design"].get("validate", False)
     conda:
         "../envs/primerlab.yaml"
@@ -146,6 +150,62 @@ rule m08_run_primerlab:
         fi
         
         # Run design
-        primerlab raa --config "{input.config}" --out results/{BUILD}/m08 $VALIDATE_FLAG
+        primerlab raa --config "{input.config}" --out "{params.outdir}" $VALIDATE_FLAG
         ) > "{log}" 2>&1
         """
+
+rule m08_degenerate_rescue:
+    """
+    Rescues degenerate positions in design candidates based on alignment data.
+    Runs only for degenerate mode.
+    """
+    input:
+        manifest=f"results/{BUILD}/m07/primer_targets_manifest.yaml",
+        summary=f"results/{BUILD}/m08/degenerate/{{region}}/summary.json",
+        alternatives=f"results/{BUILD}/m08/degenerate/{{region}}/alternatives.json",
+        best_primers=f"results/{BUILD}/m08/degenerate/{{region}}/best_primers.json"
+    output:
+        marker=f"results/{BUILD}/m08/degenerate/{{region}}/.degenerate_rescued"
+    log:
+        f"logs/{BUILD}/m08/degenerate_rescue_{{region}}.log"
+    params:
+        outdir=f"results/{BUILD}/m08/degenerate/{{region}}",
+        maf_threshold=config["primerlab"].get("degenerate", {}).get("maf_threshold", 0.10),
+        max_multiplier=config["primerlab"].get("degenerate", {}).get("max_multiplier", 16),
+        thermo_mode=config["primerlab"].get("degenerate", {}).get("thermo_eval_mode", "worst_case"),
+        vienna_temp=config["primerlab"].get("degenerate", {}).get("vienna_temp", 37.0)
+    conda:
+        "../envs/primerlab.yaml"
+    shell:
+        """
+        python scripts/m08_degenerate_rescue.py \
+            --manifest {input.manifest} \
+            --summary {input.summary} \
+            --alternatives {input.alternatives} \
+            --best-primers {input.best_primers} \
+            --outdir {params.outdir} \
+            --maf-threshold {params.maf_threshold} \
+            --max-multiplier {params.max_multiplier} \
+            --thermo-mode {params.thermo_mode} \
+            --vienna-temp {params.vienna_temp} > "{log}" 2>&1
+        
+        touch {output.marker}
+        """
+
+def get_m08_finalize_inputs(wildcards):
+    if wildcards.mode == "degenerate":
+        return f"results/{wildcards.BUILD}/m08/degenerate/{wildcards.region}/.degenerate_rescued"
+    else:
+        return f"results/{wildcards.BUILD}/m08/non_degenerate/{wildcards.region}/summary.json"
+
+rule m08_finalize_design:
+    """
+    Finalizes the design step for the track.
+    Combines or routes degenerate rescue outputs appropriately.
+    """
+    input:
+        get_m08_finalize_inputs
+    output:
+        marker=f"results/{BUILD}/m08/{{mode}}/{{region}}/.design_complete"
+    shell:
+        "touch {output.marker}"

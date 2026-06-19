@@ -203,6 +203,15 @@ primerlab:
                                    # all primer placement. Only large continuous variable stretches (UTRs, etc)
                                    # will be excluded. Default 10bp.
 
+    # --- DEGENERATE PRIMER DESIGN SIMULATION SETTINGS ---
+    degenerate:
+      enabled: true                  # true: Aktifkan desain degenerate primer | false: Mode non-degenerate standar
+      maf_threshold: 0.10            # Minor Allele Frequency threshold (0.10 = 10%) untuk menyertakan degenerate base
+      max_multiplier: 16             # Batas maksimal degeneracy multiplier (jumlah kombinasi sekuens) per primer
+      thermo_eval_mode: "worst_case" # Mode kalkulasi termodinamika pool: "worst_case", "average", atau "best_case"
+      vienna_temp: 37.0              # Suhu (°C) untuk pelipatan ViennaRNA (RNAfold/RNAcofold)
+      target_coverage_increase: 0.05 # Kenaikan coverage minimum (5%) untuk menerima versi degenerate vs non-degenerate
+
 # [M09] BLAST Specificity Verification
 blast_verification:
   enabled: true

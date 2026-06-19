@@ -29,23 +29,8 @@ def get_target_genes(config):
 TARGET_GENES = get_target_genes(config)
 HYPHY_METHODS = config["hyphy"].get("methods", ["FUBAR"])
 
-def get_m09_targets(wildcards):
-    import yaml
-    # Force Snakemake to evaluate checkpoint m07_bridge
-    checkpoint_output = checkpoints.m07_bridge.get(BUILD=BUILD)
-    manifest_path = checkpoint_output.output.manifest
-    
-    with open(manifest_path, "r") as f:
-        manifest = yaml.safe_load(f)
-    
-    regions = [r["region_id"] for r in manifest.get("candidate_regions", [])]
-    return [
-        f"results/{BUILD}/m09/{region}/verification_complete.txt"
-        for region in regions
-    ]
-
-rule all:
-    input:
+def get_pipeline_targets(wildcards):
+    targets = [
         # M02 Target (QC Report)
         f"results/{BUILD}/m02/qc_report.json",
         # M06 Target
@@ -57,10 +42,35 @@ rule all:
          if "GARD" in HYPHY_METHODS else []),
         # M07 Target (Bridge — primer target manifest)
         f"results/{BUILD}/m07/primer_targets_manifest.yaml",
-        # Dynamic M08/M09 targets based on m07_bridge checkpoint outputs
-        get_m09_targets,
-        # M10 Target (In-silico PCR Coverage Analysis)
-        f"results/{BUILD}/m10/coverage_report.md" if config.get("insilico_pcr", {}).get("enabled", False) else []
+    ]
+    
+    # Active modes
+    modes = ["non_degenerate"]
+    deg_enabled = config.get("primerlab", {}).get("degenerate", {}).get("enabled", False)
+    if deg_enabled:
+        modes.append("degenerate")
+        
+    # If in-silico PCR enabled, request comparison report
+    if config.get("insilico_pcr", {}).get("enabled", False):
+        targets.append(f"results/{BUILD}/m10/comparison_complete.txt")
+    else:
+        # If in-silico PCR is disabled, request BLAST M09 markers for all active modes
+        import yaml
+        checkpoint_output = checkpoints.m07_bridge.get(BUILD=BUILD)
+        manifest_path = checkpoint_output.output.manifest
+        with open(manifest_path, "r") as f:
+            manifest = yaml.safe_load(f)
+        regions = [r["region_id"] for r in manifest.get("candidate_regions", [])]
+        
+        for mode in modes:
+            for region in regions:
+                targets.append(f"results/{BUILD}/m09/{mode}/{region}/verification_complete.txt")
+                
+    return targets
+
+rule all:
+    input:
+        get_pipeline_targets
 
 include: "rules/m01_acquisition.smk"
 include: "rules/m02_m06_augur_core.smk"

@@ -30,7 +30,12 @@ def generate_payload(manifest_path, template_path, out_dir, args=None):
     blast_local_db_path = getattr(args, "blast_local_db_path", None) if args else None
     blast_targeted_check = getattr(args, "blast_targeted_check", None) if args else None
     blast_targeted_db_path = getattr(args, "blast_targeted_db_path", None) if args else None
-    entropy_threshold = getattr(args, "entropy_threshold", 0.50) if args else 0.50
+    mode = getattr(args, "mode", "non_degenerate") if args else "non_degenerate"
+    if mode == "degenerate":
+        # Loose threshold for degenerate mode so we don't exclude wobble bases
+        entropy_threshold = getattr(args, "entropy_threshold", 0.80) if args else 0.80
+    else:
+        entropy_threshold = getattr(args, "entropy_threshold", 0.50) if args else 0.50
     # Minimum consecutive excluded positions to form a block — prevents hundreds of tiny
     # 1-2bp wobble-position blocks from blocking all primer placement in Primer3.
     # Default 10: only continuous variable stretches ≥10bp (like UTRs) are excluded.
@@ -118,6 +123,10 @@ def generate_payload(manifest_path, template_path, out_dir, args=None):
             # Ganti type: auto
             elif line.startswith("  type: auto"):
                 out_lines.append("  type: raw                 # [M08 INJECTED]\n")
+            # Ganti preserve_iupac
+            elif line.strip().startswith("preserve_iupac:"):
+                val = "false" if mode == "degenerate" else "true"
+                out_lines.append(f"  preserve_iupac: {val}       # [M08 INJECTED]\n")
             # Ganti target_region: null
             elif line.strip().startswith("target_region:"):
                 comment = line.split("#", 1)[1] if "#" in line else ""
@@ -228,6 +237,7 @@ if __name__ == "__main__":
     parser.add_argument("--blast-targeted-db-path", type=str, help="Override targeted blast database path")
     parser.add_argument("--entropy-threshold", type=float, default=0.50, help="Entropy threshold for exclusion (Shannon entropy)")
     parser.add_argument("--min-exclusion-block-length", type=int, default=10, help="Minimum consecutive excluded positions to form a block (prevents tiny wobble-position blocks from blocking all primers)")
+    parser.add_argument("--mode", default="non_degenerate", choices=["non_degenerate", "degenerate"], help="Design mode (degenerate vs non_degenerate)")
     
     args = parser.parse_args()
     

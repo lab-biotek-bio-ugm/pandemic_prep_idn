@@ -177,6 +177,15 @@ primerlab:
     entropy_threshold: 0.50       # Exclude positions with Shannon entropy >= 0.50 from primer binding sites
     min_exclusion_block_length: 10 # Minimum block size to be excluded (prevents tiny wobble-pos blocks)
 
+    # --- DEGENERATE PRIMER DESIGN SIMULATION SETTINGS ---
+    degenerate:
+      enabled: false                 # true: Aktifkan desain degenerate primer | false: Mode non-degenerate standar
+      maf_threshold: 0.10            # Minor Allele Frequency threshold (0.10 = 10%) untuk menyertakan degenerate base
+      max_multiplier: 16             # Batas maksimal degeneracy multiplier (jumlah kombinasi sekuens) per primer
+      thermo_eval_mode: "worst_case" # Mode kalkulasi termodinamika pool: "worst_case", "average", atau "best_case"
+      vienna_temp: 37.0              # Suhu (°C) untuk pelipatan ViennaRNA (RNAfold/RNAcofold)
+      target_coverage_increase: 0.05 # Kenaikan coverage minimum (5%) untuk menerima versi degenerate vs non-degenerate
+
 # [M09] BLAST Specificity Verification
 # Catatan: num_candidates di sini menentukan berapa kandidat teratas yang diverifikasi
 # via BLAST. Idealnya ≤ vienna_ranking_limit di M08. Override di config per-target.

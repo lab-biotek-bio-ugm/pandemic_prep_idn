@@ -44,23 +44,24 @@ rule m09_blast_verification:
     Remote mode: queries NCBI nt (requires NCBI_API_KEY env var for reliability).
     """
     input:
-        alternatives=f"results/{BUILD}/m08/{{region}}/summary.json",
+        design_marker=f"results/{BUILD}/m08/{{mode}}/{{region}}/.design_complete",
+        alternatives=f"results/{BUILD}/m08/{{mode}}/{{region}}/summary.json",
         bridge_report=f"results/{BUILD}/m07/bridge_report.json",
         gff=config["references"]["annotation"],
         db_marker=_get_db_marker()  # Empty list if remote mode → no dependency
     output:
-        marker=f"results/{BUILD}/m09/{{region}}/verification_complete.txt"
+        marker=f"results/{BUILD}/m09/{{mode}}/{{region}}/verification_complete.txt"
     log:
-        f"logs/{BUILD}/m09/blast_verification_{{region}}.log"
+        f"logs/{BUILD}/m09/blast_verification_{{mode}}_{{region}}.log"
     params:
-        alternatives_file=f"results/{BUILD}/m08/{{region}}/alternatives.json",
+        alternatives_file=f"results/{BUILD}/m08/{{mode}}/{{region}}/alternatives.json",
         num_candidates=config["blast_verification"].get(
             "num_candidates", config["primerlab"]["design"].get("vienna_ranking_limit", 50)
         ),
         database=config["blast_verification"].get("database", "nt"),
         mode=config["blast_verification"].get("mode", "remote"),
         local_db_path=config["blast_verification"].get("local_db_path", ""),
-        outdir=f"results/{BUILD}/m09/{{region}}",
+        outdir=f"results/{BUILD}/m09/{{mode}}/{{region}}",
         target=config["references"].get("reference_id"),
         ref_fasta=config["references"].get("genome", ""),
         pathogen=config["build_name"].split("-")[0],
