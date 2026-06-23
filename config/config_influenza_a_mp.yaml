@@ -278,6 +278,13 @@ insilico_pcr:
   enabled: true
   max_mismatch: 3             # Toleransi mismatch maksimal untuk primer & probe
   num_candidates: 10          # Evaluasi terhadap 10 kandidat teratas dari M09
+  min_subtype_seqs: 30        # Minimum total sequences per subtype in breakdown.
+                              # Subtypes with fewer sequences are collapsed into
+                              # "Other (rare, n<30)" — cannot be generalized statistically.
+  # RAA isothermal amplification binding parameters
+  raa_3prime_bp: 8            # Jumlah bp ujung 3' yang dianggap kritis (recombinase extension)
+  raa_max_3prime_mm: 1        # Maks mismatch yang ditoleransi di region 3' kritis
+  raa_max_internal_mm: 4      # Maks mismatch yang ditoleransi di region internal (5')
 
 
 

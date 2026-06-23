@@ -274,14 +274,24 @@ def main():
                         help="Max mismatches allowed in the RAA critical 3' region (default: 1)")
     parser.add_argument("--raa-max-internal-mm", type=int, default=4,
                         help="Max mismatches allowed in the RAA internal/5' region (default: 4)")
+    parser.add_argument("--min-subtype-seqs", type=int, default=30,
+                        help="Minimum total sequences a subtype must have to appear in breakdown report (default: 30). "
+                             "Subtypes with fewer sequences are aggregated into 'Other (rare subtypes)' group.")
     args = parser.parse_args()
     
-    # Resolve thread allocation
+    # ── Thread allocation strategy ──────────────────────────────────────────
+    # Goal: run ALL candidates in parallel, giving each seqkit as many threads as possible.
+    # For degenerate candidates with hundreds of primer combinations, seqkit benefits
+    # greatly from more -j goroutines, so we balance between candidate count and threads.
     total_cpus = args.threads or os.cpu_count() or 8
-    # Give seqkit at least 4 threads per call, rest for candidate parallelism
-    seqkit_threads = max(4, total_cpus // 4)
+    # Pre-count candidates to tune allocation (we haven't loaded them yet, so estimate)
+    # Conservative estimate: max_candidates = num_candidates × (number of m09 dirs)
+    est_candidates = max(1, args.num_candidates)  # refine below after load
+    # Give seqkit at least 2 threads, and run as many candidates in parallel as possible.
+    # We'll recompute below once actual candidate count is known.
+    seqkit_threads = max(2, min(16, total_cpus // max(1, est_candidates)))
     worker_threads = max(1, total_cpus // seqkit_threads)
-    print(f"[M10] Thread config: {total_cpus} total CPUs → {worker_threads} parallel candidates × {seqkit_threads} seqkit threads each")
+    print(f"[M10] Thread pre-config: {total_cpus} total CPUs → est {worker_threads} parallel candidates × {seqkit_threads} seqkit threads each (will recompute after loading)")
 
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
@@ -403,10 +413,28 @@ def main():
         
     print(f"Evaluating {len(all_candidates)} candidates across all regions.")
 
-    # 4. PCR Simulation & Probe Binding Check — fully parallelized
+    # ── Recompute thread allocation now that we know the actual candidate count ───
+    actual_candidates = len(all_candidates)
+    # Each candidate runs one seqkit amplicon call (potentially with hundreds of combinations
+    # via -p TSV for degenerate). We want to run all candidates in parallel.
+    # seqkit itself parallelises internally with -j goroutines per call.
+    # Optimal: worker_threads = actual_candidates, seqkit_threads = total / worker_threads
+    worker_threads = min(actual_candidates, total_cpus)
+    seqkit_threads = max(2, total_cpus // worker_threads)
+    print(f"[M10] Thread final config: {total_cpus} total CPUs → {worker_threads} parallel candidates × {seqkit_threads} seqkit threads/candidate")
     # Strategy: run seqkit ONCE per candidate (with max_mismatch), then use sliding-window
     # mismatch detection to determine exact mismatch level per-sequence. This cuts seqkit
     # calls from 4× down to 1× per candidate while still reporting per-mismatch breakdown.
+
+
+    # 4. PCR Simulation & Probe Binding Check — fully parallelized
+    # Strategy for DEGENERATE primers:
+    #   - candidate carries fwd_possible_seqs / rev_possible_seqs (all ATGC variants from m08)
+    #   - build cross-product TSV and run seqkit with -p (single call, all combinations)
+    #   - UNION all matched seq_ids across ALL combinations → true degenerate coverage
+    #   - RAA assessment uses the IUPAC degenerate sequence (IUPAC-aware match_base)
+    # Strategy for NON-DEGENERATE primers:
+    #   - single seqkit call with -F / -R as before
 
     import concurrent.futures
 
@@ -414,28 +442,86 @@ def main():
         """Worker function: evaluate one candidate. Returns (cand_summary, result_row) or None."""
         idx, cand = idx_cand
         cand_id = cand.get("cand_id", f"cand_{idx}")
-        fwd = cand.get("fwd_seq") or cand.get("forward_primer_seq") or cand.get("fwd")
-        rev = cand.get("rev_seq") or cand.get("reverse_primer_seq") or cand.get("rev")
+
+        # ── Resolve primer sequences ─────────────────────────────────────────
+        # fwd_seq / rev_seq = majority (ATGC) sequence used for BLAST / display
+        # fwd_degenerate_seq = IUPAC sequence for RAA binding assessment
+        # fwd_possible_seqs  = all expanded variants for seqkit union coverage
+        fwd   = cand.get("fwd_seq") or cand.get("forward_primer_seq") or cand.get("fwd") or ""
+        rev   = cand.get("rev_seq") or cand.get("reverse_primer_seq") or cand.get("rev") or ""
         probe = cand.get("probe_seq") or cand.get("probe") or ""
+
+        # Degenerate IUPAC sequences (fall back to majority if not available)
+        fwd_deg   = cand.get("fwd_degenerate_seq") or fwd
+        rev_deg   = cand.get("rev_degenerate_seq") or rev
+        probe_deg = cand.get("probe_degenerate_seq") or probe
+
+        # Expanded variant lists from m08 degenerate rescue (may be empty for non-degenerate)
+        fwd_possible   = cand.get("fwd_possible_seqs") or []
+        rev_possible   = cand.get("rev_possible_seqs") or []
+        probe_possible = cand.get("probe_possible_seqs") or []
+
         region = cand.get("region", "unknown")
-        gene = cand.get("gene", region.split("_region_")[0] if "_region_" in region else region)
-        rank = cand.get("rank", idx + 1)
+        gene   = cand.get("gene", region.split("_region_")[0] if "_region_" in region else region)
+        rank   = cand.get("rank", idx + 1)
 
         if not fwd or not rev:
             print(f"[SKIP] {cand_id}: missing fwd_seq or rev_seq.")
             return None
 
-        print(f"[{idx+1}/{len(all_candidates)}] Simulating PCR for {cand_id} (seqkit -j {seqkit_threads})...")
+        # Determine if this candidate has degenerate possible_sequences
+        has_deg_pool = bool(fwd_possible) and bool(rev_possible)
+        n_combinations = len(fwd_possible) * len(rev_possible) if has_deg_pool else 1
+        deg_label = f"({n_combinations} combinations)" if has_deg_pool else "(non-degenerate)"
+        print(f"[{idx+1}/{actual_candidates}] Simulating PCR for {cand_id} {deg_label} (seqkit -j {seqkit_threads})...")
 
-        # ── Single seqkit call with max_mismatch ──────────────────────────────
-        # seqkit returns amplicons for sequences where BOTH primers bind within max_mismatch.
-        # We then compute per-sequence primer mismatch via Python sliding window for the
-        # matched set to determine per-mismatch-level breakdown.
-        try:
-            matches_max = run_seqkit_amplicon(fwd, rev, args.max_mismatch, args.sequences, seqkit_threads)
-        except Exception as e:
-            print(f"[ERROR] seqkit failed for {cand_id}: {e}")
-            matches_max = {}
+
+        # ── seqkit amplicon — union-based degenerate coverage ────────────────
+        # If we have a pool of possible sequences from m08, use them ALL in one
+        # seqkit -p TSV call. The result is a UNION of all matched seq_ids, which
+        # correctly represents the collective coverage of the degenerate primer pool.
+        if has_deg_pool:
+            # Build cross-product TSV: all fwd × rev combinations
+            combinations = list(itertools.product(fwd_possible, rev_possible))
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".tsv", delete=False) as tmp:
+                for c_idx, (f_comb, r_comb) in enumerate(combinations):
+                    tmp.write(f"comb_{c_idx}\t{f_comb}\t{r_comb}\n")
+                tmp_tsv = tmp.name
+            try:
+                cmd = [
+                    "seqkit", "amplicon",
+                    "-p", tmp_tsv,
+                    "-m", str(args.max_mismatch),
+                    "-j", str(seqkit_threads),
+                    "--bed",
+                    str(args.sequences)
+                ]
+                res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+                # UNION: collect ALL seq_ids across ALL combination matches
+                matches_max = {}
+                for line in res.stdout.splitlines():
+                    if not line.strip() or line.startswith("#"):
+                        continue
+                    parts = line.split("\t")
+                    if len(parts) >= 7:
+                        sid = parts[0]
+                        amp = parts[6]
+                        # Keep the best (shortest) amplicon per sequence
+                        if sid not in matches_max or len(amp) < len(matches_max[sid]):
+                            matches_max[sid] = amp
+            except subprocess.CalledProcessError as e:
+                print(f"[ERROR] seqkit (degenerate pool) failed for {cand_id}: {e.stderr}", file=sys.stderr)
+                matches_max = {}
+            finally:
+                if os.path.exists(tmp_tsv):
+                    os.remove(tmp_tsv)
+        else:
+            # Non-degenerate: single seqkit call
+            try:
+                matches_max = run_seqkit_amplicon(fwd, rev, args.max_mismatch, args.sequences, seqkit_threads)
+            except Exception as e:
+                print(f"[ERROR] seqkit failed for {cand_id}: {e}")
+                matches_max = {}
 
         matched_seqs = set(matches_max.keys())
 
@@ -465,19 +551,20 @@ def main():
                 amp_seq = matches_max[seq_id]
 
                 # ─ PCR mismatch level (for reporting, not gating) ─
-                fwd_mm = min_mismatches_sliding_window(fwd, amp_seq)
-                rev_mm = min_mismatches_sliding_window(reverse_complement(rev), amp_seq)
+                # Use degenerate IUPAC sequence for IUPAC-aware mismatch counting
+                fwd_mm = min_mismatches_sliding_window(fwd_deg, amp_seq)
+                rev_mm = min_mismatches_sliding_window(reverse_complement(rev_deg), amp_seq)
                 p_mismatch = min(max(fwd_mm, rev_mm), args.max_mismatch)
 
-                # ─ RAA binding assessment for both primers ─
+                # ─ RAA binding assessment — use IUPAC degenerate sequences ─
                 fwd_raa_ok, fwd_3p, fwd_int, _ = assess_raa_binding(
-                    fwd, amp_seq,
+                    fwd_deg, amp_seq,
                     critical_3prime_bp=args.raa_3prime_bp,
                     max_3prime_mm=args.raa_max_3prime_mm,
                     max_internal_mm=args.raa_max_internal_mm,
                 )
                 rev_raa_ok, rev_3p, rev_int, _ = assess_raa_binding(
-                    reverse_complement(rev), amp_seq,
+                    reverse_complement(rev_deg), amp_seq,
                     critical_3prime_bp=args.raa_3prime_bp,
                     max_3prime_mm=args.raa_max_3prime_mm,
                     max_internal_mm=args.raa_max_internal_mm,
@@ -486,12 +573,11 @@ def main():
                 raa_3p_mm  = max(fwd_3p, rev_3p)
                 raa_int_mm = max(fwd_int, rev_int)
 
-                # ─ Probe mismatch (shared for both PCR & RAA probe detection) ─
-                if probe:
-                    prb_mismatch = min_mismatches_sliding_window(probe, amp_seq)
-                    # For RAA: probe (exo-probe) has similar 3' critical region
+                # ─ Probe mismatch — use IUPAC degenerate probe sequence ─
+                if probe_deg:
+                    prb_mismatch = min_mismatches_sliding_window(probe_deg, amp_seq)
                     probe_raa_ok, _, _, _ = assess_raa_binding(
-                        probe, amp_seq,
+                        probe_deg, amp_seq,
                         critical_3prime_bp=args.raa_3prime_bp,
                         max_3prime_mm=args.raa_max_3prime_mm,
                         max_internal_mm=args.raa_max_internal_mm,
@@ -540,6 +626,8 @@ def main():
         print(f"  [{cand_id}] RAA → Amplified: {raa_amplified}/{total} ({raa_amp_pct}%), Detected: {raa_detected}/{total} ({raa_det_pct}%)")
 
         # ── Breakdown by subtype / year / country ─────────────────────────────
+        # For subtype breakdown: exclude subtypes with < min_subtype_seqs total sequences
+        # (they cannot be statistically generalised). Aggregate them as 'Other (rare subtypes)'.
         breakdowns = {}
         for col in ["subtype", "year", "country"]:
             grp = df_res.groupby(col).agg(
@@ -553,13 +641,43 @@ def main():
             grp["pcr_detected_pct"]  = (grp["pcr_detected"]  / grp["total"] * 100).round(2)
             grp["raa_amplified_pct"] = (grp["raa_amplified"] / grp["total"] * 100).round(2)
             grp["raa_detected_pct"]  = (grp["raa_detected"]  / grp["total"] * 100).round(2)
-            grp = grp.sort_values("year" if col == "year" else "total",
-                                   ascending=(col == "year"))
+
+            if col == "subtype":
+                # Split into major (>= threshold) and rare (< threshold) subtypes
+                min_seqs = args.min_subtype_seqs
+                major_mask = grp["total"] >= min_seqs
+                rare_rows  = grp[~major_mask]
+                grp = grp[major_mask].copy()
+                if not rare_rows.empty:
+                    other_row = {
+                        "subtype": f"Other (rare, n<{min_seqs})",
+                        "total":          int(rare_rows["total"].sum()),
+                        "pcr_amplified":  int(rare_rows["pcr_amplified"].sum()),
+                        "pcr_detected":   int(rare_rows["pcr_detected"].sum()),
+                        "raa_amplified":  int(rare_rows["raa_amplified"].sum()),
+                        "raa_detected":   int(rare_rows["raa_detected"].sum()),
+                    }
+                    t = other_row["total"]
+                    other_row["pcr_amplified_pct"] = round(other_row["pcr_amplified"] / t * 100, 2) if t else 0.0
+                    other_row["pcr_detected_pct"]  = round(other_row["pcr_detected"]  / t * 100, 2) if t else 0.0
+                    other_row["raa_amplified_pct"] = round(other_row["raa_amplified"] / t * 100, 2) if t else 0.0
+                    other_row["raa_detected_pct"]  = round(other_row["raa_detected"]  / t * 100, 2) if t else 0.0
+                    grp = pd.concat([grp, pd.DataFrame([other_row])], ignore_index=True)
+                grp = grp.sort_values("total", ascending=False)
+            elif col == "year":
+                grp = grp.sort_values("year", ascending=True)
+            else:
+                grp = grp.sort_values("total", ascending=False)
+
             breakdowns[col] = grp.to_dict(orient="records")
 
         cand_summary = {
             "cand_id": cand_id, "region": region, "gene": gene, "rank": rank,
             "fwd_seq": fwd, "rev_seq": rev, "probe_seq": probe,
+            # Degenerate IUPAC sequences (for display/RAA context)
+            "fwd_degenerate_seq": fwd_deg if fwd_deg != fwd else None,
+            "rev_degenerate_seq": rev_deg if rev_deg != rev else None,
+            "n_combinations": n_combinations,
             # PCR
             "total_seqs": total,
             "pcr_amplified_seqs": int(amplified), "pcr_amplified_pct": amp_pct,

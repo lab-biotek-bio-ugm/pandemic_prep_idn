@@ -489,6 +489,14 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
         rev_info = primers_dict.get("reverse", {})
         probe_info = primers_dict.get("probe", {})
         
+        # Degenerate primer fields — needed by M10 for union-based coverage calculation
+        fwd_degenerate_seq   = fwd_info.get("sequence", fwd_info.get("majority_sequence", fwd_seq))
+        rev_degenerate_seq   = rev_info.get("sequence", rev_info.get("majority_sequence", rev_seq))
+        probe_degenerate_seq = probe_info.get("sequence", probe_info.get("majority_sequence", probe_seq)) if probe_info else probe_seq
+        fwd_possible_seqs    = fwd_info.get("possible_sequences", [])
+        rev_possible_seqs    = rev_info.get("possible_sequences", [])
+        probe_possible_seqs  = probe_info.get("possible_sequences", []) if probe_info else []
+        
         fwd_tm = fwd_info.get("tm", "-")
         rev_tm = rev_info.get("tm", "-")
         probe_tm = probe_info.get("tm", "-") if probe_info else "-"
@@ -540,6 +548,13 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
             "fwd_seq": fwd_seq,
             "rev_seq": rev_seq,
             "probe_seq": probe_seq,
+            # Degenerate variants — used by M10 for union-based coverage
+            "fwd_degenerate_seq": fwd_degenerate_seq,
+            "rev_degenerate_seq": rev_degenerate_seq,
+            "probe_degenerate_seq": probe_degenerate_seq,
+            "fwd_possible_seqs": fwd_possible_seqs,
+            "rev_possible_seqs": rev_possible_seqs,
+            "probe_possible_seqs": probe_possible_seqs,
             "fwd_start": fwd_start_v,
             "fwd_end": fwd_end_v,
             "rev_start": rev_start_v,
