@@ -53,7 +53,8 @@ rule m10_insilico_pcr:
         markers=get_m10_input_markers,
         sequences=config["local_input"]["sequences"],
         metadata=config["local_input"]["metadata"],
-        gff=config["references"]["annotation"]
+        gff=config["references"]["annotation"],
+        design_sequences="results/{BUILD}/m02/filtered_sequences.fasta"
     output:
         summary_tsv="results/{BUILD}/m10/{mode}/coverage_summary.tsv",
         summary_json="results/{BUILD}/m10/{mode}/coverage_summary.json",
@@ -82,6 +83,7 @@ rule m10_insilico_pcr:
             --sequences {input.sequences} \
             --metadata {input.metadata} \
             --gff {input.gff} \
+            --design-sequences {input.design_sequences} \
             --outdir {params.outdir} \
             --max-mismatch {params.max_mismatch} \
             --num-candidates {params.num_candidates} \

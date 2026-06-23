@@ -195,7 +195,7 @@ def run_seqkit_amplicon(fwd: str, rev: str, max_mismatch: int, fasta_path: str, 
     finally:
         if temp_tsv_path and os.path.exists(temp_tsv_path):
             os.remove(temp_tsv_path)
-        
+
     matches = {}
     for line in result.stdout.splitlines():
         if not line.strip() or line.startswith("#"):
@@ -204,10 +204,82 @@ def run_seqkit_amplicon(fwd: str, rev: str, max_mismatch: int, fasta_path: str, 
         if len(parts) >= 7:
             seq_id = parts[0]
             amp_seq = parts[6]
-            # If multiple combinations match, keep the first one (or shortest)
             if seq_id not in matches or len(amp_seq) < len(matches[seq_id]):
                 matches[seq_id] = amp_seq
     return matches
+
+
+def run_seqkit_amplicon_pool(
+    fwd_list: list, rev_list: list,
+    max_mismatch: int, fasta_path: str, threads: int = 4,
+    cand_id: str = "unknown"
+) -> dict:
+    """Run seqkit amplicon with a pool of fwd/rev combinations via -p TSV.
+    Returns a dict of seq_id -> amplicon_seq (UNION across all combinations).
+    
+    IMPORTANT: seqkit -p TSV with --bed outputs:
+      col0=seqID, col1=start, col2=end, col3=primer_name, col4=score, col5=strand, col6=amplicon_seq
+    The primer_name (col3) encodes which combination matched, not the seq_id.
+    seq_id is ALWAYS col0.
+    """
+    # Build cross-product TSV: all fwd × rev combinations
+    combinations = list(itertools.product(fwd_list, rev_list))
+    if not combinations:
+        return {}
+
+    tmp_tsv = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".tsv", delete=False, encoding="utf-8") as tmp:
+            for c_idx, (f_comb, r_comb) in enumerate(combinations):
+                tmp.write(f"comb_{c_idx}\t{f_comb}\t{r_comb}\n")
+            tmp_tsv = tmp.name
+
+        cmd = [
+            "seqkit", "amplicon",
+            "-p", tmp_tsv,
+            "-m", str(max_mismatch),
+            "-j", str(threads),
+            "--bed",
+            str(fasta_path)
+        ]
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if res.returncode != 0:
+            print(f"[WARN] seqkit pool returned code {res.returncode} for {cand_id}: {res.stderr[:500]}",
+                  file=sys.stderr)
+            return {}
+
+        if res.stderr.strip():
+            # Print first 3 lines of stderr for debugging (seqkit logs progress there)
+            for ln in res.stderr.strip().splitlines()[:3]:
+                print(f"  [seqkit] {ln}", file=sys.stderr)
+
+        # UNION: collect ALL seq_ids across ALL combination matches
+        # BED7 format: seqID start end primerName score strand ampSeq
+        matches: dict = {}
+        for line in res.stdout.splitlines():
+            if not line.strip() or line.startswith("#"):
+                continue
+            parts = line.split("\t")
+            if len(parts) >= 7:
+                sid = parts[0]       # Column 1: sequence ID (always correct)
+                amp  = parts[6]      # Column 7: amplicon sequence
+                # Keep shortest amplicon per sequence (best match across combinations)
+                if sid not in matches or len(amp) < len(matches[sid]):
+                    matches[sid] = amp
+            elif len(parts) == 6:
+                # Some seqkit versions omit amp_seq in --bed; fall back without amp_seq
+                sid = parts[0]
+                if sid not in matches:
+                    matches[sid] = ""  # Mark as amplified without stored seq
+        return matches
+
+    except Exception as e:
+        print(f"[ERROR] seqkit pool exception for {cand_id}: {e}", file=sys.stderr)
+        return {}
+    finally:
+        if tmp_tsv and os.path.exists(tmp_tsv):
+            os.remove(tmp_tsv)
+
 
 def get_all_fasta_headers(fasta_path: str) -> list:
     """Fast extraction of all sequence headers from a FASTA file."""
@@ -277,6 +349,11 @@ def main():
     parser.add_argument("--min-subtype-seqs", type=int, default=30,
                         help="Minimum total sequences a subtype must have to appear in breakdown report (default: 30). "
                              "Subtypes with fewer sequences are aggregated into 'Other (rare subtypes)' group.")
+    parser.add_argument("--design-sequences", default=None,
+                        help="[OPTIONAL] Path to the FASTA used for primer design (e.g. M02 filtered sequences). "
+                             "If provided, coverage will be computed against BOTH this database (design coverage) "
+                             "AND the main --sequences database (surveillance coverage), giving a dual-layer "
+                             "view of primer performance.")
     args = parser.parse_args()
     
     # ── Thread allocation strategy ──────────────────────────────────────────
@@ -471,57 +548,62 @@ def main():
 
         # Determine if this candidate has degenerate possible_sequences
         has_deg_pool = bool(fwd_possible) and bool(rev_possible)
+
+        # ── CRITICAL FIX: always include majority sequence in the pool ────────
+        # fwd_possible_seqs are derived from fwd_degenerate_seq which may be 1bp shorter
+        # than fwd_seq (majority) due to MSA back-mapping gaps. The majority consensus
+        # sequence is the single most important variant — it MUST be in the pool.
+        # Debug confirmed: majority (32bp) NOT in pool of 31bp variants → coverage = 0!
+        if has_deg_pool:
+            if fwd not in fwd_possible:
+                fwd_possible = [fwd] + fwd_possible
+                print(f"  [POOL] Added majority fwd_seq ({len(fwd)}bp) to pool (was missing — MSA length drift)")
+            if rev not in rev_possible:
+                rev_possible = [rev] + rev_possible
+                print(f"  [POOL] Added majority rev_seq ({len(rev)}bp) to pool (was missing — MSA length drift)")
+
         n_combinations = len(fwd_possible) * len(rev_possible) if has_deg_pool else 1
-        deg_label = f"({n_combinations} combinations)" if has_deg_pool else "(non-degenerate)"
+        deg_label = f"({n_combinations} combos incl. majority)" if has_deg_pool else "(non-degenerate)"
         print(f"[{idx+1}/{actual_candidates}] Simulating PCR for {cand_id} {deg_label} (seqkit -j {seqkit_threads})...")
 
 
-        # ── seqkit amplicon — union-based degenerate coverage ────────────────
-        # If we have a pool of possible sequences from m08, use them ALL in one
-        # seqkit -p TSV call. The result is a UNION of all matched seq_ids, which
-        # correctly represents the collective coverage of the degenerate primer pool.
+        # ── seqkit amplicon — union-based coverage (surveillance DB) ──────────
+        # Strategy: run seqkit against the main --sequences (surveillance/50k DB).
+        # For degenerate: pool includes majority + all IUPAC variants.
         if has_deg_pool:
-            # Build cross-product TSV: all fwd × rev combinations
-            combinations = list(itertools.product(fwd_possible, rev_possible))
-            with tempfile.NamedTemporaryFile(mode="w", suffix=".tsv", delete=False) as tmp:
-                for c_idx, (f_comb, r_comb) in enumerate(combinations):
-                    tmp.write(f"comb_{c_idx}\t{f_comb}\t{r_comb}\n")
-                tmp_tsv = tmp.name
-            try:
-                cmd = [
-                    "seqkit", "amplicon",
-                    "-p", tmp_tsv,
-                    "-m", str(args.max_mismatch),
-                    "-j", str(seqkit_threads),
-                    "--bed",
-                    str(args.sequences)
-                ]
-                res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
-                # UNION: collect ALL seq_ids across ALL combination matches
-                matches_max = {}
-                for line in res.stdout.splitlines():
-                    if not line.strip() or line.startswith("#"):
-                        continue
-                    parts = line.split("\t")
-                    if len(parts) >= 7:
-                        sid = parts[0]
-                        amp = parts[6]
-                        # Keep the best (shortest) amplicon per sequence
-                        if sid not in matches_max or len(amp) < len(matches_max[sid]):
-                            matches_max[sid] = amp
-            except subprocess.CalledProcessError as e:
-                print(f"[ERROR] seqkit (degenerate pool) failed for {cand_id}: {e.stderr}", file=sys.stderr)
-                matches_max = {}
-            finally:
-                if os.path.exists(tmp_tsv):
-                    os.remove(tmp_tsv)
+            print(f"  → [SURVEILLANCE] seqkit pool {n_combinations} combos ...")
+            matches_max = run_seqkit_amplicon_pool(
+                fwd_possible, rev_possible,
+                args.max_mismatch, args.sequences,
+                seqkit_threads, cand_id
+            )
+            print(f"  → [SURVEILLANCE] Union matched: {len(matches_max)} sequences")
         else:
-            # Non-degenerate: single seqkit call
             try:
                 matches_max = run_seqkit_amplicon(fwd, rev, args.max_mismatch, args.sequences, seqkit_threads)
             except Exception as e:
                 print(f"[ERROR] seqkit failed for {cand_id}: {e}")
                 matches_max = {}
+
+        # ── [OPTIONAL] Design-DB coverage ───────────────────────────────────────
+        # If --design-sequences is provided, run a second pass against the smaller
+        # design database (M02 filtered sequences). This gives a 'fair' coverage
+        # metric: how well the primer covers the dataset it was actually designed for.
+        design_matches = {}
+        if args.design_sequences:
+            print(f"  → [DESIGN-DB] Running against design sequences...")
+            if has_deg_pool:
+                design_matches = run_seqkit_amplicon_pool(
+                    fwd_possible, rev_possible,
+                    args.max_mismatch, args.design_sequences,
+                    seqkit_threads, cand_id
+                )
+            else:
+                try:
+                    design_matches = run_seqkit_amplicon(fwd, rev, args.max_mismatch, args.design_sequences, seqkit_threads)
+                except Exception as e:
+                    print(f"[ERROR] seqkit design-db failed for {cand_id}: {e}")
+            print(f"  → [DESIGN-DB]  Matched: {len(design_matches)} sequences")
 
         matched_seqs = set(matches_max.keys())
 
@@ -625,6 +707,27 @@ def main():
         print(f"  [{cand_id}] PCR → Amplified: {amplified}/{total} ({amp_pct}%), Detected: {detected}/{total} ({det_pct}%)")
         print(f"  [{cand_id}] RAA → Amplified: {raa_amplified}/{total} ({raa_amp_pct}%), Detected: {raa_detected}/{total} ({raa_det_pct}%)")
 
+        # ── Design-DB simple coverage (seqkit matched count / design total) ────────
+        # We don’t have per-subtype metadata for design sequences (they’re a small
+        # MSA-filtered subset), so we report simple amplification % only.
+        design_total = 0
+        design_amplified = 0
+        design_amp_pct = 0.0
+        if design_matches:
+            # Count total sequences in design FASTA
+            design_total_all = sum(1 for seq in seq_mappings  # use same metadata set
+                                   if seq.get("seq_id") in {s.split()[0] for s in design_matches})
+            # Simpler: just use len(design_matches) as numerator and count design FASTA headers
+            # We report design_amplified as count matched in design DB
+            design_amplified = len(design_matches)
+            # For denominator, count design FASTA headers
+            try:
+                design_total = sum(1 for l in open(args.design_sequences, encoding='utf-8', errors='ignore') if l.startswith('>'))
+            except Exception:
+                design_total = design_amplified
+            design_amp_pct = round(design_amplified / design_total * 100, 2) if design_total else 0.0
+            print(f"  [{cand_id}] DESIGN-DB PCR → Amplified: {design_amplified}/{design_total} ({design_amp_pct}%)")
+
         # ── Breakdown by subtype / year / country ─────────────────────────────
         # For subtype breakdown: exclude subtypes with < min_subtype_seqs total sequences
         # (they cannot be statistically generalised). Aggregate them as 'Other (rare subtypes)'.
@@ -678,13 +781,17 @@ def main():
             "fwd_degenerate_seq": fwd_deg if fwd_deg != fwd else None,
             "rev_degenerate_seq": rev_deg if rev_deg != rev else None,
             "n_combinations": n_combinations,
-            # PCR
+            # Surveillance DB (full 50k EpiFlu)
             "total_seqs": total,
             "pcr_amplified_seqs": int(amplified), "pcr_amplified_pct": amp_pct,
             "pcr_detected_seqs":  int(detected),  "pcr_detected_pct":  det_pct,
-            # RAA
+            # RAA (surveillance)
             "raa_amplified_seqs": int(raa_amplified), "raa_amplified_pct": raa_amp_pct,
             "raa_detected_seqs":  int(raa_detected),  "raa_detected_pct":  raa_det_pct,
+            # Design DB (M02 filtered — primer was designed from these)
+            "design_db_total": design_total,
+            "design_db_amplified": design_amplified,
+            "design_db_amplified_pct": design_amp_pct,
             "raa_params": {
                 "critical_3prime_bp":  args.raa_3prime_bp,
                 "max_3prime_mm":       args.raa_max_3prime_mm,
@@ -694,13 +801,18 @@ def main():
         }
         result_row = {
             "cand_id": cand_id, "region": region, "gene": gene, "rank": rank,
-            "fwd_seq": fwd, "rev_seq": rev, "probe_seq": probe, "total": total,
-            # PCR
+            "fwd_seq": fwd, "rev_seq": rev, "probe_seq": probe,
+            # Surveillance DB
+            "total": total,
             "pcr_amplified": int(amplified), "pcr_detected": int(detected),
             "pcr_amplified_pct": amp_pct,    "pcr_detected_pct": det_pct,
-            # RAA
+            # RAA (surveillance)
             "raa_amplified": int(raa_amplified), "raa_detected": int(raa_detected),
             "raa_amplified_pct": raa_amp_pct,    "raa_detected_pct": raa_det_pct,
+            # Design DB
+            "design_db_total": design_total,
+            "design_db_amplified": design_amplified,
+            "design_db_amplified_pct": design_amp_pct,
         }
         return (cand_summary, result_row)
 
