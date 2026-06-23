@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 M10 Run Comparison Tool
-Compares non-degenerate vs degenerate primer design runs and generates a beautiful HTML report.
+Compares non-degenerate vs degenerate primer design runs and generates a beautiful HTML report
+with dynamic toggle between Global Surveillance DB and Design DB.
 """
 
 import argparse
@@ -11,71 +12,12 @@ import sys
 from pathlib import Path
 
 def generate_html_report(non_deg_data: list, deg_data: list, output_path: Path, build_name: str, has_degenerate: bool):
-    rows_html = []
-    
-    # We want to display side-by-side comparison for each candidate slot by Rank
-    max_ranks = max(len(non_deg_data), len(deg_data)) if (non_deg_data and deg_data) else (len(non_deg_data) if non_deg_data else (len(deg_data) if deg_data else 0))
-    
-    for idx in range(max_ranks):
-        nd_cand = non_deg_data[idx] if (non_deg_data and idx < len(non_deg_data)) else None
-        d_cand = deg_data[idx] if (has_degenerate and deg_data and idx < len(deg_data)) else None
-        
-        nd_id = nd_cand['cand_id'] if nd_cand else '-'
-        d_id = d_cand['cand_id'] if d_cand else '-'
-        
-        if nd_cand:
-            nd_seqs = f"<b>F:</b> {nd_cand['fwd_seq']}<br><b>R:</b> {nd_cand['rev_seq']}"
-            if nd_cand.get("probe_seq"):
-                nd_seqs += f"<br><b>P:</b> {nd_cand['probe_seq']}"
-            nd_cov = f"{nd_cand['raa_detected_pct']}% ({nd_cand['raa_detected_seqs']}/{nd_cand['total_seqs']})"
-            nd_amp = f"{nd_cand['raa_amplified_pct']}%"
-        else:
-            nd_seqs = '-'
-            nd_cov = '-'
-            nd_amp = '-'
-            
-        if has_degenerate and d_cand:
-            d_seqs = f"<b>F:</b> {d_cand['fwd_seq']}<br><b>R:</b> {d_cand['rev_seq']}"
-            if d_cand.get("probe_seq"):
-                d_seqs += f"<br><b>P:</b> {d_cand['probe_seq']}"
-                
-            d_cov = f"{d_cand['raa_detected_pct']}% ({d_cand['raa_detected_seqs']}/{d_cand['total_seqs']})"
-            d_amp = f"{d_cand['raa_amplified_pct']}%"
-            
-            # Highlight coverage increase
-            if nd_cand:
-                diff = d_cand['raa_detected_pct'] - nd_cand['raa_detected_pct']
-                if diff > 0:
-                    badge = f'<span class="badge positive">+{diff:.2f}%</span>'
-                elif diff < 0:
-                    badge = f'<span class="badge negative">{diff:.2f}%</span>'
-                else:
-                    badge = '<span class="badge neutral">0.00%</span>'
-            else:
-                badge = '-'
-        else:
-            if not has_degenerate:
-                d_seqs = '<span class="disabled">Degenerate Mode Disabled</span>'
-            else:
-                d_seqs = '-'
-            d_cov = '-'
-            d_amp = '-'
-            badge = '-'
+    # Serialise the lists to JSON for embedding in the HTML
+    non_deg_json = json.dumps(non_deg_data)
+    deg_json = json.dumps(deg_data) if has_degenerate else "null"
+    has_deg_js = "true" if has_degenerate else "false"
 
-        rows_html.append(f"""
-        <tr>
-            <td class="cand-id">Rank {idx + 1}<br><small>ND: {nd_id}<br>D: {d_id}</small></td>
-            <td class="seq-cell">{nd_seqs}</td>
-            <td class="center-cell highlight-nd">{nd_amp}</td>
-            <td class="center-cell highlight-nd"><b>{nd_cov}</b></td>
-            <td class="seq-cell">{d_seqs}</td>
-            <td class="center-cell highlight-d">{d_amp}</td>
-            <td class="center-cell highlight-d"><b>{d_cov}</b></td>
-            <td class="center-cell">{badge}</td>
-        </tr>
-        """)
-
-    # Subtype breakdown comparison for Rank 1
+    # Compile the subtype breakdown table statically for Rank 1 (Global mode only, but initialized statically)
     subtype_rows_html = []
     nd_r1 = non_deg_data[0] if (non_deg_data and len(non_deg_data) > 0) else None
     d_r1 = deg_data[0] if (has_degenerate and deg_data and len(deg_data) > 0) else None
@@ -119,13 +61,16 @@ def generate_html_report(non_deg_data: list, deg_data: list, output_path: Path, 
         </tr>
         """)
 
-
     # HTML Page Template
     html_content = f"""<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Universal Influenza A Diagnostics — Comparison Report</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {{
             --bg-color: #0f172a;
@@ -141,7 +86,7 @@ def generate_html_report(non_deg_data: list, deg_data: list, output_path: Path, 
             --d-color: #10b981;
         }}
         body {{
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
@@ -149,17 +94,17 @@ def generate_html_report(non_deg_data: list, deg_data: list, output_path: Path, 
             line-height: 1.5;
         }}
         .container {{
-            max-width: 1300px;
+            max-width: 1400px;
             margin: 0 auto;
         }}
         header {{
-            margin-bottom: 40px;
+            margin-bottom: 30px;
             border-bottom: 2px solid var(--border-color);
             padding-bottom: 20px;
         }}
         h1 {{
             margin: 0 0 10px 0;
-            font-size: 2.2rem;
+            font-size: 2.4rem;
             font-weight: 800;
             background: linear-gradient(to right, #60a5fa, #34d399);
             -webkit-background-clip: text;
@@ -169,6 +114,42 @@ def generate_html_report(non_deg_data: list, deg_data: list, output_path: Path, 
             color: var(--text-muted);
             font-size: 0.95rem;
         }}
+        
+        /* Toggle Switch Styling */
+        .toggle-container {{
+            display: inline-flex;
+            background-color: #1e293b;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }}
+        .toggle-btn {{
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: inherit;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }}
+        .toggle-btn.active {{
+            background-color: var(--primary);
+            color: #ffffff;
+            box-shadow: 0 4px 12px -2px rgba(59, 130, 246, 0.3);
+        }}
+        .toggle-btn:hover:not(.active) {{
+            color: var(--text-color);
+            background-color: rgba(255, 255, 255, 0.05);
+        }}
+        
         .grid {{
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -178,27 +159,42 @@ def generate_html_report(non_deg_data: list, deg_data: list, output_path: Path, 
         .card {{
             background-color: var(--panel-bg);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 20px;
+            border-radius: 16px;
+            padding: 24px;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }}
+        .card:hover {{
+            transform: translateY(-2px);
+            border-color: rgba(255,255,255,0.15);
         }}
         .card-title {{
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 700;
             margin-top: 0;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.08em;
         }}
         .metric-val {{
-            font-size: 2.5rem;
+            font-size: 2.8rem;
             font-weight: 800;
             line-height: 1;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
+            transition: color 0.3s ease;
         }}
         .metric-sub {{
             font-size: 0.85rem;
             color: var(--text-muted);
+        }}
+        h2 {{
+            font-size: 1.5rem;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }}
         table {{
             width: 100%;
@@ -206,11 +202,12 @@ def generate_html_report(non_deg_data: list, deg_data: list, output_path: Path, 
             margin-bottom: 30px;
             background-color: var(--panel-bg);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
+            border-radius: 16px;
             overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }}
         th, td {{
-            padding: 12px 15px;
+            padding: 14px 18px;
             text-align: left;
             border-bottom: 1px solid var(--border-color);
         }}
@@ -220,13 +217,14 @@ def generate_html_report(non_deg_data: list, deg_data: list, output_path: Path, 
             color: var(--text-muted);
             font-size: 0.85rem;
             text-transform: uppercase;
+            letter-spacing: 0.05em;
         }}
         tr:last-child td {{
             border-bottom: none;
         }}
         .seq-cell {{
-            font-family: "Courier New", Courier, monospace;
-            font-size: 0.9rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
             white-space: nowrap;
         }}
         .center-cell {{
@@ -259,20 +257,32 @@ def generate_html_report(non_deg_data: list, deg_data: list, output_path: Path, 
             color: var(--text-muted);
         }}
         .highlight-nd {{
-            background-color: rgba(99, 102, 241, 0.05);
-            border-left: 1px solid rgba(99, 102, 241, 0.2);
-            border-right: 1px solid rgba(99, 102, 241, 0.2);
+            background-color: rgba(99, 102, 241, 0.03);
+            border-left: 1px solid rgba(99, 102, 241, 0.15);
+            border-right: 1px solid rgba(99, 102, 241, 0.15);
         }}
         .highlight-d {{
-            background-color: rgba(16, 185, 129, 0.05);
-            border-left: 1px solid rgba(16, 185, 129, 0.2);
-            border-right: 1px solid rgba(16, 185, 129, 0.2);
+            background-color: rgba(16, 185, 129, 0.03);
+            border-left: 1px solid rgba(16, 185, 129, 0.15);
+            border-right: 1px solid rgba(16, 185, 129, 0.15);
         }}
         .footer {{
-            margin-top: 50px;
+            margin-top: 60px;
             text-align: center;
             color: var(--text-muted);
             font-size: 0.85rem;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }}
+        
+        .tab-alert {{
+            background-color: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            padding: 12px 18px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            color: #93c5fd;
+            margin-bottom: 20px;
         }}
     </style>
 </head>
@@ -285,79 +295,283 @@ def generate_html_report(non_deg_data: list, deg_data: list, output_path: Path, 
             </div>
         </header>
 
+        <!-- Toggle Switch -->
+        <div class="toggle-container">
+            <button class="toggle-btn active" id="btn-global" onclick="setDatasetMode('global')">
+                🌍 Global Surveillance DB (50k)
+            </button>
+            <button class="toggle-btn" id="btn-design" onclick="setDatasetMode('design')">
+                🎯 Design DB (Indonesia 645)
+            </button>
+        </div>
+
         <div class="grid">
             <div class="card" style="border-top: 4px solid var(--nd-color);">
                 <div class="card-title">Non-Degenerate Best Coverage</div>
-                <div class="metric-val" style="color: #818cf8;">{non_deg_data[0]['raa_detected_pct'] if non_deg_data else 0.0}%</div>
-                <div class="metric-sub">Total Covered: {non_deg_data[0]['raa_detected_seqs'] if non_deg_data else 0} / {non_deg_data[0]['total_seqs'] if non_deg_data else 0} sequences</div>
+                <div class="metric-val" id="card-nd-val" style="color: #818cf8;">—%</div>
+                <div class="metric-sub" id="card-nd-sub">—</div>
             </div>
             
             <div class="card" style="border-top: 4px solid var(--d-color);">
                 <div class="card-title">Degenerate Best Coverage</div>
-                <div class="metric-val" style="color: #34d399;">
-                    {deg_data[0]['raa_detected_pct'] if (has_degenerate and deg_data) else "N/A"}%
-                </div>
-                <div class="metric-sub">
-                    {f"Total Covered: {deg_data[0]['raa_detected_seqs']} / {deg_data[0]['total_seqs']} sequences" if (has_degenerate and deg_data) else "Degenerate simulation disabled"}
-                </div>
+                <div class="metric-val" id="card-d-val" style="color: #34d399;">—%</div>
+                <div class="metric-sub" id="card-d-sub">—</div>
             </div>
 
             <div class="card" style="border-top: 4px solid var(--warning);">
                 <div class="card-title">Coverage Uplift</div>
-                <div class="metric-val" style="color: #fbbf24;">
-                    {f"+{round(deg_data[0]['raa_detected_pct'] - non_deg_data[0]['raa_detected_pct'], 2)}%" if (has_degenerate and deg_data and non_deg_data) else "0.00%"}
-                </div>
+                <div class="metric-val" id="card-uplift-val" style="color: #fbbf24;">—%</div>
                 <div class="metric-sub">Net increase in diagnostic universality</div>
             </div>
         </div>
 
         <h2>Candidate Comparison Table</h2>
         <table>
-            <thead>
-                <tr>
-                    <th rowspan="2">Candidate</th>
-                    <th colspan="3" class="center-cell" style="background-color: rgba(99, 102, 241, 0.2);">Non-Degenerate Track</th>
-                    <th colspan="3" class="center-cell" style="background-color: rgba(16, 185, 129, 0.2);">Degenerate Track</th>
-                    <th rowspan="2" class="center-cell">Uplift</th>
-                </tr>
-                <tr>
-                    <th style="background-color: rgba(99, 102, 241, 0.1);">Sequences</th>
-                    <th class="center-cell" style="background-color: rgba(99, 102, 241, 0.1);">Amplified %</th>
-                    <th class="center-cell" style="background-color: rgba(99, 102, 241, 0.1);">Detected %</th>
-                    <th style="background-color: rgba(16, 185, 129, 0.1);">Sequences</th>
-                    <th class="center-cell" style="background-color: rgba(16, 185, 129, 0.1);">Amplified %</th>
-                    <th class="center-cell" style="background-color: rgba(16, 185, 129, 0.1);">Detected %</th>
-                </tr>
+            <thead id="table-header">
+                <!-- Loaded dynamically by JS -->
             </thead>
-            <tbody>
-                {"".join(rows_html)}
+            <tbody id="table-body">
+                <!-- Loaded dynamically by JS -->
             </tbody>
         </table>
 
-        <h2>Subtype Coverage Breakdown (Rank 1 Candidate)</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Subtype</th>
-                    <th class="center-cell highlight-nd">Non-Degenerate Coverage</th>
-                    <th class="center-cell highlight-d">Degenerate Coverage</th>
-                    <th class="center-cell">Uplift</th>
-                </tr>
-            </thead>
-            <tbody>
-                {"".join(subtype_rows_html)}
-            </tbody>
-        </table>
+        <div id="subtype-section">
+            <h2>Subtype Coverage Breakdown (Rank 1 Candidate)</h2>
+            <div class="tab-alert">
+                💡 Subtype breakdowns are generated using GISAID EpiFlu metadata, which is only available for the full global Surveillance DB.
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Subtype</th>
+                        <th class="center-cell highlight-nd">Non-Degenerate Coverage</th>
+                        <th class="center-cell highlight-d">Degenerate Coverage</th>
+                        <th class="center-cell">Uplift</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {"".join(subtype_rows_html)}
+                </tbody>
+            </table>
+        </div>
 
         <div class="footer">
-            Pandemic Preparedness Pipeline &bull; Automated Diagnostic Design Verification
+            Pandemic Preparedness Pipeline &bull; Automated Diagnostic Design Verification &bull; Dual-Path Analysis
         </div>
     </div>
+
+    <script>
+        const nonDegData = {non_deg_json};
+        const degData = {deg_json};
+        const hasDegenerate = {has_deg_js};
+
+        let currentMode = 'global';
+
+        function getBadge(diff) {{
+            if (diff > 0) {{
+                return `<span class="badge positive">+${{diff.toFixed(2)}}%</span>`;
+            }} else if (diff < 0) {{
+                return `<span class="badge negative">${{diff.toFixed(2)}}%</span>`;
+            }} else {{
+                return `<span class="badge neutral">0.00%</span>`;
+            }}
+        }}
+
+        function setDatasetMode(mode) {{
+            currentMode = mode;
+            
+            // Toggle active state on buttons
+            document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+            if (mode === 'global') {{
+                document.getElementById('btn-global').classList.add('active');
+                document.getElementById('subtype-section').style.display = 'block';
+            }} else {{
+                document.getElementById('btn-design').classList.add('active');
+                document.getElementById('subtype-section').style.display = 'none';
+            }}
+            
+            renderCards();
+            renderTable();
+        }}
+
+        function renderCards() {{
+            const nd0 = nonDegData[0];
+            const d0 = hasDegenerate && degData ? degData[0] : null;
+            
+            const cardNdVal = document.getElementById('card-nd-val');
+            const cardNdSub = document.getElementById('card-nd-sub');
+            const cardDVal = document.getElementById('card-d-val');
+            const cardDSub = document.getElementById('card-d-sub');
+            const cardUpliftVal = document.getElementById('card-uplift-val');
+            
+            if (currentMode === 'global') {{
+                const ndPct = nd0 ? nd0.raa_detected_pct : 0.0;
+                const ndSeqs = nd0 ? nd0.raa_detected_seqs : 0;
+                const total = nd0 ? nd0.total_seqs : 0;
+                cardNdVal.textContent = ndPct + '%';
+                cardNdSub.textContent = `Total Covered: ${{ndSeqs.toLocaleString()}} / ${{total.toLocaleString()}} sequences (RAA Det)`;
+                
+                if (d0) {{
+                    const dPct = d0.raa_detected_pct;
+                    const dSeqs = d0.raa_detected_seqs;
+                    cardDVal.textContent = dPct + '%';
+                    cardDSub.textContent = `Total Covered: ${{dSeqs.toLocaleString()}} / ${{total.toLocaleString()}} sequences (RAA Det)`;
+                    
+                    const diff = dPct - ndPct;
+                    cardUpliftVal.textContent = (diff > 0 ? '+' : '') + diff.toFixed(2) + '%';
+                }} else {{
+                    cardDVal.textContent = 'N/A';
+                    cardDSub.textContent = 'Degenerate simulation disabled';
+                    cardUpliftVal.textContent = '0.00%';
+                }}
+            }} else {{
+                // Design DB
+                const ndPct = nd0 ? nd0.design_db_amplified_pct : 0.0;
+                const ndSeqs = nd0 ? nd0.design_db_amplified : 0;
+                const total = nd0 ? nd0.design_db_total : 0;
+                cardNdVal.textContent = ndPct + '%';
+                cardNdSub.textContent = `Total Covered: ${{ndSeqs.toLocaleString()}} / ${{total.toLocaleString()}} sequences (PCR Amp)`;
+                
+                if (d0) {{
+                    const dPct = d0.design_db_amplified_pct;
+                    const dSeqs = d0.design_db_amplified;
+                    cardDVal.textContent = dPct + '%';
+                    cardDSub.textContent = `Total Covered: ${{dSeqs.toLocaleString()}} / ${{total.toLocaleString()}} sequences (PCR Amp)`;
+                    
+                    const diff = dPct - ndPct;
+                    cardUpliftVal.textContent = (diff > 0 ? '+' : '') + diff.toFixed(2) + '%';
+                }} else {{
+                    cardDVal.textContent = 'N/A';
+                    cardDSub.textContent = 'Degenerate simulation disabled';
+                    cardUpliftVal.textContent = '0.00%';
+                }}
+            }}
+        }}
+
+        function renderTable() {{
+            const tableHeader = document.getElementById('table-header');
+            const tableBody = document.getElementById('table-body');
+            tableBody.innerHTML = '';
+            
+            // Set headers
+            if (currentMode === 'global') {{
+                tableHeader.innerHTML = `
+                    <tr>
+                        <th rowspan="2">Candidate</th>
+                        <th colspan="3" class="center-cell" style="background-color: rgba(99, 102, 241, 0.2);">Non-Degenerate Track (Global)</th>
+                        <th colspan="3" class="center-cell" style="background-color: rgba(16, 185, 129, 0.2);">Degenerate Track (Global)</th>
+                        <th rowspan="2" class="center-cell">Uplift</th>
+                    </tr>
+                    <tr>
+                        <th style="background-color: rgba(99, 102, 241, 0.1); width: 300px;">Sequences</th>
+                        <th class="center-cell" style="background-color: rgba(99, 102, 241, 0.1);">RAA Amp %</th>
+                        <th class="center-cell" style="background-color: rgba(99, 102, 241, 0.1);">RAA Det %</th>
+                        <th style="background-color: rgba(16, 185, 129, 0.1); width: 300px;">Sequences</th>
+                        <th class="center-cell" style="background-color: rgba(16, 185, 129, 0.1);">RAA Amp %</th>
+                        <th class="center-cell" style="background-color: rgba(16, 185, 129, 0.1);">RAA Det %</th>
+                    </tr>
+                `;
+            }} else {{
+                tableHeader.innerHTML = `
+                    <tr>
+                        <th rowspan="2">Candidate</th>
+                        <th colspan="2" class="center-cell" style="background-color: rgba(99, 102, 241, 0.2);">Non-Degenerate Track (Design DB)</th>
+                        <th colspan="2" class="center-cell" style="background-color: rgba(16, 185, 129, 0.2);">Degenerate Track (Design DB)</th>
+                        <th rowspan="2" class="center-cell">Uplift</th>
+                    </tr>
+                    <tr>
+                        <th style="background-color: rgba(99, 102, 241, 0.1); width: 350px;">Sequences</th>
+                        <th class="center-cell" style="background-color: rgba(99, 102, 241, 0.1);">PCR Amp %</th>
+                        <th style="background-color: rgba(16, 185, 129, 0.1); width: 350px;">Sequences</th>
+                        <th class="center-cell" style="background-color: rgba(16, 185, 129, 0.1);">PCR Amp %</th>
+                    </tr>
+                `;
+            }}
+            
+            const maxRanks = Math.max(nonDegData.length, hasDegenerate && degData ? degData.length : 0);
+            for (let idx = 0; idx < maxRanks; idx++) {{
+                const nd = nonDegData[idx];
+                const d = hasDegenerate && degData ? degData[idx] : null;
+                
+                const ndId = nd ? nd.cand_id : '-';
+                const dId = d ? d.cand_id : '-';
+                
+                let ndSeqs = '-', ndVal1 = '-', ndVal2 = '-', ndCountStr = '';
+                if (nd) {{
+                    ndSeqs = `<b>F:</b> ${{nd.fwd_seq}}<br><b>R:</b> ${{nd.rev_seq}}`;
+                    if (nd.probe_seq) ndSeqs += `<br><b>P:</b> ${{nd.probe_seq}}`;
+                    
+                    if (currentMode === 'global') {{
+                        ndVal1 = nd.raa_amplified_pct + '%';
+                        ndVal2 = nd.raa_detected_pct + '%';
+                        ndCountStr = `(${{nd.raa_detected_seqs.toLocaleString()}}/${{nd.total_seqs.toLocaleString()}})`;
+                    }} else {{
+                        ndVal1 = nd.design_db_amplified_pct + '%';
+                        ndCountStr = `(${{nd.design_db_amplified.toLocaleString()}}/${{nd.design_db_total.toLocaleString()}})`;
+                    }}
+                }}
+                
+                let dSeqs = '-', dVal1 = '-', dVal2 = '-', dCountStr = '', badge = '-';
+                if (hasDegenerate && d) {{
+                    dSeqs = `<b>F:</b> ${{d.fwd_seq}}<br><b>R:</b> ${{d.rev_seq}}`;
+                    if (d.probe_seq) dSeqs += `<br><b>P:</b> ${{d.probe_seq}}`;
+                    
+                    if (currentMode === 'global') {{
+                        dVal1 = d.raa_amplified_pct + '%';
+                        dVal2 = d.raa_detected_pct + '%';
+                        dCountStr = `(${{d.raa_detected_seqs.toLocaleString()}}/${{d.total_seqs.toLocaleString()}})`;
+                        
+                        if (nd) {{
+                            const diff = d.raa_detected_pct - nd.raa_detected_pct;
+                            badge = getBadge(diff);
+                        }}
+                    }} else {{
+                        dVal1 = d.design_db_amplified_pct + '%';
+                        dCountStr = `(${{d.design_db_amplified.toLocaleString()}}/${{d.design_db_total.toLocaleString()}})`;
+                        
+                        if (nd) {{
+                            const diff = d.design_db_amplified_pct - nd.design_db_amplified_pct;
+                            badge = getBadge(diff);
+                        }}
+                    }}
+                }} else if (!hasDegenerate) {{
+                    dSeqs = '<span class="disabled">Degenerate Mode Disabled</span>';
+                }}
+                
+                const tr = document.createElement('tr');
+                if (currentMode === 'global') {{
+                    tr.innerHTML = `
+                        <td class="cand-id">Rank ${{idx + 1}}<br><small class="text-muted">ND: ${{ndId}}<br>D: ${{dId}}</small></td>
+                        <td class="seq-cell">${{ndSeqs}}</td>
+                        <td class="center-cell highlight-nd">${{ndVal1}}</td>
+                        <td class="center-cell highlight-nd"><b>${{ndVal2}}</b><br><small class="text-muted">${{ndCountStr}}</small></td>
+                        <td class="seq-cell">${{dSeqs}}</td>
+                        <td class="center-cell highlight-d">${{dVal1}}</td>
+                        <td class="center-cell highlight-d"><b>${{dVal2}}</b><br><small class="text-muted">${{dCountStr}}</small></td>
+                        <td class="center-cell">${{badge}}</td>
+                    `;
+                }} else {{
+                    tr.innerHTML = `
+                        <td class="cand-id">Rank ${{idx + 1}}<br><small class="text-muted">ND: ${{ndId}}<br>D: ${{dId}}</small></td>
+                        <td class="seq-cell">${{ndSeqs}}</td>
+                        <td class="center-cell highlight-nd"><b>${{ndVal1}}</b><br><small class="text-muted">${{ndCountStr}}</small></td>
+                        <td class="seq-cell">${{dSeqs}}</td>
+                        <td class="center-cell highlight-d"><b>${{dVal1}}</b><br><small class="text-muted">${{dCountStr}}</small></td>
+                        <td class="center-cell">${{badge}}</td>
+                    `;
+                }}
+                tableBody.appendChild(tr);
+            }}
+        }}
+
+        // Initialize display
+        setDatasetMode('global');
+    </script>
 </body>
 </html>
 """
 
-    with open(output_path, "w") as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         f.write(html_content)
 
 def main():
