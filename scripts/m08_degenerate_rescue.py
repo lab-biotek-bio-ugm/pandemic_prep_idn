@@ -33,6 +33,19 @@ def enumerate_sequences(sequence: str) -> list:
     bases_lists = [IUPAC_DICT.get(c, [c]) for c in sequence.upper()]
     return [''.join(p) for p in itertools.product(*bases_lists)]
 
+def reverse_complement(seq: str) -> str:
+    complement = {
+        'A': 'T', 'T': 'A', 'U': 'A', 'G': 'C', 'C': 'G',
+        'Y': 'R', 'R': 'Y', 'S': 'S', 'W': 'W', 'K': 'M',
+        'M': 'K', 'B': 'V', 'D': 'H', 'H': 'D', 'V': 'B',
+        'N': 'N',
+        'a': 't', 't': 'a', 'u': 'a', 'g': 'c', 'c': 'g',
+        'y': 'r', 'r': 'y', 's': 's', 'w': 'w', 'k': 'm',
+        'm': 'k', 'b': 'v', 'd': 'h', 'h': 'd', 'v': 'b',
+        'n': 'n'
+    }
+    return "".join(complement.get(base, base) for base in reversed(seq))
+
 def resolve_excess_degeneracy(degenerate_seq: str, original_seq: str, max_multiplier: int) -> str:
     """
     If degeneracy multiplier is greater than max_multiplier, resolve the positions with the highest
