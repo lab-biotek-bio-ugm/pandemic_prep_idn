@@ -1148,7 +1148,7 @@ def generate_heatmap_dashboard(summary_data: list, output_path: Path):
                 <div id="statRegionRank" class="stat-value">Region - Rank</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Total Sequences Evaluated</div>
+                <div class="stat-label">Surveillance DB (50k EpiFlu) · Total Sequences</div>
                 <div id="statTotalSeqs" class="stat-value">0</div>
             </div>
             <div class="stat-card">
@@ -1158,6 +1158,44 @@ def generate_heatmap_dashboard(summary_data: list, output_path: Path):
             <div class="stat-card">
                 <div class="stat-label">Overall Detection (Primers + Probe)</div>
                 <div id="statDetCoverage" class="stat-value highlight">0%</div>
+            </div>
+        </div>
+
+        <!-- Design DB Banner -->
+        <div id="designDbBanner" style="
+            background: linear-gradient(135deg, rgba(139,92,246,0.15) 0%, rgba(109,40,217,0.1) 100%);
+            border: 1px solid rgba(139,92,246,0.4);
+            border-radius: 16px;
+            padding: 1.2rem 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        ">
+            <div style="flex:0 0 auto;">
+                <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:rgba(167,139,250,0.8);margin-bottom:0.3rem;">🎯 Design DB Coverage</div>
+                <div style="font-size:0.8rem;color:rgba(167,139,250,0.65);">Sekuens yang digunakan untuk mendesain primer (M02 filtered)</div>
+            </div>
+            <div style="flex:1;display:flex;gap:2rem;flex-wrap:wrap;">
+                <div>
+                    <div style="font-size:0.75rem;color:rgba(167,139,250,0.65);margin-bottom:0.2rem;">Total Sequences</div>
+                    <div id="designDbTotal" style="font-size:1.4rem;font-weight:700;color:#a78bfa;">—</div>
+                </div>
+                <div>
+                    <div style="font-size:0.75rem;color:rgba(167,139,250,0.65);margin-bottom:0.2rem;">PCR Amplified</div>
+                    <div id="designDbAmplified" style="font-size:1.4rem;font-weight:700;color:#a78bfa;">—</div>
+                </div>
+                <div>
+                    <div style="font-size:0.75rem;color:rgba(167,139,250,0.65);margin-bottom:0.2rem;">Coverage (%)</div>
+                    <div id="designDbPct" style="font-size:2rem;font-weight:700;color:#c4b5fd;">—%</div>
+                </div>
+                <div style="align-self:center;flex:1;">
+                    <div style="font-size:0.75rem;color:rgba(167,139,250,0.65);margin-bottom:0.4rem;">Coverage Bar</div>
+                    <div style="background:rgba(255,255,255,0.05);border-radius:999px;height:8px;width:100%;min-width:100px;">
+                        <div id="designDbBar" style="height:100%;border-radius:999px;background:linear-gradient(90deg,#7c3aed,#a78bfa);width:0%;transition:width 0.6s ease;"></div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1333,16 +1371,35 @@ def generate_heatmap_dashboard(summary_data: list, output_path: Path):
             document.getElementById("statRegionRank").textContent = `${{cand.region}} - Rank ${{cand.rank}}`;
             document.getElementById("statTotalSeqs").textContent = cand.total_seqs.toLocaleString();
             const pcrAmp = cand.pcr_amplified_pct ?? cand.amplified_pct ?? 0;
-            const raaAmp = cand.raa_amplified_pct ?? "—";
+            const raaAmp = cand.raa_amplified_pct ?? "\u2014";
             document.getElementById("statAmpCoverage").textContent = `PCR: ${{pcrAmp}}% | RAA: ${{raaAmp}}%`;
             const pcrDet = cand.pcr_detected_pct ?? cand.detected_pct ?? 0;
-            const raaDet = cand.raa_detected_pct ?? "—";
+            const raaDet = cand.raa_detected_pct ?? "\u2014";
             document.getElementById("statDetCoverage").textContent = `PCR: ${{pcrDet}}% | RAA: ${{raaDet}}%`;
+
+            // Update Design DB banner
+            const banner = document.getElementById("designDbBanner");
+            if (cand.design_db_total && cand.design_db_total > 0) {{
+                banner.style.display = "flex";
+                document.getElementById("designDbTotal").textContent = cand.design_db_total.toLocaleString();
+                document.getElementById("designDbAmplified").textContent = cand.design_db_amplified.toLocaleString();
+                const dpct = cand.design_db_amplified_pct ?? 0;
+                document.getElementById("designDbPct").textContent = `${{dpct}}%`;
+                document.getElementById("designDbBar").style.width = `${{Math.min(dpct, 100)}}%`;
+                // Color bar by coverage level
+                const barEl = document.getElementById("designDbBar");
+                if (dpct >= 80) barEl.style.background = "linear-gradient(90deg,#059669,#34d399)";
+                else if (dpct >= 50) barEl.style.background = "linear-gradient(90deg,#7c3aed,#a78bfa)";
+                else if (dpct >= 30) barEl.style.background = "linear-gradient(90deg,#d97706,#fbbf24)";
+                else barEl.style.background = "linear-gradient(90deg,#dc2626,#f87171)";
+            }} else {{
+                banner.style.display = "none";
+            }}
 
             // Update detailed sequences
             document.getElementById("seqFwd").textContent = cand.fwd_seq;
             document.getElementById("seqRev").textContent = cand.rev_seq;
-            document.getElementById("seqProbe").textContent = cand.probe_seq || "— (No Probe)";
+            document.getElementById("seqProbe").textContent = cand.probe_seq || "\u2014 (No Probe)";
 
             // Populate breakdown tables
             populateTable("subtypeTable", cand.breakdowns.subtype, "subtype");
