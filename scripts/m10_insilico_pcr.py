@@ -992,6 +992,41 @@ def generate_heatmap_dashboard(summary_data: list, output_path: Path):
             font-size: 1rem;
         }}
 
+        /* Toggle Switch Styling */
+        .toggle-container {{
+            display: inline-flex;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }}
+        .toggle-btn {{
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: inherit;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }}
+        .toggle-btn.active {{
+            background-color: var(--accent-color);
+            color: #0f172a;
+            box-shadow: 0 4px 12px -2px var(--accent-glow);
+        }}
+        .toggle-btn:hover:not(.active) {{
+            color: var(--text-primary);
+            background-color: rgba(255, 255, 255, 0.05);
+        }}
+
         .controls {{
             display: flex;
             align-items: center;
@@ -1155,9 +1190,19 @@ def generate_heatmap_dashboard(summary_data: list, output_path: Path):
 <body>
     <div class="dashboard-container">
         <header>
-            <h1>🦠 PCR In-silico Validation Heatmap</h1>
+            <h1>🧬 PCR In-silico Validation Heatmap</h1>
             <div class="subtitle">Validasi diagnostik komprehensif terhadap database sekuens mentah.</div>
         </header>
+
+        <!-- Toggle Switch -->
+        <div class="toggle-container">
+            <button class="toggle-btn active" id="btn-global" onclick="setDatasetMode('global')">
+                🌍 Global Surveillance DB (50k)
+            </button>
+            <button class="toggle-btn" id="btn-design" onclick="setDatasetMode('design')">
+                🎯 Design DB (Indonesia 645)
+            </button>
+        </div>
 
         <div class="controls">
             <label for="candidateSelect">Select Candidate:</label>
@@ -1304,6 +1349,7 @@ def generate_heatmap_dashboard(summary_data: list, output_path: Path):
     <script>
         // Load data from python
         const candidatesData = {data_json};
+        let currentMode = 'global';
 
         // Initialize select dropdown
         const select = document.getElementById("candidateSelect");
@@ -1331,6 +1377,7 @@ def generate_heatmap_dashboard(summary_data: list, output_path: Path):
         function populateTable(tableId, data, categoryKey) {{
             const tbody = document.querySelector(`#${{tableId}} tbody`);
             tbody.innerHTML = "";
+            if (!data) return;
             
             // Limit geographical list to top 25 countries to prevent screen bloat
             let displayData = data;
@@ -1387,23 +1434,61 @@ def generate_heatmap_dashboard(summary_data: list, output_path: Path):
             }}
         }}
 
+        function setDatasetMode(mode) {{
+            currentMode = mode;
+            document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+            if (mode === 'global') {{
+                document.getElementById('btn-global').classList.add('active');
+                document.querySelector('.main-layout').style.display = 'grid';
+            }} else {{
+                document.getElementById('btn-design').classList.add('active');
+                document.querySelector('.main-layout').style.display = 'none';
+            }}
+            updateDashboard(document.getElementById("candidateSelect").value);
+        }}
+
         function updateDashboard(index) {{
             const cand = candidatesData[index];
             if (!cand) return;
 
             // Update stats cards
             document.getElementById("statRegionRank").textContent = `${{cand.region}} - Rank ${{cand.rank}}`;
-            document.getElementById("statTotalSeqs").textContent = cand.total_seqs.toLocaleString();
-            const pcrAmp = cand.pcr_amplified_pct ?? cand.amplified_pct ?? 0;
-            const raaAmp = cand.raa_amplified_pct ?? "\u2014";
-            document.getElementById("statAmpCoverage").textContent = `PCR: ${{pcrAmp}}% | RAA: ${{raaAmp}}%`;
-            const pcrDet = cand.pcr_detected_pct ?? cand.detected_pct ?? 0;
-            const raaDet = cand.raa_detected_pct ?? "\u2014";
-            document.getElementById("statDetCoverage").textContent = `PCR: ${{pcrDet}}% | RAA: ${{raaDet}}%`;
+            
+            const statTotalSeqs = document.getElementById("statTotalSeqs");
+            const labelTotalSeqs = statTotalSeqs.previousElementSibling;
+            const statAmp = document.getElementById("statAmpCoverage");
+            const labelAmp = statAmp.previousElementSibling;
+            const statDet = document.getElementById("statDetCoverage");
+            const labelDet = statDet.previousElementSibling;
+
+            if (currentMode === 'global') {{
+                labelTotalSeqs.textContent = "Surveillance DB (50k EpiFlu) · Total Sequences";
+                statTotalSeqs.textContent = cand.total_seqs.toLocaleString();
+                
+                labelAmp.textContent = "Overall Amplification (Primers)";
+                const pcrAmp = cand.pcr_amplified_pct ?? cand.amplified_pct ?? 0;
+                const raaAmp = cand.raa_amplified_pct ?? "—";
+                statAmp.textContent = `PCR: ${{pcrAmp}}% | RAA: ${{raaAmp}}%`;
+                
+                labelDet.textContent = "Overall Detection (Primers + Probe)";
+                const pcrDet = cand.pcr_detected_pct ?? cand.detected_pct ?? 0;
+                const raaDet = cand.raa_detected_pct ?? "—";
+                statDet.textContent = `PCR: ${{pcrDet}}% | RAA: ${{raaDet}}%`;
+            }} else {{
+                labelTotalSeqs.textContent = "Design DB (Indonesia 645) · Total Sequences";
+                statTotalSeqs.textContent = (cand.design_db_total || 0).toLocaleString();
+                
+                labelAmp.textContent = "Design DB Amplification (PCR)";
+                const dpct = cand.design_db_amplified_pct ?? 0;
+                statAmp.textContent = `${{dpct}}%`;
+                
+                labelDet.textContent = "Design DB Status";
+                statDet.textContent = "PCR Only (No RAA simulated)";
+            }}
 
             // Update Design DB banner
             const banner = document.getElementById("designDbBanner");
-            if (cand.design_db_total && cand.design_db_total > 0) {{
+            if (cand.design_db_total && cand.design_db_total > 0 && currentMode === 'global') {{
                 banner.style.display = "flex";
                 document.getElementById("designDbTotal").textContent = cand.design_db_total.toLocaleString();
                 document.getElementById("designDbAmplified").textContent = cand.design_db_amplified.toLocaleString();
@@ -1426,9 +1511,11 @@ def generate_heatmap_dashboard(summary_data: list, output_path: Path):
             document.getElementById("seqProbe").textContent = cand.probe_seq || "\u2014 (No Probe)";
 
             // Populate breakdown tables
-            populateTable("subtypeTable", cand.breakdowns.subtype, "subtype");
-            populateTable("yearTable", cand.breakdowns.year, "year");
-            populateTable("countryTable", cand.breakdowns.country, "country");
+            if (currentMode === 'global') {{
+                populateTable("subtypeTable", cand.breakdowns.subtype, "subtype");
+                populateTable("yearTable", cand.breakdowns.year, "year");
+                populateTable("countryTable", cand.breakdowns.country, "country");
+            }}
         }}
 
         // Initialize dashboard with the first candidate
