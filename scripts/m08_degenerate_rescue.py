@@ -170,8 +170,23 @@ def rescue_primer(primer_dict: dict, iupac_seq: str, consensus_seq: str, max_mul
     iupac_slice = iupac_seq[start:end]
     consensus_slice = consensus_seq[start:end]
 
+    # Detect orientation of original primer relative to the reference genome slice
+    # If original_seq is closer to the reverse complement of consensus_slice, it's reverse-oriented.
+    rc_consensus = reverse_complement(consensus_slice)
+    min_len = min(len(original_seq), len(consensus_slice))
+    
+    direct_matches = sum(1 for c1, c2 in zip(original_seq[:min_len], consensus_slice[:min_len]) if c1 == c2)
+    rc_matches = sum(1 for c1, c2 in zip(original_seq[:min_len], rc_consensus[:min_len]) if c1 == c2)
+    
+    is_reverse = rc_matches > direct_matches
+
     # Resolve excess degeneracy if any
     rescued_seq = resolve_excess_degeneracy(iupac_slice, consensus_slice, max_multiplier)
+    
+    # If reverse oriented, we must reverse-complement the rescued degenerate sequence
+    # to keep it in the 5'-3' primer direction.
+    if is_reverse:
+        rescued_seq = reverse_complement(rescued_seq)
     
     multiplier = get_degeneracy_multiplier(rescued_seq)
     possible_seqs = enumerate_sequences(rescued_seq) if multiplier > 1 else [rescued_seq]
