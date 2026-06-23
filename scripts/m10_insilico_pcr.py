@@ -389,6 +389,24 @@ def main():
     # Normalize column names to lowercase to handle case differences (Subtype vs subtype)
     df_meta.columns = [c.strip().lower() for c in df_meta.columns]
     
+    # Map GISAID/NCBI/EpiFlu fields to standardized pipeline columns
+    if 'collection_date' in df_meta.columns and 'date' not in df_meta.columns:
+        df_meta = df_meta.rename(columns={'collection_date': 'date'})
+        print("  Mapped 'collection_date' -> 'date' for GISAID/EpiFlu compatibility.")
+        
+    if 'source_country' in df_meta.columns and 'country' not in df_meta.columns:
+        df_meta = df_meta.rename(columns={'source_country': 'country'})
+        print("  Mapped 'source_country' -> 'country' for GISAID/EpiFlu compatibility.")
+    elif 'location' in df_meta.columns and 'country' not in df_meta.columns:
+        # Extract country from GISAID location (Continent / Country / Division / City)
+        def parse_gisaid_country(loc_val):
+            if pd.isna(loc_val) or not isinstance(loc_val, str) or not loc_val.strip():
+                return 'Unknown'
+            parts = [p.strip() for p in loc_val.split('/')]
+            return parts[1] if len(parts) > 1 else 'Unknown'
+        df_meta['country'] = df_meta['location'].apply(parse_gisaid_country)
+        print("  Extracted 'country' from 'location' for GISAID compatibility.")
+
     # Fill empty/na values with default values (only if column exists)
     if 'subtype' in df_meta.columns:
         df_meta['subtype'] = df_meta['subtype'].fillna('Unknown')
@@ -407,8 +425,14 @@ def main():
     
     # Use 'strain' column as key; fall back to first column if not present
     if 'strain' not in df_meta.columns:
-        print(f"[WARNING] 'strain' column not found in metadata. Using first column '{df_meta.columns[0]}' as key.")
-        df_meta = df_meta.rename(columns={df_meta.columns[0]: 'strain'})
+        for possible_strain in ['isolate_id', 'isolate_name', 'accession']:
+            if possible_strain in df_meta.columns:
+                df_meta = df_meta.rename(columns={possible_strain: 'strain'})
+                print(f"  Mapped '{possible_strain}' -> 'strain' for compatibility.")
+                break
+        else:
+            print(f"[WARNING] 'strain' column not found in metadata. Using first column '{df_meta.columns[0]}' as key.")
+            df_meta = df_meta.rename(columns={df_meta.columns[0]: 'strain'})
     
     strain_to_meta = {row['strain']: row.to_dict() for _, row in df_meta.iterrows()}
     print(f"Loaded {len(strain_to_meta)} metadata records.")
