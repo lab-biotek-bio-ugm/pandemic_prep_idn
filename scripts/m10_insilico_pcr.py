@@ -871,26 +871,59 @@ def main():
         print(f"  [{cand_id}] PCR → Amplified: {amplified}/{total} ({amp_pct}%), Detected: {detected}/{total} ({det_pct}%)")
         print(f"  [{cand_id}] RAA → Amplified: {raa_amplified}/{total} ({raa_amp_pct}%), Detected: {raa_detected}/{total} ({raa_det_pct}%)")
 
-        # ── Design-DB simple coverage (seqkit matched count / design total) ────────
-        # We don’t have per-subtype metadata for design sequences (they’re a small
-        # MSA-filtered subset), so we report simple amplification % only.
+        # ── Design-DB coverage WITH subtype/year/country breakdown ─────────────
+        # seq_mappings already contains metadata for all sequences (including design DB seqs).
+        # We filter by seq_ids in design_matches to build breakdown tables.
         design_total = 0
         design_amplified = 0
         design_amp_pct = 0.0
+        design_db_breakdowns = {"subtype": [], "year": [], "country": []}
         if design_matches:
-            # Count total sequences in design FASTA
-            design_total_all = sum(1 for seq in seq_mappings  # use same metadata set
-                                   if seq.get("seq_id") in {s.split()[0] for s in design_matches})
-            # Simpler: just use len(design_matches) as numerator and count design FASTA headers
-            # We report design_amplified as count matched in design DB
-            design_amplified = len(design_matches)
-            # For denominator, count design FASTA headers
+            # Count total design FASTA headers for denominator
             try:
                 design_total = sum(1 for l in open(args.design_sequences, encoding='utf-8', errors='ignore') if l.startswith('>'))
             except Exception:
-                design_total = design_amplified
+                design_total = 0
+            design_amplified = len(design_matches)
             design_amp_pct = round(design_amplified / design_total * 100, 2) if design_total else 0.0
             print(f"  [{cand_id}] DESIGN-DB PCR → Amplified: {design_amplified}/{design_total} ({design_amp_pct}%)")
+
+            # Build per-row records for design DB using seq_mappings metadata.
+            # design_matches keys = amplified seq_ids; join with metadata for breakdowns.
+            design_matched_ids = set(design_matches.keys())
+            try:
+                fasta_design_ids = set()
+                with open(args.design_sequences, encoding='utf-8', errors='ignore') as _fh:
+                    for _ln in _fh:
+                        if _ln.startswith('>'):
+                            fasta_design_ids.add(_ln[1:].split()[0].strip())
+            except Exception:
+                fasta_design_ids = design_matched_ids.copy()
+
+            meta_lookup = {s["seq_id"]: s for s in seq_mappings}
+            design_rows = []
+            for sid in fasta_design_ids:
+                meta = meta_lookup.get(sid)
+                design_rows.append({
+                    "seq_id":       sid,
+                    "subtype":      meta["subtype"]   if meta else "Unknown",
+                    "year":         str(meta["year"]) if meta else "Unknown",
+                    "country":      meta["country"]   if meta else "Unknown",
+                    "is_amplified": sid in design_matched_ids,
+                })
+            if design_rows:
+                import pandas as _pd_des
+                df_des = _pd_des.DataFrame(design_rows)
+                for _col in ["subtype", "year", "country"]:
+                    _grp = df_des.groupby(_col).agg(
+                        total=("seq_id", "count"),
+                        pcr_amplified=("is_amplified", "sum"),
+                    ).reset_index()
+                    _grp["pcr_amplified"] = _grp["pcr_amplified"].astype(int)
+                    _grp["pcr_amplified_pct"] = (_grp["pcr_amplified"] / _grp["total"] * 100).round(2)
+                    _grp = _grp.sort_values("year" if _col == "year" else "total",
+                                            ascending=(_col == "year"))
+                    design_db_breakdowns[_col] = _grp.to_dict(orient="records")
 
         # ── Breakdown by subtype / year / country ─────────────────────────────
         # For subtype breakdown: exclude subtypes with < min_subtype_seqs total sequences
@@ -956,6 +989,7 @@ def main():
             "design_db_total": design_total,
             "design_db_amplified": design_amplified,
             "design_db_amplified_pct": design_amp_pct,
+            "design_db_breakdowns": design_db_breakdowns,
             "raa_params": {
                 "critical_3prime_bp":  args.raa_3prime_bp,
                 "max_3prime_mm":       args.raa_max_3prime_mm,
@@ -1304,6 +1338,53 @@ def generate_heatmap_dashboard(summary_data: list, output_path):
             </div>
         </div>
     </div>
+    <div id="designTables" style="display:none;">
+        <div class="main-layout">
+            <div class="card">
+                <div class="card-title">
+                    Subtype Distribution (Design DB)
+                    <span class="badge badge-pcr">PCR Only</span>
+                </div>
+                <table id="designSubtypeTable">
+                    <thead><tr>
+                        <th>Subtype</th><th>N</th>
+                        <th style="color:var(--accent-pcr);">PCR Amp</th>
+                        <th style="color:var(--accent-pcr);">Coverage</th>
+                    </tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="card">
+                <div class="card-title">
+                    Collection Year (Design DB)
+                    <span class="badge badge-pcr">Temporal</span>
+                </div>
+                <table id="designYearTable">
+                    <thead><tr>
+                        <th>Year</th><th>N</th>
+                        <th style="color:var(--accent-pcr);">PCR Amp</th>
+                        <th style="color:var(--accent-pcr);">Coverage</th>
+                    </tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="card full-width">
+                <div class="card-title">
+                    Country Distribution (Design DB)
+                    <span class="badge badge-raa">Geographical</span>
+                </div>
+                <table id="designCountryTable">
+                    <thead><tr>
+                        <th>Country</th><th>N</th>
+                        <th style="color:var(--accent-pcr);">PCR Amp</th>
+                        <th style="color:var(--accent-pcr);">Coverage</th>
+                    </tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script>
@@ -1371,15 +1452,50 @@ def generate_heatmap_dashboard(summary_data: list, output_path):
             tr.appendChild(td); tbody.appendChild(tr);
         }
     }
+
+    function populateDesignTable(tid, data, catKey, maxRows) {{
+        const tbody = document.querySelector(`#${{tid}} tbody`);
+        tbody.innerHTML = '';
+        if (!data || data.length === 0) {{
+            const tr = document.createElement('tr');
+            const td = document.createElement('td'); td.colSpan = 4;
+            td.style.cssText = 'text-align:center;color:var(--text-2);font-style:italic;padding:1rem;';
+            td.textContent = 'No metadata available for design DB sequences';
+            tr.appendChild(td); tbody.appendChild(tr);
+            return;
+        }}
+        const rows = maxRows ? data.slice(0, maxRows) : data;
+        rows.forEach(row => {{
+            const tr = document.createElement('tr');
+            const tdCat = document.createElement('td'); tdCat.textContent = row[catKey] || '—'; tr.appendChild(tdCat);
+            const tdN = document.createElement('td'); tdN.textContent = (row.total||0).toLocaleString(); tdN.style.color='var(--text-2)'; tr.appendChild(tdN);
+            const tdAmp = document.createElement('td'); tdAmp.textContent = (row.pcr_amplified||0).toLocaleString(); tr.appendChild(tdAmp);
+            const tdPct = document.createElement('td');
+            const span = document.createElement('span');
+            span.className = 'cov-cell';
+            span.style.cssText = pctStyle(row.pcr_amplified_pct||0);
+            span.textContent = `${{row.pcr_amplified_pct||0}}%`;
+            const bar = document.createElement('div'); bar.className = 'mini-bar';
+            const fill = document.createElement('div'); fill.className = 'mini-bar-fill';
+            fill.style.width = `${{Math.min(row.pcr_amplified_pct||0,100)}}%`;
+            fill.style.background = barColor(row.pcr_amplified_pct||0, 'pcr');
+            bar.appendChild(fill);
+            const w = document.createElement('div'); w.appendChild(span); w.appendChild(bar);
+            tdPct.appendChild(w); tr.appendChild(tdPct);
+            tbody.appendChild(tr);
+        }});
+    }}
     function setDatasetMode(mode) {
         currentMode = mode;
         document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active-global','active-design'));
         if (mode === 'global') {
             document.getElementById('btn-global').classList.add('active-global');
             document.getElementById('globalTables').style.display = 'block';
+            document.getElementById('designTables').style.display = 'none';
         } else {
             document.getElementById('btn-design').classList.add('active-design');
             document.getElementById('globalTables').style.display = 'none';
+            document.getElementById('designTables').style.display = 'block';
         }
         updateDashboard(sel.value);
     }
@@ -1435,6 +1551,12 @@ def generate_heatmap_dashboard(summary_data: list, output_path):
             populateTable('subtypeTable',c.breakdowns.subtype,'subtype');
             populateTable('yearTable',c.breakdowns.year,'year');
             populateTable('countryTable',c.breakdowns.country,'country',30);
+        }
+        if (currentMode==='design' && c.design_db_breakdowns) {
+            const ddb = c.design_db_breakdowns;
+            populateDesignTable('designSubtypeTable', ddb.subtype, 'subtype');
+            populateDesignTable('designYearTable',    ddb.year,    'year');
+            populateDesignTable('designCountryTable', ddb.country, 'country', 30);
         }
     }
     if (candidatesData.length > 0) updateDashboard(0);
