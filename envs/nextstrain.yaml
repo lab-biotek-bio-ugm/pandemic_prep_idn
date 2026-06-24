@@ -9,6 +9,7 @@ dependencies:
   
   # Nextstrain Ecosystem (M1-M4, M6)
   - augur >=24.0.0
+  - auspice
   - iqtree >=2.0.0,<3.0.0
   - ncbi-datasets-cli
   - nextclade
