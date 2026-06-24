@@ -1458,19 +1458,19 @@ def generate_heatmap_dashboard(summary_data: list, output_path):
         }
     }
 
-    function populateDesignTable(tid, data, catKey, maxRows) {{
-        const tbody = document.querySelector(`#${{tid}} tbody`);
+    function populateDesignTable(tid, data, catKey, maxRows) {
+        const tbody = document.querySelector(`#${tid} tbody`);
         tbody.innerHTML = '';
-        if (!data || data.length === 0) {{
+        if (!data || data.length === 0) {
             const tr = document.createElement('tr');
             const td = document.createElement('td'); td.colSpan = 4;
             td.style.cssText = 'text-align:center;color:var(--text-2);font-style:italic;padding:1rem;';
             td.textContent = 'No metadata available for design DB sequences';
             tr.appendChild(td); tbody.appendChild(tr);
             return;
-        }}
+        }
         const rows = maxRows ? data.slice(0, maxRows) : data;
-        rows.forEach(row => {{
+        rows.forEach(row => {
             const tr = document.createElement('tr');
             const tdCat = document.createElement('td'); tdCat.textContent = row[catKey] || '—'; tr.appendChild(tdCat);
             const tdN = document.createElement('td'); tdN.textContent = (row.total||0).toLocaleString(); tdN.style.color='var(--text-2)'; tr.appendChild(tdN);
@@ -1479,17 +1479,17 @@ def generate_heatmap_dashboard(summary_data: list, output_path):
             const span = document.createElement('span');
             span.className = 'cov-cell';
             span.style.cssText = pctStyle(row.pcr_amplified_pct||0);
-            span.textContent = `${{row.pcr_amplified_pct||0}}%`;
+            span.textContent = `${row.pcr_amplified_pct||0}%`;
             const bar = document.createElement('div'); bar.className = 'mini-bar';
             const fill = document.createElement('div'); fill.className = 'mini-bar-fill';
-            fill.style.width = `${{Math.min(row.pcr_amplified_pct||0,100)}}%`;
+            fill.style.width = `${Math.min(row.pcr_amplified_pct||0,100)}%`;
             fill.style.background = barColor(row.pcr_amplified_pct||0, 'pcr');
             bar.appendChild(fill);
             const w = document.createElement('div'); w.appendChild(span); w.appendChild(bar);
             tdPct.appendChild(w); tr.appendChild(tdPct);
             tbody.appendChild(tr);
-        }});
-    }}
+        });
+    }
     function setDatasetMode(mode) {
         currentMode = mode;
         document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active-global','active-design'));
