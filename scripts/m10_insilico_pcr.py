@@ -382,6 +382,426 @@ def parse_year(date_str: str) -> str:
         return match.group(0)
     return "Unknown"
 
+
+
+def _evaluate_candidate(idx_cand, args, seq_mappings, actual_candidates, seqkit_threads):
+    """Worker function: evaluate one candidate. Returns (cand_summary, result_row) or None."""
+    idx, cand = idx_cand
+    cand_id = cand.get("cand_id", f"cand_{idx}")
+
+    # ── Resolve primer sequences ─────────────────────────────────────────
+    # fwd_seq / rev_seq = majority (ATGC) sequence used for BLAST / display
+    # fwd_degenerate_seq = IUPAC sequence for RAA binding assessment
+    # fwd_possible_seqs  = all expanded variants for seqkit union coverage
+    fwd   = cand.get("fwd_seq") or cand.get("forward_primer_seq") or cand.get("fwd") or ""
+    rev   = cand.get("rev_seq") or cand.get("reverse_primer_seq") or cand.get("rev") or ""
+    probe = cand.get("probe_seq") or cand.get("probe") or ""
+
+    # Degenerate IUPAC sequences (fall back to majority if not available)
+    fwd_deg   = cand.get("fwd_degenerate_seq") or fwd
+    rev_deg   = cand.get("rev_degenerate_seq") or rev
+    probe_deg = cand.get("probe_degenerate_seq") or probe
+
+    # Expanded variant lists from m08 degenerate rescue (may be empty for non-degenerate)
+    fwd_possible   = cand.get("fwd_possible_seqs") or []
+    rev_possible   = cand.get("rev_possible_seqs") or []
+    probe_possible = cand.get("probe_possible_seqs") or []
+
+    region = cand.get("region", "unknown")
+    gene   = cand.get("gene", region.split("_region_")[0] if "_region_" in region else region)
+    rank   = cand.get("rank", idx + 1)
+
+    if not fwd or not rev:
+        print(f"[SKIP] {cand_id}: missing fwd_seq or rev_seq.")
+        return None
+
+    # Determine if this candidate has degenerate possible_sequences
+    has_deg_pool = bool(fwd_possible) and bool(rev_possible)
+
+    # ── ORIENTATION NOTE for degenerate track ────────────────────────────
+    # rev_possible_seqs from m08_degenerate_rescue are stored in GENOMIC ORIENTATION
+    # (i.e., they are the RC of the 5'->3' reverse primer). This is because m08
+    # detects that the reverse primer is reverse-oriented and applies RC during rescue.
+    #
+    # For seqkit -p TSV: rev primer must be 5'->3' → run_seqkit_amplicon_pool will RC them
+    #   via rev_list_is_genomic=True flag.
+    # For RAA assessment: rev_possible (genomic orientation) can be used directly to
+    #   match against the + strand amplicon without any additional RC.
+    #
+    # CRITICAL FIX: always include majority sequence in fwd pool.
+    # For rev pool: add RC(rev_seq) as the majority variant in GENOMIC orientation
+    # to be consistent with rev_possible_seqs orientation.
+    if has_deg_pool:
+        if fwd not in fwd_possible:
+            fwd_possible = [fwd] + fwd_possible
+            print(f"  [POOL] Added majority fwd_seq ({len(fwd)}bp) to fwd pool (MSA length drift)")
+        # rev_possible is in GENOMIC orientation; add RC(rev) as the majority genomic variant
+        rev_majority_genomic = reverse_complement(rev)
+        if rev_majority_genomic not in rev_possible:
+            rev_possible = [rev_majority_genomic] + rev_possible
+            print(f"  [POOL] Added RC(majority rev_seq) ({len(rev_majority_genomic)}bp) to rev pool (MSA length drift)")
+
+    n_combinations = len(fwd_possible) * len(rev_possible) if has_deg_pool else 1
+    deg_label = f"({n_combinations} combos incl. majority)" if has_deg_pool else "(non-degenerate)"
+    print(f"[{idx+1}/{actual_candidates}] Simulating PCR for {cand_id} {deg_label} (seqkit -j {seqkit_threads})...")
+
+
+    # ── seqkit amplicon — union-based coverage (surveillance DB) ──────────
+    # Strategy: run seqkit against the main --sequences (surveillance/50k DB).
+    # For degenerate: pool includes majority + all IUPAC variants.
+    if has_deg_pool:
+        print(f"  → [SURVEILLANCE] seqkit pool {n_combinations} combos (rev in genomic orientation, will RC for seqkit)...")
+        matches_max = run_seqkit_amplicon_pool(
+            fwd_possible, rev_possible,
+            args.max_mismatch, args.sequences,
+            seqkit_threads, cand_id,
+            rev_list_is_genomic=True,  # rev_possible stored as RC of 5'->3' primer
+        )
+        print(f"  → [SURVEILLANCE] Union matched: {len(matches_max)} sequences")
+    else:
+        try:
+            matches_max = run_seqkit_amplicon(fwd, rev, args.max_mismatch, args.sequences, seqkit_threads)
+        except Exception as e:
+            print(f"[ERROR] seqkit failed for {cand_id}: {e}")
+            matches_max = {}
+
+    # ── [OPTIONAL] Design-DB coverage ───────────────────────────────────────
+    # If --design-sequences is provided, run a second pass against the smaller
+    # design database (M02 filtered sequences). This gives a 'fair' coverage
+    # metric: how well the primer covers the dataset it was actually designed for.
+    design_matches = {}
+    if args.design_sequences:
+        print(f"  → [DESIGN-DB] Running against design sequences...")
+        if has_deg_pool:
+            design_matches = run_seqkit_amplicon_pool(
+                fwd_possible, rev_possible,
+                args.max_mismatch, args.design_sequences,
+                seqkit_threads, cand_id,
+                rev_list_is_genomic=True,  # rev_possible stored as RC of 5'->3' primer
+            )
+        else:
+            try:
+                design_matches = run_seqkit_amplicon(fwd, rev, args.max_mismatch, args.design_sequences, seqkit_threads)
+            except Exception as e:
+                print(f"[ERROR] seqkit design-db failed for {cand_id}: {e}")
+        print(f"  → [DESIGN-DB]  Matched: {len(design_matches)} sequences")
+
+    matched_seqs = set(matches_max.keys())
+
+    # ── Per-sequence evaluation ───────────────────────────────────────────
+    # CRITICAL: seqkit amplicon is the authoritative source for amplification.
+    # Sequences in matched_seqs are DEFINITIVELY amplifiable within max_mismatch.
+    # The sliding window classifies mismatch LEVEL for breakdown reporting ONLY —
+    # it does NOT re-gate amplification. Previously this caused double-filtering
+    # and catastrophically underreported coverage (e.g. H3N2 showed 0.43%).
+    cand_results = []
+    for seq in seq_mappings:
+        seq_id = seq["seq_id"]
+
+        if seq_id not in matched_seqs:
+            # seqkit found no amplicon → genuinely not amplifiable
+            is_amplified = False
+            p_mismatch   = 99
+            prb_mismatch = 99
+            is_raa_amplified  = False
+            raa_3p_mm         = 99
+            raa_int_mm        = 99
+            is_raa_detected   = False
+            raa_probe_mm      = 99
+        else:
+            # seqkit confirmed amplification → trust it unconditionally for PCR
+            is_amplified = True
+            amp_seq = matches_max[seq_id]
+
+            # ─ PCR mismatch level (for reporting, not gating) ─
+            # For non-degenerate: use fwd_deg/rev_deg (same as majority) with IUPAC-aware match.
+            # For degenerate: rev_deg is in GENOMIC orientation (RC of 5'->3'); use it directly
+            # for matching against + strand amplicon (no additional RC needed).
+            if has_deg_pool:
+                # rev_deg is genomic (RC of 5'->3'), match directly against + strand
+                fwd_mm = min_mismatches_sliding_window(fwd_deg, amp_seq)
+                rev_mm = min_mismatches_sliding_window(rev_deg, amp_seq)
+            else:
+                # rev_deg is 5'->3' format, must RC before matching + strand
+                fwd_mm = min_mismatches_sliding_window(fwd_deg, amp_seq)
+                rev_mm = min_mismatches_sliding_window(reverse_complement(rev_deg), amp_seq)
+            p_mismatch = min(max(fwd_mm, rev_mm), args.max_mismatch)
+
+            # ─ RAA binding assessment — best-of-pool strategy ─
+            # For DEGENERATE track: evaluate all variants from fwd_possible and rev_possible.
+            #   fwd_possible: 5'->3' format → use directly for RAA binding check.
+            #   rev_possible: GENOMIC orientation → use directly against + strand amplicon.
+            # For NON-DEGENERATE: use majority sequences with correct RC for rev.
+            if has_deg_pool:
+                # fwd: best-of-pool (fwd_possible is 5'->3')
+                # Cap pool to 8 variants for RAA (don't need all 289 combos)
+                _fwd_raa_pool = fwd_possible[:8]
+                _rev_raa_pool = rev_possible[:8]
+                fwd_raa_ok = False
+                fwd_3p, fwd_int = args.raa_3prime_bp, args.raa_max_internal_mm + 1
+                for fwd_var in _fwd_raa_pool:
+                    ok, t3, ti, _ = (_assess_raa_numpy if _HAS_NUMPY else assess_raa_binding)(
+                        fwd_var, amp_seq,
+                        critical_3prime_bp=args.raa_3prime_bp,
+                        max_3prime_mm=args.raa_max_3prime_mm,
+                        max_internal_mm=args.raa_max_internal_mm,
+                    )
+                    if ok:
+                        fwd_raa_ok = True
+                        fwd_3p, fwd_int = t3, ti
+                        break
+                    if t3 < fwd_3p:
+                        fwd_3p, fwd_int = t3, ti
+
+                # rev: best-of-pool (rev_possible is GENOMIC = matches + strand directly)
+                rev_raa_ok = False
+                rev_3p, rev_int = args.raa_3prime_bp, args.raa_max_internal_mm + 1
+                for rev_var in _rev_raa_pool:
+                    ok, t3, ti, _ = (_assess_raa_numpy if _HAS_NUMPY else assess_raa_binding)(
+                        rev_var, amp_seq,
+                        critical_3prime_bp=args.raa_3prime_bp,
+                        max_3prime_mm=args.raa_max_3prime_mm,
+                        max_internal_mm=args.raa_max_internal_mm,
+                    )
+                    if ok:
+                        rev_raa_ok = True
+                        rev_3p, rev_int = t3, ti
+                        break
+                    if t3 < rev_3p:
+                        rev_3p, rev_int = t3, ti
+            else:
+                # Non-degenerate: rev_deg is 5'->3', must RC before RAA assessment vs + strand
+                fwd_raa_ok, fwd_3p, fwd_int, _ = assess_raa_binding(
+                    fwd_deg, amp_seq,
+                    critical_3prime_bp=args.raa_3prime_bp,
+                    max_3prime_mm=args.raa_max_3prime_mm,
+                    max_internal_mm=args.raa_max_internal_mm,
+                )
+                rev_raa_ok, rev_3p, rev_int, _ = assess_raa_binding(
+                    reverse_complement(rev_deg), amp_seq,
+                    critical_3prime_bp=args.raa_3prime_bp,
+                    max_3prime_mm=args.raa_max_3prime_mm,
+                    max_internal_mm=args.raa_max_internal_mm,
+                )
+
+            is_raa_amplified = fwd_raa_ok and rev_raa_ok
+            raa_3p_mm  = max(fwd_3p, rev_3p)
+            raa_int_mm = max(fwd_int, rev_int)
+
+            # ─ Probe mismatch — use IUPAC degenerate probe sequence ─
+            # probe_deg and probe_possible are always in 5'->3' format.
+            if probe_deg:
+                if has_deg_pool and probe_possible:
+                    # Best-of-pool for probe (5'->3' format)
+                    prb_mismatch = min(
+                        min_mismatches_sliding_window(pv, amp_seq) for pv in probe_possible
+                    )
+                    probe_raa_ok = False
+                    for pv in probe_possible:
+                        ok, _, _, _ = assess_raa_binding(
+                            pv, amp_seq,
+                            critical_3prime_bp=args.raa_3prime_bp,
+                            max_3prime_mm=args.raa_max_3prime_mm,
+                            max_internal_mm=args.raa_max_internal_mm,
+                        )
+                        if ok:
+                            probe_raa_ok = True
+                            break
+                else:
+                    prb_mismatch = min_mismatches_sliding_window(probe_deg, amp_seq)
+                    probe_raa_ok, _, _, _ = assess_raa_binding(
+                        probe_deg, amp_seq,
+                        critical_3prime_bp=args.raa_3prime_bp,
+                        max_3prime_mm=args.raa_max_3prime_mm,
+                        max_internal_mm=args.raa_max_internal_mm,
+                    )
+                raa_probe_mm = prb_mismatch
+            else:
+                prb_mismatch = 0
+                probe_raa_ok = True
+                raa_probe_mm = 0
+
+        is_detected     = is_amplified     and (prb_mismatch <= args.max_mismatch)
+        is_raa_detected = is_raa_amplified and probe_raa_ok
+
+
+        cand_results.append({
+            "seq_id":            seq_id,
+            "subtype":           seq["subtype"],
+            "year":              seq["year"],
+            "country":           seq["country"],
+            "primer_mismatch":   p_mismatch,
+            "probe_mismatch":    prb_mismatch,
+            # PCR
+            "is_amplified":      is_amplified,
+            "is_detected":       is_detected,
+            # RAA
+            "is_raa_amplified":  is_raa_amplified,
+            "raa_3p_mm":         raa_3p_mm,
+            "raa_int_mm":        raa_int_mm,
+            "is_raa_detected":   is_raa_detected,
+        })
+
+    df_res = pd.DataFrame(cand_results)
+    total     = len(df_res)
+    # PCR metrics
+    amplified     = df_res["is_amplified"].sum()
+    detected      = df_res["is_detected"].sum()
+    amp_pct       = round(amplified / total * 100, 2) if total > 0 else 0.0
+    det_pct       = round(detected  / total * 100, 2) if total > 0 else 0.0
+    # RAA metrics
+    raa_amplified = df_res["is_raa_amplified"].sum()
+    raa_detected  = df_res["is_raa_detected"].sum()
+    raa_amp_pct   = round(raa_amplified / total * 100, 2) if total > 0 else 0.0
+    raa_det_pct   = round(raa_detected  / total * 100, 2) if total > 0 else 0.0
+
+    print(f"  [{cand_id}] PCR → Amplified: {amplified}/{total} ({amp_pct}%), Detected: {detected}/{total} ({det_pct}%)")
+    print(f"  [{cand_id}] RAA → Amplified: {raa_amplified}/{total} ({raa_amp_pct}%), Detected: {raa_detected}/{total} ({raa_det_pct}%)")
+
+    # ── Design-DB coverage WITH subtype/year/country breakdown ─────────────
+    # seq_mappings already contains metadata for all sequences (including design DB seqs).
+    # We filter by seq_ids in design_matches to build breakdown tables.
+    design_total = 0
+    design_amplified = 0
+    design_amp_pct = 0.0
+    design_db_breakdowns = {"subtype": [], "year": [], "country": []}
+    if design_matches:
+        # Count total design FASTA headers for denominator
+        try:
+            design_total = sum(1 for l in open(args.design_sequences, encoding='utf-8', errors='ignore') if l.startswith('>'))
+        except Exception:
+            design_total = 0
+        design_amplified = len(design_matches)
+        design_amp_pct = round(design_amplified / design_total * 100, 2) if design_total else 0.0
+        print(f"  [{cand_id}] DESIGN-DB PCR → Amplified: {design_amplified}/{design_total} ({design_amp_pct}%)")
+
+        # Build per-row records for design DB using seq_mappings metadata.
+        # design_matches keys = amplified seq_ids; join with metadata for breakdowns.
+        design_matched_ids = set(design_matches.keys())
+        try:
+            fasta_design_ids = set()
+            with open(args.design_sequences, encoding='utf-8', errors='ignore') as _fh:
+                for _ln in _fh:
+                    if _ln.startswith('>'):
+                        fasta_design_ids.add(_ln[1:].split()[0].strip())
+        except Exception:
+            fasta_design_ids = design_matched_ids.copy()
+
+        meta_lookup = {s["seq_id"]: s for s in seq_mappings}
+        design_rows = []
+        for sid in fasta_design_ids:
+            meta = meta_lookup.get(sid)
+            design_rows.append({
+                "seq_id":       sid,
+                "subtype":      meta["subtype"]   if meta else "Unknown",
+                "year":         str(meta["year"]) if meta else "Unknown",
+                "country":      meta["country"]   if meta else "Unknown",
+                "is_amplified": sid in design_matched_ids,
+            })
+        if design_rows:
+            import pandas as _pd_des
+            df_des = _pd_des.DataFrame(design_rows)
+            for _col in ["subtype", "year", "country"]:
+                _grp = df_des.groupby(_col).agg(
+                    total=("seq_id", "count"),
+                    pcr_amplified=("is_amplified", "sum"),
+                ).reset_index()
+                _grp["pcr_amplified"] = _grp["pcr_amplified"].astype(int)
+                _grp["pcr_amplified_pct"] = (_grp["pcr_amplified"] / _grp["total"] * 100).round(2)
+                _grp = _grp.sort_values("year" if _col == "year" else "total",
+                                        ascending=(_col == "year"))
+                design_db_breakdowns[_col] = _grp.to_dict(orient="records")
+
+    # ── Breakdown by subtype / year / country ─────────────────────────────
+    # For subtype breakdown: exclude subtypes with < min_subtype_seqs total sequences
+    # (they cannot be statistically generalised). Aggregate them as 'Other (rare subtypes)'.
+    breakdowns = {}
+    for col in ["subtype", "year", "country"]:
+        grp = df_res.groupby(col).agg(
+            total=("seq_id", "count"),
+            pcr_amplified=("is_amplified", "sum"),
+            pcr_detected=("is_detected",  "sum"),
+            raa_amplified=("is_raa_amplified", "sum"),
+            raa_detected=("is_raa_detected",  "sum"),
+        ).reset_index()
+        grp["pcr_amplified_pct"] = (grp["pcr_amplified"] / grp["total"] * 100).round(2)
+        grp["pcr_detected_pct"]  = (grp["pcr_detected"]  / grp["total"] * 100).round(2)
+        grp["raa_amplified_pct"] = (grp["raa_amplified"] / grp["total"] * 100).round(2)
+        grp["raa_detected_pct"]  = (grp["raa_detected"]  / grp["total"] * 100).round(2)
+
+        if col == "subtype":
+            # Split into major (>= threshold) and rare (< threshold) subtypes
+            min_seqs = args.min_subtype_seqs
+            major_mask = grp["total"] >= min_seqs
+            rare_rows  = grp[~major_mask]
+            grp = grp[major_mask].copy()
+            if not rare_rows.empty:
+                other_row = {
+                    "subtype": f"Other (rare, n<{min_seqs})",
+                    "total":          int(rare_rows["total"].sum()),
+                    "pcr_amplified":  int(rare_rows["pcr_amplified"].sum()),
+                    "pcr_detected":   int(rare_rows["pcr_detected"].sum()),
+                    "raa_amplified":  int(rare_rows["raa_amplified"].sum()),
+                    "raa_detected":   int(rare_rows["raa_detected"].sum()),
+                }
+                t = other_row["total"]
+                other_row["pcr_amplified_pct"] = round(other_row["pcr_amplified"] / t * 100, 2) if t else 0.0
+                other_row["pcr_detected_pct"]  = round(other_row["pcr_detected"]  / t * 100, 2) if t else 0.0
+                other_row["raa_amplified_pct"] = round(other_row["raa_amplified"] / t * 100, 2) if t else 0.0
+                other_row["raa_detected_pct"]  = round(other_row["raa_detected"]  / t * 100, 2) if t else 0.0
+                grp = pd.concat([grp, pd.DataFrame([other_row])], ignore_index=True)
+            grp = grp.sort_values("total", ascending=False)
+        elif col == "year":
+            grp = grp.sort_values("year", ascending=True)
+        else:
+            grp = grp.sort_values("total", ascending=False)
+
+        breakdowns[col] = grp.to_dict(orient="records")
+
+    cand_summary = {
+        "cand_id": cand_id, "region": region, "gene": gene, "rank": rank,
+        "fwd_seq": fwd, "rev_seq": rev, "probe_seq": probe,
+        # Degenerate IUPAC sequences (for display/RAA context)
+        "fwd_degenerate_seq": fwd_deg if fwd_deg != fwd else None,
+        "rev_degenerate_seq": rev_deg if rev_deg != rev else None,
+        "n_combinations": n_combinations,
+        # Surveillance DB (full 50k EpiFlu)
+        "total_seqs": total,
+        "pcr_amplified_seqs": int(amplified), "pcr_amplified_pct": amp_pct,
+        "pcr_detected_seqs":  int(detected),  "pcr_detected_pct":  det_pct,
+        # RAA (surveillance)
+        "raa_amplified_seqs": int(raa_amplified), "raa_amplified_pct": raa_amp_pct,
+        "raa_detected_seqs":  int(raa_detected),  "raa_detected_pct":  raa_det_pct,
+        # Design DB (M02 filtered — primer was designed from these)
+        "design_db_total": design_total,
+        "design_db_amplified": design_amplified,
+        "design_db_amplified_pct": design_amp_pct,
+        "design_db_breakdowns": design_db_breakdowns,
+        "raa_params": {
+            "critical_3prime_bp":  args.raa_3prime_bp,
+            "max_3prime_mm":       args.raa_max_3prime_mm,
+            "max_internal_mm":     args.raa_max_internal_mm,
+        },
+        "breakdowns": breakdowns,
+    }
+    result_row = {
+        "cand_id": cand_id, "region": region, "gene": gene, "rank": rank,
+        "fwd_seq": fwd, "rev_seq": rev, "probe_seq": probe,
+        # Surveillance DB
+        "total": total,
+        "pcr_amplified": int(amplified), "pcr_detected": int(detected),
+        "pcr_amplified_pct": amp_pct,    "pcr_detected_pct": det_pct,
+        # RAA (surveillance)
+        "raa_amplified": int(raa_amplified), "raa_detected": int(raa_detected),
+        "raa_amplified_pct": raa_amp_pct,    "raa_detected_pct": raa_det_pct,
+        # Design DB
+        "design_db_total": design_total,
+        "design_db_amplified": design_amplified,
+        "design_db_amplified_pct": design_amp_pct,
+    }
+    return (cand_summary, result_row)
+
+
 def main():
     parser = argparse.ArgumentParser(description="M10 — In-silico PCR Coverage Analysis")
     parser.add_argument("--m09-dirs", nargs="+", required=True,
@@ -576,8 +996,8 @@ def main():
     # via -p TSV for degenerate). We want to run all candidates in parallel.
     # seqkit itself parallelises internally with -j goroutines per call.
     # Optimal: worker_threads = actual_candidates, seqkit_threads = total / worker_threads
-    # ThreadPoolExecutor: each worker = 1 thread. Ideal for I/O-bound seqkit subprocess calls
-    # and avoids PicklingError with nested worker function _evaluate_candidate.
+    # ProcessPoolExecutor: each worker = 1 separate Python process (bypasses GIL).
+    # Moving _evaluate_candidate to module level allows pickling/serialization.
     # Cap at 16 to avoid memory oversubscription; seqkit handles internal threading.
     worker_threads = min(actual_candidates, total_cpus, 16)
     seqkit_threads = max(2, total_cpus // worker_threads)
@@ -598,428 +1018,12 @@ def main():
 
     import concurrent.futures
 
-    def _evaluate_candidate(idx_cand):
-        """Worker function: evaluate one candidate. Returns (cand_summary, result_row) or None."""
-        idx, cand = idx_cand
-        cand_id = cand.get("cand_id", f"cand_{idx}")
-
-        # ── Resolve primer sequences ─────────────────────────────────────────
-        # fwd_seq / rev_seq = majority (ATGC) sequence used for BLAST / display
-        # fwd_degenerate_seq = IUPAC sequence for RAA binding assessment
-        # fwd_possible_seqs  = all expanded variants for seqkit union coverage
-        fwd   = cand.get("fwd_seq") or cand.get("forward_primer_seq") or cand.get("fwd") or ""
-        rev   = cand.get("rev_seq") or cand.get("reverse_primer_seq") or cand.get("rev") or ""
-        probe = cand.get("probe_seq") or cand.get("probe") or ""
-
-        # Degenerate IUPAC sequences (fall back to majority if not available)
-        fwd_deg   = cand.get("fwd_degenerate_seq") or fwd
-        rev_deg   = cand.get("rev_degenerate_seq") or rev
-        probe_deg = cand.get("probe_degenerate_seq") or probe
-
-        # Expanded variant lists from m08 degenerate rescue (may be empty for non-degenerate)
-        fwd_possible   = cand.get("fwd_possible_seqs") or []
-        rev_possible   = cand.get("rev_possible_seqs") or []
-        probe_possible = cand.get("probe_possible_seqs") or []
-
-        region = cand.get("region", "unknown")
-        gene   = cand.get("gene", region.split("_region_")[0] if "_region_" in region else region)
-        rank   = cand.get("rank", idx + 1)
-
-        if not fwd or not rev:
-            print(f"[SKIP] {cand_id}: missing fwd_seq or rev_seq.")
-            return None
-
-        # Determine if this candidate has degenerate possible_sequences
-        has_deg_pool = bool(fwd_possible) and bool(rev_possible)
-
-        # ── ORIENTATION NOTE for degenerate track ────────────────────────────
-        # rev_possible_seqs from m08_degenerate_rescue are stored in GENOMIC ORIENTATION
-        # (i.e., they are the RC of the 5'->3' reverse primer). This is because m08
-        # detects that the reverse primer is reverse-oriented and applies RC during rescue.
-        #
-        # For seqkit -p TSV: rev primer must be 5'->3' → run_seqkit_amplicon_pool will RC them
-        #   via rev_list_is_genomic=True flag.
-        # For RAA assessment: rev_possible (genomic orientation) can be used directly to
-        #   match against the + strand amplicon without any additional RC.
-        #
-        # CRITICAL FIX: always include majority sequence in fwd pool.
-        # For rev pool: add RC(rev_seq) as the majority variant in GENOMIC orientation
-        # to be consistent with rev_possible_seqs orientation.
-        if has_deg_pool:
-            if fwd not in fwd_possible:
-                fwd_possible = [fwd] + fwd_possible
-                print(f"  [POOL] Added majority fwd_seq ({len(fwd)}bp) to fwd pool (MSA length drift)")
-            # rev_possible is in GENOMIC orientation; add RC(rev) as the majority genomic variant
-            rev_majority_genomic = reverse_complement(rev)
-            if rev_majority_genomic not in rev_possible:
-                rev_possible = [rev_majority_genomic] + rev_possible
-                print(f"  [POOL] Added RC(majority rev_seq) ({len(rev_majority_genomic)}bp) to rev pool (MSA length drift)")
-
-        n_combinations = len(fwd_possible) * len(rev_possible) if has_deg_pool else 1
-        deg_label = f"({n_combinations} combos incl. majority)" if has_deg_pool else "(non-degenerate)"
-        print(f"[{idx+1}/{actual_candidates}] Simulating PCR for {cand_id} {deg_label} (seqkit -j {seqkit_threads})...")
-
-
-        # ── seqkit amplicon — union-based coverage (surveillance DB) ──────────
-        # Strategy: run seqkit against the main --sequences (surveillance/50k DB).
-        # For degenerate: pool includes majority + all IUPAC variants.
-        if has_deg_pool:
-            print(f"  → [SURVEILLANCE] seqkit pool {n_combinations} combos (rev in genomic orientation, will RC for seqkit)...")
-            matches_max = run_seqkit_amplicon_pool(
-                fwd_possible, rev_possible,
-                args.max_mismatch, args.sequences,
-                seqkit_threads, cand_id,
-                rev_list_is_genomic=True,  # rev_possible stored as RC of 5'->3' primer
-            )
-            print(f"  → [SURVEILLANCE] Union matched: {len(matches_max)} sequences")
-        else:
-            try:
-                matches_max = run_seqkit_amplicon(fwd, rev, args.max_mismatch, args.sequences, seqkit_threads)
-            except Exception as e:
-                print(f"[ERROR] seqkit failed for {cand_id}: {e}")
-                matches_max = {}
-
-        # ── [OPTIONAL] Design-DB coverage ───────────────────────────────────────
-        # If --design-sequences is provided, run a second pass against the smaller
-        # design database (M02 filtered sequences). This gives a 'fair' coverage
-        # metric: how well the primer covers the dataset it was actually designed for.
-        design_matches = {}
-        if args.design_sequences:
-            print(f"  → [DESIGN-DB] Running against design sequences...")
-            if has_deg_pool:
-                design_matches = run_seqkit_amplicon_pool(
-                    fwd_possible, rev_possible,
-                    args.max_mismatch, args.design_sequences,
-                    seqkit_threads, cand_id,
-                    rev_list_is_genomic=True,  # rev_possible stored as RC of 5'->3' primer
-                )
-            else:
-                try:
-                    design_matches = run_seqkit_amplicon(fwd, rev, args.max_mismatch, args.design_sequences, seqkit_threads)
-                except Exception as e:
-                    print(f"[ERROR] seqkit design-db failed for {cand_id}: {e}")
-            print(f"  → [DESIGN-DB]  Matched: {len(design_matches)} sequences")
-
-        matched_seqs = set(matches_max.keys())
-
-        # ── Per-sequence evaluation ───────────────────────────────────────────
-        # CRITICAL: seqkit amplicon is the authoritative source for amplification.
-        # Sequences in matched_seqs are DEFINITIVELY amplifiable within max_mismatch.
-        # The sliding window classifies mismatch LEVEL for breakdown reporting ONLY —
-        # it does NOT re-gate amplification. Previously this caused double-filtering
-        # and catastrophically underreported coverage (e.g. H3N2 showed 0.43%).
-        cand_results = []
-        for seq in seq_mappings:
-            seq_id = seq["seq_id"]
-
-            if seq_id not in matched_seqs:
-                # seqkit found no amplicon → genuinely not amplifiable
-                is_amplified = False
-                p_mismatch   = 99
-                prb_mismatch = 99
-                is_raa_amplified  = False
-                raa_3p_mm         = 99
-                raa_int_mm        = 99
-                is_raa_detected   = False
-                raa_probe_mm      = 99
-            else:
-                # seqkit confirmed amplification → trust it unconditionally for PCR
-                is_amplified = True
-                amp_seq = matches_max[seq_id]
-
-                # ─ PCR mismatch level (for reporting, not gating) ─
-                # For non-degenerate: use fwd_deg/rev_deg (same as majority) with IUPAC-aware match.
-                # For degenerate: rev_deg is in GENOMIC orientation (RC of 5'->3'); use it directly
-                # for matching against + strand amplicon (no additional RC needed).
-                if has_deg_pool:
-                    # rev_deg is genomic (RC of 5'->3'), match directly against + strand
-                    fwd_mm = min_mismatches_sliding_window(fwd_deg, amp_seq)
-                    rev_mm = min_mismatches_sliding_window(rev_deg, amp_seq)
-                else:
-                    # rev_deg is 5'->3' format, must RC before matching + strand
-                    fwd_mm = min_mismatches_sliding_window(fwd_deg, amp_seq)
-                    rev_mm = min_mismatches_sliding_window(reverse_complement(rev_deg), amp_seq)
-                p_mismatch = min(max(fwd_mm, rev_mm), args.max_mismatch)
-
-                # ─ RAA binding assessment — best-of-pool strategy ─
-                # For DEGENERATE track: evaluate all variants from fwd_possible and rev_possible.
-                #   fwd_possible: 5'->3' format → use directly for RAA binding check.
-                #   rev_possible: GENOMIC orientation → use directly against + strand amplicon.
-                # For NON-DEGENERATE: use majority sequences with correct RC for rev.
-                if has_deg_pool:
-                    # fwd: best-of-pool (fwd_possible is 5'->3')
-                    # Cap pool to 8 variants for RAA (don't need all 289 combos)
-                    _fwd_raa_pool = fwd_possible[:8]
-                    _rev_raa_pool = rev_possible[:8]
-                    fwd_raa_ok = False
-                    fwd_3p, fwd_int = args.raa_3prime_bp, args.raa_max_internal_mm + 1
-                    for fwd_var in _fwd_raa_pool:
-                        ok, t3, ti, _ = (_assess_raa_numpy if _HAS_NUMPY else assess_raa_binding)(
-                            fwd_var, amp_seq,
-                            critical_3prime_bp=args.raa_3prime_bp,
-                            max_3prime_mm=args.raa_max_3prime_mm,
-                            max_internal_mm=args.raa_max_internal_mm,
-                        )
-                        if ok:
-                            fwd_raa_ok = True
-                            fwd_3p, fwd_int = t3, ti
-                            break
-                        if t3 < fwd_3p:
-                            fwd_3p, fwd_int = t3, ti
-
-                    # rev: best-of-pool (rev_possible is GENOMIC = matches + strand directly)
-                    rev_raa_ok = False
-                    rev_3p, rev_int = args.raa_3prime_bp, args.raa_max_internal_mm + 1
-                    for rev_var in _rev_raa_pool:
-                        ok, t3, ti, _ = (_assess_raa_numpy if _HAS_NUMPY else assess_raa_binding)(
-                            rev_var, amp_seq,
-                            critical_3prime_bp=args.raa_3prime_bp,
-                            max_3prime_mm=args.raa_max_3prime_mm,
-                            max_internal_mm=args.raa_max_internal_mm,
-                        )
-                        if ok:
-                            rev_raa_ok = True
-                            rev_3p, rev_int = t3, ti
-                            break
-                        if t3 < rev_3p:
-                            rev_3p, rev_int = t3, ti
-                else:
-                    # Non-degenerate: rev_deg is 5'->3', must RC before RAA assessment vs + strand
-                    fwd_raa_ok, fwd_3p, fwd_int, _ = assess_raa_binding(
-                        fwd_deg, amp_seq,
-                        critical_3prime_bp=args.raa_3prime_bp,
-                        max_3prime_mm=args.raa_max_3prime_mm,
-                        max_internal_mm=args.raa_max_internal_mm,
-                    )
-                    rev_raa_ok, rev_3p, rev_int, _ = assess_raa_binding(
-                        reverse_complement(rev_deg), amp_seq,
-                        critical_3prime_bp=args.raa_3prime_bp,
-                        max_3prime_mm=args.raa_max_3prime_mm,
-                        max_internal_mm=args.raa_max_internal_mm,
-                    )
-
-                is_raa_amplified = fwd_raa_ok and rev_raa_ok
-                raa_3p_mm  = max(fwd_3p, rev_3p)
-                raa_int_mm = max(fwd_int, rev_int)
-
-                # ─ Probe mismatch — use IUPAC degenerate probe sequence ─
-                # probe_deg and probe_possible are always in 5'->3' format.
-                if probe_deg:
-                    if has_deg_pool and probe_possible:
-                        # Best-of-pool for probe (5'->3' format)
-                        prb_mismatch = min(
-                            min_mismatches_sliding_window(pv, amp_seq) for pv in probe_possible
-                        )
-                        probe_raa_ok = False
-                        for pv in probe_possible:
-                            ok, _, _, _ = assess_raa_binding(
-                                pv, amp_seq,
-                                critical_3prime_bp=args.raa_3prime_bp,
-                                max_3prime_mm=args.raa_max_3prime_mm,
-                                max_internal_mm=args.raa_max_internal_mm,
-                            )
-                            if ok:
-                                probe_raa_ok = True
-                                break
-                    else:
-                        prb_mismatch = min_mismatches_sliding_window(probe_deg, amp_seq)
-                        probe_raa_ok, _, _, _ = assess_raa_binding(
-                            probe_deg, amp_seq,
-                            critical_3prime_bp=args.raa_3prime_bp,
-                            max_3prime_mm=args.raa_max_3prime_mm,
-                            max_internal_mm=args.raa_max_internal_mm,
-                        )
-                    raa_probe_mm = prb_mismatch
-                else:
-                    prb_mismatch = 0
-                    probe_raa_ok = True
-                    raa_probe_mm = 0
-
-            is_detected     = is_amplified     and (prb_mismatch <= args.max_mismatch)
-            is_raa_detected = is_raa_amplified and probe_raa_ok
-
-
-            cand_results.append({
-                "seq_id":            seq_id,
-                "subtype":           seq["subtype"],
-                "year":              seq["year"],
-                "country":           seq["country"],
-                "primer_mismatch":   p_mismatch,
-                "probe_mismatch":    prb_mismatch,
-                # PCR
-                "is_amplified":      is_amplified,
-                "is_detected":       is_detected,
-                # RAA
-                "is_raa_amplified":  is_raa_amplified,
-                "raa_3p_mm":         raa_3p_mm,
-                "raa_int_mm":        raa_int_mm,
-                "is_raa_detected":   is_raa_detected,
-            })
-
-        df_res = pd.DataFrame(cand_results)
-        total     = len(df_res)
-        # PCR metrics
-        amplified     = df_res["is_amplified"].sum()
-        detected      = df_res["is_detected"].sum()
-        amp_pct       = round(amplified / total * 100, 2) if total > 0 else 0.0
-        det_pct       = round(detected  / total * 100, 2) if total > 0 else 0.0
-        # RAA metrics
-        raa_amplified = df_res["is_raa_amplified"].sum()
-        raa_detected  = df_res["is_raa_detected"].sum()
-        raa_amp_pct   = round(raa_amplified / total * 100, 2) if total > 0 else 0.0
-        raa_det_pct   = round(raa_detected  / total * 100, 2) if total > 0 else 0.0
-
-        print(f"  [{cand_id}] PCR → Amplified: {amplified}/{total} ({amp_pct}%), Detected: {detected}/{total} ({det_pct}%)")
-        print(f"  [{cand_id}] RAA → Amplified: {raa_amplified}/{total} ({raa_amp_pct}%), Detected: {raa_detected}/{total} ({raa_det_pct}%)")
-
-        # ── Design-DB coverage WITH subtype/year/country breakdown ─────────────
-        # seq_mappings already contains metadata for all sequences (including design DB seqs).
-        # We filter by seq_ids in design_matches to build breakdown tables.
-        design_total = 0
-        design_amplified = 0
-        design_amp_pct = 0.0
-        design_db_breakdowns = {"subtype": [], "year": [], "country": []}
-        if design_matches:
-            # Count total design FASTA headers for denominator
-            try:
-                design_total = sum(1 for l in open(args.design_sequences, encoding='utf-8', errors='ignore') if l.startswith('>'))
-            except Exception:
-                design_total = 0
-            design_amplified = len(design_matches)
-            design_amp_pct = round(design_amplified / design_total * 100, 2) if design_total else 0.0
-            print(f"  [{cand_id}] DESIGN-DB PCR → Amplified: {design_amplified}/{design_total} ({design_amp_pct}%)")
-
-            # Build per-row records for design DB using seq_mappings metadata.
-            # design_matches keys = amplified seq_ids; join with metadata for breakdowns.
-            design_matched_ids = set(design_matches.keys())
-            try:
-                fasta_design_ids = set()
-                with open(args.design_sequences, encoding='utf-8', errors='ignore') as _fh:
-                    for _ln in _fh:
-                        if _ln.startswith('>'):
-                            fasta_design_ids.add(_ln[1:].split()[0].strip())
-            except Exception:
-                fasta_design_ids = design_matched_ids.copy()
-
-            meta_lookup = {s["seq_id"]: s for s in seq_mappings}
-            design_rows = []
-            for sid in fasta_design_ids:
-                meta = meta_lookup.get(sid)
-                design_rows.append({
-                    "seq_id":       sid,
-                    "subtype":      meta["subtype"]   if meta else "Unknown",
-                    "year":         str(meta["year"]) if meta else "Unknown",
-                    "country":      meta["country"]   if meta else "Unknown",
-                    "is_amplified": sid in design_matched_ids,
-                })
-            if design_rows:
-                import pandas as _pd_des
-                df_des = _pd_des.DataFrame(design_rows)
-                for _col in ["subtype", "year", "country"]:
-                    _grp = df_des.groupby(_col).agg(
-                        total=("seq_id", "count"),
-                        pcr_amplified=("is_amplified", "sum"),
-                    ).reset_index()
-                    _grp["pcr_amplified"] = _grp["pcr_amplified"].astype(int)
-                    _grp["pcr_amplified_pct"] = (_grp["pcr_amplified"] / _grp["total"] * 100).round(2)
-                    _grp = _grp.sort_values("year" if _col == "year" else "total",
-                                            ascending=(_col == "year"))
-                    design_db_breakdowns[_col] = _grp.to_dict(orient="records")
-
-        # ── Breakdown by subtype / year / country ─────────────────────────────
-        # For subtype breakdown: exclude subtypes with < min_subtype_seqs total sequences
-        # (they cannot be statistically generalised). Aggregate them as 'Other (rare subtypes)'.
-        breakdowns = {}
-        for col in ["subtype", "year", "country"]:
-            grp = df_res.groupby(col).agg(
-                total=("seq_id", "count"),
-                pcr_amplified=("is_amplified", "sum"),
-                pcr_detected=("is_detected",  "sum"),
-                raa_amplified=("is_raa_amplified", "sum"),
-                raa_detected=("is_raa_detected",  "sum"),
-            ).reset_index()
-            grp["pcr_amplified_pct"] = (grp["pcr_amplified"] / grp["total"] * 100).round(2)
-            grp["pcr_detected_pct"]  = (grp["pcr_detected"]  / grp["total"] * 100).round(2)
-            grp["raa_amplified_pct"] = (grp["raa_amplified"] / grp["total"] * 100).round(2)
-            grp["raa_detected_pct"]  = (grp["raa_detected"]  / grp["total"] * 100).round(2)
-
-            if col == "subtype":
-                # Split into major (>= threshold) and rare (< threshold) subtypes
-                min_seqs = args.min_subtype_seqs
-                major_mask = grp["total"] >= min_seqs
-                rare_rows  = grp[~major_mask]
-                grp = grp[major_mask].copy()
-                if not rare_rows.empty:
-                    other_row = {
-                        "subtype": f"Other (rare, n<{min_seqs})",
-                        "total":          int(rare_rows["total"].sum()),
-                        "pcr_amplified":  int(rare_rows["pcr_amplified"].sum()),
-                        "pcr_detected":   int(rare_rows["pcr_detected"].sum()),
-                        "raa_amplified":  int(rare_rows["raa_amplified"].sum()),
-                        "raa_detected":   int(rare_rows["raa_detected"].sum()),
-                    }
-                    t = other_row["total"]
-                    other_row["pcr_amplified_pct"] = round(other_row["pcr_amplified"] / t * 100, 2) if t else 0.0
-                    other_row["pcr_detected_pct"]  = round(other_row["pcr_detected"]  / t * 100, 2) if t else 0.0
-                    other_row["raa_amplified_pct"] = round(other_row["raa_amplified"] / t * 100, 2) if t else 0.0
-                    other_row["raa_detected_pct"]  = round(other_row["raa_detected"]  / t * 100, 2) if t else 0.0
-                    grp = pd.concat([grp, pd.DataFrame([other_row])], ignore_index=True)
-                grp = grp.sort_values("total", ascending=False)
-            elif col == "year":
-                grp = grp.sort_values("year", ascending=True)
-            else:
-                grp = grp.sort_values("total", ascending=False)
-
-            breakdowns[col] = grp.to_dict(orient="records")
-
-        cand_summary = {
-            "cand_id": cand_id, "region": region, "gene": gene, "rank": rank,
-            "fwd_seq": fwd, "rev_seq": rev, "probe_seq": probe,
-            # Degenerate IUPAC sequences (for display/RAA context)
-            "fwd_degenerate_seq": fwd_deg if fwd_deg != fwd else None,
-            "rev_degenerate_seq": rev_deg if rev_deg != rev else None,
-            "n_combinations": n_combinations,
-            # Surveillance DB (full 50k EpiFlu)
-            "total_seqs": total,
-            "pcr_amplified_seqs": int(amplified), "pcr_amplified_pct": amp_pct,
-            "pcr_detected_seqs":  int(detected),  "pcr_detected_pct":  det_pct,
-            # RAA (surveillance)
-            "raa_amplified_seqs": int(raa_amplified), "raa_amplified_pct": raa_amp_pct,
-            "raa_detected_seqs":  int(raa_detected),  "raa_detected_pct":  raa_det_pct,
-            # Design DB (M02 filtered — primer was designed from these)
-            "design_db_total": design_total,
-            "design_db_amplified": design_amplified,
-            "design_db_amplified_pct": design_amp_pct,
-            "design_db_breakdowns": design_db_breakdowns,
-            "raa_params": {
-                "critical_3prime_bp":  args.raa_3prime_bp,
-                "max_3prime_mm":       args.raa_max_3prime_mm,
-                "max_internal_mm":     args.raa_max_internal_mm,
-            },
-            "breakdowns": breakdowns,
-        }
-        result_row = {
-            "cand_id": cand_id, "region": region, "gene": gene, "rank": rank,
-            "fwd_seq": fwd, "rev_seq": rev, "probe_seq": probe,
-            # Surveillance DB
-            "total": total,
-            "pcr_amplified": int(amplified), "pcr_detected": int(detected),
-            "pcr_amplified_pct": amp_pct,    "pcr_detected_pct": det_pct,
-            # RAA (surveillance)
-            "raa_amplified": int(raa_amplified), "raa_detected": int(raa_detected),
-            "raa_amplified_pct": raa_amp_pct,    "raa_detected_pct": raa_det_pct,
-            # Design DB
-            "design_db_total": design_total,
-            "design_db_amplified": design_amplified,
-            "design_db_amplified_pct": design_amp_pct,
-        }
-        return (cand_summary, result_row)
 
     # ── Run candidates in parallel ────────────────────────────────────────────
     results_list = []
     summary_data = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=worker_threads) as pool:
-        futures = {pool.submit(_evaluate_candidate, (i, c)): i
+    with concurrent.futures.ProcessPoolExecutor(max_workers=worker_threads) as pool:
+        futures = {pool.submit(_evaluate_candidate, (i, c), args, seq_mappings, actual_candidates, seqkit_threads): i
                    for i, c in enumerate(all_candidates)}
         for fut in concurrent.futures.as_completed(futures):
             out = fut.result()
