@@ -576,7 +576,8 @@ def main():
     # via -p TSV for degenerate). We want to run all candidates in parallel.
     # seqkit itself parallelises internally with -j goroutines per call.
     # Optimal: worker_threads = actual_candidates, seqkit_threads = total / worker_threads
-    # ProcessPoolExecutor: each worker = 1 separate Python process (bypasses GIL).
+    # ThreadPoolExecutor: each worker = 1 thread. Ideal for I/O-bound seqkit subprocess calls
+    # and avoids PicklingError with nested worker function _evaluate_candidate.
     # Cap at 16 to avoid memory oversubscription; seqkit handles internal threading.
     worker_threads = min(actual_candidates, total_cpus, 16)
     seqkit_threads = max(2, total_cpus // worker_threads)
@@ -1017,7 +1018,7 @@ def main():
     # ── Run candidates in parallel ────────────────────────────────────────────
     results_list = []
     summary_data = []
-    with concurrent.futures.ProcessPoolExecutor(max_workers=worker_threads) as pool:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=worker_threads) as pool:
         futures = {pool.submit(_evaluate_candidate, (i, c)): i
                    for i, c in enumerate(all_candidates)}
         for fut in concurrent.futures.as_completed(futures):
