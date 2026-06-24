@@ -212,15 +212,21 @@ def run_seqkit_amplicon(fwd: str, rev: str, max_mismatch: int, fasta_path: str, 
 def run_seqkit_amplicon_pool(
     fwd_list: list, rev_list: list,
     max_mismatch: int, fasta_path: str, threads: int = 4,
-    cand_id: str = "unknown"
+    cand_id: str = "unknown",
+    rev_list_is_genomic: bool = False,
 ) -> dict:
     """Run seqkit amplicon with a pool of fwd/rev combinations via -p TSV.
     Returns a dict of seq_id -> amplicon_seq (UNION across all combinations).
-    
+
     IMPORTANT: seqkit -p TSV with --bed outputs:
       col0=seqID, col1=start, col2=end, col3=primer_name, col4=score, col5=strand, col6=amplicon_seq
     The primer_name (col3) encodes which combination matched, not the seq_id.
     seq_id is ALWAYS col0.
+
+    rev_list_is_genomic: If True, rev_list sequences are already in genomic/RC orientation
+      (i.e., they are the RC of the 5'->3' primer). seqkit amplicon expects the REVERSE PRIMER
+      in 5'->3' format and performs RC internally. If rev_list_is_genomic=True, we must RC
+      each rev sequence back to 5'->3' before writing to the TSV.
     """
     # Build cross-product TSV: all fwd × rev combinations
     combinations = list(itertools.product(fwd_list, rev_list))
@@ -231,6 +237,12 @@ def run_seqkit_amplicon_pool(
     try:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".tsv", delete=False, encoding="utf-8") as tmp:
             for c_idx, (f_comb, r_comb) in enumerate(combinations):
+                # FIX: rev_possible_seqs from m08_degenerate_rescue are stored in GENOMIC orientation
+                # (RC of the 5'->3' primer) because back-mapping detected a reverse primer.
+                # seqkit amplicon -p TSV expects the reverse primer in 5'->3' format and will RC
+                # internally. So we must RC the genomic-orientation sequences back to 5'->3'.
+                if rev_list_is_genomic:
+                    r_comb = reverse_complement(r_comb)
                 tmp.write(f"comb_{c_idx}\t{f_comb}\t{r_comb}\n")
             tmp_tsv = tmp.name
 
@@ -573,18 +585,28 @@ def main():
         # Determine if this candidate has degenerate possible_sequences
         has_deg_pool = bool(fwd_possible) and bool(rev_possible)
 
-        # ── CRITICAL FIX: always include majority sequence in the pool ────────
-        # fwd_possible_seqs are derived from fwd_degenerate_seq which may be 1bp shorter
-        # than fwd_seq (majority) due to MSA back-mapping gaps. The majority consensus
-        # sequence is the single most important variant — it MUST be in the pool.
-        # Debug confirmed: majority (32bp) NOT in pool of 31bp variants → coverage = 0!
+        # ── ORIENTATION NOTE for degenerate track ────────────────────────────
+        # rev_possible_seqs from m08_degenerate_rescue are stored in GENOMIC ORIENTATION
+        # (i.e., they are the RC of the 5'->3' reverse primer). This is because m08
+        # detects that the reverse primer is reverse-oriented and applies RC during rescue.
+        #
+        # For seqkit -p TSV: rev primer must be 5'->3' → run_seqkit_amplicon_pool will RC them
+        #   via rev_list_is_genomic=True flag.
+        # For RAA assessment: rev_possible (genomic orientation) can be used directly to
+        #   match against the + strand amplicon without any additional RC.
+        #
+        # CRITICAL FIX: always include majority sequence in fwd pool.
+        # For rev pool: add RC(rev_seq) as the majority variant in GENOMIC orientation
+        # to be consistent with rev_possible_seqs orientation.
         if has_deg_pool:
             if fwd not in fwd_possible:
                 fwd_possible = [fwd] + fwd_possible
-                print(f"  [POOL] Added majority fwd_seq ({len(fwd)}bp) to pool (was missing — MSA length drift)")
-            if rev not in rev_possible:
-                rev_possible = [rev] + rev_possible
-                print(f"  [POOL] Added majority rev_seq ({len(rev)}bp) to pool (was missing — MSA length drift)")
+                print(f"  [POOL] Added majority fwd_seq ({len(fwd)}bp) to fwd pool (MSA length drift)")
+            # rev_possible is in GENOMIC orientation; add RC(rev) as the majority genomic variant
+            rev_majority_genomic = reverse_complement(rev)
+            if rev_majority_genomic not in rev_possible:
+                rev_possible = [rev_majority_genomic] + rev_possible
+                print(f"  [POOL] Added RC(majority rev_seq) ({len(rev_majority_genomic)}bp) to rev pool (MSA length drift)")
 
         n_combinations = len(fwd_possible) * len(rev_possible) if has_deg_pool else 1
         deg_label = f"({n_combinations} combos incl. majority)" if has_deg_pool else "(non-degenerate)"
@@ -595,11 +617,12 @@ def main():
         # Strategy: run seqkit against the main --sequences (surveillance/50k DB).
         # For degenerate: pool includes majority + all IUPAC variants.
         if has_deg_pool:
-            print(f"  → [SURVEILLANCE] seqkit pool {n_combinations} combos ...")
+            print(f"  → [SURVEILLANCE] seqkit pool {n_combinations} combos (rev in genomic orientation, will RC for seqkit)...")
             matches_max = run_seqkit_amplicon_pool(
                 fwd_possible, rev_possible,
                 args.max_mismatch, args.sequences,
-                seqkit_threads, cand_id
+                seqkit_threads, cand_id,
+                rev_list_is_genomic=True,  # rev_possible stored as RC of 5'->3' primer
             )
             print(f"  → [SURVEILLANCE] Union matched: {len(matches_max)} sequences")
         else:
@@ -620,7 +643,8 @@ def main():
                 design_matches = run_seqkit_amplicon_pool(
                     fwd_possible, rev_possible,
                     args.max_mismatch, args.design_sequences,
-                    seqkit_threads, cand_id
+                    seqkit_threads, cand_id,
+                    rev_list_is_genomic=True,  # rev_possible stored as RC of 5'->3' primer
                 )
             else:
                 try:
@@ -657,37 +681,104 @@ def main():
                 amp_seq = matches_max[seq_id]
 
                 # ─ PCR mismatch level (for reporting, not gating) ─
-                # Use degenerate IUPAC sequence for IUPAC-aware mismatch counting
-                fwd_mm = min_mismatches_sliding_window(fwd_deg, amp_seq)
-                rev_mm = min_mismatches_sliding_window(reverse_complement(rev_deg), amp_seq)
+                # For non-degenerate: use fwd_deg/rev_deg (same as majority) with IUPAC-aware match.
+                # For degenerate: rev_deg is in GENOMIC orientation (RC of 5'->3'); use it directly
+                # for matching against + strand amplicon (no additional RC needed).
+                if has_deg_pool:
+                    # rev_deg is genomic (RC of 5'->3'), match directly against + strand
+                    fwd_mm = min_mismatches_sliding_window(fwd_deg, amp_seq)
+                    rev_mm = min_mismatches_sliding_window(rev_deg, amp_seq)
+                else:
+                    # rev_deg is 5'->3' format, must RC before matching + strand
+                    fwd_mm = min_mismatches_sliding_window(fwd_deg, amp_seq)
+                    rev_mm = min_mismatches_sliding_window(reverse_complement(rev_deg), amp_seq)
                 p_mismatch = min(max(fwd_mm, rev_mm), args.max_mismatch)
 
-                # ─ RAA binding assessment — use IUPAC degenerate sequences ─
-                fwd_raa_ok, fwd_3p, fwd_int, _ = assess_raa_binding(
-                    fwd_deg, amp_seq,
-                    critical_3prime_bp=args.raa_3prime_bp,
-                    max_3prime_mm=args.raa_max_3prime_mm,
-                    max_internal_mm=args.raa_max_internal_mm,
-                )
-                rev_raa_ok, rev_3p, rev_int, _ = assess_raa_binding(
-                    reverse_complement(rev_deg), amp_seq,
-                    critical_3prime_bp=args.raa_3prime_bp,
-                    max_3prime_mm=args.raa_max_3prime_mm,
-                    max_internal_mm=args.raa_max_internal_mm,
-                )
+                # ─ RAA binding assessment — best-of-pool strategy ─
+                # For DEGENERATE track: evaluate all variants from fwd_possible and rev_possible.
+                #   fwd_possible: 5'->3' format → use directly for RAA binding check.
+                #   rev_possible: GENOMIC orientation → use directly against + strand amplicon.
+                # For NON-DEGENERATE: use majority sequences with correct RC for rev.
+                if has_deg_pool:
+                    # fwd: best-of-pool (fwd_possible is 5'->3')
+                    fwd_raa_ok = False
+                    fwd_3p, fwd_int = args.raa_3prime_bp, args.raa_max_internal_mm + 1
+                    for fwd_var in fwd_possible:
+                        ok, t3, ti, _ = assess_raa_binding(
+                            fwd_var, amp_seq,
+                            critical_3prime_bp=args.raa_3prime_bp,
+                            max_3prime_mm=args.raa_max_3prime_mm,
+                            max_internal_mm=args.raa_max_internal_mm,
+                        )
+                        if ok:
+                            fwd_raa_ok = True
+                            fwd_3p, fwd_int = t3, ti
+                            break
+                        if t3 < fwd_3p:
+                            fwd_3p, fwd_int = t3, ti
+
+                    # rev: best-of-pool (rev_possible is GENOMIC = matches + strand directly)
+                    rev_raa_ok = False
+                    rev_3p, rev_int = args.raa_3prime_bp, args.raa_max_internal_mm + 1
+                    for rev_var in rev_possible:
+                        ok, t3, ti, _ = assess_raa_binding(
+                            rev_var, amp_seq,
+                            critical_3prime_bp=args.raa_3prime_bp,
+                            max_3prime_mm=args.raa_max_3prime_mm,
+                            max_internal_mm=args.raa_max_internal_mm,
+                        )
+                        if ok:
+                            rev_raa_ok = True
+                            rev_3p, rev_int = t3, ti
+                            break
+                        if t3 < rev_3p:
+                            rev_3p, rev_int = t3, ti
+                else:
+                    # Non-degenerate: rev_deg is 5'->3', must RC before RAA assessment vs + strand
+                    fwd_raa_ok, fwd_3p, fwd_int, _ = assess_raa_binding(
+                        fwd_deg, amp_seq,
+                        critical_3prime_bp=args.raa_3prime_bp,
+                        max_3prime_mm=args.raa_max_3prime_mm,
+                        max_internal_mm=args.raa_max_internal_mm,
+                    )
+                    rev_raa_ok, rev_3p, rev_int, _ = assess_raa_binding(
+                        reverse_complement(rev_deg), amp_seq,
+                        critical_3prime_bp=args.raa_3prime_bp,
+                        max_3prime_mm=args.raa_max_3prime_mm,
+                        max_internal_mm=args.raa_max_internal_mm,
+                    )
+
                 is_raa_amplified = fwd_raa_ok and rev_raa_ok
                 raa_3p_mm  = max(fwd_3p, rev_3p)
                 raa_int_mm = max(fwd_int, rev_int)
 
                 # ─ Probe mismatch — use IUPAC degenerate probe sequence ─
+                # probe_deg and probe_possible are always in 5'->3' format.
                 if probe_deg:
-                    prb_mismatch = min_mismatches_sliding_window(probe_deg, amp_seq)
-                    probe_raa_ok, _, _, _ = assess_raa_binding(
-                        probe_deg, amp_seq,
-                        critical_3prime_bp=args.raa_3prime_bp,
-                        max_3prime_mm=args.raa_max_3prime_mm,
-                        max_internal_mm=args.raa_max_internal_mm,
-                    )
+                    if has_deg_pool and probe_possible:
+                        # Best-of-pool for probe (5'->3' format)
+                        prb_mismatch = min(
+                            min_mismatches_sliding_window(pv, amp_seq) for pv in probe_possible
+                        )
+                        probe_raa_ok = False
+                        for pv in probe_possible:
+                            ok, _, _, _ = assess_raa_binding(
+                                pv, amp_seq,
+                                critical_3prime_bp=args.raa_3prime_bp,
+                                max_3prime_mm=args.raa_max_3prime_mm,
+                                max_internal_mm=args.raa_max_internal_mm,
+                            )
+                            if ok:
+                                probe_raa_ok = True
+                                break
+                    else:
+                        prb_mismatch = min_mismatches_sliding_window(probe_deg, amp_seq)
+                        probe_raa_ok, _, _, _ = assess_raa_binding(
+                            probe_deg, amp_seq,
+                            critical_3prime_bp=args.raa_3prime_bp,
+                            max_3prime_mm=args.raa_max_3prime_mm,
+                            max_internal_mm=args.raa_max_internal_mm,
+                        )
                     raa_probe_mm = prb_mismatch
                 else:
                     prb_mismatch = 0
@@ -928,607 +1019,385 @@ def main():
     # 8. Generate coverage_report.md Report
     generate_markdown_report(summary_data, outdir / "coverage_report.md")
 
-def generate_heatmap_dashboard(summary_data: list, output_path: Path):
-    """Generate a premium interactive dark-mode HTML coverage dashboard."""
-    # Convert summary data to JSON for JS inclusion
-    data_json = json.dumps(summary_data, default=str)
-    
-    html_content = f"""<!DOCTYPE html>
+def generate_heatmap_dashboard(summary_data: list, output_path):
+    """Generate a premium interactive dark-mode HTML coverage dashboard with full PCR and RAA data."""
+    import json as _json
+    data_json = _json.dumps(summary_data, default=str)
+
+    html_content = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🧬 In-silico PCR Coverage Dashboard</title>
+    <title>\U0001f9ec In-silico PCR/RAA Coverage Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        :root {{
-            --bg-color: #0f172a;
-            --card-bg: rgba(30, 41, 59, 0.7);
-            --border-color: rgba(255, 255, 255, 0.1);
-            --accent-color: #10b981;
-            --accent-glow: rgba(16, 185, 129, 0.15);
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-        }}
-
-        * {{
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }}
-
-        body {{
-            font-family: 'Outfit', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            padding: 2rem;
-            min-height: 100vh;
-        }}
-
-        .dashboard-container {{
-            max-width: 1400px;
-            margin: 0 auto;
-        }}
-
-        header {{
-            margin-bottom: 2rem;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 1.5rem;
-        }}
-
-        h1 {{
-            font-size: 2.2rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #34d399 0%, #059669 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 0.5rem;
-        }}
-
-        .subtitle {{
-            color: var(--text-secondary);
-            font-size: 1rem;
-        }}
-
-        /* Toggle Switch Styling */
-        .toggle-container {{
-            display: inline-flex;
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 4px;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }}
-        .toggle-btn {{
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            font-family: inherit;
-            font-size: 0.95rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }}
-        .toggle-btn.active {{
-            background-color: var(--accent-color);
-            color: #0f172a;
-            box-shadow: 0 4px 12px -2px var(--accent-glow);
-        }}
-        .toggle-btn:hover:not(.active) {{
-            color: var(--text-primary);
-            background-color: rgba(255, 255, 255, 0.05);
-        }}
-
-        .controls {{
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            background: var(--card-bg);
-            padding: 1rem;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            backdrop-filter: blur(10px);
-        }}
-
-        label {{
-            font-weight: 600;
-            color: var(--text-secondary);
-        }}
-
-        select {{
-            background-color: #1e293b;
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            font-family: 'Outfit', sans-serif;
-            font-size: 1rem;
-            cursor: pointer;
-            outline: none;
-            transition: all 0.3s ease;
-        }}
-
-        select:focus {{
-            border-color: var(--accent-color);
-            box-shadow: 0 0 10px var(--accent-glow);
-        }}
-
-        .stats-grid {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }}
-
-        .stat-card {{
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 1.5rem;
-            backdrop-filter: blur(10px);
-            transition: transform 0.3s ease, border-color 0.3s ease;
-        }}
-
-        .stat-card:hover {{
-            transform: translateY(-5px);
-            border-color: var(--accent-color);
-        }}
-
-        .stat-label {{
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 0.5rem;
-        }}
-
-        .stat-value {{
-            font-size: 1.8rem;
-            font-weight: 700;
-        }}
-
-        .stat-value.highlight {{
-            color: var(--accent-color);
-            text-shadow: 0 0 10px var(--accent-glow);
-        }}
-
-        .seq-info {{
-            font-family: monospace;
-            font-size: 0.9rem;
-            background: #0f172a;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            border: 1px solid rgba(255,255,255,0.05);
-            word-break: break-all;
-        }}
-
-        .main-layout {{
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 2rem;
-        }}
-
-        @media (min-width: 1024px) {{
-            .main-layout {{
-                grid-template-columns: 1fr 1fr;
-            }}
-            .heatmap-full {{
-                grid-column: span 2;
-            }}
-        }}
-
-        .card {{
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 1.5rem;
-            backdrop-filter: blur(10px);
-        }}
-
-        .card-title {{
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 0.75rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }}
-
-        table {{
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 0.5rem;
-        }}
-
-        th, td {{
-            padding: 0.75rem 1rem;
-            text-align: left;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }}
-
-        th {{
-            color: var(--text-secondary);
-            font-weight: 600;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-        }}
-
-        .heatmap-cell {{
-            font-weight: 700;
-            text-align: center;
-            border-radius: 6px;
-            color: #0f172a;
-            transition: all 0.2s ease;
-        }}
-
-        .heatmap-cell:hover {{
-            transform: scale(1.05);
-        }}
-
-        .badge {{
-            padding: 0.25rem 0.5rem;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            background: var(--accent-glow);
-            color: var(--accent-color);
-            border: 1px solid var(--accent-color);
-        }}
+        :root {
+            --bg:#080f1e;--surface:#0f1e35;--surface2:#162036;
+            --card-bg:rgba(22,33,62,0.85);--border:rgba(255,255,255,0.07);
+            --accent-pcr:#10b981;--accent-pcr-dim:rgba(16,185,129,0.15);
+            --accent-raa:#6366f1;--accent-raa-dim:rgba(99,102,241,0.15);
+            --accent-design:#a78bfa;--text-1:#f0f6ff;--text-2:#8b9dc0;
+        }
+        *{box-sizing:border-box;margin:0;padding:0;}
+        body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text-1);padding:2rem;}
+        .dashboard{max-width:1500px;margin:0 auto;}
+        header{margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border);}
+        .header-flex{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem;}
+        h1{font-size:2rem;font-weight:700;background:linear-gradient(135deg,#34d399 0%,#6366f1 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:0.4rem;}
+        .subtitle{color:var(--text-2);font-size:0.95rem;line-height:1.6;}
+        .toggle-container{display:inline-flex;background:var(--card-bg);border:1px solid var(--border);border-radius:14px;padding:4px;box-shadow:0 8px 20px rgba(0,0,0,0.3);}
+        .toggle-btn{background:none;border:none;color:var(--text-2);padding:10px 22px;border-radius:10px;font-weight:600;cursor:pointer;transition:all 0.25s ease;font-family:inherit;font-size:0.9rem;display:flex;align-items:center;gap:8px;white-space:nowrap;}
+        .toggle-btn.active-global{background:var(--accent-pcr);color:#0a1628;box-shadow:0 4px 16px rgba(16,185,129,0.3);}
+        .toggle-btn.active-design{background:var(--accent-design);color:#0a1628;box-shadow:0 4px 16px rgba(167,139,250,0.3);}
+        .toggle-btn:hover:not(.active-global):not(.active-design){color:var(--text-1);background:rgba(255,255,255,0.05);}
+        .controls{display:flex;align-items:center;gap:1rem;margin-bottom:2rem;background:var(--card-bg);padding:1rem 1.5rem;border-radius:14px;border:1px solid var(--border);flex-wrap:wrap;}
+        .controls label{font-weight:600;color:var(--text-2);font-size:0.9rem;}
+        select{background:var(--surface2);color:var(--text-1);border:1px solid var(--border);padding:0.5rem 1rem;border-radius:8px;font-family:inherit;font-size:0.95rem;cursor:pointer;outline:none;flex:1;min-width:280px;}
+        select:focus{border-color:var(--accent-pcr);}
+        .dual-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.5rem;margin-bottom:2rem;}
+        .metric-card{background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:1.5rem;backdrop-filter:blur(10px);transition:border-color 0.3s,transform 0.3s;}
+        .metric-card:hover{border-color:rgba(16,185,129,0.35);transform:translateY(-3px);}
+        .metric-label{font-size:0.8rem;color:var(--text-2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.8rem;}
+        .metric-dual{display:flex;align-items:baseline;gap:1.5rem;}
+        .metric-block{flex:1;}
+        .metric-mode-label{font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.2rem;}
+        .metric-value{font-size:1.7rem;font-weight:700;}
+        .pcr-color{color:var(--accent-pcr);}
+        .raa-color{color:var(--accent-raa);}
+        .divider-v{width:1px;background:var(--border);height:50px;align-self:center;}
+        .prog-wrap{height:4px;background:rgba(255,255,255,0.05);border-radius:9px;margin-top:0.6rem;overflow:hidden;}
+        .prog-bar{height:100%;border-radius:9px;transition:width 0.6s ease;}
+        .seq-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:2rem;}
+        @media(max-width:1100px){.seq-grid{grid-template-columns:1fr 1fr;}}
+        @media(max-width:700px){.seq-grid{grid-template-columns:1fr;}}
+        .seq-card{background:var(--card-bg);border:1px solid var(--border);border-radius:14px;padding:1.2rem;}
+        .seq-title{font-size:0.78rem;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-2);margin-bottom:0.6rem;}
+        .seq-mono{font-family:'JetBrains Mono',monospace;font-size:0.82rem;background:#060d1a;padding:0.6rem 0.8rem;border-radius:8px;border:1px solid rgba(255,255,255,0.04);word-break:break-all;line-height:1.6;color:#a5f3c3;}
+        .seq-deg-note{font-size:0.72rem;color:var(--text-2);margin-top:0.4rem;}
+        .design-banner{background:linear-gradient(135deg,rgba(139,92,246,0.12),rgba(109,40,217,0.08));border:1px solid rgba(139,92,246,0.3);border-radius:16px;padding:1.2rem 1.5rem;margin-bottom:2rem;}
+        .design-banner-header{font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#a78bfa;margin-bottom:0.8rem;}
+        .design-content{display:flex;gap:2.5rem;flex-wrap:wrap;align-items:center;}
+        .design-stat-label{font-size:0.72rem;color:rgba(167,139,250,0.65);margin-bottom:0.2rem;}
+        .design-stat-value{font-size:1.5rem;font-weight:700;color:#c4b5fd;}
+        .design-bar-wrap{flex:1;min-width:120px;}
+        .design-bar-track{background:rgba(255,255,255,0.05);border-radius:9px;height:8px;overflow:hidden;}
+        .design-bar-fill{height:100%;border-radius:9px;transition:width 0.6s ease;}
+        .main-layout{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;}
+        @media(max-width:900px){.main-layout{grid-template-columns:1fr;}.full-width{grid-column:span 1!important;}}
+        .full-width{grid-column:span 2;}
+        .card{background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:1.5rem;backdrop-filter:blur(10px);}
+        .card-title{font-size:1.05rem;font-weight:600;margin-bottom:1.2rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+        .badge{padding:0.2rem 0.6rem;border-radius:6px;font-size:0.75rem;font-weight:600;}
+        .badge-pcr{background:var(--accent-pcr-dim);color:var(--accent-pcr);border:1px solid rgba(16,185,129,0.3);}
+        .badge-raa{background:var(--accent-raa-dim);color:var(--accent-raa);border:1px solid rgba(99,102,241,0.3);}
+        table{width:100%;border-collapse:collapse;font-size:0.88rem;}
+        th,td{padding:0.6rem 0.75rem;text-align:left;border-bottom:1px solid rgba(255,255,255,0.04);}
+        th{color:var(--text-2);font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;}
+        tr:hover td{background:rgba(255,255,255,0.02);}
+        .cov-cell{font-weight:700;border-radius:6px;padding:0.35rem 0.55rem;display:inline-block;transition:transform 0.15s;font-size:0.85rem;}
+        .cov-cell:hover{transform:scale(1.08);}
+        .mini-bar{width:100%;background:rgba(255,255,255,0.06);border-radius:4px;height:4px;margin-top:3px;overflow:hidden;}
+        .mini-bar-fill{height:100%;border-radius:4px;}
     </style>
 </head>
 <body>
-    <div class="dashboard-container">
-        <header>
-            <h1>🧬 PCR In-silico Validation Heatmap</h1>
-            <div class="subtitle">Validasi diagnostik komprehensif terhadap database sekuens mentah.</div>
-        </header>
-
-        <!-- Toggle Switch -->
-        <div class="toggle-container">
-            <button class="toggle-btn active" id="btn-global" onclick="setDatasetMode('global')">
-                🌍 Global Surveillance DB (50k)
-            </button>
-            <button class="toggle-btn" id="btn-design" onclick="setDatasetMode('design')">
-                🎯 Design DB (Indonesia 645)
-            </button>
-        </div>
-
-        <div class="controls">
-            <label for="candidateSelect">Select Candidate:</label>
-            <select id="candidateSelect" onchange="updateDashboard(this.value)">
-                <!-- Dropdown items dynamically loaded -->
-            </select>
-        </div>
-
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-label">Candidate Region / Rank</div>
-                <div id="statRegionRank" class="stat-value">Region - Rank</div>
+<div class="dashboard">
+    <header>
+        <div class="header-flex">
+            <div>
+                <h1>\U0001f9ec PCR &amp; RAA Coverage Dashboard</h1>
+                <div class="subtitle">
+                    Dual-mode in-silico validation: <span style="color:var(--accent-pcr);font-weight:600;">PCR</span> (seqkit amplicon)
+                    &amp; <span style="color:var(--accent-raa);font-weight:600;">RAA/RPA</span> (recombinase binding model).
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">Surveillance DB (50k EpiFlu) · Total Sequences</div>
-                <div id="statTotalSeqs" class="stat-value">0</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Overall Amplification (Primers)</div>
-                <div id="statAmpCoverage" class="stat-value highlight">0%</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Overall Detection (Primers + Probe)</div>
-                <div id="statDetCoverage" class="stat-value highlight">0%</div>
+            <div class="toggle-container">
+                <button class="toggle-btn active-global" id="btn-global" onclick="setDatasetMode('global')">\U0001f30d Global Surveillance DB</button>
+                <button class="toggle-btn" id="btn-design" onclick="setDatasetMode('design')">\U0001f3af Design DB Only</button>
             </div>
         </div>
+    </header>
 
-        <!-- Design DB Banner -->
-        <div id="designDbBanner" style="
-            background: linear-gradient(135deg, rgba(139,92,246,0.15) 0%, rgba(109,40,217,0.1) 100%);
-            border: 1px solid rgba(139,92,246,0.4);
-            border-radius: 16px;
-            padding: 1.2rem 1.5rem;
-            margin-bottom: 2rem;
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-            flex-wrap: wrap;
-        ">
-            <div style="flex:0 0 auto;">
-                <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:rgba(167,139,250,0.8);margin-bottom:0.3rem;">🎯 Design DB Coverage</div>
-                <div style="font-size:0.8rem;color:rgba(167,139,250,0.65);">Sekuens yang digunakan untuk mendesain primer (M02 filtered)</div>
-            </div>
-            <div style="flex:1;display:flex;gap:2rem;flex-wrap:wrap;">
-                <div>
-                    <div style="font-size:0.75rem;color:rgba(167,139,250,0.65);margin-bottom:0.2rem;">Total Sequences</div>
-                    <div id="designDbTotal" style="font-size:1.4rem;font-weight:700;color:#a78bfa;">—</div>
+    <div class="controls">
+        <label for="candidateSelect">Select Candidate:</label>
+        <select id="candidateSelect" onchange="updateDashboard(this.value)"></select>
+    </div>
+
+    <div class="dual-metrics">
+        <div class="metric-card">
+            <div class="metric-label">Candidate &middot; Region &middot; Rank</div>
+            <div id="statRegion" style="font-size:1.2rem;font-weight:700;">&mdash;</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Total Sequences (DB)</div>
+            <div id="statTotal" style="font-size:1.7rem;font-weight:700;">&mdash;</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">\U0001f52c Amplification Coverage</div>
+            <div class="metric-dual">
+                <div class="metric-block">
+                    <div class="metric-mode-label pcr-color">PCR</div>
+                    <div class="metric-value pcr-color" id="pcrAmpPct">&mdash;%</div>
+                    <div class="prog-wrap"><div class="prog-bar" id="pcrAmpBar" style="background:var(--accent-pcr);width:0%;"></div></div>
                 </div>
-                <div>
-                    <div style="font-size:0.75rem;color:rgba(167,139,250,0.65);margin-bottom:0.2rem;">PCR Amplified</div>
-                    <div id="designDbAmplified" style="font-size:1.4rem;font-weight:700;color:#a78bfa;">—</div>
-                </div>
-                <div>
-                    <div style="font-size:0.75rem;color:rgba(167,139,250,0.65);margin-bottom:0.2rem;">Coverage (%)</div>
-                    <div id="designDbPct" style="font-size:2rem;font-weight:700;color:#c4b5fd;">—%</div>
-                </div>
-                <div style="align-self:center;flex:1;">
-                    <div style="font-size:0.75rem;color:rgba(167,139,250,0.65);margin-bottom:0.4rem;">Coverage Bar</div>
-                    <div style="background:rgba(255,255,255,0.05);border-radius:999px;height:8px;width:100%;min-width:100px;">
-                        <div id="designDbBar" style="height:100%;border-radius:999px;background:linear-gradient(90deg,#7c3aed,#a78bfa);width:0%;transition:width 0.6s ease;"></div>
-                    </div>
+                <div class="divider-v"></div>
+                <div class="metric-block">
+                    <div class="metric-mode-label raa-color">RAA</div>
+                    <div class="metric-value raa-color" id="raaAmpPct">&mdash;</div>
+                    <div class="prog-wrap"><div class="prog-bar" id="raaAmpBar" style="background:var(--accent-raa);width:0%;"></div></div>
                 </div>
             </div>
         </div>
-
-        <div class="stats-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom: 2rem;">
-            <div class="stat-card">
-                <div class="stat-label">Forward Primer Sequence (5' → 3')</div>
-                <div id="seqFwd" class="seq-info">-</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Reverse Primer Sequence (5' → 3')</div>
-                <div id="seqRev" class="seq-info">-</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Probe Sequence (5' → 3')</div>
-                <div id="seqProbe" class="seq-info">-</div>
+        <div class="metric-card">
+            <div class="metric-label">\U0001f3af Detection Coverage (+Probe)</div>
+            <div class="metric-dual">
+                <div class="metric-block">
+                    <div class="metric-mode-label pcr-color">PCR</div>
+                    <div class="metric-value pcr-color" id="pcrDetPct">&mdash;%</div>
+                    <div class="prog-wrap"><div class="prog-bar" id="pcrDetBar" style="background:var(--accent-pcr);width:0%;"></div></div>
+                </div>
+                <div class="divider-v"></div>
+                <div class="metric-block">
+                    <div class="metric-mode-label raa-color">RAA</div>
+                    <div class="metric-value raa-color" id="raaDetPct">&mdash;</div>
+                    <div class="prog-wrap"><div class="prog-bar" id="raaDetBar" style="background:var(--accent-raa);width:0%;"></div></div>
+                </div>
             </div>
         </div>
+    </div>
 
+    <div class="design-banner" id="designBanner" style="display:none;">
+        <div class="design-banner-header">\U0001f3af Design DB Coverage (sekuens yang dipakai desain primer &mdash; M02 filtered)</div>
+        <div class="design-content">
+            <div><div class="design-stat-label">Total Sequences</div><div class="design-stat-value" id="designTotal">&mdash;</div></div>
+            <div><div class="design-stat-label">PCR Amplified</div><div class="design-stat-value" id="designAmplified">&mdash;</div></div>
+            <div><div class="design-stat-label">Coverage</div><div class="design-stat-value" id="designPct">&mdash;%</div></div>
+            <div class="design-bar-wrap">
+                <div class="design-stat-label">Coverage Bar</div>
+                <div class="design-bar-track"><div class="design-bar-fill" id="designBar" style="width:0%;background:linear-gradient(90deg,#7c3aed,#a78bfa);"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="seq-grid">
+        <div class="seq-card">
+            <div class="seq-title">&#x2B06; Forward Primer (5&#x27;&#x2192;3&#x27;) &mdash; Majority</div>
+            <div class="seq-mono" id="seqFwd">&mdash;</div>
+            <div class="seq-deg-note" id="seqFwdDeg" style="display:none;"></div>
+        </div>
+        <div class="seq-card">
+            <div class="seq-title">&#x2B07; Reverse Primer (5&#x27;&#x2192;3&#x27;) &mdash; Majority</div>
+            <div class="seq-mono" id="seqRev">&mdash;</div>
+            <div class="seq-deg-note" id="seqRevDeg" style="display:none;"></div>
+        </div>
+        <div class="seq-card">
+            <div class="seq-title">&#x1F534; Probe Sequence (5&#x27;&#x2192;3&#x27;)</div>
+            <div class="seq-mono" id="seqProbe">&mdash;</div>
+            <div class="seq-deg-note" id="seqProbeDeg" style="display:none;"></div>
+        </div>
+    </div>
+
+    <div id="globalTables">
         <div class="main-layout">
             <div class="card">
                 <div class="card-title">
-                    <span>Subtype Coverage Distribution</span>
-                    <span class="badge">EpiFlu Subtypes</span>
+                    Subtype Coverage Distribution
+                    <div style="display:flex;gap:0.5rem;">
+                        <span class="badge badge-pcr">PCR</span>
+                        <span class="badge badge-raa">RAA</span>
+                    </div>
                 </div>
                 <table id="subtypeTable">
-                    <thead>
-                        <tr>
-                            <th>Subtype</th>
-                            <th>Total Seqs</th>
-                            <th>PCR Amp (%)</th>
-                            <th>PCR Det (%)</th>
-                            <th>RAA Amp (%)</th>
-                            <th>RAA Det (%)</th>
-                        </tr>
-                    </thead>
+                    <thead><tr>
+                        <th>Subtype</th><th>N</th>
+                        <th style="color:var(--accent-pcr);">PCR Amp</th>
+                        <th style="color:var(--accent-pcr);">PCR Det</th>
+                        <th style="color:var(--accent-raa);">RAA Amp</th>
+                        <th style="color:var(--accent-raa);">RAA Det</th>
+                    </tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
-
             <div class="card">
                 <div class="card-title">
-                    <span>Collection Year Breakdown</span>
-                    <span class="badge">Temporal Coverage</span>
+                    Collection Year Breakdown
+                    <span class="badge badge-pcr">Temporal</span>
                 </div>
                 <table id="yearTable">
-                    <thead>
-                        <tr>
-                            <th>Year</th>
-                            <th>Total Seqs</th>
-                            <th>PCR Amp (%)</th>
-                            <th>PCR Det (%)</th>
-                            <th>RAA Amp (%)</th>
-                            <th>RAA Det (%)</th>
-                        </tr>
-                    </thead>
+                    <thead><tr>
+                        <th>Year</th><th>N</th>
+                        <th style="color:var(--accent-pcr);">PCR Amp</th>
+                        <th style="color:var(--accent-pcr);">PCR Det</th>
+                        <th style="color:var(--accent-raa);">RAA Amp</th>
+                        <th style="color:var(--accent-raa);">RAA Det</th>
+                    </tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
-
-            <div class="card heatmap-full">
+            <div class="card full-width">
                 <div class="card-title">
-                    <span>Country Coverage Breakdown</span>
-                    <span class="badge">Geographical Coverage</span>
+                    Country Coverage Breakdown
+                    <span class="badge badge-raa">Geographical</span>
                 </div>
                 <table id="countryTable">
-                    <thead>
-                        <tr>
-                            <th>Country</th>
-                            <th>Total Seqs</th>
-                            <th>PCR Amp (%)</th>
-                            <th>PCR Det (%)</th>
-                            <th>RAA Amp (%)</th>
-                            <th>RAA Det (%)</th>
-                        </tr>
-                    </thead>
+                    <thead><tr>
+                        <th>Country</th><th>N</th>
+                        <th style="color:var(--accent-pcr);">PCR Amp</th>
+                        <th style="color:var(--accent-pcr);">PCR Det</th>
+                        <th style="color:var(--accent-raa);">RAA Amp</th>
+                        <th style="color:var(--accent-raa);">RAA Det</th>
+                    </tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
         </div>
     </div>
+</div>
 
-    <script>
-        // Load data from python
-        const candidatesData = {data_json};
-        let currentMode = 'global';
-
-        // Initialize select dropdown
-        const select = document.getElementById("candidateSelect");
-        candidatesData.forEach((cand, idx) => {{
-            const option = document.createElement("option");
-            option.value = idx;
-            const detPct = cand.pcr_detected_pct ?? cand.detected_pct ?? 0;
-            const raaDetPct = cand.raa_detected_pct ?? "—";
-            option.textContent = `${{cand.cand_id}} (PCR Det: ${{detPct}}%, RAA Det: ${{raaDetPct}}%)`;
-            select.appendChild(option);
-        }});
-
-        function getCellColor(pct) {{
-            if (pct >= 95.0) {{
-                return `background-color: rgba(16, 185, 129, 0.95); color: #0f172a;`;
-            }} else if (pct >= 85.0) {{
-                return `background-color: rgba(52, 211, 153, 0.8); color: #0f172a;`;
-            }} else if (pct >= 50.0) {{
-                return `background-color: rgba(245, 158, 11, 0.9); color: #0f172a;`;
-            }} else {{
-                return `background-color: rgba(239, 68, 68, 0.9); color: #f8fafc;`;
-            }}
-        }}
-
-        function populateTable(tableId, data, categoryKey) {{
-            const tbody = document.querySelector(`#${{tableId}} tbody`);
-            tbody.innerHTML = "";
-            if (!data) return;
-            
-            // Limit geographical list to top 25 countries to prevent screen bloat
-            let displayData = data;
-            if (tableId === "countryTable" && data.length > 25) {{
-                displayData = data.slice(0, 25);
-            }}
-
-            displayData.forEach(row => {{
-                const tr = document.createElement("tr");
-                
-                const tdCat = document.createElement("td");
-                tdCat.textContent = row[categoryKey];
-                tr.appendChild(tdCat);
-                
-                const tdTotal = document.createElement("td");
-                tdTotal.textContent = row.total.toLocaleString();
-                tr.appendChild(tdTotal);
-                
-                const tdAmp = document.createElement("td");
-                tdAmp.className = "heatmap-cell";
-                tdAmp.style = getCellColor(row.pcr_amplified_pct ?? row.amplified_pct ?? 0);
-                tdAmp.textContent = `${{(row.pcr_amplified_pct ?? row.amplified_pct ?? 0)}}%`;
-                tr.appendChild(tdAmp);
-
-                const tdDet = document.createElement("td");
-                tdDet.className = "heatmap-cell";
-                tdDet.style = getCellColor(row.pcr_detected_pct ?? row.detected_pct ?? 0);
-                tdDet.textContent = `${{(row.pcr_detected_pct ?? row.detected_pct ?? 0)}}%`;
-                tr.appendChild(tdDet);
-
-                const tdRaaAmp = document.createElement("td");
-                tdRaaAmp.className = "heatmap-cell";
-                tdRaaAmp.style = getCellColor(row.raa_amplified_pct ?? 0);
-                tdRaaAmp.textContent = `${{(row.raa_amplified_pct ?? "-")}}%`;
-                tr.appendChild(tdRaaAmp);
-
-                const tdRaaDet = document.createElement("td");
-                tdRaaDet.className = "heatmap-cell";
-                tdRaaDet.style = getCellColor(row.raa_detected_pct ?? 0);
-                tdRaaDet.textContent = `${{(row.raa_detected_pct ?? "-")}}%`;
-                tr.appendChild(tdRaaDet);
-
-                tbody.appendChild(tr);
-            }});
-            
-            if (tableId === "countryTable" && data.length > 25) {{
-                const tr = document.createElement("tr");
-                const td = document.createElement("td");
-                td.colSpan = 6;
-                td.style = "text-align: center; color: var(--text-secondary); font-style: italic;";
-                td.textContent = `Showing top 25 countries out of ${{data.length}} total.`;
-                tr.appendChild(td);
-                tbody.appendChild(tr);
-            }}
-        }}
-
-        function setDatasetMode(mode) {{
-            currentMode = mode;
-            document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
-            if (mode === 'global') {{
-                document.getElementById('btn-global').classList.add('active');
-                document.querySelector('.main-layout').style.display = 'grid';
-            }} else {{
-                document.getElementById('btn-design').classList.add('active');
-                document.querySelector('.main-layout').style.display = 'none';
-            }}
-            updateDashboard(document.getElementById("candidateSelect").value);
-        }}
-
-        function updateDashboard(index) {{
-            const cand = candidatesData[index];
-            if (!cand) return;
-
-            // Update stats cards
-            document.getElementById("statRegionRank").textContent = `${{cand.region}} - Rank ${{cand.rank}}`;
-            
-            const statTotalSeqs = document.getElementById("statTotalSeqs");
-            const labelTotalSeqs = statTotalSeqs.previousElementSibling;
-            const statAmp = document.getElementById("statAmpCoverage");
-            const labelAmp = statAmp.previousElementSibling;
-            const statDet = document.getElementById("statDetCoverage");
-            const labelDet = statDet.previousElementSibling;
-
-            if (currentMode === 'global') {{
-                labelTotalSeqs.textContent = "Surveillance DB (50k EpiFlu) · Total Sequences";
-                statTotalSeqs.textContent = cand.total_seqs.toLocaleString();
-                
-                labelAmp.textContent = "Overall Amplification (Primers)";
-                const pcrAmp = cand.pcr_amplified_pct ?? cand.amplified_pct ?? 0;
-                const raaAmp = cand.raa_amplified_pct ?? "—";
-                statAmp.textContent = `PCR: ${{pcrAmp}}% | RAA: ${{raaAmp}}%`;
-                
-                labelDet.textContent = "Overall Detection (Primers + Probe)";
-                const pcrDet = cand.pcr_detected_pct ?? cand.detected_pct ?? 0;
-                const raaDet = cand.raa_detected_pct ?? "—";
-                statDet.textContent = `PCR: ${{pcrDet}}% | RAA: ${{raaDet}}%`;
-            }} else {{
-                labelTotalSeqs.textContent = "Design DB (Indonesia 645) · Total Sequences";
-                statTotalSeqs.textContent = (cand.design_db_total || 0).toLocaleString();
-                
-                labelAmp.textContent = "Design DB Amplification (PCR)";
-                const dpct = cand.design_db_amplified_pct ?? 0;
-                statAmp.textContent = `${{dpct}}%`;
-                
-                labelDet.textContent = "Design DB Status";
-                statDet.textContent = "PCR Only (No RAA simulated)";
-            }}
-
-            // Update Design DB banner
-            const banner = document.getElementById("designDbBanner");
-            if (cand.design_db_total && cand.design_db_total > 0 && currentMode === 'global') {{
-                banner.style.display = "flex";
-                document.getElementById("designDbTotal").textContent = cand.design_db_total.toLocaleString();
-                document.getElementById("designDbAmplified").textContent = cand.design_db_amplified.toLocaleString();
-                const dpct = cand.design_db_amplified_pct ?? 0;
-                document.getElementById("designDbPct").textContent = `${{dpct}}%`;
-                document.getElementById("designDbBar").style.width = `${{Math.min(dpct, 100)}}%`;
-                // Color bar by coverage level
-                const barEl = document.getElementById("designDbBar");
-                if (dpct >= 80) barEl.style.background = "linear-gradient(90deg,#059669,#34d399)";
-                else if (dpct >= 50) barEl.style.background = "linear-gradient(90deg,#7c3aed,#a78bfa)";
-                else if (dpct >= 30) barEl.style.background = "linear-gradient(90deg,#d97706,#fbbf24)";
-                else barEl.style.background = "linear-gradient(90deg,#dc2626,#f87171)";
-            }} else {{
-                banner.style.display = "none";
-            }}
-
-            // Update detailed sequences
-            document.getElementById("seqFwd").textContent = cand.fwd_seq;
-            document.getElementById("seqRev").textContent = cand.rev_seq;
-            document.getElementById("seqProbe").textContent = cand.probe_seq || "\u2014 (No Probe)";
-
-            // Populate breakdown tables
-            if (currentMode === 'global') {{
-                populateTable("subtypeTable", cand.breakdowns.subtype, "subtype");
-                populateTable("yearTable", cand.breakdowns.year, "year");
-                populateTable("countryTable", cand.breakdowns.country, "country");
-            }}
-        }}
-
-        // Initialize dashboard with the first candidate
-        if (candidatesData.length > 0) {{
-            updateDashboard(0);
-        }}
-    </script>
+<script>
+""" + "    const candidatesData = " + data_json + """;
+    let currentMode = 'global';
+    const sel = document.getElementById('candidateSelect');
+    candidatesData.forEach((c, i) => {
+        const opt = document.createElement('option');
+        opt.value = i;
+        const pa = c.pcr_amplified_pct ?? 0;
+        const ra = c.raa_amplified_pct ?? '\u2014';
+        const nc = c.n_combinations > 1 ? ` [${c.n_combinations} combos]` : '';
+        opt.textContent = `${c.cand_id}${nc}  |  PCR Amp: ${pa}%  \u00b7  RAA Amp: ${ra}%`;
+        sel.appendChild(opt);
+    });
+    function pctStyle(pct) {
+        const v = parseFloat(pct || 0);
+        if (v >= 80) return 'background:rgba(52,211,153,0.85);color:#052e1c;';
+        if (v >= 60) return 'background:rgba(16,185,129,0.7);color:#052e1c;';
+        if (v >= 35) return 'background:rgba(251,191,36,0.85);color:#1a0e00;';
+        if (v >= 15) return 'background:rgba(251,146,60,0.85);color:#1a0500;';
+        return 'background:rgba(248,113,113,0.85);color:#1a0000;';
+    }
+    function barColor(pct, type) {
+        const v = parseFloat(pct || 0);
+        if (type === 'raa') { return v >= 70 ? '#6366f1' : v >= 40 ? '#818cf8' : '#f87171'; }
+        return v >= 70 ? '#10b981' : v >= 40 ? '#fbbf24' : '#f87171';
+    }
+    function makeCell(pct, type) {
+        const td = document.createElement('td');
+        const span = document.createElement('span');
+        span.className = 'cov-cell';
+        span.style.cssText = pctStyle(pct);
+        span.textContent = pct !== null && pct !== undefined ? `${pct}%` : '\u2014';
+        const bar = document.createElement('div'); bar.className = 'mini-bar';
+        const fill = document.createElement('div'); fill.className = 'mini-bar-fill';
+        fill.style.width = `${Math.min(parseFloat(pct||0), 100)}%`;
+        fill.style.background = barColor(pct, type);
+        bar.appendChild(fill);
+        const w = document.createElement('div');
+        w.appendChild(span); w.appendChild(bar);
+        td.appendChild(w);
+        return td;
+    }
+    function populateTable(tid, data, catKey, maxRows) {
+        const tbody = document.querySelector(`#${tid} tbody`);
+        tbody.innerHTML = '';
+        if (!data) return;
+        const rows = maxRows ? data.slice(0, maxRows) : data;
+        rows.forEach(row => {
+            const tr = document.createElement('tr');
+            const tdCat = document.createElement('td'); tdCat.textContent = row[catKey] || '\u2014'; tr.appendChild(tdCat);
+            const tdN = document.createElement('td'); tdN.textContent = (row.total||0).toLocaleString(); tdN.style.color='var(--text-2)'; tr.appendChild(tdN);
+            tr.appendChild(makeCell(row.pcr_amplified_pct ?? row.amplified_pct, 'pcr'));
+            tr.appendChild(makeCell(row.pcr_detected_pct ?? row.detected_pct, 'pcr'));
+            tr.appendChild(makeCell(row.raa_amplified_pct, 'raa'));
+            tr.appendChild(makeCell(row.raa_detected_pct, 'raa'));
+            tbody.appendChild(tr);
+        });
+        if (maxRows && data.length > maxRows) {
+            const tr = document.createElement('tr');
+            const td = document.createElement('td'); td.colSpan = 6;
+            td.style.cssText = 'text-align:center;color:var(--text-2);font-style:italic;padding:0.5rem;';
+            td.textContent = `Showing ${maxRows} of ${data.length} entries`;
+            tr.appendChild(td); tbody.appendChild(tr);
+        }
+    }
+    function setDatasetMode(mode) {
+        currentMode = mode;
+        document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active-global','active-design'));
+        if (mode === 'global') {
+            document.getElementById('btn-global').classList.add('active-global');
+            document.getElementById('globalTables').style.display = 'block';
+        } else {
+            document.getElementById('btn-design').classList.add('active-design');
+            document.getElementById('globalTables').style.display = 'none';
+        }
+        updateDashboard(sel.value);
+    }
+    function updateDashboard(idx) {
+        const c = candidatesData[idx]; if (!c) return;
+        document.getElementById('statRegion').textContent = `${c.region} \u00b7 Rank ${c.rank}`;
+        const total = currentMode === 'global' ? (c.total_seqs||0) : (c.design_db_total||0);
+        document.getElementById('statTotal').textContent = total.toLocaleString();
+        let pcrAmp=0,pcrDet=0,raaAmp=null,raaDet=null;
+        if (currentMode === 'global') {
+            pcrAmp=c.pcr_amplified_pct??0; pcrDet=c.pcr_detected_pct??0;
+            raaAmp=c.raa_amplified_pct; raaDet=c.raa_detected_pct;
+        } else { pcrAmp=c.design_db_amplified_pct??0; pcrDet=pcrAmp; }
+        document.getElementById('pcrAmpPct').textContent=`${pcrAmp}%`;
+        document.getElementById('pcrDetPct').textContent=`${pcrDet}%`;
+        document.getElementById('raaAmpPct').textContent=raaAmp!=null?`${raaAmp}%`:'\u2014';
+        document.getElementById('raaDetPct').textContent=raaDet!=null?`${raaDet}%`:'\u2014';
+        [['pcrAmpBar',pcrAmp,'pcr'],['pcrDetBar',pcrDet,'pcr'],['raaAmpBar',raaAmp,'raa'],['raaDetBar',raaDet,'raa']].forEach(([id,v,t])=>{
+            const el=document.getElementById(id);
+            el.style.width=`${Math.min(parseFloat(v||0),100)}%`;
+            el.style.background=barColor(v,t);
+        });
+        const banner=document.getElementById('designBanner');
+        if (c.design_db_total>0 && currentMode==='global') {
+            banner.style.display='block';
+            document.getElementById('designTotal').textContent=c.design_db_total.toLocaleString();
+            document.getElementById('designAmplified').textContent=c.design_db_amplified.toLocaleString();
+            const dp=c.design_db_amplified_pct||0;
+            document.getElementById('designPct').textContent=`${dp}%`;
+            const db=document.getElementById('designBar');
+            db.style.width=`${Math.min(dp,100)}%`;
+            db.style.background=dp>=80?'linear-gradient(90deg,#059669,#34d399)':dp>=50?'linear-gradient(90deg,#7c3aed,#a78bfa)':dp>=30?'linear-gradient(90deg,#d97706,#fbbf24)':'linear-gradient(90deg,#dc2626,#f87171)';
+        } else { banner.style.display='none'; }
+        document.getElementById('seqFwd').textContent=c.fwd_seq||'\u2014';
+        document.getElementById('seqRev').textContent=c.rev_seq||'\u2014';
+        document.getElementById('seqProbe').textContent=c.probe_seq||'\u2014 (No Probe)';
+        const fwdDeg=document.getElementById('seqFwdDeg');
+        const revDeg=document.getElementById('seqRevDeg');
+        const prbDeg=document.getElementById('seqProbeDeg');
+        if (c.fwd_degenerate_seq && c.fwd_degenerate_seq!==c.fwd_seq) {
+            fwdDeg.innerHTML=`\U0001f9ec IUPAC: <span style="font-family:'JetBrains Mono',monospace;color:#c4b5fd;font-size:0.8rem;">${c.fwd_degenerate_seq}</span>`+(c.n_combinations>1?` \u00b7 ${c.n_combinations} combos`:'');
+            fwdDeg.style.display='block';
+        } else { fwdDeg.style.display='none'; }
+        if (c.rev_degenerate_seq && c.rev_degenerate_seq!==c.rev_seq) {
+            revDeg.innerHTML=`\U0001f9ec IUPAC: <span style="font-family:'JetBrains Mono',monospace;color:#c4b5fd;font-size:0.8rem;">${c.rev_degenerate_seq}</span>`;
+            revDeg.style.display='block';
+        } else { revDeg.style.display='none'; }
+        if (c.probe_seq && /[RYMKSWBDHVN]/i.test(c.probe_seq)) {
+            prbDeg.textContent='\U0001f9ec Contains IUPAC degenerate bases';
+            prbDeg.style.display='block';
+        } else { prbDeg.style.display='none'; }
+        if (currentMode==='global' && c.breakdowns) {
+            populateTable('subtypeTable',c.breakdowns.subtype,'subtype');
+            populateTable('yearTable',c.breakdowns.year,'year');
+            populateTable('countryTable',c.breakdowns.country,'country',30);
+        }
+    }
+    if (candidatesData.length > 0) updateDashboard(0);
+</script>
 </body>
 </html>
 """
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(html_content)
     print(f"Generated Heatmap Dashboard: {output_path}")
+
+
 
 def generate_markdown_report(summary_data: list, output_path: Path):
     """Generate an executive summary report comparing PCR vs RAA coverage."""
