@@ -278,7 +278,7 @@ blast_verification:
 insilico_pcr:
   enabled: true
   max_mismatch: 3             # Toleransi mismatch maksimal untuk primer & probe
-  num_candidates: 10          # Evaluasi terhadap 10 kandidat teratas dari M09
+  num_candidates: 20          # Evaluasi terhadap 20 kandidat teratas dari M09
   min_subtype_seqs: 30        # Minimum total sequences per subtype in breakdown.
                               # Subtypes with fewer sequences are collapsed into
                               # "Other (rare, n<30)" — cannot be generalized statistically.

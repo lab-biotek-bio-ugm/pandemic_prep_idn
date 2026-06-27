@@ -1233,8 +1233,9 @@ def generate_heatmap_dashboard(summary_data: list, output_path):
                 </div>
                 <div class="divider-v"></div>
                 <div class="metric-block">
-                    <div class="metric-mode-label raa-color">RAA</div>
+                    <div class="metric-mode-label raa-color" id="raaAmpLabel">RAA</div>
                     <div class="metric-value raa-color" id="raaAmpPct">&mdash;</div>
+                    <div id="raaAmpNote" style="font-size:0.62rem;color:var(--text-2);margin-top:1px;display:none;">(Global Surveillance DB)</div>
                     <div class="prog-wrap"><div class="prog-bar" id="raaAmpBar" style="background:var(--accent-raa);width:0%;"></div></div>
                 </div>
             </div>
@@ -1249,8 +1250,9 @@ def generate_heatmap_dashboard(summary_data: list, output_path):
                 </div>
                 <div class="divider-v"></div>
                 <div class="metric-block">
-                    <div class="metric-mode-label raa-color">RAA</div>
+                    <div class="metric-mode-label raa-color" id="raaDetLabel">RAA</div>
                     <div class="metric-value raa-color" id="raaDetPct">&mdash;</div>
+                    <div id="raaDetNote" style="font-size:0.62rem;color:var(--text-2);margin-top:1px;display:none;">(Global Surveillance DB)</div>
                     <div class="prog-wrap"><div class="prog-bar" id="raaDetBar" style="background:var(--accent-raa);width:0%;"></div></div>
                 </div>
             </div>
@@ -1513,7 +1515,18 @@ def generate_heatmap_dashboard(summary_data: list, output_path):
         if (currentMode === 'global') {
             pcrAmp=c.pcr_amplified_pct??0; pcrDet=c.pcr_detected_pct??0;
             raaAmp=c.raa_amplified_pct; raaDet=c.raa_detected_pct;
-        } else { pcrAmp=c.design_db_amplified_pct??0; pcrDet=pcrAmp; }
+        } else {
+            // Design DB mode: PCR uses design DB coverage, but RAA assessment is only computed
+            // against the surveillance DB (RAA uses mismatch-sliding-window, not seqkit).
+            // So we always show RAA from surveillance DB, with a note to make context clear.
+            pcrAmp=c.design_db_amplified_pct??0; pcrDet=pcrAmp;
+            raaAmp=c.raa_amplified_pct; raaDet=c.raa_detected_pct;
+        }
+        // Show/hide "(Global Surveillance DB)" note under RAA values when in design mode
+        const isDesignMode = currentMode !== 'global';
+        ['raaAmpNote','raaDetNote'].forEach(id => {
+            document.getElementById(id).style.display = isDesignMode ? 'block' : 'none';
+        });
         document.getElementById('pcrAmpPct').textContent=`${pcrAmp}%`;
         document.getElementById('pcrDetPct').textContent=`${pcrDet}%`;
         document.getElementById('raaAmpPct').textContent=raaAmp!=null?`${raaAmp}%`:'\u2014';
