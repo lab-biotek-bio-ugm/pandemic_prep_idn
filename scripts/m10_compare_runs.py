@@ -425,18 +425,18 @@ def generate_html_report(non_deg_data: list, deg_data: list, output_path: Path, 
                     cardUpliftVal.textContent = '0.00%';
                 }}
             }} else {{
-                // Design DB
-                const ndPct = nd0 ? nd0.design_db_amplified_pct : 0.0;
-                const ndSeqs = nd0 ? nd0.design_db_amplified : 0;
+                // Design DB — use design_db_raa_det_pct (computed from design DB sequences)
+                const ndPct = nd0 ? (nd0.design_db_raa_det_pct ?? nd0.design_db_amplified_pct) : 0.0;
+                const ndSeqs = nd0 ? (nd0.design_db_raa_detected ?? nd0.design_db_amplified) : 0;
                 const total = nd0 ? nd0.design_db_total : 0;
                 cardNdVal.textContent = ndPct + '%';
-                cardNdSub.textContent = `Total Covered: ${{ndSeqs.toLocaleString()}} / ${{total.toLocaleString()}} sequences (PCR Amp)`;
+                cardNdSub.textContent = `Total Covered: ${{ndSeqs.toLocaleString()}} / ${{total.toLocaleString()}} sequences (RAA Det)`;
                 
                 if (d0) {{
-                    const dPct = d0.design_db_amplified_pct;
-                    const dSeqs = d0.design_db_amplified;
+                    const dPct = d0.design_db_raa_det_pct ?? d0.design_db_amplified_pct;
+                    const dSeqs = d0.design_db_raa_detected ?? d0.design_db_amplified;
                     cardDVal.textContent = dPct + '%';
-                    cardDSub.textContent = `Total Covered: ${{dSeqs.toLocaleString()}} / ${{total.toLocaleString()}} sequences (PCR Amp)`;
+                    cardDSub.textContent = `Total Covered: ${{dSeqs.toLocaleString()}} / ${{total.toLocaleString()}} sequences (RAA Det)`;
                     
                     const diff = dPct - ndPct;
                     cardUpliftVal.textContent = (diff > 0 ? '+' : '') + diff.toFixed(2) + '%';
@@ -453,40 +453,28 @@ def generate_html_report(non_deg_data: list, deg_data: list, output_path: Path, 
             const tableBody = document.getElementById('table-body');
             tableBody.innerHTML = '';
             
-            // Set headers
-            if (currentMode === 'global') {{
-                tableHeader.innerHTML = `
-                    <tr>
-                        <th rowspan="2">Candidate</th>
-                        <th colspan="3" class="center-cell" style="background-color: rgba(99, 102, 241, 0.2);">Non-Degenerate Track (Global)</th>
-                        <th colspan="3" class="center-cell" style="background-color: rgba(16, 185, 129, 0.2);">Degenerate Track (Global)</th>
-                        <th rowspan="2" class="center-cell">Uplift</th>
-                    </tr>
-                    <tr>
-                        <th style="background-color: rgba(99, 102, 241, 0.1); width: 300px;">Sequences</th>
-                        <th class="center-cell" style="background-color: rgba(99, 102, 241, 0.1);">RAA Amp %</th>
-                        <th class="center-cell" style="background-color: rgba(99, 102, 241, 0.1);">RAA Det %</th>
-                        <th style="background-color: rgba(16, 185, 129, 0.1); width: 300px;">Sequences</th>
-                        <th class="center-cell" style="background-color: rgba(16, 185, 129, 0.1);">RAA Amp %</th>
-                        <th class="center-cell" style="background-color: rgba(16, 185, 129, 0.1);">RAA Det %</th>
-                    </tr>
-                `;
-            }} else {{
-                tableHeader.innerHTML = `
-                    <tr>
-                        <th rowspan="2">Candidate</th>
-                        <th colspan="2" class="center-cell" style="background-color: rgba(99, 102, 241, 0.2);">Non-Degenerate Track (Design DB)</th>
-                        <th colspan="2" class="center-cell" style="background-color: rgba(16, 185, 129, 0.2);">Degenerate Track (Design DB)</th>
-                        <th rowspan="2" class="center-cell">Uplift</th>
-                    </tr>
-                    <tr>
-                        <th style="background-color: rgba(99, 102, 241, 0.1); width: 350px;">Sequences</th>
-                        <th class="center-cell" style="background-color: rgba(99, 102, 241, 0.1);">PCR Amp %</th>
-                        <th style="background-color: rgba(16, 185, 129, 0.1); width: 350px;">Sequences</th>
-                        <th class="center-cell" style="background-color: rgba(16, 185, 129, 0.1);">PCR Amp %</th>
-                    </tr>
-                `;
-            }}
+            // Set headers — always 4 metric columns (PCR Amp, PCR Det, RAA Amp, RAA Det) in both modes
+            const modeLabel = currentMode === 'global' ? 'Global' : 'Design DB';
+            tableHeader.innerHTML = `
+                <tr>
+                    <th rowspan="2">Candidate</th>
+                    <th colspan="5" class="center-cell" style="background-color: rgba(99, 102, 241, 0.2);">Non-Degenerate Track (${{modeLabel}})</th>
+                    <th colspan="5" class="center-cell" style="background-color: rgba(16, 185, 129, 0.2);">Degenerate Track (${{modeLabel}})</th>
+                    <th rowspan="2" class="center-cell">Uplift</th>
+                </tr>
+                <tr>
+                    <th style="background-color: rgba(99, 102, 241, 0.1); width: 260px;">Sequences</th>
+                    <th class="center-cell" style="background-color: rgba(99, 102, 241, 0.1);">PCR Amp %</th>
+                    <th class="center-cell" style="background-color: rgba(99, 102, 241, 0.1);">PCR Det %</th>
+                    <th class="center-cell" style="background-color: rgba(99, 102, 241, 0.1);">RAA Amp %</th>
+                    <th class="center-cell" style="background-color: rgba(99, 102, 241, 0.1);">RAA Det %</th>
+                    <th style="background-color: rgba(16, 185, 129, 0.1); width: 260px;">Sequences</th>
+                    <th class="center-cell" style="background-color: rgba(16, 185, 129, 0.1);">PCR Amp %</th>
+                    <th class="center-cell" style="background-color: rgba(16, 185, 129, 0.1);">PCR Det %</th>
+                    <th class="center-cell" style="background-color: rgba(16, 185, 129, 0.1);">RAA Amp %</th>
+                    <th class="center-cell" style="background-color: rgba(16, 185, 129, 0.1);">RAA Det %</th>
+                </tr>
+            `;
             
             const maxRanks = Math.max(nonDegData.length, hasDegenerate && degData ? degData.length : 0);
             for (let idx = 0; idx < maxRanks; idx++) {{
@@ -496,41 +484,50 @@ def generate_html_report(non_deg_data: list, deg_data: list, output_path: Path, 
                 const ndId = nd ? nd.cand_id : '-';
                 const dId = d ? d.cand_id : '-';
                 
-                let ndSeqs = '-', ndVal1 = '-', ndVal2 = '-', ndCountStr = '';
+                let ndSeqs = '-';
+                let ndPcrAmp = '-', ndPcrDet = '-', ndRaaAmp = '-', ndRaaDet = '-', ndCountStr = '';
                 if (nd) {{
                     ndSeqs = `<b>F:</b> ${{nd.fwd_seq}}<br><b>R:</b> ${{nd.rev_seq}}`;
                     if (nd.probe_seq) ndSeqs += `<br><b>P:</b> ${{nd.probe_seq}}`;
-                    
                     if (currentMode === 'global') {{
-                        ndVal1 = nd.raa_amplified_pct + '%';
-                        ndVal2 = nd.raa_detected_pct + '%';
-                        ndCountStr = `(${{nd.raa_detected_seqs.toLocaleString()}}/${{nd.total_seqs.toLocaleString()}})`;
+                        ndPcrAmp = (nd.pcr_amplified_pct ?? '-') + '%';
+                        ndPcrDet = (nd.pcr_detected_pct ?? '-') + '%';
+                        ndRaaAmp = (nd.raa_amplified_pct ?? '-') + '%';
+                        ndRaaDet = (nd.raa_detected_pct ?? '-') + '%';
+                        ndCountStr = `(${{(nd.raa_detected_seqs ?? 0).toLocaleString()}}/${{(nd.total_seqs ?? 0).toLocaleString()}})`;
                     }} else {{
-                        ndVal1 = nd.design_db_amplified_pct + '%';
-                        ndCountStr = `(${{nd.design_db_amplified.toLocaleString()}}/${{nd.design_db_total.toLocaleString()}})`;
+                        ndPcrAmp = (nd.design_db_amplified_pct ?? '-') + '%';
+                        ndPcrDet = ndPcrAmp;  // design DB PCR has no separate det (probe is same run)
+                        ndRaaAmp = (nd.design_db_raa_amp_pct ?? '-') + '%';
+                        ndRaaDet = (nd.design_db_raa_det_pct ?? '-') + '%';
+                        ndCountStr = `(${{(nd.design_db_raa_detected ?? nd.design_db_amplified ?? 0).toLocaleString()}}/${{(nd.design_db_total ?? 0).toLocaleString()}})`;
                     }}
                 }}
                 
-                let dSeqs = '-', dVal1 = '-', dVal2 = '-', dCountStr = '', badge = '-';
+                let dSeqs = '-';
+                let dPcrAmp = '-', dPcrDet = '-', dRaaAmp = '-', dRaaDet = '-', dCountStr = '', badge = '-';
                 if (hasDegenerate && d) {{
                     dSeqs = `<b>F:</b> ${{d.fwd_seq}}<br><b>R:</b> ${{d.rev_seq}}`;
                     if (d.probe_seq) dSeqs += `<br><b>P:</b> ${{d.probe_seq}}`;
-                    
                     if (currentMode === 'global') {{
-                        dVal1 = d.raa_amplified_pct + '%';
-                        dVal2 = d.raa_detected_pct + '%';
-                        dCountStr = `(${{d.raa_detected_seqs.toLocaleString()}}/${{d.total_seqs.toLocaleString()}})`;
-                        
+                        dPcrAmp = (d.pcr_amplified_pct ?? '-') + '%';
+                        dPcrDet = (d.pcr_detected_pct ?? '-') + '%';
+                        dRaaAmp = (d.raa_amplified_pct ?? '-') + '%';
+                        dRaaDet = (d.raa_detected_pct ?? '-') + '%';
+                        dCountStr = `(${{(d.raa_detected_seqs ?? 0).toLocaleString()}}/${{(d.total_seqs ?? 0).toLocaleString()}})`;
                         if (nd) {{
-                            const diff = d.raa_detected_pct - nd.raa_detected_pct;
+                            const diff = (d.raa_detected_pct ?? 0) - (nd.raa_detected_pct ?? 0);
                             badge = getBadge(diff);
                         }}
                     }} else {{
-                        dVal1 = d.design_db_amplified_pct + '%';
-                        dCountStr = `(${{d.design_db_amplified.toLocaleString()}}/${{d.design_db_total.toLocaleString()}})`;
-                        
+                        dPcrAmp = (d.design_db_amplified_pct ?? '-') + '%';
+                        dPcrDet = dPcrAmp;
+                        dRaaAmp = (d.design_db_raa_amp_pct ?? '-') + '%';
+                        dRaaDet = (d.design_db_raa_det_pct ?? '-') + '%';
+                        dCountStr = `(${{(d.design_db_raa_detected ?? d.design_db_amplified ?? 0).toLocaleString()}}/${{(d.design_db_total ?? 0).toLocaleString()}})`;
                         if (nd) {{
-                            const diff = d.design_db_amplified_pct - nd.design_db_amplified_pct;
+                            const diff = (d.design_db_raa_det_pct ?? d.design_db_amplified_pct ?? 0)
+                                       - (nd.design_db_raa_det_pct ?? nd.design_db_amplified_pct ?? 0);
                             badge = getBadge(diff);
                         }}
                     }}
@@ -539,27 +536,20 @@ def generate_html_report(non_deg_data: list, deg_data: list, output_path: Path, 
                 }}
                 
                 const tr = document.createElement('tr');
-                if (currentMode === 'global') {{
-                    tr.innerHTML = `
-                        <td class="cand-id">Rank ${{idx + 1}}<br><small class="text-muted">ND: ${{ndId}}<br>D: ${{dId}}</small></td>
-                        <td class="seq-cell">${{ndSeqs}}</td>
-                        <td class="center-cell highlight-nd">${{ndVal1}}</td>
-                        <td class="center-cell highlight-nd"><b>${{ndVal2}}</b><br><small class="text-muted">${{ndCountStr}}</small></td>
-                        <td class="seq-cell">${{dSeqs}}</td>
-                        <td class="center-cell highlight-d">${{dVal1}}</td>
-                        <td class="center-cell highlight-d"><b>${{dVal2}}</b><br><small class="text-muted">${{dCountStr}}</small></td>
-                        <td class="center-cell">${{badge}}</td>
-                    `;
-                }} else {{
-                    tr.innerHTML = `
-                        <td class="cand-id">Rank ${{idx + 1}}<br><small class="text-muted">ND: ${{ndId}}<br>D: ${{dId}}</small></td>
-                        <td class="seq-cell">${{ndSeqs}}</td>
-                        <td class="center-cell highlight-nd"><b>${{ndVal1}}</b><br><small class="text-muted">${{ndCountStr}}</small></td>
-                        <td class="seq-cell">${{dSeqs}}</td>
-                        <td class="center-cell highlight-d"><b>${{dVal1}}</b><br><small class="text-muted">${{dCountStr}}</small></td>
-                        <td class="center-cell">${{badge}}</td>
-                    `;
-                }}
+                tr.innerHTML = `
+                    <td class="cand-id">Rank ${{idx + 1}}<br><small class="text-muted">ND: ${{ndId}}<br>D: ${{dId}}</small></td>
+                    <td class="seq-cell">${{ndSeqs}}</td>
+                    <td class="center-cell highlight-nd">${{ndPcrAmp}}</td>
+                    <td class="center-cell highlight-nd">${{ndPcrDet}}</td>
+                    <td class="center-cell highlight-nd">${{ndRaaAmp}}</td>
+                    <td class="center-cell highlight-nd"><b>${{ndRaaDet}}</b><br><small class="text-muted">${{ndCountStr}}</small></td>
+                    <td class="seq-cell">${{dSeqs}}</td>
+                    <td class="center-cell highlight-d">${{dPcrAmp}}</td>
+                    <td class="center-cell highlight-d">${{dPcrDet}}</td>
+                    <td class="center-cell highlight-d">${{dRaaAmp}}</td>
+                    <td class="center-cell highlight-d"><b>${{dRaaDet}}</b><br><small class="text-muted">${{dCountStr}}</small></td>
+                    <td class="center-cell">${{badge}}</td>
+                `;
                 tableBody.appendChild(tr);
             }}
         }}
