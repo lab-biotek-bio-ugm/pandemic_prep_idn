@@ -664,6 +664,10 @@ def _evaluate_candidate(idx_cand, args, seq_mappings, actual_candidates, seqkit_
     design_total = 0
     design_amplified = 0
     design_amp_pct = 0.0
+    design_raa_amplified = 0
+    design_raa_detected  = 0
+    design_raa_amp_pct   = 0.0
+    design_raa_det_pct   = 0.0
     design_db_breakdowns = {"subtype": [], "year": [], "country": []}
     if design_matches:
         # Count total design FASTA headers for denominator
@@ -691,23 +695,110 @@ def _evaluate_candidate(idx_cand, args, seq_mappings, actual_candidates, seqkit_
         design_rows = []
         for sid in fasta_design_ids:
             meta = meta_lookup.get(sid)
+            is_amp = sid in design_matched_ids
+
+            # ── RAA assessment for design DB sequences ──────────────────────
+            # Run same sliding-window mismatch check as surveillance DB loop.
+            # Only run RAA on amplified sequences (non-amplified → False by definition).
+            is_raa_amp_des = False
+            is_raa_det_des = False
+            if is_amp:
+                amp_seq_des = design_matches[sid]  # amplified sequence string from seqkit
+                if has_deg_pool:
+                    _fwd_raa = fwd_possible[:8]
+                    _rev_raa = rev_possible[:8]
+                    _fwd_ok = any(
+                        (_assess_raa_numpy if _HAS_NUMPY else assess_raa_binding)(
+                            fv, amp_seq_des,
+                            critical_3prime_bp=args.raa_3prime_bp,
+                            max_3prime_mm=args.raa_max_3prime_mm,
+                            max_internal_mm=args.raa_max_internal_mm,
+                        )[0]
+                        for fv in _fwd_raa
+                    )
+                    _rev_ok = any(
+                        (_assess_raa_numpy if _HAS_NUMPY else assess_raa_binding)(
+                            rv, amp_seq_des,
+                            critical_3prime_bp=args.raa_3prime_bp,
+                            max_3prime_mm=args.raa_max_3prime_mm,
+                            max_internal_mm=args.raa_max_internal_mm,
+                        )[0]
+                        for rv in _rev_raa
+                    )
+                    is_raa_amp_des = _fwd_ok and _rev_ok
+                else:
+                    _fwd_ok, _, _, _ = assess_raa_binding(
+                        fwd_deg, amp_seq_des,
+                        critical_3prime_bp=args.raa_3prime_bp,
+                        max_3prime_mm=args.raa_max_3prime_mm,
+                        max_internal_mm=args.raa_max_internal_mm,
+                    )
+                    _rev_ok, _, _, _ = assess_raa_binding(
+                        reverse_complement(rev_deg), amp_seq_des,
+                        critical_3prime_bp=args.raa_3prime_bp,
+                        max_3prime_mm=args.raa_max_3prime_mm,
+                        max_internal_mm=args.raa_max_internal_mm,
+                    )
+                    is_raa_amp_des = _fwd_ok and _rev_ok
+                # Probe RAA check (only if primer binding passes)
+                if is_raa_amp_des and probe:
+                    if has_deg_pool and probe_possible:
+                        is_raa_det_des = any(
+                            assess_raa_binding(
+                                pv, amp_seq_des,
+                                critical_3prime_bp=args.raa_3prime_bp,
+                                max_3prime_mm=args.raa_max_3prime_mm,
+                                max_internal_mm=args.raa_max_internal_mm,
+                            )[0]
+                            for pv in probe_possible
+                        )
+                    else:
+                        is_raa_det_des, _, _, _ = assess_raa_binding(
+                            probe_deg, amp_seq_des,
+                            critical_3prime_bp=args.raa_3prime_bp,
+                            max_3prime_mm=args.raa_max_3prime_mm,
+                            max_internal_mm=args.raa_max_internal_mm,
+                        )
+                elif is_raa_amp_des and not probe:
+                    # No probe → detection == amplification
+                    is_raa_det_des = True
+
             design_rows.append({
-                "seq_id":       sid,
-                "subtype":      meta["subtype"]   if meta else "Unknown",
-                "year":         str(meta["year"]) if meta else "Unknown",
-                "country":      meta["country"]   if meta else "Unknown",
-                "is_amplified": sid in design_matched_ids,
+                "seq_id":           sid,
+                "subtype":          meta["subtype"]   if meta else "Unknown",
+                "year":             str(meta["year"]) if meta else "Unknown",
+                "country":          meta["country"]   if meta else "Unknown",
+                "is_amplified":     is_amp,
+                "is_raa_amplified": is_raa_amp_des,
+                "is_raa_detected":  is_raa_det_des,
             })
+
+        # Compute design DB RAA aggregate metrics
+        design_raa_amplified = 0
+        design_raa_detected  = 0
+        design_raa_amp_pct   = 0.0
+        design_raa_det_pct   = 0.0
         if design_rows:
             import pandas as _pd_des
             df_des = _pd_des.DataFrame(design_rows)
+            design_raa_amplified = int(df_des["is_raa_amplified"].sum())
+            design_raa_detected  = int(df_des["is_raa_detected"].sum())
+            design_raa_amp_pct   = round(design_raa_amplified / design_total * 100, 2) if design_total else 0.0
+            design_raa_det_pct   = round(design_raa_detected  / design_total * 100, 2) if design_total else 0.0
+            print(f"  [{cand_id}] DESIGN-DB RAA → Amplified: {design_raa_amplified}/{design_total} ({design_raa_amp_pct}%), Detected: {design_raa_detected}/{design_total} ({design_raa_det_pct}%)")
             for _col in ["subtype", "year", "country"]:
                 _grp = df_des.groupby(_col).agg(
                     total=("seq_id", "count"),
                     pcr_amplified=("is_amplified", "sum"),
+                    raa_amplified=("is_raa_amplified", "sum"),
+                    raa_detected=("is_raa_detected", "sum"),
                 ).reset_index()
-                _grp["pcr_amplified"] = _grp["pcr_amplified"].astype(int)
+                _grp["pcr_amplified"]     = _grp["pcr_amplified"].astype(int)
+                _grp["raa_amplified"]     = _grp["raa_amplified"].astype(int)
+                _grp["raa_detected"]      = _grp["raa_detected"].astype(int)
                 _grp["pcr_amplified_pct"] = (_grp["pcr_amplified"] / _grp["total"] * 100).round(2)
+                _grp["raa_amplified_pct"] = (_grp["raa_amplified"] / _grp["total"] * 100).round(2)
+                _grp["raa_detected_pct"]  = (_grp["raa_detected"]  / _grp["total"] * 100).round(2)
                 _grp = _grp.sort_values("year" if _col == "year" else "total",
                                         ascending=(_col == "year"))
                 design_db_breakdowns[_col] = _grp.to_dict(orient="records")
@@ -776,6 +867,11 @@ def _evaluate_candidate(idx_cand, args, seq_mappings, actual_candidates, seqkit_
         "design_db_total": design_total,
         "design_db_amplified": design_amplified,
         "design_db_amplified_pct": design_amp_pct,
+        # Design DB RAA (same sliding-window binding model, applied to design DB amplicons)
+        "design_db_raa_amplified": design_raa_amplified if design_matches else 0,
+        "design_db_raa_detected":  design_raa_detected  if design_matches else 0,
+        "design_db_raa_amp_pct":   design_raa_amp_pct   if design_matches else 0.0,
+        "design_db_raa_det_pct":   design_raa_det_pct   if design_matches else 0.0,
         "design_db_breakdowns": design_db_breakdowns,
         "raa_params": {
             "critical_3prime_bp":  args.raa_3prime_bp,
@@ -798,6 +894,11 @@ def _evaluate_candidate(idx_cand, args, seq_mappings, actual_candidates, seqkit_
         "design_db_total": design_total,
         "design_db_amplified": design_amplified,
         "design_db_amplified_pct": design_amp_pct,
+        # Design DB RAA
+        "design_db_raa_amplified": design_raa_amplified if design_matches else 0,
+        "design_db_raa_detected":  design_raa_detected  if design_matches else 0,
+        "design_db_raa_amp_pct":   design_raa_amp_pct   if design_matches else 0.0,
+        "design_db_raa_det_pct":   design_raa_det_pct   if design_matches else 0.0,
     }
     return (cand_summary, result_row)
 
@@ -1516,16 +1617,15 @@ def generate_heatmap_dashboard(summary_data: list, output_path):
             pcrAmp=c.pcr_amplified_pct??0; pcrDet=c.pcr_detected_pct??0;
             raaAmp=c.raa_amplified_pct; raaDet=c.raa_detected_pct;
         } else {
-            // Design DB mode: PCR uses design DB coverage, but RAA assessment is only computed
-            // against the surveillance DB (RAA uses mismatch-sliding-window, not seqkit).
-            // So we always show RAA from surveillance DB, with a note to make context clear.
+            // Design DB mode: all metrics (PCR + RAA) now use design DB.
+            // RAA binding was computed per-sequence on design DB amplicons (same sliding-window
+            // model used for surveillance DB), so design_db_raa_* holds accurate values.
             pcrAmp=c.design_db_amplified_pct??0; pcrDet=pcrAmp;
-            raaAmp=c.raa_amplified_pct; raaDet=c.raa_detected_pct;
+            raaAmp=c.design_db_raa_amp_pct??null; raaDet=c.design_db_raa_det_pct??null;
         }
-        // Show/hide "(Global Surveillance DB)" note under RAA values when in design mode
-        const isDesignMode = currentMode !== 'global';
+        // Hide "(Global Surveillance DB)" note — RAA now from design DB when in design mode
         ['raaAmpNote','raaDetNote'].forEach(id => {
-            document.getElementById(id).style.display = isDesignMode ? 'block' : 'none';
+            document.getElementById(id).style.display = 'none';
         });
         document.getElementById('pcrAmpPct').textContent=`${pcrAmp}%`;
         document.getElementById('pcrDetPct').textContent=`${pcrDet}%`;
