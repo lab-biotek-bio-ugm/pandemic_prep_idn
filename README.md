@@ -12,54 +12,6 @@ The pipeline specifically addresses the challenges of detecting **Acute Respirat
 
 The system is orchestrated via **Snakemake** and organized into nine core modules (M01-M09) that transform raw genomic surveillance data into verified, publication-ready diagnostic primer candidates.
 
-### Pipeline Flow (M01 – M09)
-
-```mermaid
-graph TB
-    subgraph Data_Acquisition ["1. Data Acquisition & QC"]
-        M1[M01: Acquisition] -- "Sequences + Metadata" --> M2[M02: QC & Filtering]
-        M2 -- "Filtered Dataset" --> M3
-    end
-
-    subgraph Core_Processing ["2. Core Phylodynamics - Augur"]
-        M3[M03: Alignment] --> M4[M04: IQ-TREE / Tree Builder]
-        M4 --> M4R[M04: Refinement & Timetree]
-        M4R --> M6[M06: Ancestral Reconstruction]
-    end
-
-    subgraph Evolutionary_Analysis ["3. Selection Pressure - HyPhy"]
-        M3 --> M5S[M05: Sequence Subsampling]
-        M5S --> M5[M05: HyPhy Engine]
-        M5 -- "FUBAR / MEME / GARD" --> M7
-    end
-
-    subgraph Scoring_Integration ["4. Bridge Builder Engine"]
-        M6 --> M7[M07: Bridge Integration]
-        M7 -- "Ranked Gold Zones" --> M8
-    end
-
-    subgraph Primer_Design ["5. Primer Design - PrimerLab"]
-        M8[M08: PrimerLab RAA] -- "Candidates + QC" --> M9
-    end
-
-    subgraph Verification ["6. BLAST Verification"]
-        M9[M09: Specificity Check] -- "Final Report" --> OUT[Verified Candidates]
-    end
-
-    %% Professional High-Contrast Styling
-    classDef primary fill:#2d3436,stroke:#636e72,color:#ffffff,stroke-width:2px;
-    classDef core fill:#0984e3,stroke:#74b9ff,color:#ffffff,stroke-width:1px;
-    classDef scoring fill:#00b894,stroke:#55efc4,color:#ffffff,stroke-width:2px;
-    classDef primer fill:#6c5ce7,stroke:#a29bfe,color:#ffffff,stroke-width:2px;
-    classDef verify fill:#e17055,stroke:#fab1a0,color:#ffffff,stroke-width:2px;
-
-    class M1,M2 primary;
-    class M3,M4,M4R,M6 core;
-    class M7 scoring;
-    class M8 primer;
-    class M9,OUT verify;
-```
-
 ### Key Modules
 
 1. **Data Acquisition & QC (M01-M02)**: Automated retrieval from NCBI/GISAID with rigorous filtering for sequence quality and metadata completeness.
@@ -67,8 +19,9 @@ graph TB
 3. **Selection Pressure Engine (M05)**: Utilizing **HyPhy (FUBAR, MEME, GARD)** to identify sites under purifying, episodic, and diversifying selection.
 4. **Annotation & Clade Assignment (M06)**: Ancestral sequence reconstruction and clade-based annotation via Augur/Nextclade.
 5. **Bridge Builder Engine (M07)**: A proprietary integration module that scores regions based on weighted physical stability (conservation) and evolutionary robustness (avoidance of mutational hotspots). Produces entropy profiles, IUPAC-aware consensus sequences, and ranked candidate targets.
-6. **PrimerLab RAA Design (M08)**: Integration with the [PrimerLab](https://github.com/lab-biotek-bio-ugm/primerlab-genomic) engine for isothermal (RAA/RPA) primer and probe design with Primer3 + ViennaRNA thermodynamic validation.
+6. **PrimerLab RAA Design (M08)**: Integration with the [PrimerLab](https://github.com/engkinandatama/primerlab-genomic) engine for isothermal (RAA/RPA) primer and probe design with Primer3 + ViennaRNA thermodynamic validation.
 7. **BLAST Specificity Verification (M09)**: Post-design specificity check against human genome and respiratory virus databases (local or NCBI remote). Generates GFF3/BED tracks, IGV session files, and publication-ready candidate reports with GARD breakpoint cross-validation.
+8. **In-silico PCR & RAA Validation (M10)**: Automated in-silico PCR (`seqkit amplicon`) and isothermal RAA binding simulation against public surveillance databases and local designated databases. Generates interactive HTML dashboards, temporal breakdowns, and comparative reports.
 
 ---
 
@@ -181,22 +134,7 @@ After the pipeline completes:
    File → Open Session → results/{BUILD}/m09/igv_session.xml
    ```
 
----
 
-## Acknowledgments
-
-This project is supported by the **Badan Riset dan Inovasi Nasional (BRIN)** under the 2026 Fiscal Year program: *"Peningkatan Kapasitas Laboratorium untuk Deteksi Patogen Berpotensi Pandemik bagi Human"*.
-
-Collaborating Institutions:
-
-- **BRIN** (Pusat Riset Biomedis)
-- **Universitas Gadjah Mada (UGM)**
-- Universitas Indonesia (UI)
-- Telkom University
-- University of Bern, Switzerland
-- Tokyo University of Agriculture and Technology, Japan
-
----
 
 ## License
 
