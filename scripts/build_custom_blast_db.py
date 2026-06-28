@@ -332,6 +332,9 @@ def main():
         with open(human_combined_fasta, "w") as out_f:
             for host in hosts:
                 name = host.get("name", "unknown")
+                if not host.get("enabled", True):
+                    log(f"  ✓ Host '{name}' dinonaktifkan di konfigurasi (enabled: false), dilewati.")
+                    continue
                 url = host.get("fasta_url", "")
                 if not url:
                     log(f"  ⚠ Host '{name}' tidak memiliki fasta_url, dilewati.")
