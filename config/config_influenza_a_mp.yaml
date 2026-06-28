@@ -237,10 +237,9 @@ blast_verification:
     seq_length_min: 500                # Filter sekuens < N bp (buang kontigs pendek)
     cleanup_intermediates: true        # Hapus file .gz, .fna, dan FASTA mentah setelah DB selesai dibangun (~hemat 12-15 GB)
 
-    # Host genomes (Inang Manusia) — gabungan GRCh38 + T2T-CHM13 untuk cakupan maksimal
+    # Host genomes (Inang Manusia) — Hanya T2T-CHM13 untuk menghindari duplikasi hit homolog dengan GRCh38
+    # dan mempercepat proses pembangunan database hingga 2x.
     hosts:
-      - name: "GRCh38"
-        fasta_url: "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/405/GCF_000001405.40_GRCh38.p14/GCF_000001405.40_GRCh38.p14_genomic.fna.gz"
       - name: "T2T_CHM13"
         fasta_url: "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/009/914/755/GCF_009914755.1_T2T-CHM13v2.0/GCF_009914755.1_T2T-CHM13v2.0_genomic.fna.gz"
 
