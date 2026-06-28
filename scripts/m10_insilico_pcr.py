@@ -1365,9 +1365,11 @@ def generate_heatmap_dashboard(summary_data: list, output_path):
         <div class="design-content">
             <div><div class="design-stat-label">Total Sequences</div><div class="design-stat-value" id="designTotal">&mdash;</div></div>
             <div><div class="design-stat-label">PCR Amplified</div><div class="design-stat-value" id="designAmplified">&mdash;</div></div>
-            <div><div class="design-stat-label">Coverage</div><div class="design-stat-value" id="designPct">&mdash;%</div></div>
+            <div><div class="design-stat-label">PCR Coverage</div><div class="design-stat-value" id="designPct">&mdash;%</div></div>
+            <div><div class="design-stat-label">RAA Amplified</div><div class="design-stat-value" id="designRaaAmplified">&mdash;</div></div>
+            <div><div class="design-stat-label">RAA Coverage</div><div class="design-stat-value" id="designRaaPct">&mdash;%</div></div>
             <div class="design-bar-wrap">
-                <div class="design-stat-label">Coverage Bar</div>
+                <div class="design-stat-label">PCR Coverage Bar</div>
                 <div class="design-bar-track"><div class="design-bar-fill" id="designBar" style="width:0%;background:linear-gradient(90deg,#7c3aed,#a78bfa);"></div></div>
             </div>
         </div>
@@ -1451,13 +1453,18 @@ def generate_heatmap_dashboard(summary_data: list, output_path):
             <div class="card">
                 <div class="card-title">
                     Subtype Distribution (Design DB)
-                    <span class="badge badge-pcr">PCR Only</span>
+                    <div style="display:flex;gap:0.5rem;">
+                        <span class="badge badge-pcr">PCR</span>
+                        <span class="badge badge-raa">RAA</span>
+                    </div>
                 </div>
                 <table id="designSubtypeTable">
                     <thead><tr>
                         <th>Subtype</th><th>N</th>
                         <th style="color:var(--accent-pcr);">PCR Amp</th>
-                        <th style="color:var(--accent-pcr);">Coverage</th>
+                        <th style="color:var(--accent-pcr);">PCR Det</th>
+                        <th style="color:var(--accent-raa);">RAA Amp</th>
+                        <th style="color:var(--accent-raa);">RAA Det</th>
                     </tr></thead>
                     <tbody></tbody>
                 </table>
@@ -1471,7 +1478,9 @@ def generate_heatmap_dashboard(summary_data: list, output_path):
                     <thead><tr>
                         <th>Year</th><th>N</th>
                         <th style="color:var(--accent-pcr);">PCR Amp</th>
-                        <th style="color:var(--accent-pcr);">Coverage</th>
+                        <th style="color:var(--accent-pcr);">PCR Det</th>
+                        <th style="color:var(--accent-raa);">RAA Amp</th>
+                        <th style="color:var(--accent-raa);">RAA Det</th>
                     </tr></thead>
                     <tbody></tbody>
                 </table>
@@ -1485,7 +1494,9 @@ def generate_heatmap_dashboard(summary_data: list, output_path):
                     <thead><tr>
                         <th>Country</th><th>N</th>
                         <th style="color:var(--accent-pcr);">PCR Amp</th>
-                        <th style="color:var(--accent-pcr);">Coverage</th>
+                        <th style="color:var(--accent-pcr);">PCR Det</th>
+                        <th style="color:var(--accent-raa);">RAA Amp</th>
+                        <th style="color:var(--accent-raa);">RAA Det</th>
                     </tr></thead>
                     <tbody></tbody>
                 </table>
@@ -1566,7 +1577,7 @@ def generate_heatmap_dashboard(summary_data: list, output_path):
         tbody.innerHTML = '';
         if (!data || data.length === 0) {
             const tr = document.createElement('tr');
-            const td = document.createElement('td'); td.colSpan = 4;
+            const td = document.createElement('td'); td.colSpan = 6;
             td.style.cssText = 'text-align:center;color:var(--text-2);font-style:italic;padding:1rem;';
             td.textContent = 'No metadata available for design DB sequences';
             tr.appendChild(td); tbody.appendChild(tr);
@@ -1575,23 +1586,25 @@ def generate_heatmap_dashboard(summary_data: list, output_path):
         const rows = maxRows ? data.slice(0, maxRows) : data;
         rows.forEach(row => {
             const tr = document.createElement('tr');
-            const tdCat = document.createElement('td'); tdCat.textContent = row[catKey] || '—'; tr.appendChild(tdCat);
+            const tdCat = document.createElement('td'); tdCat.textContent = row[catKey] || '\u2014'; tr.appendChild(tdCat);
             const tdN = document.createElement('td'); tdN.textContent = (row.total||0).toLocaleString(); tdN.style.color='var(--text-2)'; tr.appendChild(tdN);
-            const tdAmp = document.createElement('td'); tdAmp.textContent = (row.pcr_amplified||0).toLocaleString(); tr.appendChild(tdAmp);
-            const tdPct = document.createElement('td');
-            const span = document.createElement('span');
-            span.className = 'cov-cell';
-            span.style.cssText = pctStyle(row.pcr_amplified_pct||0);
-            span.textContent = `${row.pcr_amplified_pct||0}%`;
-            const bar = document.createElement('div'); bar.className = 'mini-bar';
-            const fill = document.createElement('div'); fill.className = 'mini-bar-fill';
-            fill.style.width = `${Math.min(row.pcr_amplified_pct||0,100)}%`;
-            fill.style.background = barColor(row.pcr_amplified_pct||0, 'pcr');
-            bar.appendChild(fill);
-            const w = document.createElement('div'); w.appendChild(span); w.appendChild(bar);
-            tdPct.appendChild(w); tr.appendChild(tdPct);
+            // PCR Amp (same column structure as global: use pcr_amplified_pct)
+            tr.appendChild(makeCell(row.pcr_amplified_pct ?? 0, 'pcr'));
+            // PCR Det: design DB PCR has no separate detection step (same as amp for design DB)
+            // Fall back to pcr_amplified_pct if pcr_detected_pct is absent
+            tr.appendChild(makeCell(row.pcr_amplified_pct ?? 0, 'pcr'));
+            // RAA Amp + RAA Det — computed from design DB amplicons by m10_insilico_pcr.py
+            tr.appendChild(makeCell(row.raa_amplified_pct ?? null, 'raa'));
+            tr.appendChild(makeCell(row.raa_detected_pct  ?? null, 'raa'));
             tbody.appendChild(tr);
         });
+        if (maxRows && data.length > maxRows) {
+            const tr = document.createElement('tr');
+            const td = document.createElement('td'); td.colSpan = 6;
+            td.style.cssText = 'text-align:center;color:var(--text-2);font-style:italic;padding:0.5rem;';
+            td.textContent = `Showing ${maxRows} of ${data.length} entries`;
+            tr.appendChild(td); tbody.appendChild(tr);
+        }
     }
     function setDatasetMode(mode) {
         currentMode = mode;
@@ -1640,9 +1653,13 @@ def generate_heatmap_dashboard(summary_data: list, output_path):
         if (c.design_db_total>0 && currentMode==='global') {
             banner.style.display='block';
             document.getElementById('designTotal').textContent=c.design_db_total.toLocaleString();
-            document.getElementById('designAmplified').textContent=c.design_db_amplified.toLocaleString();
+            document.getElementById('designAmplified').textContent=(c.design_db_amplified??0).toLocaleString();
             const dp=c.design_db_amplified_pct||0;
             document.getElementById('designPct').textContent=`${dp}%`;
+            // RAA stats for design DB
+            const dr=c.design_db_raa_amp_pct??null;
+            document.getElementById('designRaaAmplified').textContent=dr!==null?(c.design_db_raa_amplified??0).toLocaleString():'\u2014';
+            document.getElementById('designRaaPct').textContent=dr!==null?`${dr}%`:'\u2014';
             const db=document.getElementById('designBar');
             db.style.width=`${Math.min(dp,100)}%`;
             db.style.background=dp>=80?'linear-gradient(90deg,#059669,#34d399)':dp>=50?'linear-gradient(90deg,#7c3aed,#a78bfa)':dp>=30?'linear-gradient(90deg,#d97706,#fbbf24)':'linear-gradient(90deg,#dc2626,#f87171)';
