@@ -19,7 +19,7 @@ The system is orchestrated via **Snakemake** and organized into nine core module
 3. **Selection Pressure Engine (M05)**: Utilizing **HyPhy (FUBAR, MEME, GARD)** to identify sites under purifying, episodic, and diversifying selection.
 4. **Annotation & Clade Assignment (M06)**: Ancestral sequence reconstruction and clade-based annotation via Augur/Nextclade.
 5. **Bridge Builder Engine (M07)**: A proprietary integration module that scores regions based on weighted physical stability (conservation) and evolutionary robustness (avoidance of mutational hotspots). Produces entropy profiles, IUPAC-aware consensus sequences, and ranked candidate targets.
-6. **PrimerLab RAA Design (M08)**: Integration with the [PrimerLab](https://github.com/engkinandatama/primerlab-genomic) engine for isothermal (RAA/RPA) primer and probe design with Primer3 + ViennaRNA thermodynamic validation.
+6. **PrimerLab RAA Design (M08)**: Integration with the [PrimerLab](https://github.com/CORE-Lab-Research/primerlab-genomic) engine for isothermal (RAA/RPA) primer and probe design with Primer3 + ViennaRNA thermodynamic validation.
 7. **BLAST Specificity Verification (M09)**: Post-design specificity check against human genome and respiratory virus databases (local or NCBI remote). Generates GFF3/BED tracks, IGV session files, and publication-ready candidate reports with GARD breakpoint cross-validation.
 8. **In-silico PCR & RAA Validation (M10)**: Automated in-silico PCR (`seqkit amplicon`) and isothermal RAA binding simulation against public surveillance databases and local designated databases. Generates interactive HTML dashboards, temporal breakdowns, and comparative reports.
 
