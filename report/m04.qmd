@@ -1,0 +1,137 @@
+---
+title: "Module 04: Phylodynamic Reconstruction"
+---
+
+Reconstructing the evolutionary history and transmission timelines of viral lineages is critical for tracking pathogen dissemination. Module 04 executes a phylodynamic workflow: inferring a Maximum-Likelihood (ML) phylogenetic tree, followed by refinement into a calendar-dated "timetree" to model mutational rates over time.
+
+---
+
+## 1. Maximum-Likelihood Tree Inference (IQ-TREE 2)
+
+The raw tree inference is performed by the Snakemake rule `augur_tree` which invokes the **IQ-TREE 2** engine [@minh2020] via the `augur tree` wrapper [@hadfield2018].
+
+```
+  ┌────────────────────────────────┐
+  │         aligned.fasta          │
+  └───────────────┬────────────────┘
+                  │
+                  ▼
+  ┌────────────────────────────┐
+  │         augur tree         │
+  ├────────────────────────────┤
+  │   Infer raw ML phylogeny   │
+  │   --method iqtree          │
+  └─────────────┬──────────────┘
+                │
+                ▼
+  ┌────────────────────────────┐
+  │        tree_raw.nwk        │
+  └────────────────────────────┘
+```
+
+*   **Substitution Model**: By default, IQ-TREE automatically selects the best-fit nucleotide substitution model (typically GTR+I+G or similar) based on the alignment's base frequencies and mutational patterns.
+*   **Optimization**: Multi-threading is enabled (configured via `augur.threads` in `config.yaml`) to distribute likelihood evaluation steps across multiple cores, accelerating tree searches for large datasets.
+
+---
+
+## 2. Temporal Refinement (TreeTime)
+
+The raw ML tree represents distances in terms of substitutions per nucleotide site. To convert these distances into calendar dates, the Snakemake rule `augur_refine` utilizes the **TreeTime** algorithm [@sagulenko2018] via the `augur refine` wrapper.
+
+```
+┌─────────────────┐      ┌───────────────┐      ┌─────────────────┐
+│  tree_raw.nwk   ├─────►│  aligned.fasta├─────►│  metadata.tsv   │
+└────────┬────────┘      └───────┬───────┘      └────────┬────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 ▼
+                    ┌──────────────────────────┐
+                    │       augur refine       │
+                    ├──────────────────────────┤
+                    │ Max-Likelihood Timetree  │
+                    │ --clock-rate 0.003       │
+                    │ --stochastic-resolve     │
+                    └────────────┬─────────────┘
+                                 │
+                   ┌─────────────┴─────────────┐
+                   ▼                           ▼
+      ┌─────────────────────────┐ ┌─────────────────────────┐
+      │        tree.nwk         │ │   branch_lengths.json   │
+      │   (Dated Newick Tree)   │ │   (Substitution Rates)  │
+      └─────────────────────────┘ └─────────────────────────┘
+```
+
+The refinement process applies the following computational controls:
+
+1.  **Molecular Clock Modeling**: Fits a strict molecular clock (with a default rate of $0.003$ substitutions/site/year and a standard deviation of $0.0015$ for Influenza A) using metadata collection dates.
+2.  **Stochastic Polyotomy Resolution**: Resolves multi-forking nodes (polytomies) using a stochastic likelihood approach to produce a binary tree structure, preventing artificial branch clustering.
+3.  **Rooting**: Finds the optimal root of the tree that maximizes the temporal correlation (root-to-tip regression) between sequence divergence and collection dates.
+
+---
+
+## 3. Configuration & CLI Wrapper (Tabset Examples)
+
+Below are the configuration parameters, raw tree inference commands, and timetree refinement commands of Module 04:
+
+::: {.panel-tabset}
+
+### 1. Configuration (config_influenza_a_mp.yaml)
+```yaml
+# [M04] Thread settings for Augur tools (Align, Tree)
+augur:
+  threads: 16
+
+# [M04] Timetree parameters for Molecular Clock model
+timetree:
+  clock_rate: 0.003               # Estimated substitution rate/site/year
+  clock_std_dev: 0.0015           # Standard deviation
+```
+
+### 2. Raw Tree CLI (IQ-TREE 2)
+```bash
+# Run Augur Tree using IQ-TREE 2
+augur tree \
+    --alignment results/influenza-a-mp-sea/m03/aligned.fasta \
+    --output results/influenza-a-mp-sea/m04/tree_raw.nwk \
+    --method iqtree \
+    --nthreads 16
+```
+
+### 3. Timetree Refinement CLI (TreeTime)
+```bash
+# Run Augur Refine using TreeTime
+augur refine \
+    --tree results/influenza-a-mp-sea/m04/tree_raw.nwk \
+    --alignment results/influenza-a-mp-sea/m03/aligned.fasta \
+    --metadata results/influenza-a-mp-sea/m01/metadata_enriched.tsv \
+    --output-tree results/influenza-a-mp-sea/m04/tree.nwk \
+    --output-node-data results/influenza-a-mp-sea/m04/branch_lengths.json \
+    --timetree \
+    --clock-rate 0.003 \
+    --clock-std-dev 0.0015 \
+    --stochastic-resolve
+```
+:::
+
+---
+
+## 4. Inputs, Outputs & Files
+
+The files involved in Module 04 are summarized below:
+
+| File Role | Path | Format | Description |
+|---|---|---|---|
+| **Input Alignment** | `results/{build}/m03/aligned.fasta` | FASTA | Multiple sequence alignment from Module 03. |
+| **Input Metadata** | `results/{build}/m01/metadata_enriched.tsv` | TSV | Sanitized and Nextclade-enriched metadata. |
+| **Raw Tree** | `results/{build}/m04/tree_raw.nwk` | Newick | Unrefined Maximum-Likelihood tree. |
+| **Refined Tree** | `results/{build}/m04/tree.nwk` | Newick | Calendar-dated phylogenetic tree (timetree). |
+| **Branch Lengths** | `results/{build}/m04/branch_lengths.json` | JSON | Tabulated mutation lengths and node calibrations. |
+
+---
+
+## 5. Troubleshooting & Limitations
+
+### 5.1. Tree Refinement Failure (Outliers)
+*   **Problem**: `augur refine` terminates with an error pointing to "large clock deviations" or "negative branch lengths".
+*   **Cause**: Sequences with wrong collection dates (e.g. historical samples mislabeled with modern dates) act as extreme phylogenetic outliers, breaking the root-to-tip regression.
+*   **Solution**: Review the execution logs in `logs/{build}/m04_augur_refine.log` to identify the outlier sequence names. These outliers can be placed in an exclusion list (`exclude.txt`) and filtered out during the Stage 2 subsampling phase.

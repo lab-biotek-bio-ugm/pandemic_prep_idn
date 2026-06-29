@@ -1,0 +1,185 @@
+---
+title: "Module 06: Mutational Annotation"
+---
+
+To track how pathogens evolve across transmission pathways, the pipeline must identify mutational events at every node in the phylogenetic tree. Module 06 performs Ancestral Sequence Reconstruction (ASR) at both the nucleotide and amino acid levels, and exports the integrated phylogenetic dataset for interactive visualization in Auspice.
+
+---
+
+## 1. Ancestral Sequence Reconstruction (ASR)
+
+ASR determines the most likely genetic sequence of extinct viral ancestors at the internal nodes of the phylogenetic tree. This allows the pipeline to map exactly *where* and *when* specific mutations arose along the branches:
+
+1.  **Nucleotide ASR (`augur ancestral`)**: Evaluates the nucleotide states at each node using a joint maximum-likelihood inference algorithm implemented in TreeTime [@sagulenko2018]. It outputs a JSON file (`nt_muts.json`) mapping nucleotide mutations relative to the parent nodes (e.g. `G120A` indicating a Guanine to Adenine change at position 120).
+2.  **Amino Acid Translation & Mutation Calling (`augur translate`)**: Translates nucleotide sequences into amino acids for all coding genes (CDS) defined in the GFF3 annotation file. It automatically handles splicing and codon reading frames, outputting a JSON file (`aa_muts.json`) detailing non-synonymous mutations (e.g., `M1: I109T` representing an Isoleucine to Threonine substitution at codon 109 of the M1 protein).
+
+---
+
+## 2. Dataset Export for Auspice Visualization
+
+Once reconstruction is complete, the individual phylodynamic components must be integrated. The Snakemake rule `augur_export` merges these datasets using **Augur Export v2** [@hadfield2018]:
+
+```
+┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+│    tree.nwk     │  │  metadata.tsv   │  │   nt_muts.json  │  │   aa_muts.json  │
+└────────┬────────┘  └────────┬────────┘  └────────┬────────┘  └────────┬────────┘
+         │                    │                    │                    │
+         └────────────────────┼──────────┬─────────┴────────────────────┘
+                                         ▼
+                            ┌─────────────────────────┐
+                            │     augur export v2     │
+                            ├─────────────────────────┤
+                            │ Integrates metadata,    │
+                            │ mutations, and clades   │
+                            └────────────┬────────────┘
+                                         ▼
+                            ┌─────────────────────────┐
+                            │  auspice_dataset.json   │
+                            │ (Unified JSON Payload)  │
+                            └─────────────────────────┘
+```
+
+The final export aggregates:
+*   The calendar-dated tree structure (`tree.nwk`) and branch lengths.
+*   Enriched socio-demographic and travel metadata (`metadata_enriched.tsv`).
+*   Nucleotide and amino acid mutations mapped to every node and tip.
+*   Pewarnaan node (color-by attributes) configuration to enable instant filtering by `clade`, `lineage`, `country`, `region`, `host`, and `date` in the web application.
+
+---
+
+## 3. Interactive Nextstrain Auspice Tree Explorer
+
+To visualize the resulting phylodynamics, the pipeline outputs JSON payloads designed to be rendered by the **Nextstrain Auspice** web application. Below is an embedded, live instance of the official Nextstrain seasonal Influenza A H3N2 HA lineage tree. 
+
+You can interactively zoom, filter by country/clade, and explore the tree branches:
+
+``` {=html}
+<div class="card shadow-sm border-0 mb-4" style="border-radius: 12px; overflow: hidden; border: 1px solid rgba(0, 0, 0, 0.08);">
+  <div class="card-header bg-dark text-white p-3 d-flex justify-content-between align-items-center">
+    <span style="font-family: system-ui; font-weight: 600; font-size: 14px;">Live Auspice Phylodynamic Tree Explorer</span>
+    <span class="badge bg-secondary">Interactive Embed</span>
+  </div>
+  <div style="position: relative; width: 100%; height: 600px;">
+    <iframe src="https://nextstrain.org/flu/seasonal/h3n2/ha/3y?embed=true" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" allowfullscreen></iframe>
+  </div>
+</div>
+```
+
+---
+
+## 4. Configuration & Outputs (Tabset Examples)
+
+Below are the configuration schemas, CLI commands, and JSON output snippets generated in Module 06:
+
+::: {.panel-tabset}
+
+### 1. Configuration (config_influenza_a_mp.yaml)
+```yaml
+# [M06] Nextclade integration settings
+nextclade:
+  enabled: false                  # Toggle Nextclade run (uses metadata clades if false)
+
+# [GLOBAL] Annotation reference used for translation
+references:
+  annotation: "config/references/flu_a_mp_annotation.gff"
+```
+
+### 2. Nucleotide ASR (nt_muts.json)
+```bash
+# Run Augur Ancestral for nucleotide ASR
+augur ancestral \
+    --tree results/influenza-a-mp-sea/m04/tree.nwk \
+    --alignment results/influenza-a-mp-sea/m03/aligned.fasta \
+    --output-node-data results/influenza-a-mp-sea/m06/nt_muts.json \
+    --inference joint
+```
+
+#### Output JSON Snippet (nt_muts.json)
+```json
+{
+  "nodes": {
+    "NODE_0000123": {
+      "muts": ["A45G", "C897T"]
+    },
+    "EPI_ISL_19661433": {
+      "muts": ["T1027C"]
+    }
+  }
+}
+```
+
+### 3. Codon Translation (aa_muts.json)
+```bash
+# Translate nucleotide mutations using GFF CDS coordinates
+augur translate \
+    --tree results/influenza-a-mp-sea/m04/tree.nwk \
+    --ancestral-sequences results/influenza-a-mp-sea/m06/nt_muts.json \
+    --reference-sequence config/references/flu_a_mp_annotation.gff \
+    --genes M1 M2 \
+    --validation-mode warn \
+    --output-node-data results/influenza-a-mp-sea/m06/aa_muts.json
+```
+
+#### Output JSON Snippet (aa_muts.json)
+```json
+{
+  "nodes": {
+    "NODE_0000123": {
+      "aa_muts": {
+        "M1": ["V15I"],
+        "M2": ["S31N"]
+      }
+    }
+  }
+}
+```
+
+### 4. Local/HPC Execution (view-auspice.sh)
+To visualize your own generated data locally or on an HPC cluster without uploading files to the public Nextstrain server, you can run the helper script [view-auspice.sh](file:///e:/Project/pandemic-preparedness/view-auspice.sh):
+
+#### Step 1: Execute the Launcher Script
+```bash
+# Run the shell script from the project root
+./view-auspice.sh
+```
+
+The script automatically:
+1. Parses the current `build_name` from your active YAML configuration.
+2. Checks and activates the `pandemic_nextstrain` Conda environment.
+3. Launches the local Auspice dataset server pointing to your output directory:
+   ```bash
+   auspice view --dataset-dir results/influenza-a-mp-sea/nextstrain
+   ```
+
+#### Step 2: Access the Visualizer
+*   **Local PC**: Open your browser at **`http://localhost:4000`**.
+*   **HPC Cluster (SSH Tunneling)**: If running on a remote HPC, create a secure SSH tunnel from your local terminal:
+    ```bash
+    ssh -L 4000:localhost:4000 username@hpc-address.ugm.ac.id
+    ```
+    Then, open **`http://localhost:4000`** on your local machine to explore your data.
+:::
+
+---
+
+## 5. Inputs, Outputs & Files
+
+The files involved in Module 06 are summarized below:
+
+| File Role | Path | Format | Description |
+|---|---|---|---|
+| **Input Tree** | `results/{build}/m04/tree.nwk` | Newick | Dated phylogenetic tree. |
+| **Input Alignment** | `results/{build}/m03/aligned.fasta` | FASTA | Multiple sequence alignment from Module 03. |
+| **Annotation GFF3** | `config/references/flu_a_mp_annotation.gff` | GFF3 | Gene boundary coordinate map. |
+| **Nucleotide Mutations** | `results/{build}/m06/nt_muts.json` | JSON | Reconstructed nucleotide changes per node. |
+| **Amino Acid Mutations** | `results/{build}/m06/aa_muts.json` | JSON | Translated amino acid substitutions per gene. |
+| **Auspice Dataset** | `results/{build}/nextstrain/auspice_dataset.json` | JSON | Unified final payload for interactive visualization. |
+
+---
+
+## 6. Troubleshooting & Limitations
+
+### 6.1. Invalid Codon Length Warnings
+*   **Problem**: `augur translate` throws multiple warnings: `Codon length is not a multiple of 3` or `Skipping translation for gene X`.
+*   **Cause**: Gaps inserted in the middle of sequences during multiple sequence alignment can disrupt the open reading frame. If a codon is truncated (e.g. only 2 nucleotides remain), translation fails.
+*   **Solution**: Ensure that the upstream alignment phase (Module 03) is anchored tightly using a high-quality reference and `--fill-gaps` parameter, and that coding sequence regions are extracted precisely according to GFF coordinates in Module 05.

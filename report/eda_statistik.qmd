@@ -1,0 +1,233 @@
+---
+title: "Genomic Surveillance: Sequence Statistics"
+---
+
+To ensure diagnostic assay design represents a true universal target, the pipeline processes a highly diverse set of genomic sequences. Below is the detailed molecular epidemiology statistics of the **50,750 genomic sequences** compiled in our master surveillance database (`EpiFlu_A_MP_Combined_Metadata.csv`).
+
+These sequences represent a mixture of human isolates and zoonotic reservoirs collected across the 7 partner countries over a multi-decade timeline.
+
+---
+
+## 1. Subtype and Host Reservoir Breakdown
+
+Influenza A is highly prone to antigenic shift and host spillover. By analyzing sequences from poultry, swine, and environmental samples alongside human cases, our diagnostic target discovery pipeline accounts for potential spillover lineages.
+
+### 1.1. Summary Statistics Table
+
+| Classification Category | Group Identifier | Sequence Count | Percentage of Dataset |
+|---|---|---|---|
+| **Subtype** | A / H3N2 (Seasonal) | 19,258 | 37.95% |
+| | A / H1N1 (Seasonal & Pandemic) | 18,468 | 36.39% |
+| | A / H9N2 (Low Pathogenic Avian) | 4,315 | 8.50% |
+| | A / H5N1 (Highly Pathogenic Avian) | 1,784 | 3.52% |
+| | A / H5N6 (Highly Pathogenic Avian) | 1,558 | 3.07% |
+| | Other Subtypes (95 minor subtipe) | 5,367 | 10.57% |
+| **Host** | Human | 37,759 | 74.40% |
+| | Avian / Poultry (Chicken, Duck, Goose, Quail) | 8,467 | 16.68% |
+| | Swine (Pigs) | 925 | 1.82% |
+| | Environment / Others | 3,599 | 7.10% |
+
+---
+
+## 2. Interactive Molecular Epidemiology Visualizations
+
+Below are the interactive charts summarizing the subtype and host reservoir ratios. Hover over the segments to view the exact sequence counts:
+
+``` {=html}
+<div class="row mb-4">
+  <div class="col-md-6 mb-3">
+    <div class="card p-3 shadow-sm border-0" style="background: rgba(33, 37, 41, 0.02); border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 12px; height: 340px;">
+      <h6 class="text-center mb-2" style="font-family: system-ui; font-weight: 600;">Subtype Distribution (50,750 seqs)</h6>
+      <div style="position: relative; height: 260px; width: 100%;">
+        <canvas id="subtypeChart"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6 mb-3">
+    <div class="card p-3 shadow-sm border-0" style="background: rgba(33, 37, 41, 0.02); border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 12px; height: 340px;">
+      <h6 class="text-center mb-2" style="font-family: system-ui; font-weight: 600;">Host Reservoirs (50,750 seqs)</h6>
+      <div style="position: relative; height: 260px; width: 100%;">
+        <canvas id="hostChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  (function() {
+    var checkExist = setInterval(function() {
+       if (typeof Chart !== 'undefined' && document.getElementById('subtypeChart') && document.getElementById('hostChart')) {
+          clearInterval(checkExist);
+          initCharts();
+       }
+    }, 100);
+
+    function initCharts() {
+      // 1. Subtype Doughnut Chart
+      var ctxSub = document.getElementById('subtypeChart').getContext('2d');
+      new Chart(ctxSub, {
+        type: 'doughnut',
+        data: {
+          labels: ['H3N2', 'H1N1', 'H9N2', 'H5N1', 'H5N6', 'Others'],
+          datasets: [{
+            data: [19258, 18468, 4315, 1784, 1558, 5367],
+            backgroundColor: [
+              'rgba(54, 162, 235, 0.7)',
+              'rgba(75, 192, 192, 0.7)',
+              'rgba(255, 206, 86, 0.7)',
+              'rgba(255, 99, 132, 0.7)',
+              'rgba(153, 102, 255, 0.7)',
+              'rgba(201, 203, 207, 0.7)'
+            ],
+            borderColor: '#fff',
+            borderWidth: 1.5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'right',
+              labels: { boxWidth: 12, font: { family: 'system-ui', size: 10 } }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  var total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  var val = context.raw;
+                  var pct = ((val / total) * 100).toFixed(1);
+                  return context.label + ': ' + val.toLocaleString() + ' (' + pct + '%)';
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // 2. Host Doughnut Chart
+      var ctxHost = document.getElementById('hostChart').getContext('2d');
+      new Chart(ctxHost, {
+        type: 'doughnut',
+        data: {
+          labels: ['Human', 'Avian/Poultry', 'Swine', 'Environment/Others'],
+          datasets: [{
+            data: [37759, 8467, 925, 3599],
+            backgroundColor: [
+              'rgba(54, 162, 235, 0.7)',
+              'rgba(255, 159, 64, 0.7)',
+              'rgba(255, 99, 132, 0.7)',
+              'rgba(201, 203, 207, 0.7)'
+            ],
+            borderColor: '#fff',
+            borderWidth: 1.5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'right',
+              labels: { boxWidth: 12, font: { family: 'system-ui', size: 10 } }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  var total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  var val = context.raw;
+                  var pct = ((val / total) * 100).toFixed(1);
+                  return context.label + ': ' + val.toLocaleString() + ' (' + pct + '%)';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+  })();
+</script>
+```
+
+---
+
+## 3. Temporal Distribution Trends (2015–2025)
+
+The database aggregates samples collected over multiple years. While historical sequences from as early as 1957 are included to provide phylogenetic baseline depth, the vast majority of sequences are densely clustered in the **last 10 years (2015–2025)** to represent modern evolutionary lineages.
+
+Below is the temporal distribution trend of sequences collected per year:
+
+``` {=html}
+<div class="card p-4 shadow-sm border-0 mb-4" style="background: rgba(33, 37, 41, 0.02); border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 12px;">
+  <div style="position: relative; height: 320px; width: 100%;">
+    <canvas id="temporalChart"></canvas>
+  </div>
+</div>
+
+<script>
+  (function() {
+    var checkExist = setInterval(function() {
+       if (typeof Chart !== 'undefined' && document.getElementById('temporalChart')) {
+          clearInterval(checkExist);
+          initTemporalChart();
+       }
+    }, 100);
+
+    function initTemporalChart() {
+      var ctx = document.getElementById('temporalChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025'],
+          datasets: [{
+            label: 'Sequences Collected',
+            data: [2651, 2782, 3341, 4104, 4501, 1393, 1899, 3796, 4942, 6756, 10689],
+            backgroundColor: 'rgba(54, 162, 235, 0.1)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 2,
+            pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+            pointRadius: 4,
+            fill: true,
+            tension: 0.15
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return context.raw.toLocaleString() + ' sequences';
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { font: { family: 'system-ui', size: 11 } }
+            },
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(0,0,0,0.05)' },
+              ticks: {
+                font: { family: 'system-ui', size: 11 },
+                callback: function(value) {
+                  return value.toLocaleString();
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+  })();
+</script>
+```
+
+### 3.1. Temporal Observations
+*   **The COVID-19 Influenza Bottleneck (2020–2021)**: The chart clearly illustrates a sharp dip in sequence collection during 2020 (1,393 sequences) and 2021 (1,899 sequences). This reflects the global reduction in influenza cases and sequencing due to non-pharmaceutical interventions (mask-wearing, lock downs) and diagnostic resources being redirected toward SARS-CoV-2.
+*   **Recent Resurgence (2024–2025)**: A dramatic increase in collection density is observed peaking in 2025 (10,689 sequences), ensuring our diagnostic designs are grounded in the most recently circulating global strains.

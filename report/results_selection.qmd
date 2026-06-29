@@ -1,0 +1,59 @@
+---
+title: "Results: Selection Pressure & Site Conservation"
+---
+
+To design primers that remain effective over time, we must understand the evolutionary forces acting on the viral genome. Module 05 executes the **HyPhy Selection Pressure Engine** [@kosakovsky2020] to analyze codon-specific selection using two complementary algorithms:
+
+1.  **FUBAR (Fast Unconstrained Bayesian Approximation)** [@murrell2013]: Identifies sites under pervasive **negative (purifying) selection** ($\text{dN} < \text{dS}$). These sites are highly conserved and represent the most stable targets for primer design.
+2.  **MEME (Mixed Effects Model of Episodic Selection)** [@murrell2012]: Identifies sites under **episodic diversifying selection** ($\text{dN} > \text{dS}$ at specific tree branches). These sites are actively evolving and must be excluded from critical primer regions (e.g., the 3' terminal block).
+
+---
+
+## 1. Pervasive Purifying Selection (FUBAR Analysis)
+
+FUBAR was run on the Matrix Protein 1 (**M1**, 252 codons) and Matrix Protein 2 (**M2**, 97 codons) coding sequences. The vast majority of codons exhibit strong negative selection, reflecting the structural constraints of these proteins:
+
+```
+                         [FUBAR Selection Profile along M1 Protein]
+  Posterior Prob (dN < dS)
+    1.0 ┼  ██████████████████████████████████████████████████████████████████ (Conserved Sites)
+        │  ██████████████████████████████████████████████████████████████████
+    0.5 ┼
+        │                                         * Codon 137 (Neutral)
+    0.0 ┼────────────────────────────────────────────────────────────────────
+        1                50               100              150              200
+```
+
+*   **Matrix Protein 1 (M1) Conservation**:
+    *   Out of 252 codons, **187 sites (74.2%)** were identified under strong pervasive purifying selection with a posterior probability $\ge 0.90$.
+    *   This extreme conservation explains why the regional designs (Indo-only and SEA-only) were able to place highly sensitive primers in the forward block (codons 63 to 117, corresponding to nucleotide positions 187–352 bp).
+*   **Matrix Protein 2 (M2) Conservation**:
+    *   Out of 97 codons, **42 sites (43.3%)** were identified under purifying selection. M2 exhibits higher sequence entropy than M1, particularly in its extracellular domain (ectodomain), making it less suitable for diagnostic design.
+
+---
+
+## 2. Episodic Diversifying Selection (MEME Analysis)
+
+MEME was run to detect transient, branch-specific evolutionary events that standard site-level models miss:
+
+*   **Identified Episodic Sites in M1**:
+    *   Only **3 codons** (Codons 37, 137, and 224) exhibited evidence of episodic positive selection with a p-value $\le 0.05$.
+    *   *Diagnostic Veto*: Codon 37 lies close to the Indo-only forward primer location. The **Bridge Scoring Engine (Module 07)** successfully identified this selection marker and applied a spatial penalty, steering the primer boundaries away from codon 37 to avoid mutations under the 3' end of the primer.
+*   **Identified Episodic Sites in M2**:
+    *   **5 codons** (Codons 11, 16, 28, 54, and 78) exhibited episodic selection. The clustering of these positive selection sites in the M2 segment highlights the risks of placing diagnostic primers in this gene region.
+
+---
+
+## 3. Bridge Scoring Profile and Target "Gold Zones"
+
+The **Bridge Scoring Engine (Module 07)** integrated the conservation entropy (Shannon Entropy) with HyPhy FUBAR negative selection probabilities and MEME positive selection penalties:
+
+$$\text{Core Score} = 0.66 \times (1 - \text{Entropy}) + 0.34 \times \text{Prob(dN < dS)}$$
+
+This core score was then adjusted using multipliers for local GC content, homopolymer repeats, and selection penalties:
+
+*   **Gold Zone Selection (Indo-Only)**:
+    *   The engine identified the region **187–352 bp** as a "Gold Zone" (Grade S/A+), characterized by a core score $>0.92$, zero MEME positive selection markers, and optimal GC content (~40%).
+*   **Regional Contrast (All-Partial)**:
+    *   When global sequences were introduced, the core score of the 187–352 bp region dropped below $0.75$ due to increased sequence entropy at codon 37 and adjacent positions. 
+    *   This drop triggered the engine to shift the design to the **858–1008 bp** region, which retained a core score $>0.88$ globally, demonstrating how evolutionary forces directly shape physical coordinate selection.

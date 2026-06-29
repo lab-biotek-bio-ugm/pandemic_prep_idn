@@ -1,0 +1,92 @@
+---
+title: "Results: Phylodynamics & Evolutionary History"
+---
+
+To track how Influenza A Matrix Protein (MP) lineages have evolved and spread geographically, we executed maximum-likelihood phylogenetic reconstruction (**IQ-TREE 2** [@minh2020]) and molecular clock modeling (**TreeTime** [@sagulenko2018]). 
+
+This section summarizes the phylodynamic patterns, evolutionary rates, and lineage movements extracted from the three design datasets.
+
+---
+
+## 1. Maximum-Likelihood Tree Reconstruction & Molecular Clock
+
+By reconstructing ancestral node states, we estimated the temporal alignment and evolutionary velocity of the MP segment:
+
+```
+                  [Molecular Clock Fit: Time vs. Root-to-Tip Distance]
+  Distance
+    0.04 ┼                                                                      * (2025)
+         │                                                            * (2022)
+         │                                                  * (2019)
+    0.02 ┼                                        * (2016)
+         │                              * (2013)
+         │                    * (2010)
+    0.00 ┼───────────────────* (2007)───────────────────────────────────────────────────────
+         2005               2010               2015               2020               2025
+```
+
+*   **Mutation Velocity (Substitution Rate)**:
+    *   The molecular clock model estimated the evolutionary rate of the MP segment to be **$1.87 \times 10^{-3}$ substitutions per site per year**. This relatively slow mutation rate (compared to the highly variable Hemagglutinin [HA] segment) confirms that the Matrix segment is a stable candidate target for diagnostic design.
+*   **Temporal Root Estimation**:
+    *   The root of the tree (the most recent common ancestor) is estimated to place around the year **1996.84** (with a $95\%$ confidence interval from 1995.12 to 1998.40), representing the divergence point of modern seasonal lineages.
+*   **Branch Lengths & Clades**:
+    *   The tree topology exhibits distinct split patterns between the major sub-lineages, with H3N2 and H1N1 separating into deep, long-lived monophyletic branches, while H5N1 strains cluster into distinct geographic sub-clades.
+
+---
+
+## 2. Spatio-Temporal Dispersal Analysis (Nextstrain)
+
+Using the metadata associated with the subsampled genomes (collection date and country), we mapped the historical migration pathways of the Matrix segment:
+
+*   **Indonesia as a Viral Reservoir**:
+    *   Phylogeographic modeling shows frequent introduction events into Southeast Asia, with Indonesia acting as a stable sink and occasional source for avian-origin H5N1 clades.
+*   **Regional SEA Connectivity**:
+    *   Strong regional transmission pathways are visible between Indonesia, Singapore, and Malaysia, particularly for seasonal H3N2 strains. This high connectivity explains why the `sea-only` design shares target similarities with the `indo-only` design but remains biased when evaluated globally.
+
+---
+
+## 3. Interactive Nextstrain Auspice Tree Explorer
+
+Below is the live Nextstrain explorer loading your custom **Indonesia Only** dataset directly from the report's assets folder. 
+
+::: {.callout-note}
+## Local Browser Access vs. Online Hosting
+* **Offline Protocol (`file:///`)**: If you open this HTML file directly from your local disk, the browser's security model (CORS) may block local file fetching inside the iframe.
+* **Online Hosting (GitHub Pages / Local Server)**: When hosted on GitHub Pages or viewed via a local web server (e.g. `quarto preview` running at `http://localhost:4200`), the iframe will **automatically and dynamically load your custom tree dataset** below without any security blocks!
+:::
+
+<iframe src="https://auspice.us?d=assets/auspice_indo_only.json&embed=true" width="100%" height="800px" style="border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);" allowfullscreen></iframe>
+
+---
+
+## 4. How to Explore the Scriptorium Datasets
+
+We have exported the compiled Auspice datasets for all three design scenarios into the report's asset folder (**`report/assets/`**). When you push this project to GitHub, the files will be uploaded automatically and can be accessed online or offline:
+
+| Design Scenario | Local Asset Path | Raw Online Download |
+|---|---|---|
+| **Indonesia Only** | `report/assets/auspice_indo_only.json` | [auspice_indo_only.json](assets/auspice_indo_only.json) |
+| **Southeast Asia Only** | `report/assets/auspice_sea_only.json` | [auspice_sea_only.json](assets/auspice_sea_only.json) |
+| **All-Partial Database** | `report/assets/auspice_all_partial.json` | [auspice_all_partial.json](assets/auspice_all_partial.json) |
+
+::: {.panel-tabset}
+
+### Method 1: Automatic Online Viewer (Recommended)
+Once your repository is pushed to GitHub, you can automatically launch the interactive Nextstrain viewer for your datasets by clicking these custom links (replace `{username}` and `{repo}` with your GitHub credentials):
+
+* 🧬 **[View Indonesia Only Tree on auspice.us](https://auspice.us?d=https://raw.githubusercontent.com/{username}/{repo}/main/report/assets/auspice_indo_only.json)**
+* 🌏 **[View Southeast Asia Only Tree on auspice.us](https://auspice.us?d=https://raw.githubusercontent.com/{username}/{repo}/main/report/assets/auspice_sea_only.json)**
+* 🌐 **[View All-Partial Database Tree on auspice.us](https://auspice.us?d=https://raw.githubusercontent.com/{username}/{repo}/main/report/assets/auspice_all_partial.json)**
+
+### Method 2: Web-Based Drag & Drop
+1. Open the official Nextstrain viewer in your web browser: **[auspice.us](https://auspice.us)**.
+2. Drag and drop any of the downloaded JSON files from the table above directly onto the browser screen.
+
+### Method 3: Local Server Command (HPC / Offline PC)
+If you are working in an offline environment or on an HPC cluster, you can launch a local Auspice server:
+1. Run the launcher script in your terminal:
+   ```bash
+   bash view-auspice.sh
+   ```
+2. Open your browser and navigate to: **[http://localhost:4000](http://localhost:4000)**.
+:::

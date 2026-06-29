@@ -1,0 +1,82 @@
+---
+title: "Scientific Literature"
+---
+
+This section provides the scientific rationale, mathematical formulations, and literature background supporting the methodology used in our target discovery pipeline. 
+
+## 1. Molecular Diagnostics: Beyond Static Shannon Entropy
+
+Traditional molecular diagnostic design relies almost exclusively on sequence conservation metrics calculated from contemporary isolates, most notably **Shannon Entropy** (Equation 1). 
+
+$$H(x) = -\sum_{i=1}^{n} P(x_i) \log_2 P(x_i)$$
+
+Where $P(x_i)$ is the probability of observing nucleotide or amino acid $x_i$ at alignment position $x$. 
+
+### The Limitations of Shannon Entropy
+While Shannon Entropy is effective at measuring static sequence conservation, it suffers from critical limitations:
+
+1.  **Temporal Blindness**: Entropy only captures variation at a single snapshot in time. It cannot distinguish between a position that is temporarily conserved due to sampling bias or recent clonal expansion, and one that is conserved due to strict functional constraints.
+2.  **Lack of Functional Context**: It treats all mutations equally, failing to capture the biological fitness costs associated with specific nucleotide substitutions [@capra2007]. For instance, a conservative mutation (maintaining residue properties) is weighted identically to a disruptive one.
+
+### Diagnostic Escape and Primer Mismatches
+In clinical diagnostics, relying on static conservation frequently leads to **diagnostic escape** or **signature erosion**. Studies on SARS-CoV-2 PCR assays demonstrated that circulating genomic mutations rapidly accumulate at primer and probe binding sites, significantly reducing binding affinity and leading to false-negative clinical results [@khan2020]. 
+
+Crucially, mutations located at the **3' terminus** of the primers have the most detrimental effect on PCR amplification, as they directly impede the extension activity of DNA polymerases [@vanaerschot2020]. This makes structural and selection-aware design a vital tool to future-proof diagnostic targets.
+
+### The Evolutionary-Aware Paradigm
+To overcome these limitations, our pipeline integrates evolutionary dynamics:
+
+*   **Purifying Selection Detection**: By mapping codon-by-codon evolutionary selection pressures, we identify target sites under strict **purifying selection** ($dN/dS \ll 1$). Mutations at these sites are functionally deleterious to the pathogen, meaning any mutant strain is rapidly eliminated by natural selection. 
+*   **Ancestral Sequence Reconstruction (ASR)**: By reconstructing the historical ancestral states at internal nodes of the phylogenetic tree, we trace the evolutionary inertia of genomic regions. Target regions with high ancestral-to-contemporary conservation (high **Bridge Score**) represent genomic zones that have remained locked across evolutionary time, making them highly resilient to future mutations.
+
+---
+
+## 2. Research Design & Workflow Framework
+
+Designing a pipeline capable of processing thousands of viral genomes with strict reproducibility requires a robust framework. Below is the scientific justification for our software architecture choices:
+
+### 2.1. Snakemake: Workflow Orchestration & Reproducibility
+For enterprise-grade diagnostic target discovery, script-based pipelines are insufficient. We utilize **Snakemake** [@molder2021] as our workflow management system.
+
+*   **Deterministic Dependency Resolution**: Snakemake isolates each execution module (M01-M10) into distinct conda environments, preventing package version mismatch.
+*   **Traceability and Log Auditing**: Every step records CLI inputs, environment parameters, and logs, ensuring the pipeline meets clinical validation standards.
+
+### 2.2. Nextstrain: Spatio-Temporal Genomic Surveillance
+For tracking pathogen lineages globally, we utilize the **Nextstrain** architecture [@hadfield2018].
+
+*   **Clade and Lineage Definition**: Nextstrain provides real-time tracking of emerging variants, allowing us to select representative datasets.
+*   **Phylogeographic Subsampling**: To avoid geographic bias, we subsample sequences relative to case numbers and demographic travel data (informed by BPS data), preventing overrepresented sequences from skewing conservation scores.
+
+---
+
+## 3. Core Bioinformatics Algorithms
+
+### 3.1. Alignment: MAFFT (Multiple Sequence Alignment)
+Aligning thousands of viral genomes requires high speed without sacrificing alignment quality at the codon level.
+
+*   **Algorithm**: We use **MAFFT** [@katoh2013], applying the progressive method `FFT-NS-2` for large datasets and iterative refinement (`L-INS-i`) for sub-datasets. MAFFT's fast Fourier transform approximation allows rapid alignment of highly variable regions while preserving structural codon boundaries.
+
+### 3.2. Phylogeny and ASR: IQ-TREE 2
+Phylodynamic tree reconstruction and ancestral sequence states are computed using **IQ-TREE 2** [@minh2020].
+
+*   **Substitution Model Selection**: IQ-TREE 2 integrates **ModelFinder** to automatically select the optimal nucleotide or codon substitution model (e.g., GTR+I+G4) based on Bayesian Information Criterion (BIC).
+*   **Ancestral Reconstruction**: IQ-TREE 2 utilizes Empirical Bayes maximum likelihood methods to perform marginal and joint ancestral sequence reconstruction at all phylogenetic nodes, providing the raw inputs for our Bridge Scoring engine.
+
+### 3.3. Selection Pressure: HyPhy (Hypothesis Testing using Phylogenies)
+To calculate site-specific selection pressures, we use **HyPhy** [@kosakovsky2020].
+
+*   **FUBAR (Fast Unconstrained Bayesian Approximation)**: FUBAR [@murrell2013] employs a fast Markov chain Monte Carlo (MCMC) algorithm to calculate the posterior probability of purifying selection ($dN < dS$) at each codon site. FUBAR is selected for its high processing speed on large alignments.
+*   **MEME (Mixed Effects Model of Episodic Selection)**: MEME [@murrell2012] is used to detect codons experiencing transient, episodic positive selection along a fraction of branches, ensuring we filter out target regions susceptible to localized adaptation.
+
+---
+
+## 4. Recombinase Polymerase Amplification (RAA/RPA) Design
+
+Recombinase Polymerase Amplification (RPA) and its close derivative, Recombinase Amplification Assay (RAA), operate isothermally (typically at 37–42°C) [@piepenburg2006]. 
+
+### Diagnostic Oligonucleotide Requirements
+RAA chemistry demands distinct target parameters compared to conventional PCR:
+
+*   **Primer Length**: RAA primers are significantly longer (30–35 bp) than PCR primers (18–22 bp).
+*   **Probe Length**: RAA probes (typically Exo probes) require a length of 46–52 bp with internal fluorophores and quencher modifications.
+*   **Thermodynamic Mismatch Tolerance**: Because RAA operates isothermally, longer primers exhibit a substantial tolerance to template mismatches, successfully amplifying sequences even with multiple mismatches (up to 9 mismatches across primer/probe binding sites) [@daher2016]. However, mismatches located at the 3' terminus of RAA primers still significantly reduce amplification kinetics, requiring the target site to be located on extremely conserved regions to maintain maximum sensitivity. We calculate these parameters using nearest-neighbor thermodynamic models to exclude stable secondary structures.

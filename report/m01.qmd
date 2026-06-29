@@ -1,0 +1,182 @@
+---
+title: "Module 01: Data Acquisition"
+---
+
+This module serves as the primary entry point for the pandemic preparedness diagnostic pipeline. Its main objective is to retrieve raw viral nucleotide sequences (FASTA) and associated spatio-temporal metadata (TSV) from global public health repositories (NCBI GenBank or GISAID) or handle manual local datasets.
+
+The module ensures that raw inputs are cleaned, standardized, and enriched with initial clade/lineage classifications before downstream processing.
+
+---
+
+## 1. Dual Acquisition Pathways
+
+Depending on the configuration parameter `database` in `config.yaml`, the pipeline routes sequence acquisition through one of two distinct pathways:
+
+```
+                  ┌────────────────────────────────────────┐
+                  │          Database Selector             │
+                  └───────────────────┬────────────────────┘
+                                      │
+                   ncbi               │              local
+             ┌────────────────────────┴────────────────────────┐
+             ▼                                                 ▼
+┌──────────────────────────┐                      ┌──────────────────────────┐
+│   NCBI Datasets API      │                      │  Manual GISAID / Local   │
+├──────────────────────────┤                      ├──────────────────────────┤
+│ datasets download virus  │                      │ Copy local FASTA/Meta    │
+│ dataformat tsv virus     │                      │ Map columns dynamically  │
+└────────────┬─────────────┘                      └────────────┬─────────────┘
+             │                                                 │
+             └────────────────────────┬────────────────────────┘
+                                      ▼
+                         ┌──────────────────────────┐
+                         │    sanitize_metadata     │
+                         │ (3-Tier Column Sanitizer)│
+                         └────────────┬─────────────┘
+                                      ▼
+                         ┌──────────────────────────┐
+                         │   Nextclade Profiling    │
+                         │  (QC & Clade Assignment) │
+                         └────────────┬─────────────┘
+                                      ▼
+                         ┌──────────────────────────┐
+                         │     Enriched Metadata    │
+                         │ (metadata_enriched.tsv)  │
+                         └──────────────────────────┘
+```
+
+### 1.1. Path A: Automated NCBI Datasets API
+When configured with `database: ncbi`, the pipeline utilizes the official **NCBI Datasets CLI tool** [@sayers2022] to programmatically fetch data. 
+
+1.  **Sequence Download**: The pipeline downloads the genomic datasets as a compressed zip package:
+    ```bash
+    datasets download virus genome taxon "Influenza A virus" \
+        --geo-location "Asia/Indonesia" \
+        --include genome \
+        --filename results/influenza-a-mp-universal/m01/ncbi_dataset.zip
+    ```
+2.  **Unzipping & Data Extraction**: The genome sequences are extracted, and the structural data report is converted into tabular format using `dataformat`:
+    ```bash
+    dataformat tsv virus-genome \
+        --inputfile ncbi_dataset/data/data_report.jsonl \
+        --fields accession,virus-name,geo-location,geo-region,collection-date,release-date,length,host-name \
+        > results/influenza-a-mp-universal/m01/raw_metadata.jsonl
+    ```
+3.  **Column Mapping**: The extracted tabular fields are mapped to Nextstrain Augur compatible naming conventions:
+    *   `Accession` $\rightarrow$ `strain`
+    *   `Virus Name` $\rightarrow$ `virus`
+    *   `Geographic Location` $\rightarrow$ `location`
+    *   `Geographic Region` $\rightarrow$ `region`
+    *   `Collection Date` $\rightarrow$ `date`
+    *   `Release Date` $\rightarrow$ `date_submitted`
+    *   `Length` $\rightarrow$ `length`
+    *   `Host Name` $\rightarrow$ `host`
+
+### 1.2. Path B: Local / Manual Files (GISAID EpiFlu & Manual Portals)
+When configured with `database: local`, the pipeline processes manually downloaded files, such as metadata sheets from **GISAID** [@shu2017]. 
+
+*   **Sequence Copy**: Copies the raw FASTA file from the path specified in `config["local_input"]["sequences"]` to the pipeline directory.
+*   **Format-Aware Metadata Conversion**:
+    *   *NCBI Virus Web CSV*: If `format` is `ncbi_virus_csv`, it maps columns and splits the combined `Geo_Location` (e.g., `Indonesia: Java: Jakarta`) into `country` (`Indonesia`) and `region` (`Java`).
+    *   *TSV / GISAID*: If `format` is `gisaid_epiflu` or `gisaid_tsv`, columns are copied as-is and forwarded to the downstream sanitizer.
+
+---
+
+## 2. Metadata Sanitization & 3-Tier Column Validation
+
+Different databases output metadata with varying schemas, date formats, and missing entries. The Snakemake rule `sanitize_metadata` runs `scripts/sanitize_metadata.py` to normalize the tabular data into a consistent internal format using a **3-tier validation protocol**:
+
+1.  **Tier 1: Critical (strain, date, country)**
+    *   *Action*: Must be present and valid. Any rows with empty strain IDs or completely unparseable dates (e.g., missing year) are **dropped** from the analysis to prevent pipeline failure.
+    *   *Incomplete Dates*: Imprecise dates like `2024` or `2024-05` are normalized to `2024-XX-XX` or `2024-05-XX` to comply with Nextstrain's date format requirements.
+2.  **Tier 2: Spatio-Temporal Context (region, host, division)**
+    *   *Action*: Missing values are **silently filled with defaults**. If `host` is empty, it defaults to `Human`. If `region` is missing, it is derived from `country` mapping.
+3.  **Tier 3: Metadata Pass-through**
+    *   *Action*: Non-essential demographic fields (e.g., `age`, `gender`, `passage_history`) are passed through unmodified to maintain dataset richness.
+
+---
+
+## 3. Nextclade Clade & Lineage Classification
+
+If Nextclade is enabled (`nextclade.enabled: true` in config), the raw sequences are aligned and classified using the **Nextclade CLI tool** [@aksamentov2021]:
+
+1.  **Dataset Retrieval**: Fetches the specified Nextclade reference database (e.g., `nextstrain/flu/h1n1pdm/ha/MW626062` for Influenza H1N1 HA):
+    ```bash
+    nextclade dataset get --name "nextstrain/flu/h1n1pdm/ha/MW626062" --output-zip nextclade_dataset.zip
+    ```
+2.  **Nextclade Alignment & QC Run**: Runs sequence alignment, mutation calling, clade classification, and frameshift detection:
+    ```bash
+    nextclade run \
+        --input-dataset nextclade_dataset.zip \
+        --output-tsv nextclade.tsv \
+        early_filtered_sequences.fasta
+    ```
+3.  **Metadata Enrichment**: The rule `enrich_metadata` merges the base metadata table with the Nextclade output table (`nextclade.tsv`) using accession IDs, appending critical columns such as `clade`, `subclade`, and quality control scores (`qc.overallStatus`).
+
+---
+
+## 4. Inputs, Outputs & Files
+
+The files involved in Module 01 are summarized below:
+
+| File Role | Path | Format | Description |
+|---|---|---|---|
+| **Input Sequences** | Configured via `local_input.sequences` | FASTA | Raw nucleotide fasta files. |
+| **Input Metadata** | Configured via `local_input.metadata` | CSV / TSV | Metadata from NCBI or GISAID. |
+| **Internal Fasta** | `results/{build}/m01/raw_sequences.fasta` | FASTA | Normalized sequence file. |
+| **Internal TSV** | `results/{build}/m01/metadata.tsv` | TSV | Unsanitized tabular metadata. |
+| **Sanitized TSV** | `results/{build}/m01/metadata_sanitized.tsv` | TSV | Normalized, Tier-validated metadata. |
+| **Nextclade TSV** | `results/{build}/m01/nextclade.tsv` | TSV | Clade classification output from Nextclade. |
+| **Enriched TSV** | `results/{build}/m01/metadata_enriched.tsv` | TSV | Final merged metadata table for M02. |
+
+### 4.1. Data Format Snippets (Inputs vs. Outputs)
+The tabset below illustrates the structural transition of files in Module 01 from raw inputs to sanitized and Nextclade-enriched outputs:
+
+::: {.panel-tabset}
+
+#### 1. Input: FASTA Sequences (Raw)
+```fasta
+>EPI_ISL_16613629
+atgagtcttctaaccgaggtcgaaacgtacgttctttctatcatcccatcaggccccctc
+aaagccgagatcgcacagagactggaaagtgtctttgcaggaaagaacacagatcttgag
+gctatcatggaatggctaaagacaagaccaatcttgtcacctctgactaagggaatttta
+ggatttgtgttcacgctcaccgtgcccagtgagcgaggactgcagcgtagacgctttatc
+```
+
+#### 2. Input: GISAID Metadata (Raw CSV)
+```csv
+Isolate_Id,Location,Host,Collection_Date,Submission_Date,Source_Country
+EPI_ISL_19661433,Oceania / Australia / Victoria,Human,2024-09-01,2025-01-12,Australia
+EPI_ISL_19661432,Oceania / Australia / Victoria,Human,2024-09-17,2025-01-12,Australia
+EPI_ISL_19661435,Oceania / Australia / Victoria,Human,2024-09-02,2025-01-12,Australia
+```
+
+#### 3. Output: Enriched Metadata (Final TSV)
+```tsv
+strain	virus	location	region	date	date_submitted	length	host	country	clade	lineage	qc_status	qc_score
+EPI_ISL_19661433	A/Victoria/3103/2024	Oceania / Australia / Victoria	Oceania	2024-09-01	2025-01-12	1027	Human	Australia	3C.2a1b.2a.2a.3a.1	H3N2	good	0
+EPI_ISL_19661432	A/Victoria/3213/2024	Oceania / Australia / Victoria	Oceania	2024-09-17	2025-01-12	1027	Human	Australia	3C.2a1b.2a.2a.3a.1	H3N2	good	0
+EPI_ISL_19661435	A/Victoria/3107/2024	Oceania / Australia / Victoria	Oceania	2024-09-02	2025-01-12	1027	Human	Australia	3C.2a1b.2a.2a.3a.1	H3N2	good	0
+```
+
+:::
+
+---
+
+## 5. Troubleshooting & Limitations
+
+### 5.1. NCBI API Rate Limiting (HTTP 429)
+*   **Problem**: Running the NCBI API pathway frequently fails with `HTTP Error 429: Too Many Requests`.
+*   **Cause**: NCBI limits unauthenticated requests to 3 per second.
+*   **Solution**: Obtain an NCBI API Key from your NCBI account page and export it to your shell environment prior to executing the pipeline:
+    ```bash
+    export NCBI_API_KEY="your_api_key_here"
+    ```
+    This raises the rate limit to 10 requests per second.
+
+### 5.2. Missing Package Dependencies in Nextclade
+*   **Problem**: Nextclade CLI command is not found or fails to execute.
+*   **Solution**: Ensure the Snakemake rule is running in the correct Conda environment (`envs/nextstrain.yaml`). If executing manually, nextclade can be installed via:
+    ```bash
+    conda install -c conda-forge nextclade
+    ```

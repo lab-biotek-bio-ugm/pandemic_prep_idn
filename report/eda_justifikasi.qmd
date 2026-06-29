@@ -1,0 +1,148 @@
+---
+title: "Genomic Surveillance: Data Justification"
+---
+
+In modern genomic surveillance, designing diagnostic targets solely based on domestic pathogen isolates creates a critical blind spot. Pathogen emergence and spread are globalized phenomena, meaning that a diagnostic assay must be future-proofed against lineages circulating in countries with high demographic and travel connectivity to Indonesia.
+
+Our hybrid workflow combines two independent data streams:
+
+1.  **Socio-Demographic Travel Volume** (from BPS Statistics) to justify key entry corridors.
+2.  **Spatio-Temporal Genomic Density** (from GISAID database) representing the raw sequences processed in the target discovery pipeline.
+
+---
+
+## 1. Demographic Importation Risk vs. Genomic Density
+
+According to network epidemiology, global disease propagation is governed by **effective distance** within the air travel network rather than physical geographic distance [@brockmann2013]. The risk of introducing a novel viral lineage into Indonesia is directly proportional to flight connectivity and passenger volumes.
+
+The table below contrasts the demographic arrival statistics (BPS) with the actual genomic sequence counts extracted from our metadata database (`EpiFlu_A_MP_Combined_Metadata.csv`) for the **7 countries** analyzed in our pipeline:
+
+| Country | Role in Pipeline | Genomic Sequences (GISAID) | BPS Arrivals (2019) | BPS Arrivals (2024) |
+|---|---|---|---|---|
+| **Indonesia** | Domestic Focal Point (Anchor) | 1,273 | *N/A (Domestic Destination)* | *N/A (Domestic Destination)* |
+| **Malaysia** | Direct Border & Land Commuter | 1,288 | 5,961,506 | 4,541,112 |
+| **Singapore** | High-Frequency Daily Flight Corridor | 4,587 | 3,868,890 | 2,810,596 |
+| **Australia** | Southern Hemisphere Contextual | 17,974 | 2,773,606 | 3,342,332 |
+| **China** | East Asian Evolutionary Source | 15,150 | 4,144,158 | 2,395,068 |
+| **India** | South Asian Regional Transit Hub | 1,287 | 1,314,600 | 1,420,414 |
+| **Japan** | High-Density Urban Megacity Hub | 9,191 | 1,039,246 | 677,800 |
+
+---
+
+## 2. Interactive BPS Connection Volume Visualization
+
+The chart below shows the official international visitor arrivals to Indonesia from the 6 major travel connection corridors during the pre-pandemic baseline (2019), pandemic recovery phase (2022), and recent baseline (2024):
+
+``` {=html}
+<div class="card p-4 shadow-sm border-0 mb-4" style="background: rgba(33, 37, 41, 0.02); border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 12px;">
+  <div style="position: relative; height: 380px; width: 100%;">
+    <canvas id="bpsChart"></canvas>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  (function() {
+    var checkExist = setInterval(function() {
+       if (typeof Chart !== 'undefined' && document.getElementById('bpsChart')) {
+          clearInterval(checkExist);
+          initChart();
+       }
+    }, 100);
+
+    function initChart() {
+      var ctx = document.getElementById('bpsChart').getContext('2d');
+      var data = {
+        labels: ['Malaysia', 'Singapore', 'Australia', 'China', 'India', 'Japan'],
+        datasets: [
+          {
+            label: 'Pre-Pandemic (2019)',
+            data: [5961506, 3868890, 2773606, 4144158, 1314600, 1039246],
+            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1.5,
+            borderRadius: 4
+          },
+          {
+            label: 'Recovery Phase (2022)',
+            data: [2425148, 1473594, 1310740, 338756, 563628, 147826],
+            backgroundColor: 'rgba(255, 99, 132, 0.7)',
+            borderColor: 'rgba(255, 99, 132, 1)',
+            borderWidth: 1.5,
+            borderRadius: 4
+          },
+          {
+            label: 'Recent Baseline (2024)',
+            data: [4541112, 2810596, 3342332, 2395068, 1420414, 677800],
+            backgroundColor: 'rgba(75, 192, 192, 0.7)',
+            borderColor: 'rgba(75, 192, 192, 1)',
+            borderWidth: 1.5,
+            borderRadius: 4
+          }
+        ]
+      };
+      
+      new Chart(ctx, {
+        type: 'bar',
+        data: data,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                font: { family: 'system-ui, -apple-system, sans-serif', size: 12 }
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  var val = context.raw;
+                  return context.dataset.label + ': ' + val.toLocaleString() + ' arrivals';
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { font: { family: 'system-ui, -apple-system, sans-serif', size: 11 } }
+            },
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(0, 0, 0, 0.05)' },
+              ticks: {
+                font: { family: 'system-ui, -apple-system, sans-serif', size: 11 },
+                callback: function(value) {
+                  if (value >= 1e6) return (value / 1e6).toFixed(1) + 'M';
+                  if (value >= 1e3) return (value / 1e3).toFixed(0) + 'K';
+                  return value;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+  })();
+</script>
+```
+
+---
+
+## 3. Epidemiological Risk Profiles
+
+Each country represents a distinct epidemiological corridor, justifying why our diagnostic target discovery pipeline must account for their circulating viral sequences:
+
+### 3.1. Malaysia & Singapore: Direct Border Corridors
+Due to physical proximity and high-frequency business travel, Malaysia and Singapore represent the most immediate pathways for introduction. Emerging variants in Southeast Asia typically transition through these commuter corridors within days of global detection.
+
+### 3.2. Australia: Southern Hemisphere Seasonal Shift
+Influenza and respiratory virus transmission in the Southern Hemisphere is temporally shifted by approximately 6 months compared to the Northern Hemisphere. Monitoring sequences from Australia allows our pipeline to capture mutations that arise during the Southern Hemisphere winter season, future-proofing diagnostic assays ahead of the next Indonesian seasonal wave.
+
+### 3.3. China & Japan: East Asian Evolutionary Epicenter
+Historically, many dominant Influenza lineages (especially avian and seasonal strains) originate in East Asian transmission hubs. China's high-density agricultural-urban interfaces and Japan's massive transit hubs serve as evolutionary hot spots where novel mutations first stabilize before propagating globally.
+
+### 3.4. India: South Asian Regional Transit Hub
+India is a major population center and travel gateway in South Asia. Its high density and complex demographic corridors facilitate rapid viral evolution and reassortment. Including Indian sequences ensures that South Asian lineage transitions are well-represented in the background dataset, preventing assay failure for imported lineages originating from the subcontinent.

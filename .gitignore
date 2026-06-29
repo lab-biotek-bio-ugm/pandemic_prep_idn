@@ -23,5 +23,4 @@ plan-docs/
 artifacts/
 
 # Documentation Sources (Private)
-docs_quarto/
 .quarto/

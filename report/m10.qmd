@@ -1,0 +1,178 @@
+---
+title: "Module 10: In-silico PCR & RAA Validation"
+---
+
+Before biological wet-lab validation, designed primer and probe candidates must undergo virtual simulation to measure their diagnostic sensitivity. Module 10 executes the **In-silico Validation Engine** (`scripts/m10_insilico_pcr.py`) using **SeqKit** [@shen2016] to run high-throughput binding simulations against large GISAID and NCBI sequence databases.
+
+This step calculates exact diagnostic coverage metrics broken down by subtype, collection year, and country to verify assay robustness against global and local viral diversity.
+
+---
+
+## 1. Virtual Amplification and Binding Simulation
+
+The validation engine runs simulated amplifications by matching designed primers and probes against target database sequences using sequence-matching parameters:
+
+```
+                            ┌─────────────────────────────────┐
+                            │    final_candidates.json (M09)  │
+                            └────────────────┬────────────────┘
+                                             │
+                                             ▼
+                               ┌──────────────────────────────┐
+                               │  In-silico Validation Engine │
+                               │  (SeqKit Amplicon Simulator) │
+                               └─────────────┬────────────────┘
+                                             │
+                                             ▼
+                               ┌──────────────────────────────┐
+                               │  Target Database Sequences   │
+                               │  (50k+ GISAID Fasta Genomes) │
+                               └─────────────┬────────────────┘
+                                             │
+                                             ▼
+                               ┌──────────────────────────────┐
+                               │   Mismatch Tolerance Filter  │
+                               │  (3' Zone vs. Internal Body) │
+                               └─────────────┬────────────────┘
+                                             │
+                                             ▼
+                    ┌────────────────────────┴────────────────────────┐
+                    ▼                                                 ▼
+      ┌──────────────────────────┐                      ┌──────────────────────────┐
+      │   Amplified Sequences    │                      │   Missed/Failed Strains  │
+      │   (Simulated Positive)   │                      │   (Diagnostic Escape)    │
+      └──────────────────────────┘                      └──────────────────────────┘
+```
+
+### 1.1. PCR Simulation (`seqkit amplicon`)
+SeqKit's `amplicon` command matches primer sequences against every target genome in the database, allowing up to a defined number of mismatches (default: $3$ or $4$ mismatches). It returns virtual amplicons for target genomes that match both primers within a designated length range (e.g. 100–300 bp).
+
+### 1.2. RAA Isothermal Binding Rules
+Because RAA operates at $37^\circ\text{C}$ with a recombinase complex, it is thermodynamically tolerant of minor internal mismatches but highly sensitive to 3' terminal defects. The engine implements strict, multi-zone mismatch criteria:
+
+*   **3' Critical Zone**: Evaluates the last **8 nucleotides of the 3' end** of both primers. It allows a maximum of **1 mismatch**; any more than 1 mismatch in this zone vetoes the binding.
+*   **Internal Body**: Allows a maximum of **4 mismatches** across the rest of the 30–35 bp primer body.
+*   **Probe Binding**: Probes (46–52 bp) allow a maximum of **3 mismatches** to maintain hybridization-induced exonuclease cleavage.
+
+
+---
+
+## 2. Spatial and Temporal Coverage Aggregation
+
+To identify potential diagnostic gaps, the engine aggregates simulation results into distinct metadata dimensions:
+
+1.  **Subtype Coverage**: Breaks down detection percentages by viral sub-lineages (e.g., A/H1N1, A/H3N2, A/H5N1) to ensure the assay is truly universal.
+2.  **Temporal Coverage**: Groups detection rates by year of sequence collection (e.g., 2015 to 2025) to track whether modern evolutionary mutations are lowering assay sensitivity over time.
+3.  **Spatial Coverage**: Groups detection rates by country (e.g., Indonesia vs. global) to guarantee high local diagnostic sensitivity.
+
+---
+
+## 3. Configuration & Outputs (Tabset Examples)
+
+Below are the configuration schemas, CLI commands, and a snippet of the generated coverage JSON:
+
+::: {.panel-tabset}
+
+### 1. Configuration (config_influenza_a_mp.yaml)
+```yaml
+# [M10] In-silico validation settings
+insilico_pcr:
+  max_mismatch: 3                 # Maximum mismatches allowed for virtual PCR
+  num_candidates: 10              # Verify the top N candidates from Module 09
+  raa_3prime_bp: 8                # Critical 3' end zone size for RAA
+  raa_max_3prime_mm: 1            # Max mismatches allowed in 3' critical zone
+  raa_max_internal_mm: 4          # Max mismatches allowed in non-3' body
+  min_subtype_seqs: 30            # Minimum sequences to report subtype stats
+```
+
+### 2. Validation Run Command
+```bash
+# Run the in-silico PCR and RAA validation engine
+python scripts/m10_insilico_pcr.py \
+    --m09-dirs results/influenza-a-mp-sea/m09/degenerate/segment-MP_region_1 \
+    --sequences data/global_surveillance.fasta \
+    --metadata data/global_metadata.tsv \
+    --gff config/references/flu_a_mp_annotation.gff \
+    --design-sequences results/influenza-a-mp-sea/m02/filtered_sequences.fasta \
+    --outdir results/influenza-a-mp-sea/m10/degenerate \
+    --max-mismatch 3 \
+    --num-candidates 10 \
+    --raa-3prime-bp 8 \
+    --raa-max-3prime-mm 1 \
+    --raa-max-internal-mm 4 \
+    --min-subtype-seqs 30 \
+    --threads 16
+```
+
+### 3. Output: coverage_summary.json Snippet
+This file summarizes the simulated detection rates against 50,750 global sequences, breaking down performance by viral subtype (e.g., Candidate 1 achieves 98.42% coverage for A/H5N1 and 99.47% for A/H3N2):
+```json
+[
+  {
+    "cand_id": "segment-MP_region_1_Cand_1",
+    "region": "segment-MP_region_1",
+    "gene": "segment-MP",
+    "rank": 1,
+    "fwd_seq": "CTGACTAAGGGGATTTTAGGATTTGTATTCAC",
+    "rev_seq": "TCTCTTTTCAGCTTCTTATATAGTTTAACTGC",
+    "probe_seq": "CCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTGTCCAAAATGCCCT",
+    "fwd_degenerate_seq": "CTGACTAARGGRATTTTRGGRTTTGTATTCA",
+    "rev_degenerate_seq": "GCAGTTAAACTATATARGAARCTGAARAGRG",
+    "total_seqs": 50750,
+    "pcr_amplified_pct": 91.20,
+    "pcr_detected_pct": 91.06,
+    "raa_amplified_pct": 88.83,
+    "raa_detected_pct": 88.65,
+    "design_db_breakdowns": {
+      "subtype": [
+        {
+          "subtype": "A / H5N1",
+          "total": 253,
+          "pcr_amplified_pct": 98.42,
+          "raa_amplified_pct": 98.42,
+          "raa_detected_pct": 98.02
+        },
+        {
+          "subtype": "A / H3N2",
+          "total": 187,
+          "pcr_amplified_pct": 99.47,
+          "raa_amplified_pct": 99.47,
+          "raa_detected_pct": 99.47
+        },
+        {
+          "subtype": "A / H1N1",
+          "total": 154,
+          "pcr_amplified_pct": 96.10,
+          "raa_amplified_pct": 81.82,
+          "raa_detected_pct": 81.82
+        }
+      ]
+    }
+  }
+]
+```
+:::
+
+---
+
+## 4. Inputs, Outputs & Files
+
+The files involved in Module 10 are summarized below:
+
+| File Role | Path | Format | Description |
+|---|---|---|---|
+| **Input Candidates** | `results/{build}/m09/{mode}/{region}/final_candidates.json` | JSON | Specificity-filtered candidate primer sets from Module 09. |
+| **Input Database** | `data/global_surveillance.fasta` | FASTA | Comprehensive global sequence database. |
+| **Input Metadata** | `data/global_metadata.tsv` | TSV | Socio-temporal metadata for database sequences. |
+| **Coverage Summary** | `results/{build}/m10/{mode}/coverage_summary.json` | JSON | Aggregated coverage and mismatch statistics. |
+| **Coverage TSV** | `results/{build}/m10/{mode}/coverage_summary.tsv` | TSV | Tabular coverage stats per candidate for Excel review. |
+| **Coverage Heatmap** | `results/{build}/m10/{mode}/coverage_heatmap.html` | HTML | Interactive heatmap visualizer. |
+
+---
+
+## 5. Troubleshooting & Limitations
+
+### 5.1. Low RAA Coverage compared to PCR Coverage
+*   **Problem**: The RAA amplified percentage is significantly lower than the PCR amplified percentage.
+*   **Cause**: This occurs in target sets with high sequence variability. RAA primers are longer (30–35 bp) than PCR primers (20 bp), which statistically increases the probability of encountering mismatches along the primer body. In addition, the strict 3' terminal zone limit (max 1 mismatch in 8 bp) penalizes binding much harder than standard PCR.
+*   **Solution**: Turn on degenerate base rescue in Module 08 to introduce degenerate bases at variable sites, allowing the primer to match multiple variants and restore RAA coverage.

@@ -1,0 +1,119 @@
+project:
+  type: website
+  output-dir: ./_site
+  preview:
+    port: 4200
+    browser: false
+  resources:
+    - assets/
+    - img/
+    - logos/
+    - "*.svg"
+
+bibliography: references.bib
+
+website:
+  title: "Pandemic Preparedness Report"
+  page-footer:
+    left: |
+      <div style="display: flex; flex-direction: column; gap: 8px;"><div style="display: flex; flex-direction: row; align-items: center; gap: 15px; flex-wrap: nowrap;"><img src="assets/images/faculty_biology_ugm.png" style="height: 32px; width: auto; vertical-align: middle;" class="img-fluid"><img src="img/Alt_Logo_BRIN.png" style="height: 28px; width: auto; vertical-align: middle;" class="img-fluid"><img src="img/kemenkes.png" style="height: 38px; width: auto; vertical-align: middle;" class="img-fluid"><img src="img/WHO (World Health Organization) Logo (PNG720p) - Vector69Com.png" style="height: 26px; width: auto; vertical-align: middle;" class="img-fluid"></div><div style="font-size: 0.82rem; color: #475569; margin-top: 2px; white-space: nowrap; vertical-align: middle;">Supported by Badan Riset dan Inovasi Nasional (BRIN) FY 2026</div></div>
+    right: |
+      <a href="https://github.com/lab-biotek-bio-ugm/pandemic_prep_idn.git" target="_blank"><img src="img/GitHub.png" style="max-height: 18px; vertical-align: middle;" class="img-fluid"></a>
+  navbar:
+    background: "#ffffff"
+    search: false
+    right:
+      - text: "<img src='assets/images/faculty_biology_ugm.png' style='height: 38px; width: auto; padding: 2px 0;' />"
+        href: https://biologi.ugm.ac.id
+  sidebar:
+    style: "floating"
+    search: false
+    collapse-level: 1
+    contents:
+      - href: index.qmd
+        text: "Home"
+      - href: literature.qmd
+        text: "Scientific Literature"
+      - section: "Genomic Surveillance"
+        contents:
+          - href: eda_justifikasi.qmd
+            text: "Data Justification"
+          - href: eda_statistik.qmd
+            text: "Sequence Statistics"
+      - section: "Technical Architecture"
+        contents:
+          - section: "Data Processing & Phylodynamics"
+            contents:
+              - href: m01.qmd
+                text: "Module 01: Data Acquisition"
+              - href: m02.qmd
+                text: "Module 02: Quality Control"
+              - href: m03.qmd
+                text: "Module 03: Alignment"
+              - href: m04.qmd
+                text: "Module 04: Phylodynamic Reconstruction"
+          - section: "Selection & Conservation"
+            contents:
+              - href: m05.qmd
+                text: "Module 05: Selection Pressure"
+              - href: m06.qmd
+                text: "Module 06: Clade Annotation"
+              - href: m07.qmd
+                text: "Module 07: Bridge Scoring Engine"
+          - section: "Design & Specificity"
+            contents:
+              - href: m08.qmd
+                text: "Module 08: PrimerLab RAA Design"
+              - href: m09.qmd
+                text: "Module 09: BLAST Specificity"
+          - section: "Multi-Metric In-Silico"
+            contents:
+              - href: m10.qmd
+                text: "Module 10: In-silico Verification"
+      - section: "Results & Biological Insights"
+        contents:
+          - href: results_phylodynamics.qmd
+            text: "Phylodynamics & History"
+          - href: results_selection.qmd
+            text: "Selection & Conservation"
+          - href: results_candidates.qmd
+            text: "Candidate Diagnostics"
+          - href: results_performance.qmd
+            text: "In-silico Evaluation"
+      - href: references.qmd
+        text: "References"
+
+highlight-style: pygments
+
+format:
+  html:
+    css: styles.css
+    smooth-scroll: true
+    link-external-icon: false
+    number-sections: false
+    toc: true
+    toc-location: right
+    toc-expand: true
+    toc-depth: 3
+    theme:
+      - cosmo
+    mermaid:
+      theme: forest
+    code-copy: true
+    include-after-body:
+      - text: |
+          <script>
+          document.addEventListener("DOMContentLoaded", function() {
+            const citations = document.querySelectorAll('a[href^="#ref-"]');
+            citations.forEach(a => {
+              const refId = a.getAttribute('href');
+              if (!window.location.pathname.endsWith('references.html')) {
+                a.setAttribute('href', 'references.html' + refId);
+              }
+            });
+          });
+          </script>
+
+execute:
+  freeze: true
+  echo: false

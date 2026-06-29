@@ -1,0 +1,77 @@
+---
+title: "Results: Diagnostic Candidate Generation"
+---
+
+This section details the narrative of our diagnostic design pipeline—from raw sequence input and quality control filtering to biophysical parameter optimization and specificity verification. 
+
+By running three distinct geographical filtering scenarios, we track how the input database constraints shape the physical profiles and off-target safety of the resulting primer/probe sets:
+
+1.  **Indonesia Only (`indo-only`)**: Tailored strictly to local Indonesian surveillance data.
+2.  **Southeast Asia Only (`sea-only`)**: Tailored to regional Southeast Asian strains.
+3.  **All-Partial Database (`all-partial`)**: Incorporates local focal strains (Indonesia) alongside global contextual background sequences.
+
+---
+
+## 1. Front-End Data Processing & Quality Control (M01 - M03)
+
+The design pipeline begins with raw sequence ingestion and systematic quality screening to ensure that only high-quality, representative genomes are used for design:
+
+```
+[50,750 Raw Sequences] (EpiFlu GISAID)
+          │
+          ▼ (Module 02 Quality Control)
+[20,720 Clean Sequences] (Removed N-content > 5.0%, invalid chars, & duplicates)
+          │
+          ├─────────────────────────┼─────────────────────────┐
+          ▼                         ▼                         ▼
+    [Indo-Only]                 [SEA-Only]              [All-Partial]
+ (645 Focal Seqs)           (2,680 Regional Seqs)    (6,628 Focal + Contextual)
+          │                         │                         │
+          ▼                         ▼                         ▼
+   [MSA & ML Tree]           [MSA & ML Tree]           [MSA & ML Tree]
+```
+
+*   **Sequence Ingestion**: A total of **50,750 raw sequences** from the EpiFlu GISAID segment MP database were loaded into the pipeline.
+*   **Quality Control (QC)**: Module 02 filtered out 40 sequences due to high ambiguity ($N$-content $> 5\%$) and 7 sequences due to invalid characters. Identical duplicates were dereplicated, removing 29,983 sequences. This resulted in **20,720 unique, high-quality sequences**.
+*   **Subsampling & Filtering**: The clean sequences were then split into our three Spatio-Temporal Filter scenarios:
+    *   *Indo-Only*: Subsampling extracted **645 sequences** representing local Indonesian diversity.
+    *   *SEA-Only*: Subsampling extracted **2,680 sequences** representing regional Southeast Asian diversity.
+    *   *All-Partial*: Subsampling extracted **6,628 sequences** using focal-contextual modeling to balance Indonesian and global representation.
+
+---
+
+## 2. Biophysical Search & Coordinate Selection (M07 - M08)
+
+The filtered sequence sets were aligned, annotated with positive selection markers, and passed to **PrimerLab-Genomic** for primer and probe design. The sequence composition of the input databases had a major impact on the selected target coordinates along the 1,027 bp MP segment:
+
+```
+[0 bp] ────────────────────────── Influenza A MP (1,027 bp) ────────────────────────── [1,027 bp]
+                │                                                     │
+                ├─► Indo-Only (187–341 bp)                            ├─► All-Partial (858–1008 bp)
+                └─► SEA-Only  (187–352 bp)
+```
+
+*   **Regional Conservency (Indo-Only & SEA-Only)**: Both regional designs placed their target coordinates at the forward end of the segment (**187–352 bp**). In local populations, this region is highly conserved, allowing the engine to place primers with minimal degenerate bases.
+*   **Global Shifts (All-Partial)**: When global sequences were included, the 5' region exhibited high sequence entropy. To maintain global coverage, PrimerLab-Genomic shifted the design coordinate to the 3' end of the segment (**858–1008 bp**), which represents the most globally conserved block.
+
+### Physical Profiles of the Top Candidate Sets
+Below are the physical profiles of the best designed primer/probe sets for each scenario:
+
+| Scenario | Target Coordinates | Primer Role | Sequence (5' to 3') | Length (bp) | IUPAC Degeneracy | $T_m$ Range ($^\circ\text{C}$) |
+|---|---|---|---|---|---|---|
+| **Indo-Only** | 187–341 bp | Forward <br> Reverse <br> Probe | `CTGACTAARGGRATTTTRGGRTTTGTATTCA` <br> `GCAGTTAAACTATATARGAARCTGAARAGRG` <br> `CCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCARAATGCCC` | 31 <br> 31 <br> 51 | 16 <br> 16 <br> 4 | 58.9–65.0 <br> 58.0–63.1 <br> 81.0–82.6 |
+| **SEA-Only** | 187–352 bp | Forward <br> Reverse <br> Probe | `CTGACTAAGGGRATTTTRGGRTTTGTKTT` <br> `GAAYGTTATYTCYCTYTTAAGTTTCCTATAC` <br> `ACCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCAAAATGCC` | 30 <br> 31 <br> 51 | 16 <br> 16 <br> 2 | 59.0–65.4 <br> 56.4–61.3 <br> 80.8–81.9 |
+| **All-Partial** | 858–1008 bp | Forward <br> Reverse <br> Probe | `AATGCATTTATCGTCGCTTYAAAYACGGYYT` <br> `TTTACTCYARYTCTATGYTGACAAAATGAC` <br> `AGGAGTGCCTGAGTCTATGAGGGAAGAATATCGRMAGGARCAGCAGARTGC` | 31 <br> 30 <br> 51 | 16 <br> 16 <br> 16 | 63.2–69.3 <br> 57.4–63.7 <br> 75.2–78.7 |
+
+---
+
+## 3. Specificity Verification & BLAST Veto Filtering (M09)
+
+Before in-silico database validation, candidate primer sets were filtered through the **NCBI BLAST+ Specificity Verification Engine** to prevent off-target amplification in the human host (`human_db`) and cross-reactivity with non-target pathogens (`virus_db`):
+
+*   **The 3' End Veto Filter**: The engine analyzed the 3' terminal region of both primers. If a candidate pair matched any off-target template with zero mismatches in the last 8 nucleotides, it was immediately vetoed (**FAIL**).
+*   **Veto Actions in Indo-Only**:
+    *   Out of 100 generated candidates, **12 sets were vetoed** due to critical 3' end cross-reactivity with human chromosomes (e.g., Candidate 5 and Candidate 18).
+    *   The remaining candidate sets (e.g., Candidate 1, 2, 3) passed all checks and were routed to in-silico validation.
+*   **Veto Actions in All-Partial**:
+    *   Due to the shift in coordinates, **22 candidate sets were vetoed** due to human genomic cross-reactivity, reflecting the higher complexity of designing primers in the 858–1008 bp region.

@@ -1,0 +1,173 @@
+---
+title: "Module 09: BLAST Specificity Verification"
+---
+
+Even thermodynamically optimal primers can fail in clinical settings if they cross-react with host genomes or non-target pathogens. Module 09 executes the **NCBI BLAST+ Specificity Verification Engine** (`scripts/m09_blast_verification.py`) to screen all PrimerLab candidates, filtering out primer sets that risk generating off-target amplification.
+
+---
+
+## 1. Local vs. Remote Verification Architecture
+
+To support different computing environments (from local workstations to restricted secure networks and HPC nodes), the specificity engine supports two distinct execution paths:
+
+```
+                            ┌─────────────────────────────────┐
+                            │    best_primers.json (M08)      │
+                            └────────────────┬────────────────┘
+                                             │
+                       Select Blast Verification Mode in config.yaml
+                                             │
+                   ┌─────────────────────────┴─────────────────────────┐
+                   ▼                                                   ▼
+         [LOCAL BLAST MODE]                                  [REMOTE BLAST MODE]
+                   │                                                   │
+  (Queries local pre-built databases)                 (Queries NCBI remote servers)
+  (Requires resources/blast_db)                       (Requires internet & NCBI API Key)
+                   │                                                   │
+         ┌─────────┴─────────┐                                         │
+         ▼                   ▼                                         │
+  ┌─────────────┐     ┌─────────────┐                                  ▼
+  │  human_db   │     │  virus_db   │                         ┌─────────────────┐
+  │ (GRCh38/T2T)│     │ (Respi Vir) │                         │  NCBI nt DB     │
+  └──────┬──────┘     └──────┬──────┘                         └────────┬────────┘
+         │                   │                                         │
+         └─────────┬─────────┘                                         │
+                   └─────────────────────────┬─────────────────────────┘
+                                             ▼
+                                ┌──────────────────────────┐
+                                │   Specificity Engine     │
+                                │  (3' Veto & Penalty Calc)│
+                                └────────────┬─────────────┘
+                                             ▼
+                                ┌──────────────────────────┐
+                                │ final_candidates.json    │
+                                │ specificity_summary.md   │
+                                └──────────────────────────┘
+```
+
+### 1.1. Local Mode (`mode: local`)
+*   **Databases**: Queries custom local database structures built upstream by `build_db.smk`:
+    1.  **`human_db`**: A consolidated human reference database combining the GRCh38.p14 and T2T-CHM13v2.0 assemblies.
+    2.  **`virus_db`**: A database containing common non-target respiratory pathogens (e.g., Adenovirus, Rhinovirus, Enterovirus, RSV, SARS-CoV-2) to ensure no cross-reactivity.
+*   **Advantage**: High-throughput execution (10–100x faster than remote queries), completely secure (clinical target sequences are not uploaded to public servers), and runs offline.
+
+### 1.2. Remote Mode (`mode: remote`)
+*   **Database**: Queries the massive NCBI **`nt`** (nucleotide) database remotely via the Web BLAST API.
+*   **Advantage**: Queries the most up-to-date sequence library globally, capturing newly deposited viral strains.
+*   **Requirement**: Highly recommended to set the `NCBI_API_KEY` environment variable; otherwise, public NCBI rate limits will trigger frequent connection drops and search timeouts.
+
+---
+
+## 2. The 3' End Veto Filter and Penalty Scoring
+
+The specificity engine does not rely on simple identity percentages. Instead, it evaluates the biochemical risk of off-target priming:
+
+*   **3' End Critical Zone**: The 3' terminal region of a primer is the site of active DNA polymerase extension. A mismatch at the 5' end of a primer is tolerated, but a mismatch in the last **5 to 8 nucleotides of the 3' end** will block amplification.
+*   **The Veto Rule**: If the 3' critical zone of both the forward and reverse primers binds to the same off-target template (such as a human chromosome) with zero mismatches, and within a PCR-amplify-capable distance ($\le 1000\text{ bp}$), the candidate set is **immediately vetoed (FAIL)**.
+*   **Blast Penalty Calculation**: Candidates with minor, non-critical off-target hits (e.g., single-primer bindings or matches with multiple 3' mismatches) are not excluded but receive a weighted penalty score. This penalty is integrated into the final selection rank:
+    $$\text{Specificity Score} = 100 - \sum \text{Off-target Penalties}$$
+
+---
+
+## 3. Configuration & Specificity Summary (Tabset Examples)
+
+Below are the configuration schemas, CLI commands, and a snippet of the generated specificity summary table:
+
+::: {.panel-tabset}
+
+### 1. Configuration (config_influenza_a_mp.yaml)
+```yaml
+# [M09] Specificity Verification settings
+blast_verification:
+  enabled: true                   # Toggle BLAST specificity checking
+  mode: "local"                   # local (using custom databases) or remote (NCBI nt)
+  database: "nt"                  # Remote database target
+  local_db_path: "resources/blast_db"
+  num_candidates: 100             # Number of top PrimerLab candidates to verify
+  three_prime_critical_bp: 8      # Size of the critical 3' terminal zone
+  qcov_hsp_perc: 60               # Query coverage threshold
+```
+
+### 2. Local BLAST CLI
+In local mode, the script runs separate queries against the human and virus databases, then compiles the final summary:
+```bash
+# 1. Query human_db
+python scripts/m09_blast_verification.py \
+    --alternatives results/influenza-a-mp-sea/m08/degenerate/segment-MP/summary.json \
+    --num-candidates 100 \
+    --database "resources/blast_db/human_db" \
+    --mode local \
+    --outdir results/influenza-a-mp-sea/m09/degenerate/segment-MP \
+    --db-label "human"
+
+# 2. Query virus_db
+python scripts/m09_blast_verification.py \
+    --alternatives results/influenza-a-mp-sea/m08/degenerate/segment-MP/summary.json \
+    --num-candidates 100 \
+    --database "resources/blast_db/virus_db" \
+    --mode local \
+    --outdir results/influenza-a-mp-sea/m09/degenerate/segment-MP \
+    --db-label "virus"
+
+# 3. Compile final reports
+python scripts/m09_blast_verification.py \
+    --alternatives results/influenza-a-mp-sea/m08/degenerate/segment-MP/summary.json \
+    --database "unused" \
+    --outdir results/influenza-a-mp-sea/m09/degenerate/segment-MP \
+    --bridge-report results/influenza-a-mp-sea/m07/bridge_report.json \
+    --compile-only
+```
+
+### 3. Remote BLAST CLI
+```bash
+# Run remote Web BLAST against NCBI nt
+python scripts/m09_blast_verification.py \
+    --alternatives results/influenza-a-mp-sea/m08/degenerate/segment-MP/summary.json \
+    --num-candidates 100 \
+    --database "nt" \
+    --mode remote \
+    --outdir results/influenza-a-mp-sea/m09/degenerate/segment-MP \
+    --bridge-report results/influenza-a-mp-sea/m07/bridge_report.json
+```
+
+### 4. Output: blast_specificity_summary.md
+This generated summary table ranks candidates based on their specificity scores. Candidates with high off-target bindings in human assemblies (e.g. Candidate 5) are flagged as **FAIL** due to critical 3' end cross-reactivity:
+```markdown
+| Candidate | Overall | PrimerLab Penalty | Human Score (Grade) | Human 3' Off-targets | Virus Score (Grade) | Virus Pathogen Hits |
+|-----------|---------|-------------------|---------------------|----------------------|---------------------|---------------------|
+| **Candidate 1** | PASS | 6.0 | 92.6 (A)  | 6  | 100.0 (A) | 200 |
+| **Candidate 2** | PASS | 7.0 | 93.9 (A)  | 6  | 100.0 (A) | 200 |
+| **Candidate 3** | PASS | 8.0 | 92.6 (A)  | 6  | 100.0 (A) | 200 |
+| **Candidate 4** | PASS | 9.0 | 91.5 (A)  | 8  | 100.0 (A) | 200 |
+| **Candidate 5** | FAIL | 10.0| 61.1 (D)  | 18 | 100.0 (A) | 200 |
+| **Candidate 6** | PASS | 11.0| 92.9 (A)  | 8  | 100.0 (A) | 200 |
+| **Candidate 20**| BORDERLINE | 40.0 | 69.9 (C-) | 18 | 100.0 (A) | 200 |
+```
+:::
+
+---
+
+## 4. Inputs, Outputs & Files
+
+The files involved in Module 09 are summarized below:
+
+| File Role | Path | Format | Description |
+|---|---|---|---|
+| **Input Candidates** | `results/{build}/m08/{mode}/{region}/summary.json` | JSON | Candidate primer sets designed in Module 08. |
+| **Input GFF3** | `config/references/flu_a_mp_annotation.gff` | GFF3 | Gene boundary coordinate map. |
+| **Final Candidates** | `results/{build}/m09/{mode}/{region}/final_candidates.json` | JSON | Specificity-filtered and ranked final candidate sets. |
+| **Specificity Summary** | `results/{build}/m09/{mode}/{region}/blast_specificity_summary.md` | MD | Markdown specificity summary report table. |
+| **Candidate Reports** | `results/{build}/m09/{mode}/{region}/candidate_{N}/` | Directory | Specificity alignments and details for candidate N. |
+
+---
+
+## 5. Troubleshooting & Limitations
+
+### 5.1. Remote BLAST Execution Hangs or Returns Gateway Timeouts
+*   **Problem**: When running in `remote` mode, the Snakemake pipeline hangs for hours or terminates with `504 Gateway Timeout` or `HTTP 429 Too Many Requests`.
+*   **Cause**: This is caused by high traffic on NCBI public servers, combined with a lack of a validated user API Key. NCBI limits unauthenticated remote requests to 3 per second, which is quickly exceeded when checking 100 candidates.
+*   **Solution**: Register a free account at NCBI to obtain an API key, then export the environment variable `NCBI_API_KEY` in your shell before starting the run:
+    ```bash
+    export NCBI_API_KEY=your_ncbi_api_key_string
+    ```
+    Alternatively, configure `mode: local` and build local BLAST databases to bypass NCBI rate limits completely.
