@@ -125,21 +125,46 @@ The calculated **Final Score** determines the target grade and recommendation:
 
 ---
 
-## 5. Configuration & Execution Commands (Tabset Examples)
+## 5. Configuration & Parameterization
 
-Below are the configuration schemas and CLI commands of Module 07:
+The Bridge Scoring Engine is configured in `config.yaml` to define search strategies and weights for evolutionary conservation versus selection pressure:
 
-::: {.panel-tabset}
-
-### 1. Configuration (config_influenza_a_mp.yaml)
 ```yaml
 # [M07] Bridge scoring and window definitions
 bridge:
-  strategy: "full_segment"        # Treat whole segment as target (ideal for short segments)
+  strategy: "full_segment"        # Treat whole segment as target (options: sliding_window, full_segment)
   design_regions:
     - "segment-MP"
   include_utr: true
   min_region_length: 150
+  scoring:
+    core:
+      conservation_weight: 0.66   # Weight for Shannon Entropy conservation score (0.0 to 1.0)
+      purifying_weight: 0.34      # Weight for HyPhy FUBAR negative selection probability (0.0 to 1.0)
+```
+
+### 5.1. Parameter Tuning Dictionary
+
+| Parameter Name | Allowed Values | Default Value | Purpose & Biological Meaning |
+|---|---|---|---|
+| `bridge.strategy` | `"sliding_window"`, `"full_segment"` | `"full_segment"` | Defines how target regions are carved. `"sliding_window"` divides the genome into slices, which is ideal for long genomes (like Coronaviruses). `"full_segment"` passes the entire segment, which is ideal for short segments (like Influenza MP) so PrimerLab can scan the whole region. |
+| `bridge.scoring.core.conservation_weight` | Float `0.0` to `1.0` | `0.66` | The weight given to sequence alignment conservation (Shannon Entropy). A high weight favors regions with high identity in current databases. |
+| `bridge.scoring.core.purifying_weight` | Float `0.0` to `1.0` | `0.34` | The weight given to HyPhy FUBAR purifying selection probability. A high weight favors codons that are evolutionary forbidden to mutate, ensuring the diagnostic target will remain stable against future drift. |
+
+### 5.2. How to Interpret Target Grades
+
+Module 07 outputs a targets list (`primer_targets_manifest.yaml`):
+*   **Grade S / A+**: Highly recommended for design. Indicates a conserved hot-spot under strong negative selection.
+*   **Grade D**: If running in `full_segment` mode, a Grade D is normal and represents the average variability of the entire segment. It should not be used as a veto; PrimerLab will still perform localized scans to find optimal candidate positions.
+
+::: {.panel-tabset}
+
+### 1. Active Configuration Schema (active_config.yaml)
+```yaml
+# Active parameters used in the run:
+bridge:
+  strategy: "full_segment"
+  include_utr: true
   scoring:
     core:
       conservation_weight: 0.66

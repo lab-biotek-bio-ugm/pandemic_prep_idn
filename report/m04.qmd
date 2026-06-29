@@ -115,6 +115,32 @@ augur refine \
 
 ---
 
+## 3. Configuration & Parameterization
+
+The molecular clock modeling in Module 04 is controlled by the clock rate parameters configured in `config.yaml`:
+
+```yaml
+# [M04] Phylodynamic Reconstruction
+phylodynamics:
+  clock_rate: 0.003               # Estimated substitution rate per site per year
+  clock_std_dev: 0.0015           # Standard deviation allowance for the molecular clock
+```
+
+### 3.1. Parameter Tuning Dictionary
+
+| Parameter Name | Allowed Values | Default Value | Purpose & Biological Meaning |
+|---|---|---|---|
+| `phylodynamics.clock_rate` | Float $\ge 0.0$ | `0.003` | The baseline mutation velocity (substitutions per site per year). For Influenza A MP, the slow rate of $1.87 \times 10^{-3}$ fits within this prior distribution. If designing for a hyper-variable virus like HIV or SARS-CoV-2, this should be increased (e.g. `0.006` or `0.008`). |
+| `phylodynamics.clock_std_dev` | Float $\ge 0.0$ | `0.0015` | The margin of flexibility allowed for the clock model to deviate across branches (relaxed molecular clock). A higher value allows TreeTime to accommodate localized outbreaks with accelerated mutation rates without crashing. |
+
+### 3.2. How to Interpret Molecular Clock Fitting
+
+Module 04 refines the branch lengths into real calendar years:
+*   **Root-to-Tip Distance**: The slope of the regression line of root-to-tip genetic distance versus time represents the estimated evolutionary rate. If the data points deviate heavily from the regression line, it indicates a poor fit (high sequencing errors or mislabeled collection dates).
+*   **Clock-dated Nodes**: Reviewing the nodes in the calendar tree allows validating the evolutionary history (e.g., ensuring the separation of major clades matches historical pandemic records, such as the 2009 H1N1 emergence).
+
+---
+
 ## 4. Inputs, Outputs & Files
 
 The files involved in Module 04 are summarized below:

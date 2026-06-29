@@ -124,6 +124,37 @@ This snippet illustrates the FUBAR output JSON format, detailing the synonymous/
 
 ---
 
+## 3. Configuration & Parameterization
+
+The selection pressure modeling is constrained by sequence limits and statistical cutoffs defined in `config.yaml`:
+
+```yaml
+# [M05] Selection Pressure (HyPhy)
+hyphy:
+  max_sequences: 300              # Limit of sequences to run in HyPhy to prevent time explosion
+  min_sequences: 50               # Minimum sequences required to run HyPhy
+  seed: 42                        # Subsample seed for selection pressure
+  fubar_threshold: 0.90           # Posterior probability cutoff for purifying selection (dN < dS)
+  meme_threshold: 0.05            # P-value cutoff for episodic selection (dN > dS)
+```
+
+### 3.1. Parameter Tuning Dictionary
+
+| Parameter Name | Allowed Values | Default Value | Purpose & Biological Meaning |
+|---|---|---|---|
+| `hyphy.max_sequences` | Integer `50` to `2000` | `300` | HyPhy's FUBAR and MEME computations scale non-linearly with sequence count. Setting a limit of 300 sequences balances statistical accuracy and execution speed (averaging ~10 minutes per run). Increasing this beyond 1000 can lead to days of computation on standard CPUs. |
+| `hyphy.min_sequences` | Integer $\ge 10$ | `50` | The minimum sample size. Below 50 sequences, the statistical power of FUBAR is insufficient to resolve site-by-site selection patterns safely. |
+| `hyphy.fubar_threshold` | Float `0.5` to `1.0` | `0.90` | The posterior probability cutoff. Codons with a FUBAR probability $\ge 0.90$ for $\text{dN} < \text{dS}$ are flagged as highly conserved and under strong purifying selection. |
+| `hyphy.meme_threshold` | Float `0.0` to `1.0` | `0.05` | The significance level (p-value). Codons with a MEME p-value $\le 0.05$ are flagged as undergoing episodic positive selection (mutational hot-spots). |
+
+### 3.2. How to Interpret HyPhy JSON Outputs
+
+Module 05 outputs raw JSON files (`fubar_M1.json` and `meme_M1.json`):
+*   **FUBAR Columns**: Look for the parameters `alpha` (synonymous rate, $dS$) and `beta` (non-synonymous rate, $dN$). If `beta` is close to 0 and `prob_negative` is high ($\ge 0.90$), this site is extremely stable and a **gold-standard target** for diagnostic design.
+*   **MEME Columns**: Look for `p-value`. A low value indicates that at least one branch of the phylogenetic tree has experienced sudden diversification. These coordinates must be avoided.
+
+---
+
 ## 4. Inputs, Outputs & Files
 
 The files involved in Module 05 are summarized below:

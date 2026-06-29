@@ -190,7 +190,7 @@ window.Quarto = {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Technical Architecture</li><li class="breadcrumb-item"><a href="./m01.html">Data Processing &amp; Phylodynamics</a></li><li class="breadcrumb-item"><a href="./m02.html">Module 02: Quality Control</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Technical Architecture</li><li class="breadcrumb-item"><a href="./config_global.html">Data Processing &amp; Phylodynamics</a></li><li class="breadcrumb-item"><a href="./m02.html">Module 02: Quality Control</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -255,6 +255,12 @@ window.Quarto = {
           </a> 
       </div>
       <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth2 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./config_global.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Global Pipeline Configuration</span></a>
+  </div>
+</li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./m01.html" class="sidebar-item-text sidebar-link">
@@ -410,6 +416,11 @@ window.Quarto = {
   <li><a href="#contextual-sampling" id="toc-contextual-sampling" class="nav-link" data-scroll-target="#contextual-sampling">2.2. Contextual Sampling</a></li>
   </ul></li>
   <li><a href="#configuration-outputs-tabset-examples" id="toc-configuration-outputs-tabset-examples" class="nav-link" data-scroll-target="#configuration-outputs-tabset-examples">3. Configuration &amp; Outputs (Tabset Examples)</a></li>
+  <li><a href="#configuration-parameterization" id="toc-configuration-parameterization" class="nav-link" data-scroll-target="#configuration-parameterization">3. Configuration &amp; Parameterization</a>
+  <ul class="collapse">
+  <li><a href="#parameter-tuning-dictionary" id="toc-parameter-tuning-dictionary" class="nav-link" data-scroll-target="#parameter-tuning-dictionary">3.1. Parameter Tuning Dictionary</a></li>
+  <li><a href="#how-to-interpret-the-qc-report" id="toc-how-to-interpret-the-qc-report" class="nav-link" data-scroll-target="#how-to-interpret-the-qc-report">3.2. How to Interpret the QC Report</a></li>
+  </ul></li>
   <li><a href="#inputs-outputs-files" id="toc-inputs-outputs-files" class="nav-link" data-scroll-target="#inputs-outputs-files">4. Inputs, Outputs &amp; Files</a></li>
   <li><a href="#troubleshooting-limitations" id="toc-troubleshooting-limitations" class="nav-link" data-scroll-target="#troubleshooting-limitations">5. Troubleshooting &amp; Limitations</a>
   <ul class="collapse">
@@ -421,7 +432,7 @@ window.Quarto = {
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Technical Architecture</li><li class="breadcrumb-item"><a href="./m01.html">Data Processing &amp; Phylodynamics</a></li><li class="breadcrumb-item"><a href="./m02.html">Module 02: Quality Control</a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Technical Architecture</li><li class="breadcrumb-item"><a href="./config_global.html">Data Processing &amp; Phylodynamics</a></li><li class="breadcrumb-item"><a href="./m02.html">Module 02: Quality Control</a></li></ol></nav>
 <div class="quarto-title">
 <h1 class="title">Module 02: Quality Control &amp; Subsampling</h1>
 </div>
@@ -588,6 +599,66 @@ window.Quarto = {
 </div>
 </div>
 <hr>
+</section>
+<section id="configuration-parameterization" class="level2">
+<h2 class="anchored" data-anchor-id="configuration-parameterization">3. Configuration &amp; Parameterization</h2>
+<p>The behavior of Module 02 is governed by the quality control and spatial filtering parameters in <code>config.yaml</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M02] Quality Control &amp; Spatio-Temporal Filter</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">qc</span><span class="kw">:</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">max_n_content</span><span class="kw">:</span><span class="at"> </span><span class="fl">5.0</span><span class="co">              # Toleransi maksimal % base N (ambiguitas)</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">dedup</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">                     # Hapus sekuens duplikat identik</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">min_length</span><span class="kw">:</span><span class="at"> </span><span class="dv">800</span><span class="co">                 # Panjang sekuens minimal (bp)</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">query</span><span class="kw">:</span><span class="at"> </span><span class="st">"country in ['Indonesia', 'Singapore', 'Malaysia', 'Thailand', 'Vietnam', 'Philippines', 'Myanmar', 'Cambodia', 'Laos', 'Brunei']"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="parameter-tuning-dictionary" class="level3">
+<h3 class="anchored" data-anchor-id="parameter-tuning-dictionary">3.1. Parameter Tuning Dictionary</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Parameter Name</th>
+<th>Allowed Values</th>
+<th>Default Value</th>
+<th>Purpose &amp; Biological Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>qc.max_n_content</code></td>
+<td>Float <code>0.0</code> to <code>100.0</code></td>
+<td><code>5.0</code></td>
+<td>Sets the maximum percentage of ambiguous nucleotides (<span class="math inline">\(N\)</span>) allowed in a sequence. Sequences exceeding 5% <span class="math inline">\(N\)</span> are discarded. Ambiguous sequences degrade alignment quality and lead to false mismatch counts during in-silico validation.</td>
+</tr>
+<tr class="even">
+<td><code>qc.dedup</code></td>
+<td><code>true</code>, <code>false</code></td>
+<td><code>true</code></td>
+<td>When enabled, identical sequences (sharing 100% identity and same length) are collapsed into a single representative sequence. This significantly reduces downstream computational overhead for multiple sequence alignment and phylogenetic building without losing epidemiological diversity.</td>
+</tr>
+<tr class="odd">
+<td><code>qc.min_length</code></td>
+<td>Integer <span class="math inline">\(\ge 0\)</span></td>
+<td><code>800</code></td>
+<td>Excludes short or partial sequence fragments. For the Influenza MP segment (~1024 bp), setting this to 800 bp ensures that only near-full-length records are processed, preserving structural integrity for primer design.</td>
+</tr>
+<tr class="even">
+<td><code>qc.query</code></td>
+<td>Pandas query string</td>
+<td>SEA Countries</td>
+<td>Defines the geographic and metadata boundary of your dataset. Only sequences matching this query are retained for the subsampling pool. Changing this is how you switch between regional designs (e.g.&nbsp;<code>indo-only</code> vs <code>sea-only</code>).</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="how-to-interpret-the-qc-report" class="level3">
+<h3 class="anchored" data-anchor-id="how-to-interpret-the-qc-report">3.2. How to Interpret the QC Report</h3>
+<p>Module 02 outputs a tabular and JSON summary (<code>qc_report.json</code>): * <strong><code>input_records</code></strong>: Total raw input sequences. * <strong><code>retained_after_n_filter</code></strong>: Number of sequences passing the <span class="math inline">\(N\)</span>-content threshold. A major drop here indicates poor sequencing quality in your raw data. * <strong><code>retained_after_deduplication</code></strong>: Number of sequences after collapsing duplicates. For highly sampled pathogens, deduplication can shrink the database by <span class="math inline">\(&gt;70\%\)</span>, which is normal and desirable.</p>
+<hr>
+</section>
 </section>
 <section id="inputs-outputs-files" class="level2">
 <h2 class="anchored" data-anchor-id="inputs-outputs-files">4. Inputs, Outputs &amp; Files</h2>

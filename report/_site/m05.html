@@ -257,6 +257,12 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./config_global.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Global Pipeline Configuration</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./m01.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Module 01: Data Acquisition</span></a>
   </div>
@@ -410,6 +416,11 @@ window.Quarto = {
   <li><a href="#episodic-selection-analysis-meme" id="toc-episodic-selection-analysis-meme" class="nav-link" data-scroll-target="#episodic-selection-analysis-meme">2.2. Episodic Selection Analysis (MEME)</a></li>
   </ul></li>
   <li><a href="#configuration-execution-commands-tabset-examples" id="toc-configuration-execution-commands-tabset-examples" class="nav-link" data-scroll-target="#configuration-execution-commands-tabset-examples">3. Configuration &amp; Execution Commands (Tabset Examples)</a></li>
+  <li><a href="#configuration-parameterization" id="toc-configuration-parameterization" class="nav-link" data-scroll-target="#configuration-parameterization">3. Configuration &amp; Parameterization</a>
+  <ul class="collapse">
+  <li><a href="#parameter-tuning-dictionary" id="toc-parameter-tuning-dictionary" class="nav-link" data-scroll-target="#parameter-tuning-dictionary">3.1. Parameter Tuning Dictionary</a></li>
+  <li><a href="#how-to-interpret-hyphy-json-outputs" id="toc-how-to-interpret-hyphy-json-outputs" class="nav-link" data-scroll-target="#how-to-interpret-hyphy-json-outputs">3.2. How to Interpret HyPhy JSON Outputs</a></li>
+  </ul></li>
   <li><a href="#inputs-outputs-files" id="toc-inputs-outputs-files" class="nav-link" data-scroll-target="#inputs-outputs-files">4. Inputs, Outputs &amp; Files</a></li>
   <li><a href="#troubleshooting-limitations" id="toc-troubleshooting-limitations" class="nav-link" data-scroll-target="#troubleshooting-limitations">5. Troubleshooting &amp; Limitations</a>
   <ul class="collapse">
@@ -554,6 +565,67 @@ window.Quarto = {
 </div>
 </div>
 <hr>
+</section>
+<section id="configuration-parameterization" class="level2">
+<h2 class="anchored" data-anchor-id="configuration-parameterization">3. Configuration &amp; Parameterization</h2>
+<p>The selection pressure modeling is constrained by sequence limits and statistical cutoffs defined in <code>config.yaml</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M05] Selection Pressure (HyPhy)</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">hyphy</span><span class="kw">:</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">max_sequences</span><span class="kw">:</span><span class="at"> </span><span class="dv">300</span><span class="co">              # Limit of sequences to run in HyPhy to prevent time explosion</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">min_sequences</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span><span class="co">               # Minimum sequences required to run HyPhy</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">seed</span><span class="kw">:</span><span class="at"> </span><span class="dv">42</span><span class="co">                        # Subsample seed for selection pressure</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">fubar_threshold</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.90</span><span class="co">           # Posterior probability cutoff for purifying selection (dN &lt; dS)</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">meme_threshold</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.05</span><span class="co">            # P-value cutoff for episodic selection (dN &gt; dS)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="parameter-tuning-dictionary" class="level3">
+<h3 class="anchored" data-anchor-id="parameter-tuning-dictionary">3.1. Parameter Tuning Dictionary</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Parameter Name</th>
+<th>Allowed Values</th>
+<th>Default Value</th>
+<th>Purpose &amp; Biological Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>hyphy.max_sequences</code></td>
+<td>Integer <code>50</code> to <code>2000</code></td>
+<td><code>300</code></td>
+<td>HyPhy’s FUBAR and MEME computations scale non-linearly with sequence count. Setting a limit of 300 sequences balances statistical accuracy and execution speed (averaging ~10 minutes per run). Increasing this beyond 1000 can lead to days of computation on standard CPUs.</td>
+</tr>
+<tr class="even">
+<td><code>hyphy.min_sequences</code></td>
+<td>Integer <span class="math inline">\(\ge 10\)</span></td>
+<td><code>50</code></td>
+<td>The minimum sample size. Below 50 sequences, the statistical power of FUBAR is insufficient to resolve site-by-site selection patterns safely.</td>
+</tr>
+<tr class="odd">
+<td><code>hyphy.fubar_threshold</code></td>
+<td>Float <code>0.5</code> to <code>1.0</code></td>
+<td><code>0.90</code></td>
+<td>The posterior probability cutoff. Codons with a FUBAR probability <span class="math inline">\(\ge 0.90\)</span> for <span class="math inline">\(\text{dN} &lt; \text{dS}\)</span> are flagged as highly conserved and under strong purifying selection.</td>
+</tr>
+<tr class="even">
+<td><code>hyphy.meme_threshold</code></td>
+<td>Float <code>0.0</code> to <code>1.0</code></td>
+<td><code>0.05</code></td>
+<td>The significance level (p-value). Codons with a MEME p-value <span class="math inline">\(\le 0.05\)</span> are flagged as undergoing episodic positive selection (mutational hot-spots).</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="how-to-interpret-hyphy-json-outputs" class="level3">
+<h3 class="anchored" data-anchor-id="how-to-interpret-hyphy-json-outputs">3.2. How to Interpret HyPhy JSON Outputs</h3>
+<p>Module 05 outputs raw JSON files (<code>fubar_M1.json</code> and <code>meme_M1.json</code>): * <strong>FUBAR Columns</strong>: Look for the parameters <code>alpha</code> (synonymous rate, <span class="math inline">\(dS\)</span>) and <code>beta</code> (non-synonymous rate, <span class="math inline">\(dN\)</span>). If <code>beta</code> is close to 0 and <code>prob_negative</code> is high (<span class="math inline">\(\ge 0.90\)</span>), this site is extremely stable and a <strong>gold-standard target</strong> for diagnostic design. * <strong>MEME Columns</strong>: Look for <code>p-value</code>. A low value indicates that at least one branch of the phylogenetic tree has experienced sudden diversification. These coordinates must be avoided.</p>
+<hr>
+</section>
 </section>
 <section id="inputs-outputs-files" class="level2">
 <h2 class="anchored" data-anchor-id="inputs-outputs-files">4. Inputs, Outputs &amp; Files</h2>

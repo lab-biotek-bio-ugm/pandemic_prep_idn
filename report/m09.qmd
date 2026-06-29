@@ -147,6 +147,39 @@ This generated summary table ranks candidates based on their specificity scores.
 
 ---
 
+## 3. Configuration & Parameterization
+
+The BLAST specificity screening is governed by database paths and threshold parameters in `config.yaml`:
+
+```yaml
+# [M09] BLAST Specificity Verification
+blast:
+  mode: "local"                   # options: local, remote
+  num_candidates: 100             # Number of candidates from M08 to screen
+  evalue: 10.0                    # Maximum e-value threshold for BLAST hits
+  human_db: "resources/blast_db/human_db"
+  virus_db: "resources/blast_db/virus_db"
+  veto_3prime_mismatch: 2         # Reject candidate if human hit has <= 2 mismatches at 3' end
+```
+
+### 3.1. Parameter Tuning Dictionary
+
+| Parameter Name | Allowed Values | Default Value | Purpose & Biological Meaning |
+|---|---|---|---|
+| `blast.mode` | `"local"`, `"remote"` | `"local"` | In `"local"` mode, the pipeline executes `blastn` locally against pre-downloaded databases, which is fast and offline-capable. In `"remote"` mode, it sends queries to the NCBI servers (slower, rate-limited, but requires no local database setup). |
+| `blast.num_candidates` | Integer $\ge 1$ | `100` | Limits the number of top-ranked candidates from Module 08 to send to BLAST. Setting this to 100 is sufficient to catch off-target effects without excessive CPU time. |
+| `blast.evalue` | Float $\ge 0.0$ | `10.0` | Expect value threshold. A higher value (e.g. `10.0`) is highly sensitive, catching short, partial matches. A lower value (e.g. `1e-5`) only catches highly significant homologies. |
+| `blast.veto_3prime_mismatch` | Integer $\ge 0$ | `2` | **The 3' End Veto Filter**. Recombinase and polymerase are extremely sensitive to mismatches at the 3' terminal end of the primer. If a human genomic sequence matches the primer with $\le 2$ mismatches at the 3' end, the candidate is immediately vetoed (**FAIL**) to prevent off-target amplification in human clinical samples. |
+
+### 3.2. How to Interpret BLAST Specificity Reports
+
+Module 09 outputs a tabular markdown summary (`blast_specificity_summary.md`):
+*   **Status `PASS`**: The candidate has no significant homology to human DNA and has high sequence matches with target pathogens. Safe for synthesis.
+*   **Status `FAIL`**: Immediately discarded. This candidate has significant homology to the host genome (human) or has critical 3' end overlaps that could cause non-specific amplification.
+*   **Status `BORDERLINE`**: The candidate has minor homologies in host DNA but they are located at the 5' end. Synthesize only if no `PASS` candidates are available.
+
+---
+
 ## 4. Inputs, Outputs & Files
 
 The files involved in Module 09 are summarized below:

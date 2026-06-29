@@ -91,6 +91,35 @@ NNNNNttctaaccgaggtcgaaacgtacgttctttctatcatcccatcaggccccctcaa...
 
 ---
 
+## 2. Configuration & Parameterization
+
+The alignment behavior is controlled by the reference anchor settings and MAFFT arguments defined in the pipeline scripts:
+
+```bash
+# MAFFT alignment command parameters
+mafft \
+    --add results/m02/filtered_sequences.fasta \
+    --keeplength \
+    config/references/flu_a_mp_reference.fasta \
+    > results/m03/aligned.fasta
+```
+
+### 2.1. Parameter Tuning Dictionary
+
+| Parameter Name / Option | Allowed Values | Default Value | Purpose & Biological Meaning |
+|---|---|---|---|
+| `--add` | File path | Filtered fasta | Instructs MAFFT to align the query sequences *to* the reference genome template rather than recalculating the entire multiple sequence alignment from scratch. This accelerates alignment from hours to seconds. |
+| `--keeplength` | Boolean flag | `True` | **Crucial Diagnostic Veto**. Forces MAFFT to keep the exact length of the reference sequence. Any insertions in the query sequences that extend beyond the reference length are discarded (clipped), and deletions are padded with gaps ($-$). This guarantees that all aligned sequences have the exact same nucleotide coordinates (e.g., pos 187 is position 187 in *every* sequence). |
+| Subsampling Group-by | Column list | `subtype country year month` | Defines the stratification keys for subsampling. Splitting sequences into these buckets ensures a homogeneous distribution over time and space, preventing H3N2 or US-based strains from dominating the target search. |
+
+### 2.2. How to Interpret Alignment Visualizations
+
+During alignment, sequences are padded at the terminal ends:
+*   **Terminal `N` Padding**: If a query sequence begins at nucleotide 5 (e.g., due to primer clipping during wet-lab sequencing), the alignment will pad positions 1–4 with `NNNN`. This is expected and does not count as a true mutation.
+*   **Internal Gaps (`-`)**: A gap represents a deletion mutation. If a gap occurs in a target primer region, it represents a major mismatch that will block recombinase or polymerase binding.
+
+---
+
 ## 3. Inputs, Outputs & Files
 
 The files involved in Module 03 are summarized below:

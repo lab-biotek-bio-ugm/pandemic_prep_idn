@@ -238,6 +238,12 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./config_global.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Global Pipeline Configuration</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./m01.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Module 01: Data Acquisition</span></a>
   </div>
@@ -391,6 +397,11 @@ window.Quarto = {
   </ul></li>
   <li><a href="#the-3-end-veto-filter-and-penalty-scoring" id="toc-the-3-end-veto-filter-and-penalty-scoring" class="nav-link" data-scroll-target="#the-3-end-veto-filter-and-penalty-scoring">2. The 3’ End Veto Filter and Penalty Scoring</a></li>
   <li><a href="#configuration-specificity-summary-tabset-examples" id="toc-configuration-specificity-summary-tabset-examples" class="nav-link" data-scroll-target="#configuration-specificity-summary-tabset-examples">3. Configuration &amp; Specificity Summary (Tabset Examples)</a></li>
+  <li><a href="#configuration-parameterization" id="toc-configuration-parameterization" class="nav-link" data-scroll-target="#configuration-parameterization">3. Configuration &amp; Parameterization</a>
+  <ul class="collapse">
+  <li><a href="#parameter-tuning-dictionary" id="toc-parameter-tuning-dictionary" class="nav-link" data-scroll-target="#parameter-tuning-dictionary">3.1. Parameter Tuning Dictionary</a></li>
+  <li><a href="#how-to-interpret-blast-specificity-reports" id="toc-how-to-interpret-blast-specificity-reports" class="nav-link" data-scroll-target="#how-to-interpret-blast-specificity-reports">3.2. How to Interpret BLAST Specificity Reports</a></li>
+  </ul></li>
   <li><a href="#inputs-outputs-files" id="toc-inputs-outputs-files" class="nav-link" data-scroll-target="#inputs-outputs-files">4. Inputs, Outputs &amp; Files</a></li>
   <li><a href="#troubleshooting-limitations" id="toc-troubleshooting-limitations" class="nav-link" data-scroll-target="#troubleshooting-limitations">5. Troubleshooting &amp; Limitations</a>
   <ul class="collapse">
@@ -560,6 +571,68 @@ window.Quarto = {
 </div>
 <hr>
 </section>
+<section id="configuration-parameterization" class="level2">
+<h2 class="anchored" data-anchor-id="configuration-parameterization">3. Configuration &amp; Parameterization</h2>
+<p>The BLAST specificity screening is governed by database paths and threshold parameters in <code>config.yaml</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M09] BLAST Specificity Verification</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">blast</span><span class="kw">:</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">mode</span><span class="kw">:</span><span class="at"> </span><span class="st">"local"</span><span class="co">                   # options: local, remote</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">num_candidates</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span><span class="co">             # Number of candidates from M08 to screen</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">evalue</span><span class="kw">:</span><span class="at"> </span><span class="fl">10.0</span><span class="co">                    # Maximum e-value threshold for BLAST hits</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">human_db</span><span class="kw">:</span><span class="at"> </span><span class="st">"resources/blast_db/human_db"</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">virus_db</span><span class="kw">:</span><span class="at"> </span><span class="st">"resources/blast_db/virus_db"</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">veto_3prime_mismatch</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span><span class="co">         # Reject candidate if human hit has &lt;= 2 mismatches at 3' end</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="parameter-tuning-dictionary" class="level3">
+<h3 class="anchored" data-anchor-id="parameter-tuning-dictionary">3.1. Parameter Tuning Dictionary</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Parameter Name</th>
+<th>Allowed Values</th>
+<th>Default Value</th>
+<th>Purpose &amp; Biological Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>blast.mode</code></td>
+<td><code>"local"</code>, <code>"remote"</code></td>
+<td><code>"local"</code></td>
+<td>In <code>"local"</code> mode, the pipeline executes <code>blastn</code> locally against pre-downloaded databases, which is fast and offline-capable. In <code>"remote"</code> mode, it sends queries to the NCBI servers (slower, rate-limited, but requires no local database setup).</td>
+</tr>
+<tr class="even">
+<td><code>blast.num_candidates</code></td>
+<td>Integer <span class="math inline">\(\ge 1\)</span></td>
+<td><code>100</code></td>
+<td>Limits the number of top-ranked candidates from Module 08 to send to BLAST. Setting this to 100 is sufficient to catch off-target effects without excessive CPU time.</td>
+</tr>
+<tr class="odd">
+<td><code>blast.evalue</code></td>
+<td>Float <span class="math inline">\(\ge 0.0\)</span></td>
+<td><code>10.0</code></td>
+<td>Expect value threshold. A higher value (e.g.&nbsp;<code>10.0</code>) is highly sensitive, catching short, partial matches. A lower value (e.g.&nbsp;<code>1e-5</code>) only catches highly significant homologies.</td>
+</tr>
+<tr class="even">
+<td><code>blast.veto_3prime_mismatch</code></td>
+<td>Integer <span class="math inline">\(\ge 0\)</span></td>
+<td><code>2</code></td>
+<td><strong>The 3’ End Veto Filter</strong>. Recombinase and polymerase are extremely sensitive to mismatches at the 3’ terminal end of the primer. If a human genomic sequence matches the primer with <span class="math inline">\(\le 2\)</span> mismatches at the 3’ end, the candidate is immediately vetoed (<strong>FAIL</strong>) to prevent off-target amplification in human clinical samples.</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="how-to-interpret-blast-specificity-reports" class="level3">
+<h3 class="anchored" data-anchor-id="how-to-interpret-blast-specificity-reports">3.2. How to Interpret BLAST Specificity Reports</h3>
+<p>Module 09 outputs a tabular markdown summary (<code>blast_specificity_summary.md</code>): * <strong>Status <code>PASS</code></strong>: The candidate has no significant homology to human DNA and has high sequence matches with target pathogens. Safe for synthesis. * <strong>Status <code>FAIL</code></strong>: Immediately discarded. This candidate has significant homology to the host genome (human) or has critical 3’ end overlaps that could cause non-specific amplification. * <strong>Status <code>BORDERLINE</code></strong>: The candidate has minor homologies in host DNA but they are located at the 5’ end. Synthesize only if no <code>PASS</code> candidates are available.</p>
+<hr>
+</section>
+</section>
 <section id="inputs-outputs-files" class="level2">
 <h2 class="anchored" data-anchor-id="inputs-outputs-files">4. Inputs, Outputs &amp; Files</h2>
 <p>The files involved in Module 09 are summarized below:</p>
@@ -621,7 +694,7 @@ window.Quarto = {
 <li><p><strong>Problem</strong>: When running in <code>remote</code> mode, the Snakemake pipeline hangs for hours or terminates with <code>504 Gateway Timeout</code> or <code>HTTP 429 Too Many Requests</code>.</p></li>
 <li><p><strong>Cause</strong>: This is caused by high traffic on NCBI public servers, combined with a lack of a validated user API Key. NCBI limits unauthenticated remote requests to 3 per second, which is quickly exceeded when checking 100 candidates.</p></li>
 <li><p><strong>Solution</strong>: Register a free account at NCBI to obtain an API key, then export the environment variable <code>NCBI_API_KEY</code> in your shell before starting the run:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">NCBI_API_KEY</span><span class="op">=</span>your_ncbi_api_key_string</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">NCBI_API_KEY</span><span class="op">=</span>your_ncbi_api_key_string</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>Alternatively, configure <code>mode: local</code> and build local BLAST databases to bypass NCBI rate limits completely.</p></li>
 </ul>
 

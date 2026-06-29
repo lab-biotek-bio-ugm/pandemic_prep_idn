@@ -257,6 +257,12 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./config_global.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Global Pipeline Configuration</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./m01.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Module 01: Data Acquisition</span></a>
   </div>
@@ -411,6 +417,11 @@ window.Quarto = {
   <li><a href="#evolutionary-exclusion-check" id="toc-evolutionary-exclusion-check" class="nav-link" data-scroll-target="#evolutionary-exclusion-check">2. Evolutionary Exclusion Check</a></li>
   <li><a href="#degenerate-rescue-system" id="toc-degenerate-rescue-system" class="nav-link" data-scroll-target="#degenerate-rescue-system">3. Degenerate Rescue System</a></li>
   <li><a href="#configuration-execution-commands-tabset-examples" id="toc-configuration-execution-commands-tabset-examples" class="nav-link" data-scroll-target="#configuration-execution-commands-tabset-examples">4. Configuration &amp; Execution Commands (Tabset Examples)</a></li>
+  <li><a href="#configuration-parameterization" id="toc-configuration-parameterization" class="nav-link" data-scroll-target="#configuration-parameterization">4. Configuration &amp; Parameterization</a>
+  <ul class="collapse">
+  <li><a href="#primerlab-thermodynamic-master-template-primerlab_template.yaml" id="toc-primerlab-thermodynamic-master-template-primerlab_template.yaml" class="nav-link" data-scroll-target="#primerlab-thermodynamic-master-template-primerlab_template.yaml">4.1. PrimerLab Thermodynamic Master Template (<code>primerlab_template.yaml</code>)</a></li>
+  <li><a href="#how-to-interpret-primerlab-design-outputs" id="toc-how-to-interpret-primerlab-design-outputs" class="nav-link" data-scroll-target="#how-to-interpret-primerlab-design-outputs">4.2. How to Interpret PrimerLab Design Outputs</a></li>
+  </ul></li>
   <li><a href="#inputs-outputs-files" id="toc-inputs-outputs-files" class="nav-link" data-scroll-target="#inputs-outputs-files">5. Inputs, Outputs &amp; Files</a></li>
   <li><a href="#troubleshooting-limitations" id="toc-troubleshooting-limitations" class="nav-link" data-scroll-target="#troubleshooting-limitations">6. Troubleshooting &amp; Limitations</a>
   <ul class="collapse">
@@ -599,6 +610,86 @@ window.Quarto = {
 </div>
 </div>
 <hr>
+</section>
+<section id="configuration-parameterization" class="level2">
+<h2 class="anchored" data-anchor-id="configuration-parameterization">4. Configuration &amp; Parameterization</h2>
+<p>The assay design phase is controlled by the design parameters in <code>config.yaml</code> and the detailed thermodynamic template <strong><code>config/primerlab_template.yaml</code></strong>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M08] Primer &amp; Probe Design (PrimerLab)</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">design</span><span class="kw">:</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">min_primer_length</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">max_primer_length</span><span class="kw">:</span><span class="at"> </span><span class="dv">35</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">min_probe_length</span><span class="kw">:</span><span class="at"> </span><span class="dv">46</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">max_probe_length</span><span class="kw">:</span><span class="at"> </span><span class="dv">52</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">max_degeneracy</span><span class="kw">:</span><span class="at"> </span><span class="dv">16</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="primerlab-thermodynamic-master-template-primerlab_template.yaml" class="level3">
+<h3 class="anchored" data-anchor-id="primerlab-thermodynamic-master-template-primerlab_template.yaml">4.1. PrimerLab Thermodynamic Master Template (<code>primerlab_template.yaml</code>)</h3>
+<p>PrimerLab calculates DNA melting temperatures (<span class="math inline">\(T_m\)</span>) using nearest-neighbor thermodynamic parameters and models secondary structures using ViennaRNA <span class="citation" data-cites="lorenz2011">(<a href="#ref-lorenz2011" role="doc-biblioref"><span class="nocase">Lorenz et al.</span> 2011</a>)</span>. Below are the key parameters defined in the template:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Parameter Path</th>
+<th>Allowed Values</th>
+<th>Default Value</th>
+<th>Purpose &amp; Biological Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>parameters.thermodynamics.salt_monovalent</code></td>
+<td>Float <span class="math inline">\(\ge 0.0\)</span></td>
+<td><code>50.0</code></td>
+<td>Monovalent salt concentration (Na+ / K+ in mM). Used for salt-correction of DNA melting temperature.</td>
+</tr>
+<tr class="even">
+<td><code>parameters.thermodynamics.salt_divalent</code></td>
+<td>Float <span class="math inline">\(\ge 0.0\)</span></td>
+<td><code>14.0</code></td>
+<td>Divalent salt concentration (Mg2+ in mM). <strong>RAA specific</strong>. Isothermal amplification relies on high magnesium concentrations (~14 mM) to stabilize recombinase-DNA complexes.</td>
+</tr>
+<tr class="odd">
+<td><code>parameters.thermodynamics.dntp_conc</code></td>
+<td>Float <span class="math inline">\(\ge 0.0\)</span></td>
+<td><code>0.8</code></td>
+<td>Concentration of dNTPs (mM). Higher than standard PCR to fuel fast isothermal transcription.</td>
+</tr>
+<tr class="even">
+<td><code>parameters.thermodynamics.dna_conc</code></td>
+<td>Float <span class="math inline">\(\ge 0.0\)</span></td>
+<td><code>480.0</code></td>
+<td>Total primer concentration (nM). RAA requires a highly crowded environment to drive recombinase-mediated strand invasion.</td>
+</tr>
+<tr class="odd">
+<td><code>parameters.primer_size.opt</code></td>
+<td>Integer</td>
+<td><code>32</code></td>
+<td>Optimal length of RAA primers. Isothermal recombinase binding requires long primers (<span class="math inline">\(30-35\)</span> bp) to successfully invade double-stranded DNA templates.</td>
+</tr>
+<tr class="even">
+<td><code>parameters.probe.type</code></td>
+<td><code>"exo"</code>, <code>"taqman"</code></td>
+<td><code>"exo"</code></td>
+<td>The chemistry type. <code>"exo"</code> designs TwistAmp Exo-style probes (<span class="math inline">\(46-52\)</span> bp) with an internal abasic site (THF spacer) for Endonuclease IV cleavage.</td>
+</tr>
+<tr class="odd">
+<td><code>qc.vienna_ranking_limit</code></td>
+<td>Integer</td>
+<td><code>50</code></td>
+<td>The top 50 candidates from Primer3 are sent to ViennaRNA to calculate secondary structures (hairpins, homodimers, heterodimers) at the isothermal temperature of <span class="math inline">\(37^\circ\text{C}\)</span>.</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="how-to-interpret-primerlab-design-outputs" class="level3">
+<h3 class="anchored" data-anchor-id="how-to-interpret-primerlab-design-outputs">4.2. How to Interpret PrimerLab Design Outputs</h3>
+<p>Module 08 outputs <code>best_primers.json</code> containing the physical profiles of the designed set: * <strong>Hairpin &amp; Dimer <span class="math inline">\(\Delta G\)</span></strong>: Represents the Gibbs free energy change of self-folding. Values <strong>closer to 0</strong> (e.g.&nbsp;<span class="math inline">\(&gt;-2.0\text{ kcal/mol}\)</span>) are stable and safe. Values more negative than <span class="math inline">\(-5.0\text{ kcal/mol}\)</span> indicate a high risk of primer-dimer formation, which will consume master-mix and cause false positives. * <strong>Degeneracy Multiplier</strong>: The number of unique primer sequences in the synthesized mix. A multiplier of 16 (e.g.&nbsp;4 degenerate positions) means the active concentration of any single primer sequence is diluted to <span class="math inline">\(1/16\)</span>-th. Keeping this below 16 ensures high diagnostic sensitivity.</p>
+<hr>
+</section>
 </section>
 <section id="inputs-outputs-files" class="level2">
 <h2 class="anchored" data-anchor-id="inputs-outputs-files">5. Inputs, Outputs &amp; Files</h2>

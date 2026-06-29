@@ -190,7 +190,7 @@ window.Quarto = {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Technical Architecture</li><li class="breadcrumb-item"><a href="./m01.html">Data Processing &amp; Phylodynamics</a></li><li class="breadcrumb-item"><a href="./m01.html">Module 01: Data Acquisition</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Technical Architecture</li><li class="breadcrumb-item"><a href="./config_global.html">Data Processing &amp; Phylodynamics</a></li><li class="breadcrumb-item"><a href="./m01.html">Module 01: Data Acquisition</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -255,6 +255,12 @@ window.Quarto = {
           </a> 
       </div>
       <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth2 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./config_global.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Global Pipeline Configuration</span></a>
+  </div>
+</li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./m01.html" class="sidebar-item-text sidebar-link active">
@@ -410,6 +416,11 @@ window.Quarto = {
   </ul></li>
   <li><a href="#metadata-sanitization-3-tier-column-validation" id="toc-metadata-sanitization-3-tier-column-validation" class="nav-link" data-scroll-target="#metadata-sanitization-3-tier-column-validation">2. Metadata Sanitization &amp; 3-Tier Column Validation</a></li>
   <li><a href="#nextclade-clade-lineage-classification" id="toc-nextclade-clade-lineage-classification" class="nav-link" data-scroll-target="#nextclade-clade-lineage-classification">3. Nextclade Clade &amp; Lineage Classification</a></li>
+  <li><a href="#configuration-parameterization" id="toc-configuration-parameterization" class="nav-link" data-scroll-target="#configuration-parameterization">3. Configuration &amp; Parameterization</a>
+  <ul class="collapse">
+  <li><a href="#parameter-tuning-dictionary" id="toc-parameter-tuning-dictionary" class="nav-link" data-scroll-target="#parameter-tuning-dictionary">3.1. Parameter Tuning Dictionary</a></li>
+  <li><a href="#how-to-interpret-sanitized-metadata-outputs" id="toc-how-to-interpret-sanitized-metadata-outputs" class="nav-link" data-scroll-target="#how-to-interpret-sanitized-metadata-outputs">3.2. How to Interpret Sanitized Metadata Outputs</a></li>
+  </ul></li>
   <li><a href="#inputs-outputs-files" id="toc-inputs-outputs-files" class="nav-link" data-scroll-target="#inputs-outputs-files">4. Inputs, Outputs &amp; Files</a>
   <ul class="collapse">
   <li><a href="#data-format-snippets-inputs-vs.-outputs" id="toc-data-format-snippets-inputs-vs.-outputs" class="nav-link" data-scroll-target="#data-format-snippets-inputs-vs.-outputs">4.1. Data Format Snippets (Inputs vs.&nbsp;Outputs)</a></li>
@@ -425,7 +436,7 @@ window.Quarto = {
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Technical Architecture</li><li class="breadcrumb-item"><a href="./m01.html">Data Processing &amp; Phylodynamics</a></li><li class="breadcrumb-item"><a href="./m01.html">Module 01: Data Acquisition</a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Technical Architecture</li><li class="breadcrumb-item"><a href="./config_global.html">Data Processing &amp; Phylodynamics</a></li><li class="breadcrumb-item"><a href="./m01.html">Module 01: Data Acquisition</a></li></ol></nav>
 <div class="quarto-title">
 <h1 class="title">Module 01: Data Acquisition</h1>
 </div>
@@ -556,6 +567,78 @@ window.Quarto = {
 </ol>
 <hr>
 </section>
+<section id="configuration-parameterization" class="level2">
+<h2 class="anchored" data-anchor-id="configuration-parameterization">3. Configuration &amp; Parameterization</h2>
+<p>The behavior of Module 01 is governed by the input pathways and early pre-filtering parameters in <code>config.yaml</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M01] Data Acquisition (Local Mode)</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">local_input</span><span class="kw">:</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">sequences</span><span class="kw">:</span><span class="at"> </span><span class="st">"dataset/EpiFlu/MP/EpiFlu_A_MP_Combined_Sequence.fasta"</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">metadata</span><span class="kw">:</span><span class="at"> </span><span class="st">"dataset/EpiFlu/MP/EpiFlu_A_MP_Combined_Metadata.csv"</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">format</span><span class="kw">:</span><span class="at"> </span><span class="st">"gisaid_epiflu"</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co"># [M01a] Early Filtering (Pre-Nextclade)</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="fu">early_filter</span><span class="kw">:</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">query</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span><span class="co">                     # e.g., "subtype == 'A / H1N1'"</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">min_date</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span><span class="co">                  # Remove sequences before this year (YYYY)</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">max_date</span><span class="kw">:</span><span class="at"> </span><span class="st">"2026-04-01"</span><span class="co">          # Remove sequences after this date (YYYY-MM-DD)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="parameter-tuning-dictionary" class="level3">
+<h3 class="anchored" data-anchor-id="parameter-tuning-dictionary">3.1. Parameter Tuning Dictionary</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Parameter Name</th>
+<th>Allowed Values</th>
+<th>Default Value</th>
+<th>Purpose &amp; Biological Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>local_input.format</code></td>
+<td><code>"ncbi"</code>, <code>"gisaid_epiflu"</code></td>
+<td><code>"gisaid_epiflu"</code></td>
+<td>Maps CSV columns to internal pipeline headers. <code>"gisaid_epiflu"</code> maps EpiFlu GISAID columns (such as <code>Collection_Date</code> and <code>Isolate_Id</code>). Set to <code>"ncbi"</code> if importing a manual NCBI table.</td>
+</tr>
+<tr class="even">
+<td><code>early_filter.enabled</code></td>
+<td><code>true</code>, <code>false</code></td>
+<td><code>true</code></td>
+<td>Controls whether the pre-filtering script is active. Useful to disable if working with a pre-sanitized dataset.</td>
+</tr>
+<tr class="odd">
+<td><code>early_filter.query</code></td>
+<td>Pandas query string</td>
+<td><code>null</code></td>
+<td>A logical string to filter the dataset before alignment (e.g.&nbsp;<code>"country == 'Indonesia'"</code> or <code>"subtype == 'A / H5N1'"</code>). This allows designing diagnostic assays for specific sub-populations.</td>
+</tr>
+<tr class="even">
+<td><code>early_filter.min_date</code></td>
+<td>Integer (YYYY) or <code>null</code></td>
+<td><code>null</code></td>
+<td>Excludes old historical sequences. Useful to discard sequences older than 10 years to avoid designing primers for extinct viral lineages.</td>
+</tr>
+<tr class="odd">
+<td><code>early_filter.max_date</code></td>
+<td>String (YYYY-MM-DD)</td>
+<td><code>"2026-04-01"</code></td>
+<td>Excludes sequences submitted after this date. Essential for clinical freeze analysis and pipeline reproducibility across historical runs.</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="how-to-interpret-sanitized-metadata-outputs" class="level3">
+<h3 class="anchored" data-anchor-id="how-to-interpret-sanitized-metadata-outputs">3.2. How to Interpret Sanitized Metadata Outputs</h3>
+<p>Module 01 outputs a merged metadata sheet (<code>metadata_enriched.tsv</code>): * <strong>Column <code>qc_status</code></strong>: Nextclade’s assessment of sequence quality (<code>good</code>, <code>mediocre</code>, <code>bad</code>). If a sequence is flagged as <code>bad</code>, it is a warning that it has frameshifts or high missing bases (<span class="math inline">\(N\)</span>). * <strong>Column <code>clade</code> / <code>lineage</code></strong>: Represents the parsed viral classification. Reviewing this column helps verify if your dataset has the desired target subtype distribution before proceeding to downstream alignment.</p>
+<hr>
+</section>
+</section>
 <section id="inputs-outputs-files" class="level2">
 <h2 class="anchored" data-anchor-id="inputs-outputs-files">4. Inputs, Outputs &amp; Files</h2>
 <p>The files involved in Module 01 are summarized below:</p>
@@ -657,7 +740,7 @@ EPI_ISL_19661435    A/Victoria/3107/2024    Oceania / Australia / Victoria  Ocea
 <li><p><strong>Problem</strong>: Running the NCBI API pathway frequently fails with <code>HTTP Error 429: Too Many Requests</code>.</p></li>
 <li><p><strong>Cause</strong>: NCBI limits unauthenticated requests to 3 per second.</p></li>
 <li><p><strong>Solution</strong>: Obtain an NCBI API Key from your NCBI account page and export it to your shell environment prior to executing the pipeline:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">NCBI_API_KEY</span><span class="op">=</span><span class="st">"your_api_key_here"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">NCBI_API_KEY</span><span class="op">=</span><span class="st">"your_api_key_here"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p>This raises the rate limit to 10 requests per second.</p></li>
 </ul>
 </section>
@@ -666,7 +749,7 @@ EPI_ISL_19661435    A/Victoria/3107/2024    Oceania / Australia / Victoria  Ocea
 <ul>
 <li><p><strong>Problem</strong>: Nextclade CLI command is not found or fails to execute.</p></li>
 <li><p><strong>Solution</strong>: Ensure the Snakemake rule is running in the correct Conda environment (<code>envs/nextstrain.yaml</code>). If executing manually, nextclade can be installed via:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> install <span class="at">-c</span> conda-forge nextclade</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> install <span class="at">-c</span> conda-forge nextclade</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div></li>
 </ul>
 
 

@@ -257,6 +257,12 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./config_global.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Global Pipeline Configuration</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./m01.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Module 01: Data Acquisition</span></a>
   </div>
@@ -410,6 +416,11 @@ window.Quarto = {
   </ul></li>
   <li><a href="#spatial-and-temporal-coverage-aggregation" id="toc-spatial-and-temporal-coverage-aggregation" class="nav-link" data-scroll-target="#spatial-and-temporal-coverage-aggregation">2. Spatial and Temporal Coverage Aggregation</a></li>
   <li><a href="#configuration-outputs-tabset-examples" id="toc-configuration-outputs-tabset-examples" class="nav-link" data-scroll-target="#configuration-outputs-tabset-examples">3. Configuration &amp; Outputs (Tabset Examples)</a></li>
+  <li><a href="#configuration-parameterization" id="toc-configuration-parameterization" class="nav-link" data-scroll-target="#configuration-parameterization">3. Configuration &amp; Parameterization</a>
+  <ul class="collapse">
+  <li><a href="#parameter-tuning-dictionary" id="toc-parameter-tuning-dictionary" class="nav-link" data-scroll-target="#parameter-tuning-dictionary">3.1. Parameter Tuning Dictionary</a></li>
+  <li><a href="#how-to-interpret-validation-heatmaps" id="toc-how-to-interpret-validation-heatmaps" class="nav-link" data-scroll-target="#how-to-interpret-validation-heatmaps">3.2. How to Interpret Validation Heatmaps</a></li>
+  </ul></li>
   <li><a href="#inputs-outputs-files" id="toc-inputs-outputs-files" class="nav-link" data-scroll-target="#inputs-outputs-files">4. Inputs, Outputs &amp; Files</a></li>
   <li><a href="#troubleshooting-limitations" id="toc-troubleshooting-limitations" class="nav-link" data-scroll-target="#troubleshooting-limitations">5. Troubleshooting &amp; Limitations</a>
   <ul class="collapse">
@@ -582,6 +593,66 @@ window.Quarto = {
 </div>
 </div>
 <hr>
+</section>
+<section id="configuration-parameterization" class="level2">
+<h2 class="anchored" data-anchor-id="configuration-parameterization">3. Configuration &amp; Parameterization</h2>
+<p>The virtual amplification evaluation is parameterized in <code>config.yaml</code> to control mismatch thresholds for both PCR and RAA:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M10] In-silico Validation Parameters</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">validation</span><span class="kw">:</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">pcr_mismatch</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span><span class="co">                 # Maximum mismatches allowed for PCR primers (0 to 4)</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">raa_3prime_bp</span><span class="kw">:</span><span class="at"> </span><span class="dv">8</span><span class="co">                # Length of the critical 3' end region for RAA (bp)</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">raa_max_3prime_mm</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="co">            # Maximum mismatches allowed in the RAA 3' critical zone</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">raa_max_internal_mm</span><span class="kw">:</span><span class="at"> </span><span class="dv">4</span><span class="co">          # Maximum mismatches allowed in the RAA internal zone</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="parameter-tuning-dictionary" class="level3">
+<h3 class="anchored" data-anchor-id="parameter-tuning-dictionary">3.1. Parameter Tuning Dictionary</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Parameter Name</th>
+<th>Allowed Values</th>
+<th>Default Value</th>
+<th>Purpose &amp; Biological Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>validation.pcr_mismatch</code></td>
+<td>Integer <code>0</code> to <code>5</code></td>
+<td><code>2</code></td>
+<td>The maximum mismatches allowed for standard PCR. If a primer has <span class="math inline">\(\le 2\)</span> mismatches against a sequence, the template is considered amplified. Set this to <code>0</code> for high-specificity screening (e.g.&nbsp;strain differentiation) or <code>3</code> to model relaxed PCR assays.</td>
+</tr>
+<tr class="even">
+<td><code>validation.raa_3prime_bp</code></td>
+<td>Integer <code>5</code> to <code>15</code></td>
+<td><code>8</code></td>
+<td>The length of the critical 3’ terminal anchoring block of RAA primers. Polymerase extension is highly sensitive to mismatched base pairing at this end.</td>
+</tr>
+<tr class="odd">
+<td><code>validation.raa_max_3prime_mm</code></td>
+<td>Integer <code>0</code> to <code>2</code></td>
+<td><code>1</code></td>
+<td>Maximum mismatches allowed in the 8-bp 3’ critical zone. Setting this to <code>0</code> represents strict, high-fidelity polymerase constraints.</td>
+</tr>
+<tr class="even">
+<td><code>validation.raa_max_internal_mm</code></td>
+<td>Integer <code>0</code> to <code>6</code></td>
+<td><code>4</code></td>
+<td>Maximum mismatches allowed in the remaining internal/5’ body of the RAA primer. Isothermal recombinase-mediated strand invasion can tolerate up to 4 internal mismatches without aborting.</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="how-to-interpret-validation-heatmaps" class="level3">
+<h3 class="anchored" data-anchor-id="how-to-interpret-validation-heatmaps">3.2. How to Interpret Validation Heatmaps</h3>
+<p>Module 10 outputs an interactive report (<code>coverage_heatmap.html</code>): * <strong>PCR vs RAA Amplified</strong>: RAA coverage is almost always slightly lower than PCR coverage because RAA primers are longer (<span class="math inline">\(30-35\)</span> bp), which statistically increases the probability of encountering random mutations along the primer body. * <strong>Subtype Breakdown Table</strong>: Review this table to identify target bias. If a primer set has <span class="math inline">\(99\%\)</span> H3N2 coverage but <span class="math inline">\(0\%\)</span> H5N1 coverage, it indicates that the primer has a critical mismatch against the avian clade sequence.</p>
+<hr>
+</section>
 </section>
 <section id="inputs-outputs-files" class="level2">
 <h2 class="anchored" data-anchor-id="inputs-outputs-files">4. Inputs, Outputs &amp; Files</h2>

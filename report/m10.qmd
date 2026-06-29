@@ -155,6 +155,36 @@ This file summarizes the simulated detection rates against 50,750 global sequenc
 
 ---
 
+## 3. Configuration & Parameterization
+
+The virtual amplification evaluation is parameterized in `config.yaml` to control mismatch thresholds for both PCR and RAA:
+
+```yaml
+# [M10] In-silico Validation Parameters
+validation:
+  pcr_mismatch: 2                 # Maximum mismatches allowed for PCR primers (0 to 4)
+  raa_3prime_bp: 8                # Length of the critical 3' end region for RAA (bp)
+  raa_max_3prime_mm: 1            # Maximum mismatches allowed in the RAA 3' critical zone
+  raa_max_internal_mm: 4          # Maximum mismatches allowed in the RAA internal zone
+```
+
+### 3.1. Parameter Tuning Dictionary
+
+| Parameter Name | Allowed Values | Default Value | Purpose & Biological Meaning |
+|---|---|---|---|
+| `validation.pcr_mismatch` | Integer `0` to `5` | `2` | The maximum mismatches allowed for standard PCR. If a primer has $\le 2$ mismatches against a sequence, the template is considered amplified. Set this to `0` for high-specificity screening (e.g. strain differentiation) or `3` to model relaxed PCR assays. |
+| `validation.raa_3prime_bp` | Integer `5` to `15` | `8` | The length of the critical 3' terminal anchoring block of RAA primers. Polymerase extension is highly sensitive to mismatched base pairing at this end. |
+| `validation.raa_max_3prime_mm` | Integer `0` to `2` | `1` | Maximum mismatches allowed in the 8-bp 3' critical zone. Setting this to `0` represents strict, high-fidelity polymerase constraints. |
+| `validation.raa_max_internal_mm` | Integer `0` to `6` | `4` | Maximum mismatches allowed in the remaining internal/5' body of the RAA primer. Isothermal recombinase-mediated strand invasion can tolerate up to 4 internal mismatches without aborting. |
+
+### 3.2. How to Interpret Validation Heatmaps
+
+Module 10 outputs an interactive report (`coverage_heatmap.html`):
+*   **PCR vs RAA Amplified**: RAA coverage is almost always slightly lower than PCR coverage because RAA primers are longer ($30-35$ bp), which statistically increases the probability of encountering random mutations along the primer body.
+*   **Subtype Breakdown Table**: Review this table to identify target bias. If a primer set has $99\%$ H3N2 coverage but $0\%$ H5N1 coverage, it indicates that the primer has a critical mismatch against the avian clade sequence. 
+
+---
+
 ## 4. Inputs, Outputs & Files
 
 The files involved in Module 10 are summarized below:

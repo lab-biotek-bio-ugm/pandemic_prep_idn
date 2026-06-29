@@ -157,6 +157,37 @@ augur filter \
 
 ---
 
+## 3. Configuration & Parameterization
+
+The behavior of Module 02 is governed by the quality control and spatial filtering parameters in `config.yaml`:
+
+```yaml
+# [M02] Quality Control & Spatio-Temporal Filter
+qc:
+  max_n_content: 5.0              # Toleransi maksimal % base N (ambiguitas)
+  dedup: true                     # Hapus sekuens duplikat identik
+  min_length: 800                 # Panjang sekuens minimal (bp)
+  query: "country in ['Indonesia', 'Singapore', 'Malaysia', 'Thailand', 'Vietnam', 'Philippines', 'Myanmar', 'Cambodia', 'Laos', 'Brunei']"
+```
+
+### 3.1. Parameter Tuning Dictionary
+
+| Parameter Name | Allowed Values | Default Value | Purpose & Biological Meaning |
+|---|---|---|---|
+| `qc.max_n_content` | Float `0.0` to `100.0` | `5.0` | Sets the maximum percentage of ambiguous nucleotides ($N$) allowed in a sequence. Sequences exceeding 5% $N$ are discarded. Ambiguous sequences degrade alignment quality and lead to false mismatch counts during in-silico validation. |
+| `qc.dedup` | `true`, `false` | `true` | When enabled, identical sequences (sharing 100% identity and same length) are collapsed into a single representative sequence. This significantly reduces downstream computational overhead for multiple sequence alignment and phylogenetic building without losing epidemiological diversity. |
+| `qc.min_length` | Integer $\ge 0$ | `800` | Excludes short or partial sequence fragments. For the Influenza MP segment (~1024 bp), setting this to 800 bp ensures that only near-full-length records are processed, preserving structural integrity for primer design. |
+| `qc.query` | Pandas query string | SEA Countries | Defines the geographic and metadata boundary of your dataset. Only sequences matching this query are retained for the subsampling pool. Changing this is how you switch between regional designs (e.g. `indo-only` vs `sea-only`). |
+
+### 3.2. How to Interpret the QC Report
+
+Module 02 outputs a tabular and JSON summary (`qc_report.json`):
+*   **`input_records`**: Total raw input sequences.
+*   **`retained_after_n_filter`**: Number of sequences passing the $N$-content threshold. A major drop here indicates poor sequencing quality in your raw data.
+*   **`retained_after_deduplication`**: Number of sequences after collapsing duplicates. For highly sampled pathogens, deduplication can shrink the database by $>70\%$, which is normal and desirable.
+
+---
+
 ## 4. Inputs, Outputs & Files
 
 The files involved in Module 02 are summarized below:

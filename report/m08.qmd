@@ -172,6 +172,42 @@ This JSON contains the top ranked primer pair and probe designed by PrimerLab-Ge
 
 ---
 
+## 4. Configuration & Parameterization
+
+The assay design phase is controlled by the design parameters in `config.yaml` and the detailed thermodynamic template **`config/primerlab_template.yaml`**:
+
+```yaml
+# [M08] Primer & Probe Design (PrimerLab)
+design:
+  min_primer_length: 30
+  max_primer_length: 35
+  min_probe_length: 46
+  max_probe_length: 52
+  max_degeneracy: 16
+```
+
+### 4.1. PrimerLab Thermodynamic Master Template (`primerlab_template.yaml`)
+
+PrimerLab calculates DNA melting temperatures ($T_m$) using nearest-neighbor thermodynamic parameters and models secondary structures using ViennaRNA [@lorenz2011]. Below are the key parameters defined in the template:
+
+| Parameter Path | Allowed Values | Default Value | Purpose & Biological Meaning |
+|---|---|---|---|
+| `parameters.thermodynamics.salt_monovalent` | Float $\ge 0.0$ | `50.0` | Monovalent salt concentration (Na+ / K+ in mM). Used for salt-correction of DNA melting temperature. |
+| `parameters.thermodynamics.salt_divalent` | Float $\ge 0.0$ | `14.0` | Divalent salt concentration (Mg2+ in mM). **RAA specific**. Isothermal amplification relies on high magnesium concentrations (~14 mM) to stabilize recombinase-DNA complexes. |
+| `parameters.thermodynamics.dntp_conc` | Float $\ge 0.0$ | `0.8` | Concentration of dNTPs (mM). Higher than standard PCR to fuel fast isothermal transcription. |
+| `parameters.thermodynamics.dna_conc` | Float $\ge 0.0$ | `480.0` | Total primer concentration (nM). RAA requires a highly crowded environment to drive recombinase-mediated strand invasion. |
+| `parameters.primer_size.opt` | Integer | `32` | Optimal length of RAA primers. Isothermal recombinase binding requires long primers ($30-35$ bp) to successfully invade double-stranded DNA templates. |
+| `parameters.probe.type` | `"exo"`, `"taqman"` | `"exo"` | The chemistry type. `"exo"` designs TwistAmp Exo-style probes ($46-52$ bp) with an internal abasic site (THF spacer) for Endonuclease IV cleavage. |
+| `qc.vienna_ranking_limit` | Integer | `50` | The top 50 candidates from Primer3 are sent to ViennaRNA to calculate secondary structures (hairpins, homodimers, heterodimers) at the isothermal temperature of $37^\circ\text{C}$. |
+
+### 4.2. How to Interpret PrimerLab Design Outputs
+
+Module 08 outputs `best_primers.json` containing the physical profiles of the designed set:
+*   **Hairpin & Dimer $\Delta G$**: Represents the Gibbs free energy change of self-folding. Values **closer to 0** (e.g. $>-2.0\text{ kcal/mol}$) are stable and safe. Values more negative than $-5.0\text{ kcal/mol}$ indicate a high risk of primer-dimer formation, which will consume master-mix and cause false positives.
+*   **Degeneracy Multiplier**: The number of unique primer sequences in the synthesized mix. A multiplier of 16 (e.g. 4 degenerate positions) means the active concentration of any single primer sequence is diluted to $1/16$-th. Keeping this below 16 ensures high diagnostic sensitivity.
+
+---
+
 ## 5. Inputs, Outputs & Files
 
 The files involved in Module 08 are summarized below:

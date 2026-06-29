@@ -228,6 +228,12 @@ div.csl-indent {
       <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./config_global.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Global Pipeline Configuration</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./m01.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Module 01: Data Acquisition</span></a>
   </div>
@@ -378,6 +384,11 @@ div.csl-indent {
   <li><a href="#dataset-export-for-auspice-visualization" id="toc-dataset-export-for-auspice-visualization" class="nav-link" data-scroll-target="#dataset-export-for-auspice-visualization">2. Dataset Export for Auspice Visualization</a></li>
   <li><a href="#interactive-nextstrain-auspice-tree-explorer" id="toc-interactive-nextstrain-auspice-tree-explorer" class="nav-link" data-scroll-target="#interactive-nextstrain-auspice-tree-explorer">3. Interactive Nextstrain Auspice Tree Explorer</a></li>
   <li><a href="#configuration-outputs-tabset-examples" id="toc-configuration-outputs-tabset-examples" class="nav-link" data-scroll-target="#configuration-outputs-tabset-examples">4. Configuration &amp; Outputs (Tabset Examples)</a></li>
+  <li><a href="#configuration-parameterization" id="toc-configuration-parameterization" class="nav-link" data-scroll-target="#configuration-parameterization">4. Configuration &amp; Parameterization</a>
+  <ul class="collapse">
+  <li><a href="#parameter-tuning-dictionary" id="toc-parameter-tuning-dictionary" class="nav-link" data-scroll-target="#parameter-tuning-dictionary">4.1. Parameter Tuning Dictionary</a></li>
+  <li><a href="#how-to-interpret-the-auspice-payload" id="toc-how-to-interpret-the-auspice-payload" class="nav-link" data-scroll-target="#how-to-interpret-the-auspice-payload">4.2. How to Interpret the Auspice Payload</a></li>
+  </ul></li>
   <li><a href="#inputs-outputs-files" id="toc-inputs-outputs-files" class="nav-link" data-scroll-target="#inputs-outputs-files">5. Inputs, Outputs &amp; Files</a></li>
   <li><a href="#troubleshooting-limitations" id="toc-troubleshooting-limitations" class="nav-link" data-scroll-target="#troubleshooting-limitations">6. Troubleshooting &amp; Limitations</a>
   <ul class="collapse">
@@ -530,13 +541,59 @@ div.csl-indent {
 <li><p><strong>Local PC</strong>: Open your browser at <strong><code>http://localhost:4000</code></strong>.</p></li>
 <li><p><strong>HPC Cluster (SSH Tunneling)</strong>: If running on a remote HPC, create a secure SSH tunnel from your local terminal:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> <span class="at">-L</span> 4000:localhost:4000 username@hpc-address.ugm.ac.id</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p>Then, open <strong><code>http://localhost:4000</code></strong> on your local machine to explore your data.</p></li>
+<p>then, open <strong><code>http://localhost:4000</code></strong> on your local machine to explore your data.</p></li>
 </ul>
 </section>
 </div>
 </div>
 </div>
 <hr>
+</section>
+<section id="configuration-parameterization" class="level2">
+<h2 class="anchored" data-anchor-id="configuration-parameterization">4. Configuration &amp; Parameterization</h2>
+<p>The export process in Module 06 is controlled by the Nextstrain metadata mapping and Nextclade classifier toggles in <code>config.yaml</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M06] Nextstrain Visualization Export</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">nextclade</span><span class="kw">:</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">                   # Set to true to run nextclade classifier on the dataset</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">dataset_name</span><span class="kw">:</span><span class="at"> </span><span class="st">"nextstrain/flu/h3n2/ha/3y"</span><span class="co">  # Nextclade dataset to fetch (e.g. flu_a_mp)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="parameter-tuning-dictionary" class="level3">
+<h3 class="anchored" data-anchor-id="parameter-tuning-dictionary">4.1. Parameter Tuning Dictionary</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Parameter Name</th>
+<th>Allowed Values</th>
+<th>Default Value</th>
+<th>Purpose &amp; Biological Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>nextclade.enabled</code></td>
+<td><code>true</code>, <code>false</code></td>
+<td><code>true</code></td>
+<td>Controls whether Nextclade is invoked. If enabled, the pipeline queries Nextclade to assign lineage and clade designations to the metadata, which are then rendered on the Nextstrain tree. If disabled, the pipeline will fall back to using pre-existing clade annotations from the input metadata.</td>
+</tr>
+<tr class="even">
+<td><code>nextclade.dataset_name</code></td>
+<td>Nextclade dataset key</td>
+<td><code>"nextstrain/flu/h3n2/ha/3y"</code></td>
+<td>Defines the reference database to download for classification. Ensure that the dataset matches the target species (e.g.&nbsp;using Influenza A datasets for flu runs).</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="how-to-interpret-the-auspice-payload" class="level3">
+<h3 class="anchored" data-anchor-id="how-to-interpret-the-auspice-payload">4.2. How to Interpret the Auspice Payload</h3>
+<p>Module 06 compiles all previous analyses into a single file (<code>auspice_dataset.json</code>): * <strong><code>nodes</code></strong>: A nested dictionary representing the tree topology. Each node contains a <code>mutations</code> record (reconstructed by Augur Ancestral) showing which nucleotides mutated at that specific point in history. * <strong><code>colorings</code></strong>: Maps metadata fields (such as <code>clade</code>, <code>country</code>, and <code>year</code>) to colors on the tree. If you notice a particular clade has a distinct mutation in the M1 gene, this explains why that clade might exhibit diagnostic escape from standard primers.</p>
+<hr>
+</section>
 </section>
 <section id="inputs-outputs-files" class="level2">
 <h2 class="anchored" data-anchor-id="inputs-outputs-files">5. Inputs, Outputs &amp; Files</h2>

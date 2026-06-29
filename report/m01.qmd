@@ -115,6 +115,43 @@ If Nextclade is enabled (`nextclade.enabled: true` in config), the raw sequences
 
 ---
 
+## 3. Configuration & Parameterization
+
+The behavior of Module 01 is governed by the input pathways and early pre-filtering parameters in `config.yaml`:
+
+```yaml
+# [M01] Data Acquisition (Local Mode)
+local_input:
+  sequences: "dataset/EpiFlu/MP/EpiFlu_A_MP_Combined_Sequence.fasta"
+  metadata: "dataset/EpiFlu/MP/EpiFlu_A_MP_Combined_Metadata.csv"
+  format: "gisaid_epiflu"
+
+# [M01a] Early Filtering (Pre-Nextclade)
+early_filter:
+  enabled: true
+  query: null                     # e.g., "subtype == 'A / H1N1'"
+  min_date: null                  # Remove sequences before this year (YYYY)
+  max_date: "2026-04-01"          # Remove sequences after this date (YYYY-MM-DD)
+```
+
+### 3.1. Parameter Tuning Dictionary
+
+| Parameter Name | Allowed Values | Default Value | Purpose & Biological Meaning |
+|---|---|---|---|
+| `local_input.format` | `"ncbi"`, `"gisaid_epiflu"` | `"gisaid_epiflu"` | Maps CSV columns to internal pipeline headers. `"gisaid_epiflu"` maps EpiFlu GISAID columns (such as `Collection_Date` and `Isolate_Id`). Set to `"ncbi"` if importing a manual NCBI table. |
+| `early_filter.enabled` | `true`, `false` | `true` | Controls whether the pre-filtering script is active. Useful to disable if working with a pre-sanitized dataset. |
+| `early_filter.query` | Pandas query string | `null` | A logical string to filter the dataset before alignment (e.g. `"country == 'Indonesia'"` or `"subtype == 'A / H5N1'"`). This allows designing diagnostic assays for specific sub-populations. |
+| `early_filter.min_date` | Integer (YYYY) or `null` | `null` | Excludes old historical sequences. Useful to discard sequences older than 10 years to avoid designing primers for extinct viral lineages. |
+| `early_filter.max_date` | String (YYYY-MM-DD) | `"2026-04-01"` | Excludes sequences submitted after this date. Essential for clinical freeze analysis and pipeline reproducibility across historical runs. |
+
+### 3.2. How to Interpret Sanitized Metadata Outputs
+
+Module 01 outputs a merged metadata sheet (`metadata_enriched.tsv`):
+*   **Column `qc_status`**: Nextclade's assessment of sequence quality (`good`, `mediocre`, `bad`). If a sequence is flagged as `bad`, it is a warning that it has frameshifts or high missing bases ($N$).
+*   **Column `clade` / `lineage`**: Represents the parsed viral classification. Reviewing this column helps verify if your dataset has the desired target subtype distribution before proceeding to downstream alignment.
+
+---
+
 ## 4. Inputs, Outputs & Files
 
 The files involved in Module 01 are summarized below:

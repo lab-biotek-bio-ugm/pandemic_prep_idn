@@ -44,6 +44,8 @@ website:
         contents:
           - section: "Data Processing & Phylodynamics"
             contents:
+              - href: config_global.qmd
+                text: "Global Pipeline Configuration"
               - href: m01.qmd
                 text: "Module 01: Data Acquisition"
               - href: m02.qmd

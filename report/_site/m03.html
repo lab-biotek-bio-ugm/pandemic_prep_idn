@@ -190,7 +190,7 @@ window.Quarto = {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Technical Architecture</li><li class="breadcrumb-item"><a href="./m01.html">Data Processing &amp; Phylodynamics</a></li><li class="breadcrumb-item"><a href="./m03.html">Module 03: Alignment</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Technical Architecture</li><li class="breadcrumb-item"><a href="./config_global.html">Data Processing &amp; Phylodynamics</a></li><li class="breadcrumb-item"><a href="./m03.html">Module 03: Alignment</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -255,6 +255,12 @@ window.Quarto = {
           </a> 
       </div>
       <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth2 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./config_global.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Global Pipeline Configuration</span></a>
+  </div>
+</li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./m01.html" class="sidebar-item-text sidebar-link">
@@ -405,6 +411,11 @@ window.Quarto = {
   <ul>
   <li><a href="#multiple-alignment-methodology" id="toc-multiple-alignment-methodology" class="nav-link active" data-scroll-target="#multiple-alignment-methodology">1. Multiple Alignment Methodology</a></li>
   <li><a href="#configuration-outputs-tabset-examples" id="toc-configuration-outputs-tabset-examples" class="nav-link" data-scroll-target="#configuration-outputs-tabset-examples">2. Configuration &amp; Outputs (Tabset Examples)</a></li>
+  <li><a href="#configuration-parameterization" id="toc-configuration-parameterization" class="nav-link" data-scroll-target="#configuration-parameterization">2. Configuration &amp; Parameterization</a>
+  <ul class="collapse">
+  <li><a href="#parameter-tuning-dictionary" id="toc-parameter-tuning-dictionary" class="nav-link" data-scroll-target="#parameter-tuning-dictionary">2.1. Parameter Tuning Dictionary</a></li>
+  <li><a href="#how-to-interpret-alignment-visualizations" id="toc-how-to-interpret-alignment-visualizations" class="nav-link" data-scroll-target="#how-to-interpret-alignment-visualizations">2.2. How to Interpret Alignment Visualizations</a></li>
+  </ul></li>
   <li><a href="#inputs-outputs-files" id="toc-inputs-outputs-files" class="nav-link" data-scroll-target="#inputs-outputs-files">3. Inputs, Outputs &amp; Files</a></li>
   <li><a href="#troubleshooting-limitations" id="toc-troubleshooting-limitations" class="nav-link" data-scroll-target="#troubleshooting-limitations">4. Troubleshooting &amp; Limitations</a>
   <ul class="collapse">
@@ -416,7 +427,7 @@ window.Quarto = {
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Technical Architecture</li><li class="breadcrumb-item"><a href="./m01.html">Data Processing &amp; Phylodynamics</a></li><li class="breadcrumb-item"><a href="./m03.html">Module 03: Alignment</a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Technical Architecture</li><li class="breadcrumb-item"><a href="./config_global.html">Data Processing &amp; Phylodynamics</a></li><li class="breadcrumb-item"><a href="./m03.html">Module 03: Alignment</a></li></ol></nav>
 <div class="quarto-title">
 <h1 class="title">Module 03: Multiple Sequence Alignment</h1>
 </div>
@@ -512,6 +523,60 @@ NNNNNttctaaccgaggtcgaaacgtacgttctttctatcatcccatcaggccccctcaa...</code></pre>
 </div>
 </div>
 <hr>
+</section>
+<section id="configuration-parameterization" class="level2">
+<h2 class="anchored" data-anchor-id="configuration-parameterization">2. Configuration &amp; Parameterization</h2>
+<p>The alignment behavior is controlled by the reference anchor settings and MAFFT arguments defined in the pipeline scripts:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># MAFFT alignment command parameters</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">mafft</span> <span class="dt">\</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">--add</span> results/m02/filtered_sequences.fasta <span class="dt">\</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">--keeplength</span> <span class="dt">\</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    config/references/flu_a_mp_reference.fasta <span class="dt">\</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">&gt;</span> results/m03/aligned.fasta</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="parameter-tuning-dictionary" class="level3">
+<h3 class="anchored" data-anchor-id="parameter-tuning-dictionary">2.1. Parameter Tuning Dictionary</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Parameter Name / Option</th>
+<th>Allowed Values</th>
+<th>Default Value</th>
+<th>Purpose &amp; Biological Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>--add</code></td>
+<td>File path</td>
+<td>Filtered fasta</td>
+<td>Instructs MAFFT to align the query sequences <em>to</em> the reference genome template rather than recalculating the entire multiple sequence alignment from scratch. This accelerates alignment from hours to seconds.</td>
+</tr>
+<tr class="even">
+<td><code>--keeplength</code></td>
+<td>Boolean flag</td>
+<td><code>True</code></td>
+<td><strong>Crucial Diagnostic Veto</strong>. Forces MAFFT to keep the exact length of the reference sequence. Any insertions in the query sequences that extend beyond the reference length are discarded (clipped), and deletions are padded with gaps (<span class="math inline">\(-\)</span>). This guarantees that all aligned sequences have the exact same nucleotide coordinates (e.g., pos 187 is position 187 in <em>every</em> sequence).</td>
+</tr>
+<tr class="odd">
+<td>Subsampling Group-by</td>
+<td>Column list</td>
+<td><code>subtype country year month</code></td>
+<td>Defines the stratification keys for subsampling. Splitting sequences into these buckets ensures a homogeneous distribution over time and space, preventing H3N2 or US-based strains from dominating the target search.</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="how-to-interpret-alignment-visualizations" class="level3">
+<h3 class="anchored" data-anchor-id="how-to-interpret-alignment-visualizations">2.2. How to Interpret Alignment Visualizations</h3>
+<p>During alignment, sequences are padded at the terminal ends: * <strong>Terminal <code>N</code> Padding</strong>: If a query sequence begins at nucleotide 5 (e.g., due to primer clipping during wet-lab sequencing), the alignment will pad positions 1–4 with <code>NNNN</code>. This is expected and does not count as a true mutation. * <strong>Internal Gaps (<code>-</code>)</strong>: A gap represents a deletion mutation. If a gap occurs in a target primer region, it represents a major mismatch that will block recombinase or polymerase binding.</p>
+<hr>
+</section>
 </section>
 <section id="inputs-outputs-files" class="level2">
 <h2 class="anchored" data-anchor-id="inputs-outputs-files">3. Inputs, Outputs &amp; Files</h2>
