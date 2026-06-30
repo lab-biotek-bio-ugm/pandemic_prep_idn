@@ -14,11 +14,11 @@ To verify the necessity of IUPAC degenerate bases, all candidate sets were evalu
 
 The table below summarizes the overall PCR and RAA amplification coverage achieved on the global dataset ($N=50,750$ sequences), demonstrating the **degeneracy uplift (gain)**:
 
-| Scenario | Candidate ID | primer Type | PCR Amplification (%) | RAA Amplification (%) | Coverage Uplift (Gain) |
-|---|---|---|---|---|---|
-| **Indonesia Only** <br> *(`indo-only`)* | `segment-MP_region_1_Cand_1` | Non-Degenerate <br> **Degenerate** | 18.61% <br> **91.20%** | 18.33% <br> **88.83%** | <span style="color: #10b981; font-weight: bold;">+72.59%</span> <br> <span style="color: #10b981; font-weight: bold;">+70.50%</span> |
-| **Southeast Asia** <br> *(`sea-only`)* | `segment-MP_region_1_Cand_1` | Non-Degenerate <br> **Degenerate** | 33.87% <br> **34.53%** | 33.87% <br> **34.53%** | <span style="color: #10b981; font-weight: bold;">+0.66%</span> <br> <span style="color: #10b981; font-weight: bold;">+0.66%</span> |
-| **All-Partial** <br> *(`all-partial`)* | `segment-MP_region_1_Cand_1` | Non-Degenerate <br> **Degenerate** | 17.24% <br> **17.56%** | 17.14% <br> **17.52%** | <span style="color: #10b981; font-weight: bold;">+0.32%</span> <br> <span style="color: #10b981; font-weight: bold;">+0.38%</span> |
+| Scenario | PCR (Non-Degen) | PCR (Degenerate) | PCR Uplift | RAA (Non-Degen) | RAA (Degenerate) | RAA Uplift |
+|---|---|---|---|---|---|---|
+| **Indonesia Only** <br> *(`indo-only`)* | 18.61% | **91.20%** | <span style="color: #10b981; font-weight: bold;">+72.59%</span> | 18.33% | **88.83%** | <span style="color: #10b981; font-weight: bold;">+70.50%</span> |
+| **Southeast Asia** <br> *(`sea-only`)* | 33.87% | **34.53%** | <span style="color: #10b981; font-weight: bold;">+0.66%</span> | 33.87% | **34.53%** | <span style="color: #10b981; font-weight: bold;">+0.66%</span> |
+| **All-Partial** <br> *(`all-partial`)* | 17.24% | **17.56%** | <span style="color: #10b981; font-weight: bold;">+0.32%</span> | 17.14% | **17.52%** | <span style="color: #10b981; font-weight: bold;">+0.38%</span> |
 
 ### Key Findings:
 *   **The Degeneracy Necessity**: For the `indo-only` design, removing degenerate bases collapses the coverage from **91.20%** down to **18.61%** (a drop of over 70%). This mathematically proves that degenerate primers are mandatory to handle natural genomic variations in circulating Influenza A strains.
