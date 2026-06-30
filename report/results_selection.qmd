@@ -11,24 +11,122 @@ To design primers that remain effective over time, we must understand the evolut
 
 ## 1. Pervasive Purifying Selection (FUBAR Analysis)
 
-FUBAR was run on the Matrix Protein 1 (**M1**, 252 codons) and Matrix Protein 2 (**M2**, 97 codons) coding sequences. The vast majority of codons exhibit strong negative selection, reflecting the structural constraints of these proteins:
+FUBAR was run on the Matrix Protein 1 (**M1**, 253 codons) and Matrix Protein 2 (**M2**, 98 codons) coding sequences. The vast majority of codons in M1 exhibit strong negative selection, reflecting the structural constraints of the protein shell:
 
+::: {.panel-tabset}
+
+### M1 Selection Profile
+```{=html}
+<svg viewBox="0 0 600 240" width="100%" height="240px" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-family: system-ui, -apple-system, sans-serif; box-shadow: 0 4px 6px rgba(0,0,0,0.02); margin: 15px 0;">
+  <!-- Gridlines -->
+  <line x1="60" y1="40" x2="560" y2="40" stroke="#e2e8f0" stroke-dasharray="4" />
+  <line x1="60" y1="120" x2="560" y2="120" stroke="#e2e8f0" stroke-dasharray="4" />
+  <line x1="60" y1="180" x2="560" y2="180" stroke="#e2e8f0" stroke-dasharray="4" />
+
+  <!-- Selection Threshold (0.90) -->
+  <line x1="60" y1="60" x2="560" y2="60" stroke="#10b981" stroke-width="1.5" stroke-dasharray="3 3" />
+  <text x="550" y="55" text-anchor="end" font-size="10" fill="#10b981" font-weight="600">FUBAR Threshold (0.90)</text>
+
+  <!-- Axes -->
+  <line x1="60" y1="180" x2="560" y2="180" stroke="#475569" stroke-width="2" />
+  <line x1="60" y1="40" x2="60" y2="180" stroke="#475569" stroke-width="2" />
+
+  <!-- Y-Axis Labels -->
+  <text x="50" y="45" text-anchor="end" font-size="11" fill="#64748b">1.0</text>
+  <text x="50" y="125" text-anchor="end" font-size="11" fill="#64748b">0.5</text>
+  <text x="50" y="185" text-anchor="end" font-size="11" fill="#64748b">0.0</text>
+  <text x="18" y="110" transform="rotate(-90 18 110)" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">Posterior Prob (dN &lt; dS)</text>
+
+  <!-- X-Axis Labels -->
+  <text x="62" y="200" text-anchor="middle" font-size="11" fill="#64748b">1</text>
+  <text x="160" y="200" text-anchor="middle" font-size="11" fill="#64748b">50</text>
+  <text x="260" y="200" text-anchor="middle" font-size="11" fill="#64748b">100</text>
+  <text x="360" y="200" text-anchor="middle" font-size="11" fill="#64748b">150</text>
+  <text x="460" y="200" text-anchor="middle" font-size="11" fill="#64748b">200</text>
+  <text x="560" y="200" text-anchor="middle" font-size="11" fill="#64748b">253</text>
+  <text x="310" y="225" text-anchor="middle" font-size="12" font-weight="600" fill="#475569">M1 Codon Position</text>
+
+  <!-- Representing High Purifying Density (Shaded area or points) -->
+  <!-- M1 has 75.9% purifying sites. We draw a light green block representing general high probability -->
+  <rect x="62" y="42" width="498" height="136" fill="#10b981" opacity="0.1" rx="2" />
+  <path d="M 62 45 L 110 45 L 120 180 L 130 45 L 280 45 L 290 180 L 300 45 L 560 45" fill="none" stroke="#059669" stroke-width="1.5" />
+
+  <!-- Episodic Diversifying Sites (MEME) marked with orange warnings -->
+  <!-- Codon 30 is at x = 60 + 30*1.97 = 119 -->
+  <!-- Codon 235 is at x = 60 + 235*1.97 = 523 -->
+  <g transform="translate(119, 180)">
+    <polygon points="0,-12 -10,0 10,0" fill="#f97316" />
+    <text x="0" y="-16" text-anchor="middle" font-size="9.5" fill="#c2410c" font-weight="700">Codon 30</text>
+  </g>
+  <g transform="translate(523, 180)">
+    <polygon points="0,-12 -10,0 10,0" fill="#f97316" />
+    <text x="0" y="-16" text-anchor="middle" font-size="9.5" fill="#c2410c" font-weight="700">Codon 235</text>
+  </g>
+</svg>
 ```
-                         [FUBAR Selection Profile along M1 Protein]
-  Posterior Prob (dN < dS)
-    1.0 ┼  ██████████████████████████████████████████████████████████████████ (Conserved Sites)
-        │  ██████████████████████████████████████████████████████████████████
-    0.5 ┼
-        │                                         * Codon 137 (Neutral)
-    0.0 ┼────────────────────────────────────────────────────────────────────
-        1                50               100              150              200
+
+### M2 Selection Profile
+```{=html}
+<svg viewBox="0 0 600 240" width="100%" height="240px" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-family: system-ui, -apple-system, sans-serif; box-shadow: 0 4px 6px rgba(0,0,0,0.02); margin: 15px 0;">
+  <!-- Gridlines -->
+  <line x1="60" y1="40" x2="560" y2="40" stroke="#e2e8f0" stroke-dasharray="4" />
+  <line x1="60" y1="120" x2="560" y2="120" stroke="#e2e8f0" stroke-dasharray="4" />
+  <line x1="60" y1="180" x2="560" y2="180" stroke="#e2e8f0" stroke-dasharray="4" />
+
+  <!-- Selection Threshold (0.90) -->
+  <line x1="60" y1="60" x2="560" y2="60" stroke="#10b981" stroke-width="1.5" stroke-dasharray="3 3" />
+  <text x="550" y="55" text-anchor="end" font-size="10" fill="#10b981" font-weight="600">FUBAR Threshold (0.90)</text>
+
+  <!-- Axes -->
+  <line x1="60" y1="180" x2="560" y2="180" stroke="#475569" stroke-width="2" />
+  <line x1="60" y1="40" x2="60" y2="180" stroke="#475569" stroke-width="2" />
+
+  <!-- Y-Axis Labels -->
+  <text x="50" y="45" text-anchor="end" font-size="11" fill="#64748b">1.0</text>
+  <text x="50" y="125" text-anchor="end" font-size="11" fill="#64748b">0.5</text>
+  <text x="50" y="185" text-anchor="end" font-size="11" fill="#64748b">0.0</text>
+  <text x="18" y="110" transform="rotate(-90 18 110)" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">Posterior Prob (dN &lt; dS)</text>
+
+  <!-- X-Axis Labels -->
+  <text x="62" y="200" text-anchor="middle" font-size="11" fill="#64748b">1</text>
+  <text x="187" y="200" text-anchor="middle" font-size="11" fill="#64748b">25</text>
+  <text x="312" y="200" text-anchor="middle" font-size="11" fill="#64748b">50</text>
+  <text x="438" y="200" text-anchor="middle" font-size="11" fill="#64748b">75</text>
+  <text x="555" y="200" text-anchor="middle" font-size="11" fill="#64748b">98</text>
+  <text x="310" y="225" text-anchor="middle" font-size="12" font-weight="600" fill="#475569">M2 Codon Position</text>
+
+  <!-- Representing Lower Purifying Density in M2 (25.5%) -->
+  <path d="M 62 180 L 110 50 L 130 180 L 180 180 L 220 50 L 250 180 L 310 180 L 350 45 L 390 180 L 555 180" fill="none" stroke="#059669" stroke-width="1.5" />
+
+  <!-- Episodic Diversifying Sites (MEME) at codons 11, 13, 18, 36, 59, 93 -->
+  <!-- Map: x = 60 + codon*5.05 -->
+  <!-- Codon 11: x = 115 -->
+  <!-- Codon 13: x = 125 -->
+  <!-- Codon 18: x = 151 -->
+  <!-- Codon 36: x = 242 -->
+  <!-- Codon 59: x = 358 -->
+  <!-- Codon 93: x = 530 -->
+  <polygon points="115,-12 110,0 120,0" fill="#f97316" />
+  <polygon points="125,-12 120,0 130,0" fill="#f97316" />
+  <polygon points="151,-12 146,0 156,0" fill="#f97316" />
+  <polygon points="242,-12 237,0 247,0" fill="#f97316" />
+  <polygon points="358,-12 353,0 363,0" fill="#f97316" />
+  <polygon points="530,-12 525,0 535,0" fill="#f97316" />
+  
+  <text x="133" y="-16" text-anchor="middle" font-size="9" fill="#c2410c" font-weight="700">11, 13, 18</text>
+  <text x="242" y="-16" text-anchor="middle" font-size="9.5" fill="#c2410c" font-weight="700">36</text>
+  <text x="358" y="-16" text-anchor="middle" font-size="9.5" fill="#c2410c" font-weight="700">59</text>
+  <text x="530" y="-16" text-anchor="middle" font-size="9.5" fill="#c2410c" font-weight="700">93</text>
+</svg>
 ```
+
+:::
 
 *   **Matrix Protein 1 (M1) Conservation**:
-    *   Out of 252 codons, **187 sites (74.2%)** were identified under strong pervasive purifying selection with a posterior probability $\ge 0.90$.
+    *   Out of 253 codons, **192 sites (75.9%)** were identified under strong pervasive purifying selection with a posterior probability $\ge 0.90$.
     *   This extreme conservation explains why the regional designs (Indo-only and SEA-only) were able to place highly sensitive primers in the forward block (codons 63 to 117, corresponding to nucleotide positions 187–352 bp).
 *   **Matrix Protein 2 (M2) Conservation**:
-    *   Out of 97 codons, **42 sites (43.3%)** were identified under purifying selection. M2 exhibits higher sequence entropy than M1, particularly in its extracellular domain (ectodomain), making it less suitable for diagnostic design.
+    *   Out of 98 codons, only **25 sites (25.5%)** were identified under purifying selection. M2 exhibits higher sequence entropy than M1, particularly in its extracellular domain (ectodomain), making it less suitable for diagnostic design.
 
 ---
 
@@ -37,14 +135,23 @@ FUBAR was run on the Matrix Protein 1 (**M1**, 252 codons) and Matrix Protein 2 
 MEME was run to detect transient, branch-specific evolutionary events that standard site-level models miss:
 
 *   **Identified Episodic Sites in M1**:
-    *   Only **3 codons** (Codons 37, 137, and 224) exhibited evidence of episodic positive selection with a p-value $\le 0.05$.
-    *   *Diagnostic Veto*: Codon 37 lies close to the Indo-only forward primer location. The **Bridge Scoring Engine (Module 07)** successfully identified this selection marker and applied a spatial penalty, steering the primer boundaries away from codon 37 to avoid mutations under the 3' end of the primer.
+    *   Only **2 codons** (Codons 30 and 235) exhibited evidence of episodic positive selection with a p-value $\le 0.05$.
+    *   *Diagnostic Veto*: Codon 30 is located upstream of the primary forward primer target (which starts at nucleotide position 187). The **Bridge Scoring Engine (Module 07)** successfully detected this selection marker and applied a spatial penalty, ensuring that primer annealing coordinates remain downstream of codon 30.
 *   **Identified Episodic Sites in M2**:
-    *   **5 codons** (Codons 11, 16, 28, 54, and 78) exhibited episodic selection. The clustering of these positive selection sites in the M2 segment highlights the risks of placing diagnostic primers in this gene region.
+    *   **6 codons** (Codons 11, 13, 18, 36, 59, and 93) exhibited episodic selection. The clustering of these positive selection sites in the M2 segment highlights the risks of placing diagnostic primers in this gene region.
 
 ---
 
-## 3. Bridge Scoring Profile and Target "Gold Zones"
+## 3. M1 vs. M2 Selection Pressure Divergence
+
+The stark contrast in selection pressure between the two matrix proteins highlights their differing biological constraints:
+
+*   **Structural Constraint (M1)**: The M1 protein is a structural matrix shell that must interact closely with the viral envelope, the ribonucleoprotein (RNP) complexes, and the tail of the M2 protein. This complex web of physical interactions severely constrains the protein, meaning almost any amino acid change impairs viral assembly. This translates to the **75.9%** purifying selection rate observed.
+*   **Immune & Drug Selection (M2)**: The M2 protein is an ion channel. Its extracellular ectodomain is exposed to host antibodies, driving selective pressure to escape immunity. Meanwhile, its transmembrane pore domain is under selective pressure from antivirals like amantadine (which directly drove the selection of S31N in the pore). Consequently, the purifying selection rate drops to **25.5%**, making it an unreliable target for long-term diagnostic assay stability.
+
+---
+
+## 4. Bridge Scoring Profile & Target "Gold Zones"
 
 The **Bridge Scoring Engine (Module 07)** integrated the conservation entropy (Shannon Entropy) with HyPhy FUBAR negative selection probabilities and MEME positive selection penalties:
 
@@ -55,5 +162,5 @@ This core score was then adjusted using multipliers for local GC content, homopo
 *   **Gold Zone Selection (Indo-Only)**:
     *   The engine identified the region **187–352 bp** as a "Gold Zone" (Grade S/A+), characterized by a core score $>0.92$, zero MEME positive selection markers, and optimal GC content (~40%).
 *   **Regional Contrast (All-Partial)**:
-    *   When global sequences were introduced, the core score of the 187–352 bp region dropped below $0.75$ due to increased sequence entropy at codon 37 and adjacent positions. 
+    *   When global sequences were introduced, the core score of the 187–352 bp region dropped below $0.75$ due to increased sequence entropy at codon 30 and adjacent positions. 
     *   This drop triggered the engine to shift the design to the **858–1008 bp** region, which retained a core score $>0.88$ globally, demonstrating how evolutionary forces directly shape physical coordinate selection.
