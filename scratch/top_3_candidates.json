@@ -1,0 +1,140 @@
+{
+  "influenza-a-mp-indo-only": {
+    "segment-MP_region_1": [
+      {
+        "rank": 1,
+        "fwd": "CTGACTAARGGRATTTTRGGRTTTGTATTCA",
+        "rev": "GCAGTTAAACTATATARGAARCTGAARAGRG",
+        "probe": "CCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCARAATGCCC",
+        "fwd_tm": "58.94 - 64.98 \u00b0C",
+        "rev_tm": "58.03 - 63.12 \u00b0C",
+        "probe_tm": "80.96 - 82.57 \u00b0C",
+        "amplicon_length": 155,
+        "human_score": 92.6,
+        "virus_score": 100.0,
+        "hairpin_dg": -4.21119810245416,
+        "cross_dimer_dg": -9.29500606030044
+      },
+      {
+        "rank": 2,
+        "fwd": "CTGACTAARGGRATTTTRGGRTTTGTATTCA",
+        "rev": "AGCAGTTAAACTATATARGAARCTGAARAGR",
+        "probe": "CCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCARAATGCCC",
+        "fwd_tm": "58.94 - 64.98 \u00b0C",
+        "rev_tm": "58.27 - 62.49 \u00b0C",
+        "probe_tm": "80.96 - 82.57 \u00b0C",
+        "amplicon_length": 154,
+        "human_score": 93.9,
+        "virus_score": 100.0,
+        "hairpin_dg": -4.21119810245416,
+        "cross_dimer_dg": -9.29500606030044
+      },
+      {
+        "rank": 3,
+        "fwd": "CTGACTAARGGRATTTTRGGRTTTGTATTCA",
+        "rev": "GCAGTTAAACTATATARGAARCTGAARAGR",
+        "probe": "CCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCARAATGCCC",
+        "fwd_tm": "58.94 - 64.98 \u00b0C",
+        "rev_tm": "57.25 - 61.55 \u00b0C",
+        "probe_tm": "80.96 - 82.57 \u00b0C",
+        "amplicon_length": 154,
+        "human_score": 92.6,
+        "virus_score": 100.0,
+        "hairpin_dg": -4.21119810245416,
+        "cross_dimer_dg": -9.29500606030044
+      }
+    ]
+  },
+  "influenza-a-mp-sea-only": {
+    "segment-MP_region_1": [
+      {
+        "rank": 1,
+        "fwd": "CTGACTAAGGGRATTTTRGGRTTTGTKTT",
+        "rev": "GAAYGTTATYTCYCTYTTAAGTTTCCTATAC",
+        "probe": "ACCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCAAAATGCC",
+        "fwd_tm": "58.97 - 65.40 \u00b0C",
+        "rev_tm": "56.43 - 61.29 \u00b0C",
+        "probe_tm": "80.76 - 81.85 \u00b0C",
+        "amplicon_length": 166,
+        "human_score": 73.6,
+        "virus_score": 100.0,
+        "hairpin_dg": -4.21119810245416,
+        "cross_dimer_dg": -7.59430983137885
+      },
+      {
+        "rank": 2,
+        "fwd": "CTGACTAAGGGRATTTTRGGRTTTGTKTT",
+        "rev": "AAYGTTATYTCYCTYTTAAGTTTCCTATACAG",
+        "probe": "ACCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCAAAATGCC",
+        "fwd_tm": "58.97 - 65.40 \u00b0C",
+        "rev_tm": "57.62 - 62.38 \u00b0C",
+        "probe_tm": "80.76 - 81.85 \u00b0C",
+        "amplicon_length": 165,
+        "human_score": 80.8,
+        "virus_score": 100.0,
+        "hairpin_dg": -4.21119810245416,
+        "cross_dimer_dg": -7.59430983137885
+      },
+      {
+        "rank": 3,
+        "fwd": "CTCTGACTAAGGGRATTTTRGGRTTTGTKTT",
+        "rev": "TAGGAAACTTAAAAGRGARATAACRTTCCAY",
+        "probe": "ACCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCAAAATGCC",
+        "fwd_tm": "60.69 - 66.72 \u00b0C",
+        "rev_tm": "58.45 - 63.13 \u00b0C",
+        "probe_tm": "80.76 - 81.85 \u00b0C",
+        "amplicon_length": 171,
+        "human_score": 77.3,
+        "virus_score": 100.0,
+        "hairpin_dg": -4.21119810245416,
+        "cross_dimer_dg": -7.59430983137885
+      }
+    ]
+  },
+  "influenza-a-mp-all-partial": {
+    "segment-MP_region_1": [
+      {
+        "rank": 1,
+        "fwd": "AATGCATTTATCGTCGCTTYAAAYACGGYYT",
+        "rev": "TTTACTCYARYTCTATGYTGACAAAATGAC",
+        "probe": "AGGAGTGCCTGAGTCTATGAGGGAAGAATATCGRMAGGARCAGCAGARTGC",
+        "fwd_tm": "63.22 - 69.28 \u00b0C",
+        "rev_tm": "57.44 - 63.67 \u00b0C",
+        "probe_tm": "75.22 - 78.66 \u00b0C",
+        "amplicon_length": 151,
+        "human_score": 92.2,
+        "virus_score": 100.0,
+        "hairpin_dg": -2.8083076867678463,
+        "cross_dimer_dg": -8.228159475980574
+      },
+      {
+        "rank": 2,
+        "fwd": "AATGCATTTATCGTCGCTTYAAAYACGGYYT",
+        "rev": "TTTACTCYARYTCTATGYTGACAAAATGA",
+        "probe": "AGGAGTGCCTGAGTCTATGAGGGAAGAATATCGRMAGGARCAGCAGARTGC",
+        "fwd_tm": "63.22 - 69.28 \u00b0C",
+        "rev_tm": "56.39 - 62.90 \u00b0C",
+        "probe_tm": "75.22 - 78.66 \u00b0C",
+        "amplicon_length": 151,
+        "human_score": 92.2,
+        "virus_score": 100.0,
+        "hairpin_dg": -2.8083076867678463,
+        "cross_dimer_dg": -8.228159475980574
+      },
+      {
+        "rank": 3,
+        "fwd": "CACYTGATATTGTGGATTMYTGATCGTCTTT",
+        "rev": "TTTACTCYARYTCTATGYTGACAAAATGAC",
+        "probe": "AGGAGTGCCTGAGTCTATGAGGGAAGAATATCGRMAGGARCAGCAGARTGC",
+        "fwd_tm": "60.87 - 64.86 \u00b0C",
+        "rev_tm": "57.44 - 63.67 \u00b0C",
+        "probe_tm": "75.22 - 78.66 \u00b0C",
+        "amplicon_length": 188,
+        "human_score": 91.8,
+        "virus_score": 100.0,
+        "hairpin_dg": -2.8083076867678463,
+        "cross_dimer_dg": -8.228159475980574
+      }
+    ]
+  }
+}
