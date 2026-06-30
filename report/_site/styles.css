@@ -847,36 +847,42 @@ header#title-block-header.quarto-title-block .subtitle {
   color: #334155 !important; /* Premium dark slate */
 }
 
-/* Styling Kolom Tabel Parameter Agar Proporsional dan Rapi */
+/* Styling Kolom Tabel Agar Proporsional dan Rapi */
 table {
   width: 100% !important;
   border-collapse: collapse !important;
   margin-bottom: 1.5rem !important;
+  table-layout: fixed !important; /* Kunci layout agar persentase colgroup dipatuhi penuh */
 }
 
 th, td {
   padding: 10px 12px !important;
   vertical-align: top !important;
+  overflow-wrap: break-word !important; /* Izinkan pembungkusan kata panjang */
 }
 
-/* Kolom pertama (Parameter Name): berikan lebar minimal agar tidak patah kata */
+/* Memaksa rasio kolom tabel 4 kolom agar seimbang secara global (menimpa colgroup Quarto) */
+table col:nth-child(1) {
+  width: 25% !important;
+}
+table col:nth-child(2) {
+  width: 15% !important;
+}
+table col:nth-child(3) {
+  width: 10% !important;
+}
+table col:nth-child(4) {
+  width: 50% !important; /* Berikan porsi lebar terbesar untuk deskripsi/rasionalisasi */
+}
+
+/* Kolom pertama (Parameter Name/File Role) */
 table th:first-child,
 table td:first-child {
-  min-width: 250px !important;
-  width: 28% !important;
-  white-space: normal !important;
-  word-break: keep-all !important;
-  overflow-wrap: normal !important;
+  font-weight: 600 !important;
 }
 
-/* Kolom terakhir (Rationale/Description): berikan prioritas lebar sisa terbesar */
+/* Kolom terakhir (Description/Rationale) */
 table th:last-child,
 table td:last-child {
-  width: 48% !important;
   text-align: justify !important;
 }
-
-
-
-
-
