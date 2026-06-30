@@ -184,11 +184,24 @@
     ]
   },
   {
+    "objectID": "m09.html#interactive-igv-genomic-track-explorer",
+    "href": "m09.html#interactive-igv-genomic-track-explorer",
+    "title": "Module 09: BLAST Specificity Verification",
+    "section": "4. Interactive IGV Genomic Track Explorer",
+    "text": "4. Interactive IGV Genomic Track Explorer\nTo visualize how final primer candidates target the Influenza A MP segment, below is an embedded, live instance of the Integrative Genomics Viewer (IGV.js) displaying a demo sequence, gene annotations (GFF3), and designed primer targets (BED) matching the igv_session.xml exported by Module 09.\n```{=html}",
+    "crumbs": [
+      "<img src='assets/images/faculty_biology_ugm.png' style='height: 38px; width: auto; padding: 2px 0;' />",
+      "Technical Architecture",
+      "Design & Specificity",
+      "Module 09: BLAST Specificity"
+    ]
+  },
+  {
     "objectID": "m09.html#inputs-outputs-files",
     "href": "m09.html#inputs-outputs-files",
     "title": "Module 09: BLAST Specificity Verification",
-    "section": "4. Inputs, Outputs & Files",
-    "text": "4. Inputs, Outputs & Files\nThe files involved in Module 09 are summarized below:\n\n\n\n\n\n\n\n\n\nFile Role\nPath\nFormat\nDescription\n\n\n\n\nInput Candidates\nresults/{build}/m08/{mode}/{region}/summary.json\nJSON\nCandidate primer sets designed in Module 08.\n\n\nInput GFF3\nconfig/references/flu_a_mp_annotation.gff\nGFF3\nGene boundary coordinate map.\n\n\nFinal Candidates\nresults/{build}/m09/{mode}/{region}/final_candidates.json\nJSON\nSpecificity-filtered and ranked final candidate sets.\n\n\nSpecificity Summary\nresults/{build}/m09/{mode}/{region}/blast_specificity_summary.md\nMD\nMarkdown specificity summary report table.\n\n\nCandidate Reports\nresults/{build}/m09/{mode}/{region}/candidate_{N}/\nDirectory\nSpecificity alignments and details for candidate N.",
+    "section": "5. Inputs, Outputs & Files",
+    "text": "5. Inputs, Outputs & Files\nThe files involved in Module 09 are summarized below:\n\n\n\n\n\n\n\n\n\nFile Role\nPath\nFormat\nDescription\n\n\n\n\nInput Candidates\nresults/{build}/m08/{mode}/{region}/summary.json\nJSON\nCandidate primer sets designed in Module 08.\n\n\nInput GFF3\nconfig/references/flu_a_mp_annotation.gff\nGFF3\nGene boundary coordinate map.\n\n\nFinal Candidates\nresults/{build}/m09/{mode}/{region}/final_candidates.json\nJSON\nSpecificity-filtered and ranked final candidate sets.\n\n\nSpecificity Summary\nresults/{build}/m09/{mode}/{region}/blast_specificity_summary.md\nMD\nMarkdown specificity summary report table.\n\n\nCandidate Reports\nresults/{build}/m09/{mode}/{region}/candidate_{N}/\nDirectory\nSpecificity alignments and details for candidate N.",
     "crumbs": [
       "<img src='assets/images/faculty_biology_ugm.png' style='height: 38px; width: auto; padding: 2px 0;' />",
       "Technical Architecture",
@@ -200,8 +213,8 @@
     "objectID": "m09.html#troubleshooting-limitations",
     "href": "m09.html#troubleshooting-limitations",
     "title": "Module 09: BLAST Specificity Verification",
-    "section": "5. Troubleshooting & Limitations",
-    "text": "5. Troubleshooting & Limitations\n\n5.1. Remote BLAST Execution Hangs or Returns Gateway Timeouts\n\nProblem: When running in remote mode, the Snakemake pipeline hangs for hours or terminates with 504 Gateway Timeout or HTTP 429 Too Many Requests.\nCause: This is caused by high traffic on NCBI public servers, combined with a lack of a validated user API Key. NCBI limits unauthenticated remote requests to 3 per second, which is quickly exceeded when checking 100 candidates.\nSolution: Register a free account at NCBI to obtain an API key, then export the environment variable NCBI_API_KEY in your shell before starting the run:\nexport NCBI_API_KEY=your_ncbi_api_key_string\nAlternatively, configure mode: local and build local BLAST databases to bypass NCBI rate limits completely.",
+    "section": "6. Troubleshooting & Limitations",
+    "text": "6. Troubleshooting & Limitations\n\n6.1. Remote BLAST Execution Hangs or Returns Gateway Timeouts\n\nProblem: When running in remote mode, the Snakemake pipeline hangs for hours or terminates with 504 Gateway Timeout or HTTP 429 Too Many Requests.\nCause: This is caused by high traffic on NCBI public servers, combined with a lack of a validated user API Key. NCBI limits unauthenticated remote requests to 3 per second, which is quickly exceeded when checking 100 candidates.\nSolution: Register a free account at NCBI to obtain an API key, then export the environment variable NCBI_API_KEY in your shell before starting the run:\nexport NCBI_API_KEY=your_ncbi_api_key_string\nAlternatively, configure mode: local and build local BLAST databases to bypass NCBI rate limits completely.",
     "crumbs": [
       "<img src='assets/images/faculty_biology_ugm.png' style='height: 38px; width: auto; padding: 2px 0;' />",
       "Technical Architecture",
@@ -1120,24 +1133,11 @@
     ]
   },
   {
-    "objectID": "m07.html#interactive-igv-genomic-track-explorer",
-    "href": "m07.html#interactive-igv-genomic-track-explorer",
-    "title": "Module 07: Bridge Scoring Engine",
-    "section": "6. Interactive IGV Genomic Track Explorer",
-    "text": "6. Interactive IGV Genomic Track Explorer\nTo demonstrate how output target tracks can be visualized, below is an embedded, live instance of the Integrative Genomics Viewer (IGV.js) displaying a demo Influenza A MP segment reference, gene annotations (GFF3), and output target zones (BED).",
-    "crumbs": [
-      "<img src='assets/images/faculty_biology_ugm.png' style='height: 38px; width: auto; padding: 2px 0;' />",
-      "Technical Architecture",
-      "Selection & Conservation",
-      "Module 07: Bridge Scoring Engine"
-    ]
-  },
-  {
     "objectID": "m07.html#inputs-outputs-files",
     "href": "m07.html#inputs-outputs-files",
     "title": "Module 07: Bridge Scoring Engine",
-    "section": "7. Inputs, Outputs & Files",
-    "text": "7. Inputs, Outputs & Files\nThe files involved in Module 07 are summarized below:\n\n\n\nFile Role\nPath\nFormat\nDescription\n\n\n\n\nInput Alignment\nresults/{build}/m03/aligned.fasta\nFASTA\nFull sequence alignment from Module 03.\n\n\nInput GFF3\nconfig/references/flu_a_mp_annotation.gff\nGFF3\nGene boundary coordinate map. Published in assets/flu_a_mp_annotation.gff.\n\n\nInput Selection JSONs\nresults/{build}/m05/fubar_{gene}.json\nJSON\ndN/dS values per gene from Module 05.\n\n\nConserved BED\nresults/{build}/m07/conserved_regions.bed\nBED\nGraded conserved target zones. Published in assets/sea_only_conserved_regions.bed / assets/indo_only_conserved_regions.bed / assets/all_partial_conserved_regions.bed.\n\n\nBridge Report\nresults/{build}/m07/bridge_report.json\nJSON\nDetailed statistical metrics for every target window.\n\n\nTargets Manifest\nresults/{build}/m07/primer_targets_manifest.yaml\nYAML\nStructured list of target zones with consensus sequences.",
+    "section": "6. Inputs, Outputs & Files",
+    "text": "6. Inputs, Outputs & Files\nThe files involved in Module 07 are summarized below:\n\n\n\n\n\n\n\n\n\nFile Role\nPath\nFormat\nDescription\n\n\n\n\nInput Alignment\nresults/{build}/m03/aligned.fasta\nFASTA\nFull sequence alignment from Module 03.\n\n\nInput GFF3\nconfig/references/flu_a_mp_annotation.gff\nGFF3\nGene boundary coordinate map.\n\n\nInput Selection JSONs\nresults/{build}/m05/fubar_{gene}.json\nJSON\ndN/dS values per gene from Module 05.\n\n\nConserved BED\nresults/{build}/m07/conserved_regions.bed\nBED\nGraded conserved target zones.\n\n\nBridge Report\nresults/{build}/m07/bridge_report.json\nJSON\nDetailed statistical metrics for every target window.\n\n\nTargets Manifest\nresults/{build}/m07/primer_targets_manifest.yaml\nYAML\nStructured list of target zones with consensus sequences.",
     "crumbs": [
       "<img src='assets/images/faculty_biology_ugm.png' style='height: 38px; width: auto; padding: 2px 0;' />",
       "Technical Architecture",
@@ -1149,8 +1149,8 @@
     "objectID": "m07.html#troubleshooting-limitations",
     "href": "m07.html#troubleshooting-limitations",
     "title": "Module 07: Bridge Scoring Engine",
-    "section": "8. Troubleshooting & Limitations",
-    "text": "8. Troubleshooting & Limitations\n\n8.1. Low Scores in Full Segment Mode\n\nProblem: In full_segment mode, the composite score is very low (e.g. \\(0.40\\)), resulting in Grade D.\nCause: Evaluating an entire 1000+ bp segment as a single window includes hyper-variable loops and non-coding mutations, accumulating homopolymer and mismatch penalties that lower the score.\nSolution: This is expected behavior. The grade in full_segment mode is not used to exclude the segment, but simply reflects overall segment variation. The consensus sequence is still successfully exported to PrimerLab, which will perform local thermodynamic sliding scans to find individual primer pairs.",
+    "section": "7. Troubleshooting & Limitations",
+    "text": "7. Troubleshooting & Limitations\n\n7.1. Low Scores in Full Segment Mode\n\nProblem: In full_segment mode, the composite score is very low (e.g. \\(0.40\\)), resulting in Grade D.\nCause: Evaluating an entire 1000+ bp segment as a single window includes hyper-variable loops and non-coding mutations, accumulating homopolymer and mismatch penalties that lower the score.\nSolution: This is expected behavior. The grade in full_segment mode is not used to exclude the segment, but simply reflects overall segment variation. The consensus sequence is still successfully exported to PrimerLab, which will perform local thermodynamic sliding scans to find individual primer pairs.",
     "crumbs": [
       "<img src='assets/images/faculty_biology_ugm.png' style='height: 38px; width: auto; padding: 2px 0;' />",
       "Technical Architecture",
