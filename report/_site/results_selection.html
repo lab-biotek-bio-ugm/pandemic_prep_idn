@@ -377,7 +377,10 @@ window.Quarto = {
   <li><a href="#pervasive-purifying-selection-fubar-analysis" id="toc-pervasive-purifying-selection-fubar-analysis" class="nav-link active" data-scroll-target="#pervasive-purifying-selection-fubar-analysis">1. Pervasive Purifying Selection (FUBAR Analysis)</a></li>
   <li><a href="#episodic-diversifying-selection-meme-analysis" id="toc-episodic-diversifying-selection-meme-analysis" class="nav-link" data-scroll-target="#episodic-diversifying-selection-meme-analysis">2. Episodic Diversifying Selection (MEME Analysis)</a></li>
   <li><a href="#m1-vs.-m2-selection-pressure-divergence" id="toc-m1-vs.-m2-selection-pressure-divergence" class="nav-link" data-scroll-target="#m1-vs.-m2-selection-pressure-divergence">3. M1 vs.&nbsp;M2 Selection Pressure Divergence</a></li>
-  <li><a href="#bridge-scoring-profile-target-gold-zones" id="toc-bridge-scoring-profile-target-gold-zones" class="nav-link" data-scroll-target="#bridge-scoring-profile-target-gold-zones">4. Bridge Scoring Profile &amp; Target “Gold Zones”</a></li>
+  <li><a href="#bridge-scoring-profile-physical-target-selection" id="toc-bridge-scoring-profile-physical-target-selection" class="nav-link" data-scroll-target="#bridge-scoring-profile-physical-target-selection">4. Bridge Scoring Profile &amp; Physical Target Selection</a>
+  <ul class="collapse">
+  <li><a href="#downstream-primer-coordinate-selection-module-08-09" id="toc-downstream-primer-coordinate-selection-module-08-09" class="nav-link" data-scroll-target="#downstream-primer-coordinate-selection-module-08-09">Downstream Primer Coordinate Selection (Module 08 &amp; 09)</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -567,25 +570,28 @@ window.Quarto = {
 </ul>
 <hr>
 </section>
-<section id="bridge-scoring-profile-target-gold-zones" class="level2">
-<h2 class="anchored" data-anchor-id="bridge-scoring-profile-target-gold-zones">4. Bridge Scoring Profile &amp; Target “Gold Zones”</h2>
-<p>The <strong>Bridge Scoring Engine (Module 07)</strong> integrated the conservation entropy (Shannon Entropy) with HyPhy FUBAR negative selection probabilities and MEME positive selection penalties:</p>
+<section id="bridge-scoring-profile-physical-target-selection" class="level2">
+<h2 class="anchored" data-anchor-id="bridge-scoring-profile-physical-target-selection">4. Bridge Scoring Profile &amp; Physical Target Selection</h2>
+<p>The <strong>Bridge Scoring Engine (Module 07)</strong> integrated site-specific conservation (Shannon Entropy) with HyPhy FUBAR purifying selection probabilities using a weighted core scoring formula:</p>
 <p><span class="math display">\[\text{Core Score} = 0.66 \times (1 - \text{Entropy}) + 0.34 \times \text{Prob(dN &lt; dS)}\]</span></p>
-<p>This core score was then adjusted using multipliers for local GC content, homopolymer repeats, and selection penalties:</p>
+<p>This core score was computed across the entire segment. Because the engine was configured with the <code>full_segment</code> strategy for the Influenza A MP segment, it evaluated the segment from <strong>0 to 1027 bp</strong> as a single candidate region (<code>segment-MP_region_1</code>). The resulting overall scores and grades for this target region are:</p>
 <ul>
-<li><strong>Gold Zone Selection (Indo-Only)</strong>:
+<li><strong>Indonesia Only</strong>: Core composite score of <strong>0.4071</strong> (Grade <strong>D</strong>, mean entropy: <strong>0.2146</strong>, conservation: <strong>89.27%</strong>).</li>
+<li><strong>Southeast Asia Only</strong>: Core composite score of <strong>0.4098</strong> (Grade <strong>D</strong>, mean entropy: <strong>0.2025</strong>, conservation: <strong>89.87%</strong>).</li>
+<li><strong>All-Partial Database</strong>: Core composite score of <strong>0.4022</strong> (Grade <strong>D</strong>, mean entropy: <strong>0.2359</strong>, conservation: <strong>88.20%</strong>).</li>
+</ul>
+<section id="downstream-primer-coordinate-selection-module-08-09" class="level3">
+<h3 class="anchored" data-anchor-id="downstream-primer-coordinate-selection-module-08-09">Downstream Primer Coordinate Selection (Module 08 &amp; 09)</h3>
+<p>Although Module 07 exported the entire segment as a single candidate zone (due to the segment’s small size and overall conservation), the downstream primer design tool (<strong>Primer3/PrimerLab</strong> in Module 08 and 09) scanned this candidate region to select the most stable physical primer coordinates, demonstrating how local sequence variations alter target selection:</p>
 <ul>
-<li>The engine identified the region <strong>187–352 bp</strong> as a “Gold Zone” (Grade S/A+), characterized by a core score <span class="math inline">\(&gt;0.92\)</span>, zero MEME positive selection markers, and optimal GC content (~40%).</li>
-</ul></li>
-<li><strong>Regional Contrast (All-Partial)</strong>:
-<ul>
-<li>When global sequences were introduced, the core score of the 187–352 bp region dropped below <span class="math inline">\(0.75\)</span> due to increased sequence entropy at codon 30 and adjacent positions.</li>
-<li>This drop triggered the engine to shift the design to the <strong>858–1008 bp</strong> region, which retained a core score <span class="math inline">\(&gt;0.88\)</span> globally, demonstrating how evolutionary forces directly shape physical coordinate selection.</li>
-</ul></li>
+<li><strong>Indonesia Only Design</strong>: The optimal primers were placed in the M1 gene at <strong>187–341 bp</strong> (Forward primer: <strong>187–218 bp</strong>, Reverse primer: <strong>310–341 bp</strong>), generating a <strong>155 bp</strong> amplicon.</li>
+<li><strong>Southeast Asia Only Design</strong>: The primers were placed at <strong>187–352 bp</strong> (Forward: <strong>187–216 bp</strong>, Reverse: <strong>321–352 bp</strong>), generating a <strong>166 bp</strong> amplicon.</li>
+<li><strong>All-Partial Database Design</strong>: When global database variations were introduced, increased sequence entropy in the M1 gene (including at codon 30) forced the primer design tool to shift coordinates to the 3’ end of the segment in the M2 gene at <strong>858–1008 bp</strong> (Forward: <strong>858–889 bp</strong>, Reverse: <strong>978–1008 bp</strong>), generating a <strong>151 bp</strong> amplicon.</li>
 </ul>
 
 
 
+</section>
 </section>
 
 <div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" role="list">
