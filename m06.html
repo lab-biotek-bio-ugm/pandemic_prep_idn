@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Module 06: Mutational Annotation – Pandemic Preparedness Report</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-c875dbb4c9335aca9cc352e974a4ec92.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-2615300157265309db475a5c6a50d51f.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+
+
+<link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Pandemic Preparedness Report</span>
+    </a>
+  </div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="https://biologi.ugm.ac.id"> 
+<span class="menu-text"><img src="assets/images/faculty_biology_ugm.png" style="height: 38px; width: auto; padding: 2px 0;"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Technical Architecture</li><li class="breadcrumb-item"><a href="./m05.html">Selection &amp; Conservation</a></li><li class="breadcrumb-item"><a href="./m06.html">Module 06: Clade Annotation</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Home</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./literature.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Scientific Literature</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false">
+ <span class="menu-text">Genomic Surveillance</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./eda_justifikasi.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Data Justification</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./eda_statistik.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Sequence Statistics</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Technical Architecture</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false">
+ <span class="menu-text">Data Processing &amp; Phylodynamics</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth2 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./config_global.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Global Pipeline Configuration</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m01.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 01: Data Acquisition</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m02.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 02: Quality Control</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m03.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 03: Alignment</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m04.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 04: Phylodynamic Reconstruction</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">Selection &amp; Conservation</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth2 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m05.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 05: Selection Pressure</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m06.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Module 06: Clade Annotation</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m07.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 07: Bridge Scoring Engine</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false">
+ <span class="menu-text">Design &amp; Specificity</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth2 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m08.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 08: PrimerLab RAA Design</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m09.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 09: BLAST Specificity</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="false">
+ <span class="menu-text">Multi-Metric In-Silico</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth2 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m10.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 10: In-silico Verification</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="false">
+ <span class="menu-text">Results &amp; Biological Insights</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./results_phylodynamics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Phylodynamics &amp; History</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./results_selection.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Selection &amp; Conservation</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./results_candidates.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Candidate Diagnostics</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./results_performance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">In-silico Evaluation</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active" data-toc-expanded="99">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#ancestral-sequence-reconstruction-asr" id="toc-ancestral-sequence-reconstruction-asr" class="nav-link active" data-scroll-target="#ancestral-sequence-reconstruction-asr">1. Ancestral Sequence Reconstruction (ASR)</a></li>
+  <li><a href="#dataset-export-for-auspice-visualization" id="toc-dataset-export-for-auspice-visualization" class="nav-link" data-scroll-target="#dataset-export-for-auspice-visualization">2. Dataset Export for Auspice Visualization</a></li>
+  <li><a href="#interactive-nextstrain-auspice-tree-explorer" id="toc-interactive-nextstrain-auspice-tree-explorer" class="nav-link" data-scroll-target="#interactive-nextstrain-auspice-tree-explorer">3. Interactive Nextstrain Auspice Tree Explorer</a></li>
+  <li><a href="#configuration-outputs-tabset-examples" id="toc-configuration-outputs-tabset-examples" class="nav-link" data-scroll-target="#configuration-outputs-tabset-examples">4. Configuration &amp; Outputs (Tabset Examples)</a></li>
+  <li><a href="#configuration-parameterization" id="toc-configuration-parameterization" class="nav-link" data-scroll-target="#configuration-parameterization">4. Configuration &amp; Parameterization</a>
+  <ul class="collapse">
+  <li><a href="#parameter-tuning-dictionary" id="toc-parameter-tuning-dictionary" class="nav-link" data-scroll-target="#parameter-tuning-dictionary">4.1. Parameter Tuning Dictionary</a></li>
+  <li><a href="#how-to-interpret-the-auspice-payload" id="toc-how-to-interpret-the-auspice-payload" class="nav-link" data-scroll-target="#how-to-interpret-the-auspice-payload">4.2. How to Interpret the Auspice Payload</a></li>
+  </ul></li>
+  <li><a href="#inputs-outputs-files" id="toc-inputs-outputs-files" class="nav-link" data-scroll-target="#inputs-outputs-files">5. Inputs, Outputs &amp; Files</a></li>
+  <li><a href="#troubleshooting-limitations" id="toc-troubleshooting-limitations" class="nav-link" data-scroll-target="#troubleshooting-limitations">6. Troubleshooting &amp; Limitations</a>
+  <ul class="collapse">
+  <li><a href="#invalid-codon-length-warnings" id="toc-invalid-codon-length-warnings" class="nav-link" data-scroll-target="#invalid-codon-length-warnings">6.1. Invalid Codon Length Warnings</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Technical Architecture</li><li class="breadcrumb-item"><a href="./m05.html">Selection &amp; Conservation</a></li><li class="breadcrumb-item"><a href="./m06.html">Module 06: Clade Annotation</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Module 06: Mutational Annotation</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>To track how pathogens evolve across transmission pathways, the pipeline must identify mutational events at every node in the phylogenetic tree. Module 06 performs Ancestral Sequence Reconstruction (ASR) at both the nucleotide and amino acid levels, and exports the integrated phylogenetic dataset for interactive visualization in Auspice.</p>
+<hr>
+<section id="ancestral-sequence-reconstruction-asr" class="level2">
+<h2 class="anchored" data-anchor-id="ancestral-sequence-reconstruction-asr">1. Ancestral Sequence Reconstruction (ASR)</h2>
+<p>ASR determines the most likely genetic sequence of extinct viral ancestors at the internal nodes of the phylogenetic tree. This allows the pipeline to map exactly <em>where</em> and <em>when</em> specific mutations arose along the branches:</p>
+<ol type="1">
+<li><strong>Nucleotide ASR (<code>augur ancestral</code>)</strong>: Evaluates the nucleotide states at each node using a joint maximum-likelihood inference algorithm implemented in TreeTime <span class="citation" data-cites="sagulenko2018">(<a href="#ref-sagulenko2018" role="doc-biblioref">Sagulenko et al. 2018</a>)</span>. It outputs a JSON file (<code>nt_muts.json</code>) mapping nucleotide mutations relative to the parent nodes (e.g.&nbsp;<code>G120A</code> indicating a Guanine to Adenine change at position 120).</li>
+<li><strong>Amino Acid Translation &amp; Mutation Calling (<code>augur translate</code>)</strong>: Translates nucleotide sequences into amino acids for all coding genes (CDS) defined in the GFF3 annotation file. It automatically handles splicing and codon reading frames, outputting a JSON file (<code>aa_muts.json</code>) detailing non-synonymous mutations (e.g., <code>M1: I109T</code> representing an Isoleucine to Threonine substitution at codon 109 of the M1 protein).</li>
+</ol>
+<hr>
+</section>
+<section id="dataset-export-for-auspice-visualization" class="level2">
+<h2 class="anchored" data-anchor-id="dataset-export-for-auspice-visualization">2. Dataset Export for Auspice Visualization</h2>
+<p>Once reconstruction is complete, the individual phylodynamic components must be integrated. The Snakemake rule <code>augur_export</code> merges these datasets using <strong>Augur Export v2</strong> <span class="citation" data-cites="hadfield2018">(<a href="#ref-hadfield2018" role="doc-biblioref"><span class="nocase">Hadfield et al.</span> 2018</a>)</span>:</p>
+<pre><code>┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+│    tree.nwk     │  │  metadata.tsv   │  │   nt_muts.json  │  │   aa_muts.json  │
+└────────┬────────┘  └────────┬────────┘  └────────┬────────┘  └────────┬────────┘
+         │                    │                    │                    │
+         └────────────────────┼──────────┬─────────┴────────────────────┘
+                                         ▼
+                            ┌─────────────────────────┐
+                            │     augur export v2     │
+                            ├─────────────────────────┤
+                            │ Integrates metadata,    │
+                            │ mutations, and clades   │
+                            └────────────┬────────────┘
+                                         ▼
+                            ┌─────────────────────────┐
+                            │  auspice_dataset.json   │
+                            │ (Unified JSON Payload)  │
+                            └─────────────────────────┘</code></pre>
+<p>The final export aggregates:</p>
+<ul>
+<li>The calendar-dated tree structure (<code>tree.nwk</code>) and branch lengths.</li>
+<li>Enriched socio-demographic and travel metadata (<code>metadata_enriched.tsv</code>).</li>
+<li>Nucleotide and amino acid mutations mapped to every node and tip.</li>
+<li>Pewarnaan node (color-by attributes) configuration to enable instant filtering by <code>clade</code>, <code>lineage</code>, <code>country</code>, <code>region</code>, <code>host</code>, and <code>date</code> in the web application.</li>
+</ul>
+<hr>
+</section>
+<section id="interactive-nextstrain-auspice-tree-explorer" class="level2">
+<h2 class="anchored" data-anchor-id="interactive-nextstrain-auspice-tree-explorer">3. Interactive Nextstrain Auspice Tree Explorer</h2>
+<p>To visualize the resulting phylodynamics, the pipeline outputs JSON payloads designed to be rendered by the <strong>Nextstrain Auspice</strong> web application. Below is an embedded, live instance of the official Nextstrain seasonal Influenza A H3N2 HA lineage tree.</p>
+<p>You can interactively zoom, filter by country/clade, and explore the tree branches:</p>
+<div class="card shadow-sm border-0 mb-4" style="border-radius: 12px; overflow: hidden; border: 1px solid rgba(0, 0, 0, 0.08);">
+  <div class="card-header bg-dark text-white p-3 d-flex justify-content-between align-items-center">
+    <span style="font-family: system-ui; font-weight: 600; font-size: 14px;">Live Auspice Phylodynamic Tree Explorer</span>
+    <span class="badge bg-secondary">Interactive Embed</span>
+  </div>
+  <div style="position: relative; width: 100%; height: 600px;">
+    <iframe src="https://nextstrain.org/flu/seasonal/h3n2/ha/3y?embed=true" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" allowfullscreen=""></iframe>
+  </div>
+</div>
+<hr>
+</section>
+<section id="configuration-outputs-tabset-examples" class="level2">
+<h2 class="anchored" data-anchor-id="configuration-outputs-tabset-examples">4. Configuration &amp; Outputs (Tabset Examples)</h2>
+<p>Below are the configuration schemas, CLI commands, and JSON output snippets generated in Module 06:</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">1. Configuration (config_influenza_a_mp.yaml)</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">2. Nucleotide ASR (nt_muts.json)</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-3" role="tab" aria-controls="tabset-1-3" aria-selected="false" href="">3. Codon Translation (aa_muts.json)</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-4-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-4" role="tab" aria-controls="tabset-1-4" aria-selected="false" href="">4. Local/HPC Execution (view-auspice.sh)</a></li></ul>
+<div class="tab-content">
+<div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M06] Nextclade integration settings</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">nextclade</span><span class="kw">:</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="co">                  # Toggle Nextclade run (uses metadata clades if false)</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># [GLOBAL] Annotation reference used for translation</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="fu">references</span><span class="kw">:</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">annotation</span><span class="kw">:</span><span class="at"> </span><span class="st">"config/references/flu_a_mp_annotation.gff"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Run Augur Ancestral for nucleotide ASR</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">augur</span> ancestral <span class="dt">\</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">--tree</span> results/influenza-a-mp-sea/m04/tree.nwk <span class="dt">\</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">--alignment</span> results/influenza-a-mp-sea/m03/aligned.fasta <span class="dt">\</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">--output-node-data</span> results/influenza-a-mp-sea/m06/nt_muts.json <span class="dt">\</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">--inference</span> joint</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="output-json-snippet-nt_muts.json" class="level4">
+<h4 class="anchored" data-anchor-id="output-json-snippet-nt_muts.json">Output JSON Snippet (nt_muts.json)</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"nodes"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"NODE_0000123"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"muts"</span><span class="fu">:</span> <span class="ot">[</span><span class="st">"A45G"</span><span class="ot">,</span> <span class="st">"C897T"</span><span class="ot">]</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">},</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"EPI_ISL_19661433"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"muts"</span><span class="fu">:</span> <span class="ot">[</span><span class="st">"T1027C"</span><span class="ot">]</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</div>
+<div id="tabset-1-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-3-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Translate nucleotide mutations using GFF CDS coordinates</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">augur</span> translate <span class="dt">\</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">--tree</span> results/influenza-a-mp-sea/m04/tree.nwk <span class="dt">\</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">--ancestral-sequences</span> results/influenza-a-mp-sea/m06/nt_muts.json <span class="dt">\</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">--reference-sequence</span> config/references/flu_a_mp_annotation.gff <span class="dt">\</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">--genes</span> M1 M2 <span class="dt">\</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">--validation-mode</span> warn <span class="dt">\</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">--output-node-data</span> results/influenza-a-mp-sea/m06/aa_muts.json</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="output-json-snippet-aa_muts.json" class="level4">
+<h4 class="anchored" data-anchor-id="output-json-snippet-aa_muts.json">Output JSON Snippet (aa_muts.json)</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"nodes"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"NODE_0000123"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"aa_muts"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"M1"</span><span class="fu">:</span> <span class="ot">[</span><span class="st">"V15I"</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"M2"</span><span class="fu">:</span> <span class="ot">[</span><span class="st">"S31N"</span><span class="ot">]</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>      <span class="fu">}</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</div>
+<div id="tabset-1-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-4-tab">
+<p>To visualize your own generated data locally or on an HPC cluster without uploading files to the public Nextstrain server, you can run the helper script <a href="file:///e:/Project/pandemic-preparedness/view-auspice.sh">view-auspice.sh</a>:</p>
+<section id="step-1-execute-the-launcher-script" class="level4">
+<h4 class="anchored" data-anchor-id="step-1-execute-the-launcher-script">Step 1: Execute the Launcher Script</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Run the shell script from the project root</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">./view-auspice.sh</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The script automatically: 1. Parses the current <code>build_name</code> from your active YAML configuration. 2. Checks and activates the <code>pandemic_nextstrain</code> Conda environment. 3. Launches the local Auspice dataset server pointing to your output directory: <code>bash    auspice view --dataset-dir results/influenza-a-mp-sea/nextstrain</code></p>
+</section>
+<section id="step-2-access-the-visualizer" class="level4">
+<h4 class="anchored" data-anchor-id="step-2-access-the-visualizer">Step 2: Access the Visualizer</h4>
+<ul>
+<li><p><strong>Local PC</strong>: Open your browser at <strong><code>http://localhost:4000</code></strong>.</p></li>
+<li><p><strong>HPC Cluster (SSH Tunneling)</strong>: If running on a remote HPC, create a secure SSH tunnel from your local terminal:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> <span class="at">-L</span> 4000:localhost:4000 username@hpc-address.ugm.ac.id</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>then, open <strong><code>http://localhost:4000</code></strong> on your local machine to explore your data.</p></li>
+</ul>
+</section>
+</div>
+</div>
+</div>
+<hr>
+</section>
+<section id="configuration-parameterization" class="level2">
+<h2 class="anchored" data-anchor-id="configuration-parameterization">4. Configuration &amp; Parameterization</h2>
+<p>The export process in Module 06 is controlled by the Nextstrain metadata mapping and Nextclade classifier toggles in <code>config.yaml</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M06] Nextstrain Visualization Export</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">nextclade</span><span class="kw">:</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">                   # Set to true to run nextclade classifier on the dataset</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">dataset_name</span><span class="kw">:</span><span class="at"> </span><span class="st">"nextstrain/flu/h3n2/ha/3y"</span><span class="co">  # Nextclade dataset to fetch (e.g. flu_a_mp)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="parameter-tuning-dictionary" class="level3">
+<h3 class="anchored" data-anchor-id="parameter-tuning-dictionary">4.1. Parameter Tuning Dictionary</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Parameter Name</th>
+<th>Allowed Values</th>
+<th>Default Value</th>
+<th>Purpose &amp; Biological Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>nextclade.enabled</code></td>
+<td><code>true</code>, <code>false</code></td>
+<td><code>true</code></td>
+<td>Controls whether Nextclade is invoked. If enabled, the pipeline queries Nextclade to assign lineage and clade designations to the metadata, which are then rendered on the Nextstrain tree. If disabled, the pipeline will fall back to using pre-existing clade annotations from the input metadata.</td>
+</tr>
+<tr class="even">
+<td><code>nextclade.dataset_name</code></td>
+<td>Nextclade dataset key</td>
+<td><code>"nextstrain/flu/h3n2/ha/3y"</code></td>
+<td>Defines the reference database to download for classification. Ensure that the dataset matches the target species (e.g.&nbsp;using Influenza A datasets for flu runs).</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="how-to-interpret-the-auspice-payload" class="level3">
+<h3 class="anchored" data-anchor-id="how-to-interpret-the-auspice-payload">4.2. How to Interpret the Auspice Payload</h3>
+<p>Module 06 compiles all previous analyses into a single file (<code>auspice_dataset.json</code>):</p>
+<ul>
+<li><strong><code>nodes</code></strong>: A nested dictionary representing the tree topology. Each node contains a <code>mutations</code> record (reconstructed by Augur Ancestral) showing which nucleotides mutated at that specific point in history.</li>
+<li><strong><code>colorings</code></strong>: Maps metadata fields (such as <code>clade</code>, <code>country</code>, and <code>year</code>) to colors on the tree. If you notice a particular clade has a distinct mutation in the M1 gene, this explains why that clade might exhibit diagnostic escape from standard primers.</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="inputs-outputs-files" class="level2">
+<h2 class="anchored" data-anchor-id="inputs-outputs-files">5. Inputs, Outputs &amp; Files</h2>
+<p>The files involved in Module 06 are summarized below:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>File Role</th>
+<th>Path</th>
+<th>Format</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Input Tree</strong></td>
+<td><code>results/{build}/m04/tree.nwk</code></td>
+<td>Newick</td>
+<td>Dated phylogenetic tree.</td>
+</tr>
+<tr class="even">
+<td><strong>Input Alignment</strong></td>
+<td><code>results/{build}/m03/aligned.fasta</code></td>
+<td>FASTA</td>
+<td>Multiple sequence alignment from Module 03.</td>
+</tr>
+<tr class="odd">
+<td><strong>Annotation GFF3</strong></td>
+<td><code>config/references/flu_a_mp_annotation.gff</code></td>
+<td>GFF3</td>
+<td>Gene boundary coordinate map.</td>
+</tr>
+<tr class="even">
+<td><strong>Nucleotide Mutations</strong></td>
+<td><code>results/{build}/m06/nt_muts.json</code></td>
+<td>JSON</td>
+<td>Reconstructed nucleotide changes per node.</td>
+</tr>
+<tr class="odd">
+<td><strong>Amino Acid Mutations</strong></td>
+<td><code>results/{build}/m06/aa_muts.json</code></td>
+<td>JSON</td>
+<td>Translated amino acid substitutions per gene.</td>
+</tr>
+<tr class="even">
+<td><strong>Auspice Dataset</strong></td>
+<td><code>results/{build}/nextstrain/auspice_dataset.json</code></td>
+<td>JSON</td>
+<td>Unified final payload for interactive visualization.</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="troubleshooting-limitations" class="level2">
+<h2 class="anchored" data-anchor-id="troubleshooting-limitations">6. Troubleshooting &amp; Limitations</h2>
+<section id="invalid-codon-length-warnings" class="level3">
+<h3 class="anchored" data-anchor-id="invalid-codon-length-warnings">6.1. Invalid Codon Length Warnings</h3>
+<ul>
+<li><strong>Problem</strong>: <code>augur translate</code> throws multiple warnings: <code>Codon length is not a multiple of 3</code> or <code>Skipping translation for gene X</code>.</li>
+<li><strong>Cause</strong>: Gaps inserted in the middle of sequences during multiple sequence alignment can disrupt the open reading frame. If a codon is truncated (e.g.&nbsp;only 2 nucleotides remain), translation fails.</li>
+<li><strong>Solution</strong>: Ensure that the upstream alignment phase (Module 03) is anchored tightly using a high-quality reference and <code>--fill-gaps</code> parameter, and that coding sequence regions are extracted precisely according to GFF coordinates in Module 05.</li>
+</ul>
+
+
+
+</section>
+</section>
+
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" role="list">
+<div id="ref-hadfield2018" class="csl-entry" role="listitem">
+<span class="nocase">Hadfield, James et al.</span> 2018. <span>“Nextstrain: Real-Time Tracking of Pathogen Evolution.”</span> <em>Bioinformatics</em> 34 (23): 4121–23. <a href="https://doi.org/10.1093/bioinformatics/bty407">https://doi.org/10.1093/bioinformatics/bty407</a>.
+</div>
+<div id="ref-sagulenko2018" class="csl-entry" role="listitem">
+Sagulenko, Pavel, Vadim Puller, and Richard A. Neher. 2018. <span>“TreeTime: Maximum-Likelihood Phylodynamic Analysis.”</span> <em>Virus Evolution</em> 4 (1): vex042. <a href="https://doi.org/10.1093/ve/vex042">https://doi.org/10.1093/ve/vex042</a>.
+</div>
+</div></section></div></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<div style="display: flex; flex-direction: column; gap: 8px;">
+<div style="display: flex; flex-direction: row; align-items: center; gap: 15px; flex-wrap: nowrap;">
+<img src="assets/images/faculty_biology_ugm.png" style="height: 32px; width: auto; vertical-align: middle;" class="img-fluid"><img src="img/Alt_Logo_BRIN.png" style="height: 28px; width: auto; vertical-align: middle;" class="img-fluid"><img src="img/kemenkes.png" style="height: 38px; width: auto; vertical-align: middle;" class="img-fluid"><img src="img/WHO (World Health Organization) Logo (PNG720p) - Vector69Com.png" style="height: 26px; width: auto; vertical-align: middle;" class="img-fluid">
+</div>
+<div style="font-size: 0.82rem; color: #475569; margin-top: 2px; white-space: nowrap; vertical-align: middle;">
+Supported by Badan Riset dan Inovasi Nasional (BRIN) FY 2026
+</div>
+</div>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p><a href="https://github.com/lab-biotek-bio-ugm/pandemic_prep_idn.git" target="_blank"><img src="img/GitHub.png" style="max-height: 18px; vertical-align: middle;" class="img-fluid"></a></p>
+</div>
+  </div>
+</footer>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const citations = document.querySelectorAll('a[href^="#ref-"]');
+  citations.forEach(a => {
+    const refId = a.getAttribute('href');
+    if (!window.location.pathname.endsWith('references.html')) {
+      a.setAttribute('href', 'references.html' + refId);
+    }
+  });
+
+  var tables = document.querySelectorAll("main table");
+  tables.forEach(function(table) {
+    var firstTh = table.querySelector("thead th");
+    if (firstTh) {
+      var text = firstTh.textContent.trim().toLowerCase();
+      if (text.includes("parameter name")) {
+        table.classList.add("parameter-table");
+      } else if (text.includes("file role")) {
+        table.classList.add("files-table");
+      }
+    }
+    if (!table.parentNode.classList.contains("table-responsive")) {
+      var wrapper = document.createElement("div");
+      wrapper.className = "table-responsive";
+      table.parentNode.insertBefore(wrapper, table);
+      wrapper.appendChild(table);
+    }
+  });
+});
+</script>
+
+
+
+
+<script src="site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

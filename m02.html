@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Module 02: Quality Control &amp; Subsampling – Pandemic Preparedness Report</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-c875dbb4c9335aca9cc352e974a4ec92.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-2615300157265309db475a5c6a50d51f.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Pandemic Preparedness Report</span>
+    </a>
+  </div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="https://biologi.ugm.ac.id"> 
+<span class="menu-text"><img src="assets/images/faculty_biology_ugm.png" style="height: 38px; width: auto; padding: 2px 0;"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Technical Architecture</li><li class="breadcrumb-item"><a href="./config_global.html">Data Processing &amp; Phylodynamics</a></li><li class="breadcrumb-item"><a href="./m02.html">Module 02: Quality Control</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Home</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./literature.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Scientific Literature</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false">
+ <span class="menu-text">Genomic Surveillance</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./eda_justifikasi.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Data Justification</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./eda_statistik.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Sequence Statistics</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Technical Architecture</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">Data Processing &amp; Phylodynamics</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth2 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./config_global.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Global Pipeline Configuration</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m01.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 01: Data Acquisition</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m02.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Module 02: Quality Control</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m03.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 03: Alignment</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m04.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 04: Phylodynamic Reconstruction</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false">
+ <span class="menu-text">Selection &amp; Conservation</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth2 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m05.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 05: Selection Pressure</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m06.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 06: Clade Annotation</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m07.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 07: Bridge Scoring Engine</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false">
+ <span class="menu-text">Design &amp; Specificity</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth2 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m08.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 08: PrimerLab RAA Design</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m09.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 09: BLAST Specificity</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="false">
+ <span class="menu-text">Multi-Metric In-Silico</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth2 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m10.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 10: In-silico Verification</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="false">
+ <span class="menu-text">Results &amp; Biological Insights</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./results_phylodynamics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Phylodynamics &amp; History</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./results_selection.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Selection &amp; Conservation</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./results_candidates.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Candidate Diagnostics</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./results_performance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">In-silico Evaluation</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active" data-toc-expanded="99">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#stage-1-quality-control-prefiltering" id="toc-stage-1-quality-control-prefiltering" class="nav-link active" data-scroll-target="#stage-1-quality-control-prefiltering">1. Stage 1: Quality Control &amp; Prefiltering</a></li>
+  <li><a href="#stage-2-spatio-temporal-subsampling-augur-filter" id="toc-stage-2-spatio-temporal-subsampling-augur-filter" class="nav-link" data-scroll-target="#stage-2-spatio-temporal-subsampling-augur-filter">2. Stage 2: Spatio-Temporal Subsampling (Augur Filter)</a>
+  <ul class="collapse">
+  <li><a href="#focal-sampling" id="toc-focal-sampling" class="nav-link" data-scroll-target="#focal-sampling">2.1. Focal Sampling</a></li>
+  <li><a href="#contextual-sampling" id="toc-contextual-sampling" class="nav-link" data-scroll-target="#contextual-sampling">2.2. Contextual Sampling</a></li>
+  </ul></li>
+  <li><a href="#configuration-outputs-tabset-examples" id="toc-configuration-outputs-tabset-examples" class="nav-link" data-scroll-target="#configuration-outputs-tabset-examples">3. Configuration &amp; Outputs (Tabset Examples)</a></li>
+  <li><a href="#configuration-parameterization" id="toc-configuration-parameterization" class="nav-link" data-scroll-target="#configuration-parameterization">3. Configuration &amp; Parameterization</a>
+  <ul class="collapse">
+  <li><a href="#parameter-tuning-dictionary" id="toc-parameter-tuning-dictionary" class="nav-link" data-scroll-target="#parameter-tuning-dictionary">3.1. Parameter Tuning Dictionary</a></li>
+  <li><a href="#how-to-interpret-the-qc-report" id="toc-how-to-interpret-the-qc-report" class="nav-link" data-scroll-target="#how-to-interpret-the-qc-report">3.2. How to Interpret the QC Report</a></li>
+  </ul></li>
+  <li><a href="#inputs-outputs-files" id="toc-inputs-outputs-files" class="nav-link" data-scroll-target="#inputs-outputs-files">4. Inputs, Outputs &amp; Files</a></li>
+  <li><a href="#troubleshooting-limitations" id="toc-troubleshooting-limitations" class="nav-link" data-scroll-target="#troubleshooting-limitations">5. Troubleshooting &amp; Limitations</a>
+  <ul class="collapse">
+  <li><a href="#ambiguous-date-exclusions" id="toc-ambiguous-date-exclusions" class="nav-link" data-scroll-target="#ambiguous-date-exclusions">5.1. Ambiguous Date Exclusions</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Technical Architecture</li><li class="breadcrumb-item"><a href="./config_global.html">Data Processing &amp; Phylodynamics</a></li><li class="breadcrumb-item"><a href="./m02.html">Module 02: Quality Control</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Module 02: Quality Control &amp; Subsampling</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>Raw viral sequencing data from global databases contains significant sampling biases, sequence duplicates, and low-quality assemblies. Module 02 resolves these issues by implementing a two-stage quality control and spatio-temporal subsampling pipeline before phylogenetic reconstruction.</p>
+<p>The module ensures phylogenetic trees and genetic selection analyses are computed on a high-quality, representative, and computationally tractable subset of genomes.</p>
+<hr>
+<section id="stage-1-quality-control-prefiltering" class="level2">
+<h2 class="anchored" data-anchor-id="stage-1-quality-control-prefiltering">1. Stage 1: Quality Control &amp; Prefiltering</h2>
+<p>The first stage runs the Snakemake rule <code>qc_prefilter</code> which executes <code>scripts/qc_prefilter.py</code> using <strong>BioPython</strong> <span class="citation" data-cites="cock2009">(<a href="#ref-cock2009" role="doc-biblioref"><span class="nocase">Cock et al.</span> 2009</a>)</span>. It applies three main filters:</p>
+<ol type="1">
+<li><strong>N-Content Filtering</strong>: Sequences with high rates of ambiguous bases (<span class="math inline">\(N\)</span>) are discarded. Ambiguous bases prevent accurate alignment and mutation identification. The threshold is set via <code>config["qc"]["max_n_content"]</code> (default: 5.0%).</li>
+<li><strong>Sequence Deduplication</strong>: Replicating sequences with identical nucleotide structures are identified via MD5 hashing and collapsed. This deduplication reduces downstream alignment and tree-building times by up to 60% without losing unique mutational variants.</li>
+<li><strong>Underrepresented Subtype Filtering</strong>: Subtypes with fewer than a minimum count (default: 30 sequences) are filtered out to ensure statistical validity during genetic selection analysis.</li>
+</ol>
+<hr>
+</section>
+<section id="stage-2-spatio-temporal-subsampling-augur-filter" class="level2">
+<h2 class="anchored" data-anchor-id="stage-2-spatio-temporal-subsampling-augur-filter">2. Stage 2: Spatio-Temporal Subsampling (Augur Filter)</h2>
+<p>To prevent phylogenetic trees from being dominated by regions with massive sequencing capacity (creating a sampling bias), the Snakemake rule <code>augur_filter</code> runs <code>scripts/m02_filter_wrapper.py</code>. This wrapper dynamically executes <code>augur filter</code> <span class="citation" data-cites="hadfield2018">(<a href="#ref-hadfield2018" role="doc-biblioref"><span class="nocase">Hadfield et al.</span> 2018</a>)</span> using a <strong>Focal + Contextual Subsampling</strong> strategy.</p>
+<pre><code>                    ┌──────────────────────────────┐
+                    │  Prefiltered Sequences FASTA │
+                    └──────────────┬───────────────┘
+                                   │
+                   ┌───────────────┴───────────────┐
+                   ▼                               ▼
+      ┌─────────────────────────┐     ┌─────────────────────────┐
+      │   Focal Subsampling     │     │ Contextual Subsampling  │
+      ├─────────────────────────┤     ├─────────────────────────┤
+      │ Targets domestic area   │     │ Targets global partners │
+      │ High sequence density   │     │ Representative samples  │
+      │ e.g. Country: Indonesia │     │ e.g. MY, SG, AU, CN, IN │
+      └────────────┬────────────┘     └────────────┬────────────┘
+                   │                               │
+                   └───────────────┬───────────────┘
+                                   ▼
+                      ┌─────────────────────────┐
+                      │    Combine &amp; Deduplicate│
+                      ├─────────────────────────┤
+                      │ filtered_sequences.fasta│
+                      └─────────────────────────┘</code></pre>
+<section id="focal-sampling" class="level3">
+<h3 class="anchored" data-anchor-id="focal-sampling">2.1. Focal Sampling</h3>
+<ul>
+<li><strong>Target</strong>: The domestic region under investigation (configured via <code>subsampling.focal.query</code>). For this build, it selects Indonesian isolates (<code>country == 'Indonesia'</code>).</li>
+<li><strong>Density</strong>: Retains a high density of local sequences to capture the complete picture of local transmission chains.</li>
+</ul>
+</section>
+<section id="contextual-sampling" class="level3">
+<h3 class="anchored" data-anchor-id="contextual-sampling">2.2. Contextual Sampling</h3>
+<ul>
+<li><strong>Target</strong>: The neighboring travel corridors identified in our BPS demographic justification (Malaysia, Singapore, Australia, China, India, Japan).</li>
+<li><strong>Density</strong>: Subsamples global sequences at a lower density (e.g., grouped by country, year, and month) to serve as evolutionary context for ancestral reconstruction.</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="configuration-outputs-tabset-examples" class="level2">
+<h2 class="anchored" data-anchor-id="configuration-outputs-tabset-examples">3. Configuration &amp; Outputs (Tabset Examples)</h2>
+<p>Below are the configuration schemas and generated report files of Module 02:</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" href="">1. Configuration (config_influenza_a_mp.yaml)</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false" href="">2. Output: QC Report (qc_report.json)</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-3" role="tab" aria-controls="tabset-1-3" aria-selected="false" href="">3. Generated Command Wrapper</a></li></ul>
+<div class="tab-content">
+<div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M02] Quality Control &amp; Spatio-Temporal Filter</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">qc</span><span class="kw">:</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">max_n_content</span><span class="kw">:</span><span class="at"> </span><span class="fl">5.0</span><span class="co">              # Discard sequences with &gt;5% ambiguous bases</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">dedup</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">                     # Remove identical duplicate sequences</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="fu">subsampling</span><span class="kw">:</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co">  # Base Settings (used when focal.enabled is false)</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">group_by</span><span class="kw">:</span><span class="at"> </span><span class="st">"subtype country year month"</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">sequences_per_group</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">max_sequences</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">min_length</span><span class="kw">:</span><span class="at"> </span><span class="dv">800</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">seed</span><span class="kw">:</span><span class="at"> </span><span class="dv">42</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">query</span><span class="kw">:</span><span class="at"> </span><span class="st">"country in ['Indonesia', 'Singapore', 'Malaysia', 'Thailand', 'Vietnam', 'Philippines', 'Myanmar', 'Cambodia', 'Laos', 'Brunei']"</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="co">  # Targeted Background Subsampling (Focal vs Contextual)</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">focal</span><span class="kw">:</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="co">                # Toggle to enable split focal/contextual sampling</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">query</span><span class="kw">:</span><span class="at"> </span><span class="st">"country == 'Indonesia'"</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">max_sequences</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">sequences_per_group</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">group_by</span><span class="kw">:</span><span class="at"> </span><span class="st">"subtype year month"</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="at">    </span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">contextual</span><span class="kw">:</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">query</span><span class="kw">:</span><span class="at"> </span><span class="st">"country != 'Indonesia'"</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">max_sequences</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">sequences_per_group</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">group_by</span><span class="kw">:</span><span class="at"> </span><span class="st">"subtype country year month"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"timestamp"</span><span class="fu">:</span> <span class="st">"2026-06-29T14:40:00Z"</span><span class="fu">,</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"input_records"</span><span class="fu">:</span> <span class="dv">50750</span><span class="fu">,</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"retained_after_n_filter"</span><span class="fu">:</span> <span class="dv">48123</span><span class="fu">,</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"retained_after_deduplication"</span><span class="fu">:</span> <span class="dv">12845</span><span class="fu">,</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"retained_after_subtype_filter"</span><span class="fu">:</span> <span class="dv">12512</span><span class="fu">,</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"dropped_n_filter"</span><span class="fu">:</span> <span class="dv">2627</span><span class="fu">,</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"dropped_duplicates"</span><span class="fu">:</span> <span class="dv">35278</span><span class="fu">,</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"dropped_subtype_filter"</span><span class="fu">:</span> <span class="dv">333</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="tabset-1-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-3-tab">
+<p>Depending on whether <code>focal.enabled</code> is <code>true</code> or <code>false</code>, the pipeline invokes Augur in one of two ways:</p>
+<section id="option-a-base-subsampling-focal.enabled-false---default" class="level4">
+<h4 class="anchored" data-anchor-id="option-a-base-subsampling-focal.enabled-false---default">Option A: Base Subsampling (focal.enabled: false - Default)</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter sequences across Southeast Asia countries using base parameters</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">augur</span> filter <span class="dt">\</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">--sequences</span> results/influenza-a-mp-sea/m02/prefiltered_sequences.fasta <span class="dt">\</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">--metadata</span> results/influenza-a-mp-sea/m01/metadata_enriched.tsv <span class="dt">\</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">--min-length</span> 800 <span class="dt">\</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">--subsample-seed</span> 42 <span class="dt">\</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">--exclude-ambiguous-dates-by</span> any <span class="dt">\</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">--query</span> <span class="st">"country in ['Indonesia', 'Singapore', 'Malaysia', 'Thailand', 'Vietnam', 'Philippines', 'Myanmar', 'Cambodia', 'Laos', 'Brunei']"</span> <span class="dt">\</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">--sequences-per-group</span> 10 <span class="dt">\</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">--group-by</span> subtype country year month <span class="dt">\</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">--output-sequences</span> results/influenza-a-mp-sea/m02/filtered_sequences.fasta</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="option-b-focal-contextual-subsampling-focal.enabled-true" class="level4">
+<h4 class="anchored" data-anchor-id="option-b-focal-contextual-subsampling-focal.enabled-true">Option B: Focal + Contextual Subsampling (focal.enabled: true)</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Filter local Indonesian isolates (Focal)</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">augur</span> filter <span class="dt">\</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">--sequences</span> results/influenza-a-mp-sea/m02/prefiltered_sequences.fasta <span class="dt">\</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">--metadata</span> results/influenza-a-mp-sea/m01/metadata_enriched.tsv <span class="dt">\</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">--min-length</span> 800 <span class="dt">\</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">--subsample-seed</span> 42 <span class="dt">\</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">--exclude-ambiguous-dates-by</span> any <span class="dt">\</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">--query</span> <span class="st">"country == 'Indonesia'"</span> <span class="dt">\</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">--sequences-per-group</span> 50 <span class="dt">\</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">--group-by</span> subtype year month <span class="dt">\</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">--output-sequences</span> results/influenza-a-mp-sea/m02/filtered_sequences.fasta.focal.fasta</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Filter global/neighboring background isolates (Contextual)</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="ex">augur</span> filter <span class="dt">\</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">--sequences</span> results/influenza-a-mp-sea/m02/prefiltered_sequences.fasta <span class="dt">\</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">--metadata</span> results/influenza-a-mp-sea/m01/metadata_enriched.tsv <span class="dt">\</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">--min-length</span> 800 <span class="dt">\</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">--subsample-seed</span> 42 <span class="dt">\</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">--exclude-ambiguous-dates-by</span> any <span class="dt">\</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">--query</span> <span class="st">"country != 'Indonesia'"</span> <span class="dt">\</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">--sequences-per-group</span> 3 <span class="dt">\</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">--group-by</span> subtype country year month <span class="dt">\</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">--output-sequences</span> results/influenza-a-mp-sea/m02/filtered_sequences.fasta.ctx.fasta</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a><span class="co"># [Pipeline merges focal.fasta and ctx.fasta, removing duplicates]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</div>
+</div>
+</div>
+<hr>
+</section>
+<section id="configuration-parameterization" class="level2">
+<h2 class="anchored" data-anchor-id="configuration-parameterization">3. Configuration &amp; Parameterization</h2>
+<p>The behavior of Module 02 is governed by the quality control and spatial filtering parameters in <code>config.yaml</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M02] Quality Control &amp; Spatio-Temporal Filter</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">qc</span><span class="kw">:</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">max_n_content</span><span class="kw">:</span><span class="at"> </span><span class="fl">5.0</span><span class="co">              # Toleransi maksimal % base N (ambiguitas)</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">dedup</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">                     # Hapus sekuens duplikat identik</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">min_length</span><span class="kw">:</span><span class="at"> </span><span class="dv">800</span><span class="co">                 # Panjang sekuens minimal (bp)</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">query</span><span class="kw">:</span><span class="at"> </span><span class="st">"country in ['Indonesia', 'Singapore', 'Malaysia', 'Thailand', 'Vietnam', 'Philippines', 'Myanmar', 'Cambodia', 'Laos', 'Brunei']"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="parameter-tuning-dictionary" class="level3">
+<h3 class="anchored" data-anchor-id="parameter-tuning-dictionary">3.1. Parameter Tuning Dictionary</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Parameter Name</th>
+<th>Allowed Values</th>
+<th>Default Value</th>
+<th>Purpose &amp; Biological Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>qc.max_n_content</code></td>
+<td>Float <code>0.0</code> to <code>100.0</code></td>
+<td><code>5.0</code></td>
+<td>Sets the maximum percentage of ambiguous nucleotides (<span class="math inline">\(N\)</span>) allowed in a sequence. Sequences exceeding 5% <span class="math inline">\(N\)</span> are discarded. Ambiguous sequences degrade alignment quality and lead to false mismatch counts during in-silico validation.</td>
+</tr>
+<tr class="even">
+<td><code>qc.dedup</code></td>
+<td><code>true</code>, <code>false</code></td>
+<td><code>true</code></td>
+<td>When enabled, identical sequences (sharing 100% identity and same length) are collapsed into a single representative sequence. This significantly reduces downstream computational overhead for multiple sequence alignment and phylogenetic building without losing epidemiological diversity.</td>
+</tr>
+<tr class="odd">
+<td><code>qc.min_length</code></td>
+<td>Integer <span class="math inline">\(\ge 0\)</span></td>
+<td><code>800</code></td>
+<td>Excludes short or partial sequence fragments. For the Influenza MP segment (~1024 bp), setting this to 800 bp ensures that only near-full-length records are processed, preserving structural integrity for primer design.</td>
+</tr>
+<tr class="even">
+<td><code>qc.query</code></td>
+<td>Pandas query string</td>
+<td>SEA Countries</td>
+<td>Defines the geographic and metadata boundary of your dataset. Only sequences matching this query are retained for the subsampling pool. Changing this is how you switch between regional designs (e.g.&nbsp;<code>indo-only</code> vs <code>sea-only</code>).</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="how-to-interpret-the-qc-report" class="level3">
+<h3 class="anchored" data-anchor-id="how-to-interpret-the-qc-report">3.2. How to Interpret the QC Report</h3>
+<p>Module 02 outputs a tabular and JSON summary (<code>qc_report.json</code>):</p>
+<ul>
+<li><strong><code>input_records</code></strong>: Total raw input sequences.</li>
+<li><strong><code>retained_after_n_filter</code></strong>: Number of sequences passing the <span class="math inline">\(N\)</span>-content threshold. A major drop here indicates poor sequencing quality in your raw data.</li>
+<li><strong><code>retained_after_deduplication</code></strong>: Number of sequences after collapsing duplicates. For highly sampled pathogens, deduplication can shrink the database by <span class="math inline">\(&gt;70\%\)</span>, which is normal and desirable.</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="inputs-outputs-files" class="level2">
+<h2 class="anchored" data-anchor-id="inputs-outputs-files">4. Inputs, Outputs &amp; Files</h2>
+<p>The files involved in Module 02 are summarized below:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>File Role</th>
+<th>Path</th>
+<th>Format</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Input Sequences</strong></td>
+<td><code>results/{build}/m01/raw_sequences.fasta</code></td>
+<td>FASTA</td>
+<td>Raw sequences from Module 01.</td>
+</tr>
+<tr class="even">
+<td><strong>Input Metadata</strong></td>
+<td><code>results/{build}/m01/metadata_enriched.tsv</code></td>
+<td>TSV</td>
+<td>Nextclade-enriched metadata table.</td>
+</tr>
+<tr class="odd">
+<td><strong>QC Sequences</strong></td>
+<td><code>results/{build}/m02/prefiltered_sequences.fasta</code></td>
+<td>FASTA</td>
+<td>Sequences post N-filtering and deduplication.</td>
+</tr>
+<tr class="even">
+<td><strong>QC Report</strong></td>
+<td><code>results/{build}/m02/qc_report.json</code></td>
+<td>JSON</td>
+<td>Summary statistics of sequence filter counts.</td>
+</tr>
+<tr class="odd">
+<td><strong>Final Filtered</strong></td>
+<td><code>results/{build}/m02/filtered_sequences.fasta</code></td>
+<td>FASTA</td>
+<td>Final subsampled sequences ready for alignment.</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="troubleshooting-limitations" class="level2">
+<h2 class="anchored" data-anchor-id="troubleshooting-limitations">5. Troubleshooting &amp; Limitations</h2>
+<section id="ambiguous-date-exclusions" class="level3">
+<h3 class="anchored" data-anchor-id="ambiguous-date-exclusions">5.1. Ambiguous Date Exclusions</h3>
+<ul>
+<li><strong>Problem</strong>: Crucial local sequences are missing in the final alignment.</li>
+<li><strong>Cause</strong>: Augur filter defaults to dropping sequences with incomplete dates (e.g.&nbsp;<code>2024-XX-XX</code> or <code>2024-06-XX</code>). If the command includes <code>--exclude-ambiguous-dates-by any</code>, these are excluded.</li>
+<li><strong>Solution</strong>: The pipeline’s metadata sanitizer (Module 01) resolves this by dynamically filling day or month wildcards with standard middle-points (e.g.&nbsp;<code>15</code> for day, <code>06</code> for month) when exact temporal precision is not mandatory for downstream selection analyses.</li>
+</ul>
+
+
+
+</section>
+</section>
+
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" role="list">
+<div id="ref-cock2009" class="csl-entry" role="listitem">
+<span class="nocase">Cock, Peter J. A. et al.</span> 2009. <span>“Biopython: Freely Available Python Tools for Computational Molecular Biology and Bioinformatics.”</span> <em>Bioinformatics</em> 25 (11): 1422–23. <a href="https://doi.org/10.1093/bioinformatics/btp163">https://doi.org/10.1093/bioinformatics/btp163</a>.
+</div>
+<div id="ref-hadfield2018" class="csl-entry" role="listitem">
+<span class="nocase">Hadfield, James et al.</span> 2018. <span>“Nextstrain: Real-Time Tracking of Pathogen Evolution.”</span> <em>Bioinformatics</em> 34 (23): 4121–23. <a href="https://doi.org/10.1093/bioinformatics/bty407">https://doi.org/10.1093/bioinformatics/bty407</a>.
+</div>
+</div></section></div></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<div style="display: flex; flex-direction: column; gap: 8px;">
+<div style="display: flex; flex-direction: row; align-items: center; gap: 15px; flex-wrap: nowrap;">
+<img src="assets/images/faculty_biology_ugm.png" style="height: 32px; width: auto; vertical-align: middle;" class="img-fluid"><img src="img/Alt_Logo_BRIN.png" style="height: 28px; width: auto; vertical-align: middle;" class="img-fluid"><img src="img/kemenkes.png" style="height: 38px; width: auto; vertical-align: middle;" class="img-fluid"><img src="img/WHO (World Health Organization) Logo (PNG720p) - Vector69Com.png" style="height: 26px; width: auto; vertical-align: middle;" class="img-fluid">
+</div>
+<div style="font-size: 0.82rem; color: #475569; margin-top: 2px; white-space: nowrap; vertical-align: middle;">
+Supported by Badan Riset dan Inovasi Nasional (BRIN) FY 2026
+</div>
+</div>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p><a href="https://github.com/lab-biotek-bio-ugm/pandemic_prep_idn.git" target="_blank"><img src="img/GitHub.png" style="max-height: 18px; vertical-align: middle;" class="img-fluid"></a></p>
+</div>
+  </div>
+</footer>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const citations = document.querySelectorAll('a[href^="#ref-"]');
+  citations.forEach(a => {
+    const refId = a.getAttribute('href');
+    if (!window.location.pathname.endsWith('references.html')) {
+      a.setAttribute('href', 'references.html' + refId);
+    }
+  });
+
+  var tables = document.querySelectorAll("main table");
+  tables.forEach(function(table) {
+    var firstTh = table.querySelector("thead th");
+    if (firstTh) {
+      var text = firstTh.textContent.trim().toLowerCase();
+      if (text.includes("parameter name")) {
+        table.classList.add("parameter-table");
+      } else if (text.includes("file role")) {
+        table.classList.add("files-table");
+      }
+    }
+    if (!table.parentNode.classList.contains("table-responsive")) {
+      var wrapper = document.createElement("div");
+      wrapper.className = "table-responsive";
+      table.parentNode.insertBefore(wrapper, table);
+      wrapper.appendChild(table);
+    }
+  });
+});
+</script>
+
+
+
+
+<script src="site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>
