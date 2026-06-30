@@ -21,8 +21,8 @@ The table below summarizes the overall PCR and RAA amplification coverage achiev
 | **All-Partial** <br> *(`all-partial`)* | 17.24% | **17.56%** | <span style="color: #10b981; font-weight: bold;">+0.32%</span> | 17.14% | **17.52%** | <span style="color: #10b981; font-weight: bold;">+0.38%</span> |
 
 ### Key Findings:
-*   **The Degeneracy Necessity**: For the `indo-only` design, removing degenerate bases collapses the coverage from **91.20%** down to **18.61%** (a drop of over 70%). This mathematically proves that degenerate primers are mandatory to handle natural genomic variations in circulating Influenza A strains.
-*   **Regional Design Limitation**: The regional `sea-only` and global `all-partial` candidates achieved very low global coverage (~34% and ~17% respectively). This is due to sequence entropy at the design target and the fact that their degenerate slots were spent accommodating rare regional sequencing errors rather than global consensus transitions.
+*   **The Degeneracy Necessity**: For the `indo-only` design, removing degenerate bases collapses the coverage from **91.20%** down to **18.61%** (a drop of over 70 percentage points). This demonstrates mathematically that IUPAC degenerate bases are essential to accommodate the natural genomic variation in circulating Influenza A strains [@elnifro2000]. Non-degenerate primers carrying a consensus-only sequence are systematically excluded from large fractions of the viral sequence space, consistent with documented primer mismatch failures in diagnostic assays [@khan2020].
+*   **Regional Design Limitation**: The regional `sea-only` and global `all-partial` candidates achieved very low global coverage (~34% and ~17% respectively). This is due to sequence entropy at the design target and the fact that their degenerate slots were spent accommodating rare regional sequencing artifacts rather than high-frequency global consensus transitions.
 
 ---
 
