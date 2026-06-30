@@ -452,25 +452,32 @@ window.Quarto = {
 </section>
 <section id="interactive-nextstrain-auspice-tree-explorer" class="level2">
 <h2 class="anchored" data-anchor-id="interactive-nextstrain-auspice-tree-explorer">3. Interactive Nextstrain Auspice Tree Explorer</h2>
-<p>Below is the live Nextstrain explorer loading your custom <strong>Indonesia Only</strong> dataset directly from the report’s assets folder.</p>
-<div class="callout callout-style-default callout-note callout-titled">
+<p>Because Nextstrain Auspice (<code>auspice.us</code>) runs entirely in the cloud, embedding a local dataset inside a public iframe during local development is not directly supported due to browser security protocols (CORS and Mixed Content blocks).</p>
+<div class="callout callout-style-default callout-important callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Note</span>Local Browser Access vs.&nbsp;Online Hosting
+<span class="screen-reader-only">Important</span>Cara Memvisualisasikan Pohon Filogenetika Anda Secara Lokal
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<ul>
-<li><strong>Offline Protocol (<code>file:///</code>)</strong>: If you open this HTML file directly from your local disk, the browser’s security model (CORS) may block local file fetching inside the iframe.</li>
-<li><strong>Online Hosting (GitHub Pages / Local Server)</strong>: When hosted on GitHub Pages or viewed via a local web server (e.g.&nbsp;<code>quarto preview</code> running at <code>http://localhost:4200</code>), the iframe will <strong>automatically and dynamically load your custom tree dataset</strong> below without any security blocks!</li>
-</ul>
+<ol type="1">
+<li><strong>Metode Drag &amp; Drop (Paling Mudah)</strong>: Buka <strong><a href="https://auspice.us">auspice.us</a></strong> di tab baru, lalu seret (<em>drag</em>) dan lepas (<em>drop</em>) file lokal <strong><code>report/assets/auspice_indo_only.json</code></strong> langsung ke halaman tersebut. Data Anda akan dirender secara instan dan aman di browser tanpa diunggah ke server mana pun.</li>
+<li><strong>Setelah Push ke GitHub</strong>: Begitu repositori ini di-push ke GitHub, iframe ini dapat dikonfigurasi untuk memuat data secara otomatis menggunakan URL publik raw GitHub. Klik tab <strong>Method 1</strong> di bawah untuk langsung membukanya secara otomatis!</li>
+</ol>
 </div>
 </div>
-<iframe src="https://auspice.us?d=assets/auspice_indo_only.json&amp;embed=true" width="100%" height="800px" style="border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);" allowfullscreen="">
-</iframe>
+<div style="text-align: center; padding: 40px; border: 1px dashed #cbd5e1; border-radius: 8px; background-color: #f8fafc; margin: 25px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+<p style="font-weight: 600; color: #475569; margin-bottom: 8px; font-size: 16px;">
+Visualisasi Interaktif Auspice (Nextstrain)
+</p>
+<p style="color: #64748b; font-size: 14px; margin-bottom: 20px;">
+Silakan drag-and-drop file JSON hasil ekspor Anda ke <strong>auspice.us</strong> untuk mengeksplorasi pohon filogenetika secara interaktif saat offline.
+</p>
+<p><a href="https://auspice.us" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; display: inline-block; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); transition: background-color 0.2s;">Buka auspice.us</a></p>
+</div>
 <hr>
 </section>
 <section id="how-to-explore-the-scriptorium-datasets" class="level2">

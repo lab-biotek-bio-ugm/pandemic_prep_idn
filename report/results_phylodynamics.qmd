@@ -47,15 +47,19 @@ Using the metadata associated with the subsampled genomes (collection date and c
 
 ## 3. Interactive Nextstrain Auspice Tree Explorer
 
-Below is the live Nextstrain explorer loading your custom **Indonesia Only** dataset directly from the report's assets folder. 
+Because Nextstrain Auspice (`auspice.us`) runs entirely in the cloud, embedding a local dataset inside a public iframe during local development is not directly supported due to browser security protocols (CORS and Mixed Content blocks). 
 
-::: {.callout-note}
-## Local Browser Access vs. Online Hosting
-* **Offline Protocol (`file:///`)**: If you open this HTML file directly from your local disk, the browser's security model (CORS) may block local file fetching inside the iframe.
-* **Online Hosting (GitHub Pages / Local Server)**: When hosted on GitHub Pages or viewed via a local web server (e.g. `quarto preview` running at `http://localhost:4200`), the iframe will **automatically and dynamically load your custom tree dataset** below without any security blocks!
+::: {.callout-important}
+## Cara Memvisualisasikan Pohon Filogenetika Anda Secara Lokal
+1. **Metode Drag & Drop (Paling Mudah)**: Buka **[auspice.us](https://auspice.us)** di tab baru, lalu seret (*drag*) dan lepas (*drop*) file lokal **`report/assets/auspice_indo_only.json`** langsung ke halaman tersebut. Data Anda akan dirender secara instan dan aman di browser tanpa diunggah ke server mana pun.
+2. **Setelah Push ke GitHub**: Begitu repositori ini di-push ke GitHub, iframe ini dapat dikonfigurasi untuk memuat data secara otomatis menggunakan URL publik raw GitHub. Klik tab **Method 1** di bawah untuk langsung membukanya secara otomatis!
 :::
 
-<iframe src="https://auspice.us?d=assets/auspice_indo_only.json&embed=true" width="100%" height="800px" style="border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);" allowfullscreen></iframe>
+<div style="text-align: center; padding: 40px; border: 1px dashed #cbd5e1; border-radius: 8px; background-color: #f8fafc; margin: 25px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+  <p style="font-weight: 600; color: #475569; margin-bottom: 8px; font-size: 16px;">Visualisasi Interaktif Auspice (Nextstrain)</p>
+  <p style="color: #64748b; font-size: 14px; margin-bottom: 20px;">Silakan drag-and-drop file JSON hasil ekspor Anda ke <strong>auspice.us</strong> untuk mengeksplorasi pohon filogenetika secara interaktif saat offline.</p>
+  <a href="https://auspice.us" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; display: inline-block; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); transition: background-color 0.2s;">Buka auspice.us</a>
+</div>
 
 ---
 
