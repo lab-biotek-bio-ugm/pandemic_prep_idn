@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Results: In-silico Evaluation – Pandemic Preparedness Report</title>
+<title>Results: In-silico Performance Validation – Pandemic Preparedness Report</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -355,12 +355,11 @@ window.Quarto = {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#overall-diagnostic-sensitivity-coverage-global-vs.-local" id="toc-overall-diagnostic-sensitivity-coverage-global-vs.-local" class="nav-link active" data-scroll-target="#overall-diagnostic-sensitivity-coverage-global-vs.-local">1. Overall Diagnostic Sensitivity &amp; Coverage (Global vs.&nbsp;Local)</a></li>
-  <li><a href="#deep-dive-the-indonesia-only-success-phenomenon" id="toc-deep-dive-the-indonesia-only-success-phenomenon" class="nav-link" data-scroll-target="#deep-dive-the-indonesia-only-success-phenomenon">2. Deep Dive: The “Indonesia Only” Success Phenomenon</a>
+  <li><a href="#overall-in-silico-coverage-and-degeneracy-uplift" id="toc-overall-in-silico-coverage-and-degeneracy-uplift" class="nav-link active" data-scroll-target="#overall-in-silico-coverage-and-degeneracy-uplift">1. Overall In-Silico Coverage and Degeneracy Uplift</a>
   <ul class="collapse">
-  <li><a href="#evolutionary-conservation-of-the-187341-bp-target" id="toc-evolutionary-conservation-of-the-187341-bp-target" class="nav-link" data-scroll-target="#evolutionary-conservation-of-the-187341-bp-target">2.1. Evolutionary Conservation of the 187–341 bp Target</a></li>
-  <li><a href="#the-degeneracy-complexity-trade-off" id="toc-the-degeneracy-complexity-trade-off" class="nav-link" data-scroll-target="#the-degeneracy-complexity-trade-off">2.2. The Degeneracy Complexity Trade-off</a></li>
+  <li><a href="#key-findings" id="toc-key-findings" class="nav-link" data-scroll-target="#key-findings">Key Findings:</a></li>
   </ul></li>
+  <li><a href="#in-silico-validation-report-dashboard" id="toc-in-silico-validation-report-dashboard" class="nav-link" data-scroll-target="#in-silico-validation-report-dashboard">2. In-Silico Validation Report Dashboard</a></li>
   <li><a href="#subtype-specific-performance-analysis" id="toc-subtype-specific-performance-analysis" class="nav-link" data-scroll-target="#subtype-specific-performance-analysis">3. Subtype-Specific Performance Analysis</a></li>
   <li><a href="#temporal-robustness-antigenic-drift" id="toc-temporal-robustness-antigenic-drift" class="nav-link" data-scroll-target="#temporal-robustness-antigenic-drift">4. Temporal Robustness &amp; Antigenic Drift</a></li>
   </ul>
@@ -371,7 +370,7 @@ window.Quarto = {
 
 <header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./results_phylodynamics.html">Results &amp; Biological Insights</a></li><li class="breadcrumb-item"><a href="./results_performance.html">In-silico Evaluation</a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title">Results: In-silico Evaluation</h1>
+<h1 class="title">Results: In-silico Performance Validation</h1>
 </div>
 
 
@@ -388,40 +387,176 @@ window.Quarto = {
 </header>
 
 
-<p>This section presents the final in-silico validation of the designed primer and probe candidates against a global database of <strong>50,750 Influenza A sequences</strong>. We compare the diagnostic sensitivity of the three design scenarios and analyze the biological factors driving their performance.</p>
+<p>This section details the final in-silico validation of the designed primer and probe candidates against a global database of <strong>50,750 Influenza A sequences</strong>. We compare the diagnostic sensitivity of the three design scenarios, analyze the impact of degenerate bases on sequence coverage, and provide direct access to the validation heatmaps and report files.</p>
 <hr>
-<section id="overall-diagnostic-sensitivity-coverage-global-vs.-local" class="level2">
-<h2 class="anchored" data-anchor-id="overall-diagnostic-sensitivity-coverage-global-vs.-local">1. Overall Diagnostic Sensitivity &amp; Coverage (Global vs.&nbsp;Local)</h2>
-<p>All candidates that passed the BLAST specificity checks were evaluated for virtual amplification using <strong>SeqKit <code>amplicon</code></strong> and RAA mismatch filtering:</p>
-<pre><code>                  [In-silico Amplification Coverage Against Global Dataset (N=50,750)]
-  100% ┼─────────────────────────────────────────────────────────────────────────────────────────────
-       │                  ██████████  91.20% (PCR)
-       │                  ██████████  88.83% (RAA)
-   50% ┼                                          ██████████  34.53% (PCR/RAA)
-       │                                          ██████████                      ██████████  17.56% (PCR)
-       │                                                                          ██████████  17.52% (RAA)
-    0% ┼─────────────────────────────────────────────────────────────────────────────────────────────
-                           Indo-Only                   SEA-Only                   All-Partial</code></pre>
+<section id="overall-in-silico-coverage-and-degeneracy-uplift" class="level2">
+<h2 class="anchored" data-anchor-id="overall-in-silico-coverage-and-degeneracy-uplift">1. Overall In-Silico Coverage and Degeneracy Uplift</h2>
+<p>To verify the necessity of IUPAC degenerate bases, all candidate sets were evaluated in two forms: 1. <strong>Degenerate</strong>: Primers and probes containing degenerate bases (e.g., <code>R</code> for A/G, <code>Y</code> for C/T) as designed by the pipeline. 2. <strong>Non-Degenerate</strong>: Primers and probes where degenerate bases were replaced with their consensus base, simulating non-degenerate diagnostic design.</p>
+<p>The table below summarizes the overall PCR and RAA amplification coverage achieved on the global dataset (<span class="math inline">\(N=50,750\)</span> sequences), demonstrating the <strong>degeneracy uplift (gain)</strong>:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Scenario</th>
+<th>Candidate ID</th>
+<th>primer Type</th>
+<th>PCR Amplification (%)</th>
+<th>RAA Amplification (%)</th>
+<th>Coverage Uplift (Gain)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Indonesia Only</strong> <br> <em>(<code>indo-only</code>)</em></td>
+<td><code>segment-MP_region_1_Cand_1</code></td>
+<td>Non-Degenerate <br> <strong>Degenerate</strong></td>
+<td>18.61% <br> <strong>91.20%</strong></td>
+<td>18.33% <br> <strong>88.83%</strong></td>
+<td><span style="color: #10b981; font-weight: bold;">+72.59%</span> <br> <span style="color: #10b981; font-weight: bold;">+70.50%</span></td>
+</tr>
+<tr class="even">
+<td><strong>Southeast Asia</strong> <br> <em>(<code>sea-only</code>)</em></td>
+<td><code>segment-MP_region_1_Cand_1</code></td>
+<td>Non-Degenerate <br> <strong>Degenerate</strong></td>
+<td>33.87% <br> <strong>34.53%</strong></td>
+<td>33.87% <br> <strong>34.53%</strong></td>
+<td><span style="color: #10b981; font-weight: bold;">+0.66%</span> <br> <span style="color: #10b981; font-weight: bold;">+0.66%</span></td>
+</tr>
+<tr class="odd">
+<td><strong>All-Partial</strong> <br> <em>(<code>all-partial</code>)</em></td>
+<td><code>segment-MP_region_1_Cand_1</code></td>
+<td>Non-Degenerate <br> <strong>Degenerate</strong></td>
+<td>17.24% <br> <strong>17.56%</strong></td>
+<td>17.14% <br> <strong>17.52%</strong></td>
+<td><span style="color: #10b981; font-weight: bold;">+0.32%</span> <br> <span style="color: #10b981; font-weight: bold;">+0.38%</span></td>
+</tr>
+</tbody>
+</table>
+<section id="key-findings" class="level3">
+<h3 class="anchored" data-anchor-id="key-findings">Key Findings:</h3>
 <ul>
-<li><strong>Indo-Only</strong>: Achieved the highest diagnostic coverage of <strong>91.20% (PCR)</strong> and <strong>88.83% (RAA)</strong>.</li>
-<li><strong>SEA-Only</strong>: Achieved moderate coverage of <strong>34.53%</strong> for both PCR and RAA.</li>
-<li><strong>All-Partial</strong>: Achieved a global coverage of <strong>17.56% (PCR)</strong> and <strong>17.52% (RAA)</strong>.</li>
+<li><strong>The Degeneracy Necessity</strong>: For the <code>indo-only</code> design, removing degenerate bases collapses the coverage from <strong>91.20%</strong> down to <strong>18.61%</strong> (a drop of over 70%). This mathematically proves that degenerate primers are mandatory to handle natural genomic variations in circulating Influenza A strains.</li>
+<li><strong>Regional Design Limitation</strong>: The regional <code>sea-only</code> and global <code>all-partial</code> candidates achieved very low global coverage (~34% and ~17% respectively). This is due to sequence entropy at the design target and the fact that their degenerate slots were spent accommodating rare regional sequencing errors rather than global consensus transitions.</li>
 </ul>
 <hr>
 </section>
-<section id="deep-dive-the-indonesia-only-success-phenomenon" class="level2">
-<h2 class="anchored" data-anchor-id="deep-dive-the-indonesia-only-success-phenomenon">2. Deep Dive: The “Indonesia Only” Success Phenomenon</h2>
-<p>A key finding from this validation is that <strong>primers designed using only Indonesian sequences (<code>indo-only</code>) achieved significantly higher global coverage than those designed with regional (<code>sea-only</code>) or global (<code>all-partial</code>) datasets.</strong></p>
-<p>This counterintuitive outcome is driven by several biological and algorithmic factors:</p>
-<section id="evolutionary-conservation-of-the-187341-bp-target" class="level3">
-<h3 class="anchored" data-anchor-id="evolutionary-conservation-of-the-187341-bp-target">2.1. Evolutionary Conservation of the 187–341 bp Target</h3>
-<p>When the design was restricted to Indonesian sequences, the design engine identified a highly conserved target region at the forward end of the segment (<strong>187–341 bp</strong>). This region: * Overlaps with essential functional domains of the Influenza A Matrix protein that are structurally intolerant to mutations. * Is highly conserved not just in Indonesia, but globally. By focusing on a clean local dataset, the engine was able to locate this global hot-spot without the confounding effects of regional sequencing errors or rare variations from other continents.</p>
 </section>
-<section id="the-degeneracy-complexity-trade-off" class="level3">
-<h3 class="anchored" data-anchor-id="the-degeneracy-complexity-trade-off">2.2. The Degeneracy Complexity Trade-off</h3>
-<p>Under a strict complexity constraint (degeneracy multiplier capped at <span class="math inline">\(16\)</span>), the input sequence composition determines how degeneracy is allocated: * <strong>Indo-Only</strong>: The low sequence entropy in the Indonesian subset allowed the engine to place degenerate bases precisely at key transition sites (e.g., <span class="math inline">\(R = A/G\)</span> at pos 197 and 202). This resulted in a highly focused primer mixture that matches the global consensus. * <strong>SEA-Only &amp; All-Partial</strong>: The inclusion of diverse sequences from multiple countries introduced many low-frequency mutations (<em>sequence noise</em>). Under the complexity cap, the engine was forced to either: 1. Spend degenerate slots on rare regional variants, reducing the primer’s ability to match the global consensus. 2. Shift coordinates to a less optimal region (e.g., <strong>858–1008 bp</strong> for <code>all-partial</code>) where the sequences are conserved but have lower amplification efficiency or require more complex degeneracy (the <code>all-partial</code> probe requires a multiplier of <span class="math inline">\(16\)</span>, diluting the active primer concentration).</p>
+<section id="in-silico-validation-report-dashboard" class="level2">
+<h2 class="anchored" data-anchor-id="in-silico-validation-report-dashboard">2. In-Silico Validation Report Dashboard</h2>
+<p>For transparency and verification, the pipeline generated interactive HTML reports for each scenario under Module 10 (M10). You can click the links below to open the real data tables and coverage heatmaps directly in your browser:</p>
+<style>
+  .report-table th {
+    background-color: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+  }
+  .btn-report {
+    display: inline-block;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: all 0.2s;
+    text-align: center;
+    min-width: 130px;
+    margin: 2px;
+  }
+  .btn-comp {
+    background-color: #3b82f6;
+    color: #ffffff !important;
+    border: 1px solid #2563eb;
+  }
+  .btn-comp:hover {
+    background-color: #2563eb;
+  }
+  .btn-deg {
+    background-color: #10b981;
+    color: #ffffff !important;
+    border: 1px solid #059669;
+  }
+  .btn-deg:hover {
+    background-color: #059669;
+  }
+  .btn-non {
+    background-color: #6366f1;
+    color: #ffffff !important;
+    border: 1px solid #4f46e5;
+  }
+  .btn-non:hover {
+    background-color: #4f46e5;
+  }
+</style>
+<table class="table report-table" style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+<thead>
+<tr>
+<th style="border: 1px solid #e2e8f0; padding: 12px; text-align: left;">
+Geographic Model
+</th>
+<th style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+M10 Comparison Report
+</th>
+<th style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+Degenerate Heatmap
+</th>
+<th style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+Non-Degenerate Heatmap
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="border: 1px solid #e2e8f0; padding: 12px; font-weight: bold; color: #1e3a8a;">
+Indonesia Only (indo-only)
+</td>
+<td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+<a class="btn-report btn-comp" href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-indo-only/m10/comparison_report.html">📊 Comparison Report</a>
+</td>
+<td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+<a class="btn-report btn-deg" href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-indo-only/m10/degenerate/coverage_heatmap.html">📈 Degenerate Heatmap</a>
+</td>
+<td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+<a class="btn-report btn-non" href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-indo-only/m10/non_degenerate/coverage_heatmap.html">📉 Non-Degenerate</a>
+</td>
+</tr>
+<tr>
+<td style="border: 1px solid #e2e8f0; padding: 12px; font-weight: bold; color: #1e3a8a;">
+Southeast Asia (sea-only)
+</td>
+<td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+<a class="btn-report btn-comp" href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-sea-only/m10/comparison_report.html">📊 Comparison Report</a>
+</td>
+<td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+<a class="btn-report btn-deg" href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-sea-only/m10/degenerate/coverage_heatmap.html">📈 Degenerate Heatmap</a>
+</td>
+<td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+<a class="btn-report btn-non" href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-sea-only/m10/non_degenerate/coverage_heatmap.html">📉 Non-Degenerate</a>
+</td>
+</tr>
+<tr>
+<td style="border: 1px solid #e2e8f0; padding: 12px; font-weight: bold; color: #1e3a8a;">
+All-Partial Database
+</td>
+<td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+<a class="btn-report btn-comp" href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-all-partial/m10/comparison_report.html">📊 Comparison Report</a>
+</td>
+<td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+<a class="btn-report btn-deg" href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-all-partial/m10/degenerate/coverage_heatmap.html">📈 Degenerate Heatmap</a>
+</td>
+<td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+<a class="btn-report btn-non" href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-all-partial/m10/non_degenerate/coverage_heatmap.html">📉 Non-Degenerate</a>
+</td>
+</tr>
+</tbody>
+</table>
 <hr>
-</section>
 </section>
 <section id="subtype-specific-performance-analysis" class="level2">
 <h2 class="anchored" data-anchor-id="subtype-specific-performance-analysis">3. Subtype-Specific Performance Analysis</h2>

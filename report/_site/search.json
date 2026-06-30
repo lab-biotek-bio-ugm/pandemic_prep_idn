@@ -62,9 +62,9 @@
   {
     "objectID": "results_performance.html",
     "href": "results_performance.html",
-    "title": "Results: In-silico Evaluation",
+    "title": "Results: In-silico Performance Validation",
     "section": "",
-    "text": "This section presents the final in-silico validation of the designed primer and probe candidates against a global database of 50,750 Influenza A sequences. We compare the diagnostic sensitivity of the three design scenarios and analyze the biological factors driving their performance.",
+    "text": "This section details the final in-silico validation of the designed primer and probe candidates against a global database of 50,750 Influenza A sequences. We compare the diagnostic sensitivity of the three design scenarios, analyze the impact of degenerate bases on sequence coverage, and provide direct access to the validation heatmaps and report files.",
     "crumbs": [
       "<img src='assets/images/faculty_biology_ugm.png' style='height: 38px; width: auto; padding: 2px 0;' />",
       "Results & Biological Insights",
@@ -72,11 +72,11 @@
     ]
   },
   {
-    "objectID": "results_performance.html#overall-diagnostic-sensitivity-coverage-global-vs.-local",
-    "href": "results_performance.html#overall-diagnostic-sensitivity-coverage-global-vs.-local",
-    "title": "Results: In-silico Evaluation",
-    "section": "1. Overall Diagnostic Sensitivity & Coverage (Global vs. Local)",
-    "text": "1. Overall Diagnostic Sensitivity & Coverage (Global vs. Local)\nAll candidates that passed the BLAST specificity checks were evaluated for virtual amplification using SeqKit amplicon and RAA mismatch filtering:\n                  [In-silico Amplification Coverage Against Global Dataset (N=50,750)]\n  100% ┼─────────────────────────────────────────────────────────────────────────────────────────────\n       │                  ██████████  91.20% (PCR)\n       │                  ██████████  88.83% (RAA)\n   50% ┼                                          ██████████  34.53% (PCR/RAA)\n       │                                          ██████████                      ██████████  17.56% (PCR)\n       │                                                                          ██████████  17.52% (RAA)\n    0% ┼─────────────────────────────────────────────────────────────────────────────────────────────\n                           Indo-Only                   SEA-Only                   All-Partial\n\nIndo-Only: Achieved the highest diagnostic coverage of 91.20% (PCR) and 88.83% (RAA).\nSEA-Only: Achieved moderate coverage of 34.53% for both PCR and RAA.\nAll-Partial: Achieved a global coverage of 17.56% (PCR) and 17.52% (RAA).",
+    "objectID": "results_performance.html#overall-in-silico-coverage-and-degeneracy-uplift",
+    "href": "results_performance.html#overall-in-silico-coverage-and-degeneracy-uplift",
+    "title": "Results: In-silico Performance Validation",
+    "section": "1. Overall In-Silico Coverage and Degeneracy Uplift",
+    "text": "1. Overall In-Silico Coverage and Degeneracy Uplift\nTo verify the necessity of IUPAC degenerate bases, all candidate sets were evaluated in two forms: 1. Degenerate: Primers and probes containing degenerate bases (e.g., R for A/G, Y for C/T) as designed by the pipeline. 2. Non-Degenerate: Primers and probes where degenerate bases were replaced with their consensus base, simulating non-degenerate diagnostic design.\nThe table below summarizes the overall PCR and RAA amplification coverage achieved on the global dataset (\\(N=50,750\\) sequences), demonstrating the degeneracy uplift (gain):\n\n\n\n\n\n\n\n\n\n\n\nScenario\nCandidate ID\nprimer Type\nPCR Amplification (%)\nRAA Amplification (%)\nCoverage Uplift (Gain)\n\n\n\n\nIndonesia Only  (indo-only)\nsegment-MP_region_1_Cand_1\nNon-Degenerate  Degenerate\n18.61%  91.20%\n18.33%  88.83%\n+72.59%  +70.50%\n\n\nSoutheast Asia  (sea-only)\nsegment-MP_region_1_Cand_1\nNon-Degenerate  Degenerate\n33.87%  34.53%\n33.87%  34.53%\n+0.66%  +0.66%\n\n\nAll-Partial  (all-partial)\nsegment-MP_region_1_Cand_1\nNon-Degenerate  Degenerate\n17.24%  17.56%\n17.14%  17.52%\n+0.32%  +0.38%\n\n\n\n\nKey Findings:\n\nThe Degeneracy Necessity: For the indo-only design, removing degenerate bases collapses the coverage from 91.20% down to 18.61% (a drop of over 70%). This mathematically proves that degenerate primers are mandatory to handle natural genomic variations in circulating Influenza A strains.\nRegional Design Limitation: The regional sea-only and global all-partial candidates achieved very low global coverage (~34% and ~17% respectively). This is due to sequence entropy at the design target and the fact that their degenerate slots were spent accommodating rare regional sequencing errors rather than global consensus transitions.",
     "crumbs": [
       "<img src='assets/images/faculty_biology_ugm.png' style='height: 38px; width: auto; padding: 2px 0;' />",
       "Results & Biological Insights",
@@ -84,11 +84,11 @@
     ]
   },
   {
-    "objectID": "results_performance.html#deep-dive-the-indonesia-only-success-phenomenon",
-    "href": "results_performance.html#deep-dive-the-indonesia-only-success-phenomenon",
-    "title": "Results: In-silico Evaluation",
-    "section": "2. Deep Dive: The “Indonesia Only” Success Phenomenon",
-    "text": "2. Deep Dive: The “Indonesia Only” Success Phenomenon\nA key finding from this validation is that primers designed using only Indonesian sequences (indo-only) achieved significantly higher global coverage than those designed with regional (sea-only) or global (all-partial) datasets.\nThis counterintuitive outcome is driven by several biological and algorithmic factors:\n\n2.1. Evolutionary Conservation of the 187–341 bp Target\nWhen the design was restricted to Indonesian sequences, the design engine identified a highly conserved target region at the forward end of the segment (187–341 bp). This region: * Overlaps with essential functional domains of the Influenza A Matrix protein that are structurally intolerant to mutations. * Is highly conserved not just in Indonesia, but globally. By focusing on a clean local dataset, the engine was able to locate this global hot-spot without the confounding effects of regional sequencing errors or rare variations from other continents.\n\n\n2.2. The Degeneracy Complexity Trade-off\nUnder a strict complexity constraint (degeneracy multiplier capped at \\(16\\)), the input sequence composition determines how degeneracy is allocated: * Indo-Only: The low sequence entropy in the Indonesian subset allowed the engine to place degenerate bases precisely at key transition sites (e.g., \\(R = A/G\\) at pos 197 and 202). This resulted in a highly focused primer mixture that matches the global consensus. * SEA-Only & All-Partial: The inclusion of diverse sequences from multiple countries introduced many low-frequency mutations (sequence noise). Under the complexity cap, the engine was forced to either: 1. Spend degenerate slots on rare regional variants, reducing the primer’s ability to match the global consensus. 2. Shift coordinates to a less optimal region (e.g., 858–1008 bp for all-partial) where the sequences are conserved but have lower amplification efficiency or require more complex degeneracy (the all-partial probe requires a multiplier of \\(16\\), diluting the active primer concentration).",
+    "objectID": "results_performance.html#in-silico-validation-report-dashboard",
+    "href": "results_performance.html#in-silico-validation-report-dashboard",
+    "title": "Results: In-silico Performance Validation",
+    "section": "2. In-Silico Validation Report Dashboard",
+    "text": "2. In-Silico Validation Report Dashboard\nFor transparency and verification, the pipeline generated interactive HTML reports for each scenario under Module 10 (M10). You can click the links below to open the real data tables and coverage heatmaps directly in your browser:\n\n\n\n\n\nGeographic Model\n\n\nM10 Comparison Report\n\n\nDegenerate Heatmap\n\n\nNon-Degenerate Heatmap\n\n\n\n\n\n\nIndonesia Only (indo-only)\n\n\n📊 Comparison Report\n\n\n📈 Degenerate Heatmap\n\n\n📉 Non-Degenerate\n\n\n\n\nSoutheast Asia (sea-only)\n\n\n📊 Comparison Report\n\n\n📈 Degenerate Heatmap\n\n\n📉 Non-Degenerate\n\n\n\n\nAll-Partial Database\n\n\n📊 Comparison Report\n\n\n📈 Degenerate Heatmap\n\n\n📉 Non-Degenerate",
     "crumbs": [
       "<img src='assets/images/faculty_biology_ugm.png' style='height: 38px; width: auto; padding: 2px 0;' />",
       "Results & Biological Insights",
@@ -98,7 +98,7 @@
   {
     "objectID": "results_performance.html#subtype-specific-performance-analysis",
     "href": "results_performance.html#subtype-specific-performance-analysis",
-    "title": "Results: In-silico Evaluation",
+    "title": "Results: In-silico Performance Validation",
     "section": "3. Subtype-Specific Performance Analysis",
     "text": "3. Subtype-Specific Performance Analysis\nTo ensure that the designs are effective across different lineages, coverage was analyzed across major Influenza A subtypes:\n\n\n\n\n\n\n\n\n\n\nSubtype\nMetric\nIndo-Only Coverage\nSEA-Only Coverage\nAll-Partial Coverage\n\n\n\n\nA / H5N1  (N=253)\nPCR  RAA (Amp)  RAA (Det)\n98.42%  98.42%  98.02%\n0.00%  0.00%  0.00%\n47.37%  47.19%  34.91%\n\n\nA / H3N2  (N=187)\nPCR  RAA (Amp)  RAA (Det)\n99.47%  99.47%  99.47%\n86.67%  86.67%  86.67%\n3.17%  3.17%  3.17%\n\n\nA / H1N1  (N=154)\nPCR  RAA (Amp)  RAA (Det)\n96.10%  81.82%  81.82%\n0.53%  0.53%  0.53%\n35.17%  35.17%  35.11%\n\n\n\n\nSubtype Inclusivity:\n\nThe indo-only design is highly effective across all major subtypes, achieving \\(&gt;96\\%\\) PCR coverage for H5N1, H3N2, and H1N1.\nThe sea-only design is heavily biased toward H3N2 (\\(86.67\\%\\)), failing to detect H5N1 and H1N1 due to regional sequence mismatches.\nThe all-partial design shows moderate coverage for H5N1 (\\(47.37\\%\\)) and H1N1 (\\(35.17\\%\\)), but fails to detect H3N2 (\\(3.17\\%\\)), indicating a significant design bias.",
     "crumbs": [
@@ -110,7 +110,7 @@
   {
     "objectID": "results_performance.html#temporal-robustness-antigenic-drift",
     "href": "results_performance.html#temporal-robustness-antigenic-drift",
-    "title": "Results: In-silico Evaluation",
+    "title": "Results: In-silico Performance Validation",
     "section": "4. Temporal Robustness & Antigenic Drift",
     "text": "4. Temporal Robustness & Antigenic Drift\nAggregating simulated detection rates over time shows how well each design resists viral evolution (antigenic drift) from 2015 to 2025:\n\nIndo-Only: Maintains stable coverage above 90% across the 10-year span, confirming that the 187–341 bp target region remains highly conserved.\nSEA-Only: Shows significant annual fluctuations, indicating vulnerability to seasonal mutations.\nAll-Partial: Exhibits a steady decline in coverage in recent years, indicating that its target region is undergoing evolutionary drift in modern global lineages.",
     "crumbs": [
