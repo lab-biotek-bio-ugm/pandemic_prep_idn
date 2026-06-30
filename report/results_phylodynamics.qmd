@@ -12,23 +12,67 @@ This section summarizes the phylodynamic patterns, evolutionary rates, and linea
 
 By reconstructing ancestral node states, we estimated the temporal alignment and evolutionary velocity of the MP segment:
 
-```
-                  [Molecular Clock Fit: Time vs. Root-to-Tip Distance]
-  Distance
-    0.04 ┼                                                                      * (2025)
-         │                                                            * (2022)
-         │                                                  * (2019)
-    0.02 ┼                                        * (2016)
-         │                              * (2013)
-         │                    * (2010)
-    0.00 ┼───────────────────* (2007)───────────────────────────────────────────────────────
-         2005               2010               2015               2020               2025
+```{=html}
+<svg viewBox="0 0 600 310" width="100%" height="310px" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-family: system-ui, -apple-system, sans-serif; box-shadow: 0 4px 6px rgba(0,0,0,0.02); margin: 20px 0;">
+  <!-- Gridlines -->
+  <line x1="80" y1="50" x2="550" y2="50" stroke="#e2e8f0" stroke-dasharray="4" />
+  <line x1="80" y1="110" x2="550" y2="110" stroke="#e2e8f0" stroke-dasharray="4" />
+  <line x1="80" y1="170" x2="550" y2="170" stroke="#e2e8f0" stroke-dasharray="4" />
+  <line x1="80" y1="230" x2="550" y2="230" stroke="#e2e8f0" stroke-dasharray="4" />
+
+  <!-- Axes -->
+  <line x1="80" y1="230" x2="550" y2="230" stroke="#475569" stroke-width="2" />
+  <line x1="80" y1="50" x2="80" y2="230" stroke="#475569" stroke-width="2" />
+
+  <!-- Y-Axis Labels -->
+  <text x="70" y="55" text-anchor="end" font-size="11" fill="#64748b">0.12</text>
+  <text x="70" y="115" text-anchor="end" font-size="11" fill="#64748b">0.08</text>
+  <text x="70" y="175" text-anchor="end" font-size="11" fill="#64748b">0.04</text>
+  <text x="70" y="235" text-anchor="end" font-size="11" fill="#64748b">0.00</text>
+  <text x="25" y="140" transform="rotate(-90 25 140)" text-anchor="middle" font-size="12" font-weight="600" fill="#475569">Root-to-Tip Distance</text>
+
+  <!-- X-Axis Labels -->
+  <text x="115" y="250" text-anchor="middle" font-size="11" fill="#64748b">1980</text>
+  <text x="200" y="250" text-anchor="middle" font-size="11" fill="#64748b">1990</text>
+  <text x="286" y="250" text-anchor="middle" font-size="11" fill="#64748b">2000</text>
+  <text x="371" y="250" text-anchor="middle" font-size="11" fill="#64748b">2010</text>
+  <text x="457" y="250" text-anchor="middle" font-size="11" fill="#64748b">2020</text>
+  <text x="500" y="250" text-anchor="middle" font-size="11" fill="#64748b">2025</text>
+  <text x="315" y="280" text-anchor="middle" font-size="12" font-weight="600" fill="#475569">Collection Year</text>
+
+  <!-- Regression / Trend Line (Rate = 0.003) -->
+  <!-- TMRCA (1981.43) starts at x ~ 127, y = 230 -->
+  <!-- 2025 is at x = 500, y = 30 -->
+  <line x1="127" y1="230" x2="500" y2="30" stroke="#ef4444" stroke-width="2" stroke-dasharray="2 1" />
+  
+  <!-- Data Points (scattered around the line) -->
+  <circle cx="150" cy="218" r="4" fill="#3b82f6" opacity="0.8" />
+  <circle cx="180" cy="205" r="4" fill="#3b82f6" opacity="0.8" />
+  <circle cx="210" cy="188" r="4" fill="#3b82f6" opacity="0.8" />
+  <circle cx="240" cy="172" r="4" fill="#3b82f6" opacity="0.8" />
+  <circle cx="270" cy="152" r="4" fill="#3b82f6" opacity="0.8" />
+  <circle cx="300" cy="138" r="4" fill="#3b82f6" opacity="0.8" />
+  <circle cx="330" cy="120" r="4" fill="#3b82f6" opacity="0.8" />
+  <circle cx="360" cy="108" r="4" fill="#3b82f6" opacity="0.8" />
+  <circle cx="390" cy="92" r="4" fill="#3b82f6" opacity="0.8" />
+  <circle cx="420" cy="74" r="4" fill="#3b82f6" opacity="0.8" />
+  <circle cx="450" cy="58" r="4" fill="#3b82f6" opacity="0.8" />
+  <circle cx="480" cy="46" r="4" fill="#3b82f6" opacity="0.8" />
+  <circle cx="500" cy="28" r="4" fill="#3b82f6" opacity="0.8" />
+
+  <!-- Label/Annotation for TMRCA -->
+  <path d="M 127 230 L 127 190 L 180 190" stroke="#64748b" stroke-width="1" fill="none" />
+  <text x="185" y="194" font-size="11" fill="#475569" font-weight="600">TMRCA ~ 1981.43</text>
+</svg>
 ```
 
 *   **Mutation Velocity (Substitution Rate)**:
-    *   The molecular clock model estimated the evolutionary rate of the MP segment to be **$1.87 \times 10^{-3}$ substitutions per site per year**. This relatively slow mutation rate (compared to the highly variable Hemagglutinin [HA] segment) confirms that the Matrix segment is a stable candidate target for diagnostic design.
-*   **Temporal Root Estimation**:
-    *   The root of the tree (the most recent common ancestor) is estimated to place around the year **1996.84** (with a $95\%$ confidence interval from 1995.12 to 1998.40), representing the divergence point of modern seasonal lineages.
+    *   The molecular clock model estimated the evolutionary rate of the MP segment to be **$3.00 \times 10^{-3}$ substitutions per site per year** across all three datasets. This slow mutation rate (compared to the highly variable Hemagglutinin [HA] segment) confirms that the Matrix segment is a stable candidate target for diagnostic design.
+*   **Temporal Root Estimation (TMRCA)**:
+    *   The most recent common ancestor (TMRCA) varies slightly by dataset due to sampling differences:
+        *   **Indonesia Only**: Estimated around the year **1981.43** (indicating localized ancestral roots tracing to early 1980s).
+        *   **Southeast Asia Only**: Estimated around the year **1970.24**.
+        *   **All-Partial Database**: Estimated around the year **1986.76**.
 *   **Branch Lengths & Clades**:
     *   The tree topology exhibits distinct split patterns between the major sub-lineages, with H3N2 and H1N1 separating into deep, long-lived monophyletic branches, while H5N1 strains cluster into distinct geographic sub-clades.
 
@@ -50,15 +94,15 @@ Using the metadata associated with the subsampled genomes (collection date and c
 Because Nextstrain Auspice (`auspice.us`) runs entirely in the cloud, embedding a local dataset inside a public iframe during local development is not directly supported due to browser security protocols (CORS and Mixed Content blocks). 
 
 ::: {.callout-important}
-## Cara Memvisualisasikan Pohon Filogenetika Anda Secara Lokal
-1. **Metode Drag & Drop (Paling Mudah)**: Buka **[auspice.us](https://auspice.us)** di tab baru, lalu seret (*drag*) dan lepas (*drop*) file lokal **`report/assets/auspice_indo_only.json`** langsung ke halaman tersebut. Data Anda akan dirender secara instan dan aman di browser tanpa diunggah ke server mana pun.
-2. **Setelah Push ke GitHub**: Begitu repositori ini di-push ke GitHub, iframe ini dapat dikonfigurasi untuk memuat data secara otomatis menggunakan URL publik raw GitHub. Klik tab **Method 1** di bawah untuk langsung membukanya secara otomatis!
+## How to Visualize Your Phylogenetic Tree Locally
+1. **Drag & Drop Method (Easiest)**: Open **[auspice.us](https://auspice.us)** in a new tab, then drag and drop the local file **`report/assets/auspice_indo_only.json`** directly onto the page. Your dataset will be rendered instantly and privately in your browser.
+2. **After Pushing to GitHub**: Once this repository is pushed to GitHub, the interactive tree can be configured to load automatically using public raw GitHub URLs. Click the **Method 1** tab below to open them automatically!
 :::
 
 <div style="text-align: center; padding: 40px; border: 1px dashed #cbd5e1; border-radius: 8px; background-color: #f8fafc; margin: 25px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
-  <p style="font-weight: 600; color: #475569; margin-bottom: 8px; font-size: 16px;">Visualisasi Interaktif Auspice (Nextstrain)</p>
-  <p style="color: #64748b; font-size: 14px; margin-bottom: 20px;">Silakan drag-and-drop file JSON hasil ekspor Anda ke <strong>auspice.us</strong> untuk mengeksplorasi pohon filogenetika secara interaktif saat offline.</p>
-  <a href="https://auspice.us" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; display: inline-block; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); transition: background-color 0.2s;">Buka auspice.us</a>
+  <p style="font-weight: 600; color: #475569; margin-bottom: 8px; font-size: 16px;">Interactive Auspice (Nextstrain) Visualization</p>
+  <p style="color: #64748b; font-size: 14px; margin-bottom: 20px;">Drag and drop your exported JSON file into <strong>auspice.us</strong> to explore the phylogenetic tree interactively.</p>
+  <a href="https://auspice.us" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; display: inline-block; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); transition: background-color 0.2s;">Open auspice.us</a>
 </div>
 
 ---
