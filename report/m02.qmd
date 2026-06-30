@@ -182,6 +182,7 @@ qc:
 ### 3.2. How to Interpret the QC Report
 
 Module 02 outputs a tabular and JSON summary (`qc_report.json`):
+
 *   **`input_records`**: Total raw input sequences.
 *   **`retained_after_n_filter`**: Number of sequences passing the $N$-content threshold. A major drop here indicates poor sequencing quality in your raw data.
 *   **`retained_after_deduplication`**: Number of sequences after collapsing duplicates. For highly sampled pathogens, deduplication can shrink the database by $>70\%$, which is normal and desirable.

@@ -150,6 +150,7 @@ hyphy:
 ### 3.2. How to Interpret HyPhy JSON Outputs
 
 Module 05 outputs raw JSON files (`fubar_M1.json` and `meme_M1.json`):
+
 *   **FUBAR Columns**: Look for the parameters `alpha` (synonymous rate, $dS$) and `beta` (non-synonymous rate, $dN$). If `beta` is close to 0 and `prob_negative` is high ($\ge 0.90$), this site is extremely stable and a **gold-standard target** for diagnostic design.
 *   **MEME Columns**: Look for `p-value`. A low value indicates that at least one branch of the phylogenetic tree has experienced sudden diversification. These coordinates must be avoided.
 

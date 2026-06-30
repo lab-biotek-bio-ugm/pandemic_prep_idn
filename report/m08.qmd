@@ -203,6 +203,7 @@ PrimerLab calculates DNA melting temperatures ($T_m$) using nearest-neighbor the
 ### 4.2. How to Interpret PrimerLab Design Outputs
 
 Module 08 outputs `best_primers.json` containing the physical profiles of the designed set:
+
 *   **Hairpin & Dimer $\Delta G$**: Represents the Gibbs free energy change of self-folding. Values **closer to 0** (e.g. $>-2.0\text{ kcal/mol}$) are stable and safe. Values more negative than $-5.0\text{ kcal/mol}$ indicate a high risk of primer-dimer formation, which will consume master-mix and cause false positives.
 *   **Degeneracy Multiplier**: The number of unique primer sequences in the synthesized mix. A multiplier of 16 (e.g. 4 degenerate positions) means the active concentration of any single primer sequence is diluted to $1/16$-th. Keeping this below 16 ensures high diagnostic sensitivity.
 
@@ -225,6 +226,7 @@ The files involved in Module 08 are summarized below:
 ## 6. Troubleshooting & Limitations
 
 ### 6.1. High-Degeneracy Failures (Exceeding Multiplier)
+
 *   **Problem**: PrimerLab fails to return candidates, throwing warnings that the degeneracy complexity limit ($16$) was exceeded.
 *   **Cause**: This happens in variable zones (such as UTRs or HA loops) where multiple minor variants exist at rates $>10\%$. 
 *   **Solution**: Shift the design target to a conserved coding region (e.g. M1 segment), increase the `maf_threshold` to $0.15$ (to ignore rarer variants), or increase the `max_multiplier` to $32$ (noting that this may lower overall reaction sensitivity).

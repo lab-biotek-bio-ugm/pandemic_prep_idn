@@ -183,6 +183,7 @@ nextclade:
 ### 4.2. How to Interpret the Auspice Payload
 
 Module 06 compiles all previous analyses into a single file (`auspice_dataset.json`):
+
 *   **`nodes`**: A nested dictionary representing the tree topology. Each node contains a `mutations` record (reconstructed by Augur Ancestral) showing which nucleotides mutated at that specific point in history.
 *   **`colorings`**: Maps metadata fields (such as `clade`, `country`, and `year`) to colors on the tree. If you notice a particular clade has a distinct mutation in the M1 gene, this explains why that clade might exhibit diagnostic escape from standard primers.
 

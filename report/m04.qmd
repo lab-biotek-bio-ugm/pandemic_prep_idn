@@ -136,6 +136,7 @@ phylodynamics:
 ### 3.2. How to Interpret Molecular Clock Fitting
 
 Module 04 refines the branch lengths into real calendar years:
+
 *   **Root-to-Tip Distance**: The slope of the regression line of root-to-tip genetic distance versus time represents the estimated evolutionary rate. If the data points deviate heavily from the regression line, it indicates a poor fit (high sequencing errors or mislabeled collection dates).
 *   **Clock-dated Nodes**: Reviewing the nodes in the calendar tree allows validating the evolutionary history (e.g., ensuring the separation of major clades matches historical pandemic records, such as the 2009 H1N1 emergence).
 

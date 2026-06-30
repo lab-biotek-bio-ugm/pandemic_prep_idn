@@ -147,6 +147,7 @@ early_filter:
 ### 3.2. How to Interpret Sanitized Metadata Outputs
 
 Module 01 outputs a merged metadata sheet (`metadata_enriched.tsv`):
+
 *   **Column `qc_status`**: Nextclade's assessment of sequence quality (`good`, `mediocre`, `bad`). If a sequence is flagged as `bad`, it is a warning that it has frameshifts or high missing bases ($N$).
 *   **Column `clade` / `lineage`**: Represents the parsed viral classification. Reviewing this column helps verify if your dataset has the desired target subtype distribution before proceeding to downstream alignment.
 

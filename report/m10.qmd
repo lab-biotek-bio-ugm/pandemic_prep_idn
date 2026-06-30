@@ -180,6 +180,7 @@ validation:
 ### 3.2. How to Interpret Validation Heatmaps
 
 Module 10 outputs an interactive report (`coverage_heatmap.html`):
+
 *   **PCR vs RAA Amplified**: RAA coverage is almost always slightly lower than PCR coverage because RAA primers are longer ($30-35$ bp), which statistically increases the probability of encountering random mutations along the primer body.
 *   **Subtype Breakdown Table**: Review this table to identify target bias. If a primer set has $99\%$ H3N2 coverage but $0\%$ H5N1 coverage, it indicates that the primer has a critical mismatch against the avian clade sequence. 
 

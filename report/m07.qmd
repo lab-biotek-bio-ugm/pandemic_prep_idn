@@ -154,6 +154,7 @@ bridge:
 ### 5.2. How to Interpret Target Grades
 
 Module 07 outputs a targets list (`primer_targets_manifest.yaml`):
+
 *   **Grade S / A+**: Highly recommended for design. Indicates a conserved hot-spot under strong negative selection.
 *   **Grade D**: If running in `full_segment` mode, a Grade D is normal and represents the average variability of the entire segment. It should not be used as a veto; PrimerLab will still perform localized scans to find optimal candidate positions.
 

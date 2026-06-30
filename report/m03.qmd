@@ -115,6 +115,7 @@ mafft \
 ### 2.2. How to Interpret Alignment Visualizations
 
 During alignment, sequences are padded at the terminal ends:
+
 *   **Terminal `N` Padding**: If a query sequence begins at nucleotide 5 (e.g., due to primer clipping during wet-lab sequencing), the alignment will pad positions 1–4 with `NNNN`. This is expected and does not count as a true mutation.
 *   **Internal Gaps (`-`)**: A gap represents a deletion mutation. If a gap occurs in a target primer region, it represents a major mismatch that will block recombinase or polymerase binding.
 
