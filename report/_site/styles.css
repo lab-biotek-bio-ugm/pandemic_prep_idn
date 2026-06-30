@@ -944,3 +944,61 @@ mjx-container:not([display="true"]),
   overflow-x: auto !important;
   overflow-y: hidden !important;
 }
+
+/* =====================================================
+   PRINT & PDF EXPORT FORMATTING
+   ===================================================== */
+@media print {
+  /* Sembunyikan navigasi, sidebar, TOC, footer, dan tombol interaktif */
+  #quarto-header,
+  #quarto-sidebar,
+  #quarto-margin-sidebar,
+  .navbar,
+  .sidebar,
+  .toc,
+  footer,
+  .page-footer,
+  .nav-btn,
+  .btn-report,
+  a.btn-report,
+  .tabset-margin-container,
+  .nav-tabs,
+  .callout-important .callout-header,
+  .callout-important .callout-body-container ol {
+    display: none !important;
+  }
+
+  /* Lebarkan konten utama ke seluruh halaman */
+  main,
+  .content,
+  #quarto-document-content,
+  article {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Format halaman dan margin (Academic A4 - 2.5cm) */
+  @page {
+    size: A4;
+    margin: 25mm 25mm 25mm 25mm;
+  }
+
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+    line-height: 1.5 !important;
+  }
+
+  /* Rapikan blok kode agar tidak terpotong */
+  pre, code {
+    background-color: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    white-space: pre-wrap !important;
+    word-break: break-all !important;
+    font-size: 9.5pt !important;
+  }
+}
+
