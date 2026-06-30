@@ -146,9 +146,9 @@ We have exported the compiled Auspice datasets for all three design scenarios in
 
 | Design Scenario | Local Asset Path | Raw Online Download |
 |---|---|---|
-| **Indonesia Only** | `report/assets/auspice_indo_only.json` | [auspice_indo_only.json](assets/auspice_indo_only.json) |
-| **Southeast Asia Only** | `report/assets/auspice_sea_only.json` | [auspice_sea_only.json](assets/auspice_sea_only.json) |
-| **All-Partial Database** | `report/assets/auspice_all_partial.json` | [auspice_all_partial.json](assets/auspice_all_partial.json) |
+| **Indonesia Only** | `report/assets/auspice_indo_only.json` | <a href="assets/auspice_indo_only.json" download="auspice_indo_only.json">auspice_indo_only.json</a> |
+| **Southeast Asia Only** | `report/assets/auspice_sea_only.json` | <a href="assets/auspice_sea_only.json" download="auspice_sea_only.json">auspice_sea_only.json</a> |
+| **All-Partial Database** | `report/assets/auspice_all_partial.json` | <a href="assets/auspice_all_partial.json" download="auspice_all_partial.json">auspice_all_partial.json</a> |
 
 ::: {.panel-tabset}
 
