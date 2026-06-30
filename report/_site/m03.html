@@ -1084,6 +1084,8 @@ document.addEventListener("DOMContentLoaded", function() {
       var text = firstTh.textContent.trim().toLowerCase();
       if (text.includes("parameter name")) {
         table.classList.add("parameter-table");
+      } else if (text.includes("file role")) {
+        table.classList.add("files-table");
       }
     }
     if (!table.parentNode.classList.contains("table-responsive")) {

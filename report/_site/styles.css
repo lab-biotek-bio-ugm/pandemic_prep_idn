@@ -874,20 +874,42 @@ th, td {
 
 /* Khusus tabel parameter (diberi kelas parameter-table via JS) */
 table.parameter-table {
-  table-layout: fixed !important; /* Kunci layout agar rasio kolom parameter dipatuhi penuh */
+  table-layout: auto !important; /* Gunakan auto agar kolom menyesuaikan konten alami */
 }
 
-table.parameter-table col:nth-child(1) {
-  width: 25% !important;
+table.parameter-table col {
+  width: auto !important; /* Hapus paksaan persentase inline dari Quarto */
 }
-table.parameter-table col:nth-child(2) {
-  width: 15% !important;
+
+table.parameter-table td:nth-child(1),
+table.parameter-table th:nth-child(1),
+table.parameter-table td:nth-child(2),
+table.parameter-table th:nth-child(2),
+table.parameter-table td:nth-child(3),
+table.parameter-table th:nth-child(3) {
+  white-space: nowrap !important; /* Jangan wrap agar parameter, allowed values, dan default value tidak menumpuk vertikal */
+  word-break: normal !important;
+  overflow-wrap: normal !important;
 }
-table.parameter-table col:nth-child(3) {
-  width: 10% !important;
+
+/* Khusus tabel files (diberi kelas files-table via JS) */
+table.files-table {
+  table-layout: auto !important;
 }
-table.parameter-table col:nth-child(4) {
-  width: 50% !important; /* Porsi lebar terbesar untuk deskripsi/rasionalisasi */
+
+table.files-table col {
+  width: auto !important; /* Hapus paksaan persentase inline dari Quarto */
+}
+
+table.files-table td:nth-child(1),
+table.files-table th:nth-child(1),
+table.files-table td:nth-child(2),
+table.files-table th:nth-child(2),
+table.files-table td:nth-child(3),
+table.files-table th:nth-child(3) {
+  white-space: nowrap !important; /* Jangan wrap agar role, path, dan format rapi sejajar horizontal */
+  word-break: normal !important;
+  overflow-wrap: normal !important;
 }
 
 /* Kolom pertama (Parameter Name/File Role) */
