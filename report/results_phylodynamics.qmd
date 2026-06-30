@@ -120,11 +120,11 @@ We have exported the compiled Auspice datasets for all three design scenarios in
 ::: {.panel-tabset}
 
 ### Method 1: Automatic Online Viewer (Recommended)
-Once your repository is pushed to GitHub, you can automatically launch the interactive Nextstrain viewer for your datasets by clicking these custom links (replace `{username}` and `{repo}` with your GitHub credentials):
+Once your repository is pushed to GitHub, you can automatically launch the interactive Nextstrain viewer for your datasets by clicking these custom links:
 
-* 🧬 **[View Indonesia Only Tree on auspice.us](https://auspice.us?d=https://raw.githubusercontent.com/{username}/{repo}/main/report/assets/auspice_indo_only.json)**
-* 🌏 **[View Southeast Asia Only Tree on auspice.us](https://auspice.us?d=https://raw.githubusercontent.com/{username}/{repo}/main/report/assets/auspice_sea_only.json)**
-* 🌐 **[View All-Partial Database Tree on auspice.us](https://auspice.us?d=https://raw.githubusercontent.com/{username}/{repo}/main/report/assets/auspice_all_partial.json)**
+* 🧬 **[View Indonesia Only Tree on auspice.us](https://auspice.us?d=https://raw.githubusercontent.com/lab-biotek-bio-ugm/pandemic_prep_idn/report/report/assets/auspice_indo_only.json)**
+* 🌏 **[View Southeast Asia Only Tree on auspice.us](https://auspice.us?d=https://raw.githubusercontent.com/lab-biotek-bio-ugm/pandemic_prep_idn/report/report/assets/auspice_sea_only.json)**
+* 🌐 **[View All-Partial Database Tree on auspice.us](https://auspice.us?d=https://raw.githubusercontent.com/lab-biotek-bio-ugm/pandemic_prep_idn/report/report/assets/auspice_all_partial.json)**
 
 ### Method 2: Web-Based Drag & Drop
 1. Open the official Nextstrain viewer in your web browser: **[auspice.us](https://auspice.us)**.
