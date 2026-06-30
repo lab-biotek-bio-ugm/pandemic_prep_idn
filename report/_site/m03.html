@@ -574,7 +574,11 @@ NNNNNttctaaccgaggtcgaaacgtacgttctttctatcatcccatcaggccccctcaa...</code></pre>
 </section>
 <section id="how-to-interpret-alignment-visualizations" class="level3">
 <h3 class="anchored" data-anchor-id="how-to-interpret-alignment-visualizations">2.2. How to Interpret Alignment Visualizations</h3>
-<p>During alignment, sequences are padded at the terminal ends: * <strong>Terminal <code>N</code> Padding</strong>: If a query sequence begins at nucleotide 5 (e.g., due to primer clipping during wet-lab sequencing), the alignment will pad positions 1–4 with <code>NNNN</code>. This is expected and does not count as a true mutation. * <strong>Internal Gaps (<code>-</code>)</strong>: A gap represents a deletion mutation. If a gap occurs in a target primer region, it represents a major mismatch that will block recombinase or polymerase binding.</p>
+<p>During alignment, sequences are padded at the terminal ends:</p>
+<ul>
+<li><strong>Terminal <code>N</code> Padding</strong>: If a query sequence begins at nucleotide 5 (e.g., due to primer clipping during wet-lab sequencing), the alignment will pad positions 1–4 with <code>NNNN</code>. This is expected and does not count as a true mutation.</li>
+<li><strong>Internal Gaps (<code>-</code>)</strong>: A gap represents a deletion mutation. If a gap occurs in a target primer region, it represents a major mismatch that will block recombinase or polymerase binding.</li>
+</ul>
 <hr>
 </section>
 </section>

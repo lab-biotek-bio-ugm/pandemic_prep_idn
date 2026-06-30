@@ -635,7 +635,11 @@ window.Quarto = {
 </section>
 <section id="how-to-interpret-sanitized-metadata-outputs" class="level3">
 <h3 class="anchored" data-anchor-id="how-to-interpret-sanitized-metadata-outputs">3.2. How to Interpret Sanitized Metadata Outputs</h3>
-<p>Module 01 outputs a merged metadata sheet (<code>metadata_enriched.tsv</code>): * <strong>Column <code>qc_status</code></strong>: Nextclade’s assessment of sequence quality (<code>good</code>, <code>mediocre</code>, <code>bad</code>). If a sequence is flagged as <code>bad</code>, it is a warning that it has frameshifts or high missing bases (<span class="math inline">\(N\)</span>). * <strong>Column <code>clade</code> / <code>lineage</code></strong>: Represents the parsed viral classification. Reviewing this column helps verify if your dataset has the desired target subtype distribution before proceeding to downstream alignment.</p>
+<p>Module 01 outputs a merged metadata sheet (<code>metadata_enriched.tsv</code>):</p>
+<ul>
+<li><strong>Column <code>qc_status</code></strong>: Nextclade’s assessment of sequence quality (<code>good</code>, <code>mediocre</code>, <code>bad</code>). If a sequence is flagged as <code>bad</code>, it is a warning that it has frameshifts or high missing bases (<span class="math inline">\(N\)</span>).</li>
+<li><strong>Column <code>clade</code> / <code>lineage</code></strong>: Represents the parsed viral classification. Reviewing this column helps verify if your dataset has the desired target subtype distribution before proceeding to downstream alignment.</li>
+</ul>
 <hr>
 </section>
 </section>

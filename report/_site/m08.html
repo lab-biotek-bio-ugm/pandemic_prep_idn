@@ -687,7 +687,11 @@ window.Quarto = {
 </section>
 <section id="how-to-interpret-primerlab-design-outputs" class="level3">
 <h3 class="anchored" data-anchor-id="how-to-interpret-primerlab-design-outputs">4.2. How to Interpret PrimerLab Design Outputs</h3>
-<p>Module 08 outputs <code>best_primers.json</code> containing the physical profiles of the designed set: * <strong>Hairpin &amp; Dimer <span class="math inline">\(\Delta G\)</span></strong>: Represents the Gibbs free energy change of self-folding. Values <strong>closer to 0</strong> (e.g.&nbsp;<span class="math inline">\(&gt;-2.0\text{ kcal/mol}\)</span>) are stable and safe. Values more negative than <span class="math inline">\(-5.0\text{ kcal/mol}\)</span> indicate a high risk of primer-dimer formation, which will consume master-mix and cause false positives. * <strong>Degeneracy Multiplier</strong>: The number of unique primer sequences in the synthesized mix. A multiplier of 16 (e.g.&nbsp;4 degenerate positions) means the active concentration of any single primer sequence is diluted to <span class="math inline">\(1/16\)</span>-th. Keeping this below 16 ensures high diagnostic sensitivity.</p>
+<p>Module 08 outputs <code>best_primers.json</code> containing the physical profiles of the designed set:</p>
+<ul>
+<li><strong>Hairpin &amp; Dimer <span class="math inline">\(\Delta G\)</span></strong>: Represents the Gibbs free energy change of self-folding. Values <strong>closer to 0</strong> (e.g.&nbsp;<span class="math inline">\(&gt;-2.0\text{ kcal/mol}\)</span>) are stable and safe. Values more negative than <span class="math inline">\(-5.0\text{ kcal/mol}\)</span> indicate a high risk of primer-dimer formation, which will consume master-mix and cause false positives.</li>
+<li><strong>Degeneracy Multiplier</strong>: The number of unique primer sequences in the synthesized mix. A multiplier of 16 (e.g.&nbsp;4 degenerate positions) means the active concentration of any single primer sequence is diluted to <span class="math inline">\(1/16\)</span>-th. Keeping this below 16 ensures high diagnostic sensitivity.</li>
+</ul>
 <hr>
 </section>
 </section>

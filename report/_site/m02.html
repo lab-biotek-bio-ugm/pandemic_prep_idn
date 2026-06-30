@@ -656,7 +656,12 @@ window.Quarto = {
 </section>
 <section id="how-to-interpret-the-qc-report" class="level3">
 <h3 class="anchored" data-anchor-id="how-to-interpret-the-qc-report">3.2. How to Interpret the QC Report</h3>
-<p>Module 02 outputs a tabular and JSON summary (<code>qc_report.json</code>): * <strong><code>input_records</code></strong>: Total raw input sequences. * <strong><code>retained_after_n_filter</code></strong>: Number of sequences passing the <span class="math inline">\(N\)</span>-content threshold. A major drop here indicates poor sequencing quality in your raw data. * <strong><code>retained_after_deduplication</code></strong>: Number of sequences after collapsing duplicates. For highly sampled pathogens, deduplication can shrink the database by <span class="math inline">\(&gt;70\%\)</span>, which is normal and desirable.</p>
+<p>Module 02 outputs a tabular and JSON summary (<code>qc_report.json</code>):</p>
+<ul>
+<li><strong><code>input_records</code></strong>: Total raw input sequences.</li>
+<li><strong><code>retained_after_n_filter</code></strong>: Number of sequences passing the <span class="math inline">\(N\)</span>-content threshold. A major drop here indicates poor sequencing quality in your raw data.</li>
+<li><strong><code>retained_after_deduplication</code></strong>: Number of sequences after collapsing duplicates. For highly sampled pathogens, deduplication can shrink the database by <span class="math inline">\(&gt;70\%\)</span>, which is normal and desirable.</li>
+</ul>
 <hr>
 </section>
 </section>
