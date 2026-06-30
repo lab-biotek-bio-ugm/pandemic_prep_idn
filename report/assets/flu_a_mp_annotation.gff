@@ -1,0 +1,9 @@
+##gff-version 3
+##sequence-region NC_002016.1 1 1027
+NC_002016.1	NCBI	gene	1	1027	.	+	.	ID=segment-MP
+NC_002016.1	NCBI	CDS	26	51	.	+	0	ID=cds-M2_p1;Parent=segment-MP;gene=M2
+NC_002016.1	NCBI	CDS	740	1007	.	+	0	ID=cds-M2_p2;Parent=segment-MP;gene=M2
+NC_002016.1	NCBI	gene	26	784	.	+	.	ID=gene-M1;gene=M1
+NC_002016.1	NCBI	CDS	26	784	.	+	0	ID=cds-M1;Parent=gene-M1;gene=M1
+NC_002016.1	NCBI	five_prime_UTR	1	25	.	+	.	ID=utr-5;Parent=segment-MP
+NC_002016.1	NCBI	three_prime_UTR	1008	1027	.	+	.	ID=utr-3;Parent=segment-MP

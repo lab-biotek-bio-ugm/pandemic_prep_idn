@@ -1120,11 +1120,24 @@
     ]
   },
   {
+    "objectID": "m07.html#interactive-igv-genomic-track-explorer",
+    "href": "m07.html#interactive-igv-genomic-track-explorer",
+    "title": "Module 07: Bridge Scoring Engine",
+    "section": "6. Interactive IGV Genomic Track Explorer",
+    "text": "6. Interactive IGV Genomic Track Explorer\nTo visualize the target zones and how they map onto the Influenza A MP segment, we have embedded a live, interactive instance of the Integrative Genomics Viewer (IGV.js).\nYou can zoom in to see individual nucleotide bases, inspect the M1 and M2 gene boundaries (GFF3 annotation), and compare the conserved target zones (conserved_regions.bed) across the three different design scenarios.\n\n  \n    \n      Interactive IGV Genomic Track Explorer\n      Initializing...\n    \n    \n    \n      Select Design Scenario:\n      \n        Southeast Asia Only\n        Indonesia Only\n        All-Partial Database\n      \n    \n  \n\n  \n    ⚠️ Browser Security Restriction (CORS) Detected\n    Anda membuka laporan ini langsung dari file lokal menggunakan protokol file:///. Karena kebijakan keamanan web browser, pemuatan track data dinamis dari harddisk lokal diblokir.\n    Untuk berinteraksi dengan browser genome IGV ini secara langsung:\n    \n      Opsi A (Rekomendasi): Jalankan server lokal dengan mengetik quarto preview report di terminal project Anda, lalu buka halaman ini di browser Anda (http://localhost:4200).\n      Opsi B (Drag & Drop Manual): Buka aplikasi web resmi igv.org/app, lalu seret dan lepas (drag & drop) file-file di bawah ini dari folder project Anda langsung ke layar browser tersebut:\n        \n          config/references/flu_a_mp_reference.fasta (Reference Genome)\n          config/references/flu_a_mp_annotation.gff (Gene Map)\n          ssh-output/results/{build}/m07/conserved_regions.bed (Selected Target Zones)",
+    "crumbs": [
+      "<img src='assets/images/faculty_biology_ugm.png' style='height: 38px; width: auto; padding: 2px 0;' />",
+      "Technical Architecture",
+      "Selection & Conservation",
+      "Module 07: Bridge Scoring Engine"
+    ]
+  },
+  {
     "objectID": "m07.html#inputs-outputs-files",
     "href": "m07.html#inputs-outputs-files",
     "title": "Module 07: Bridge Scoring Engine",
-    "section": "6. Inputs, Outputs & Files",
-    "text": "6. Inputs, Outputs & Files\nThe files involved in Module 07 are summarized below:\n\n\n\n\n\n\n\n\n\nFile Role\nPath\nFormat\nDescription\n\n\n\n\nInput Alignment\nresults/{build}/m03/aligned.fasta\nFASTA\nFull sequence alignment from Module 03.\n\n\nInput GFF3\nconfig/references/flu_a_mp_annotation.gff\nGFF3\nGene boundary coordinate map.\n\n\nInput Selection JSONs\nresults/{build}/m05/fubar_{gene}.json\nJSON\ndN/dS values per gene from Module 05.\n\n\nConserved BED\nresults/{build}/m07/conserved_regions.bed\nBED\nCoordinates of graded conserved target zones.\n\n\nBridge Report\nresults/{build}/m07/bridge_report.json\nJSON\nDetailed statistical metrics for every target window.\n\n\nTargets Manifest\nresults/{build}/m07/primer_targets_manifest.yaml\nYAML\nStructured list of target zones with consensus sequences.",
+    "section": "7. Inputs, Outputs & Files",
+    "text": "7. Inputs, Outputs & Files\nThe files involved in Module 07 are summarized below:\n\n\n\nFile Role\nPath\nFormat\nDescription\n\n\n\n\nInput Alignment\nresults/{build}/m03/aligned.fasta\nFASTA\nFull sequence alignment from Module 03.\n\n\nInput GFF3\nconfig/references/flu_a_mp_annotation.gff\nGFF3\nGene boundary coordinate map. Published in assets/flu_a_mp_annotation.gff.\n\n\nInput Selection JSONs\nresults/{build}/m05/fubar_{gene}.json\nJSON\ndN/dS values per gene from Module 05.\n\n\nConserved BED\nresults/{build}/m07/conserved_regions.bed\nBED\nGraded conserved target zones. Published in assets/sea_only_conserved_regions.bed / assets/indo_only_conserved_regions.bed / assets/all_partial_conserved_regions.bed.\n\n\nBridge Report\nresults/{build}/m07/bridge_report.json\nJSON\nDetailed statistical metrics for every target window.\n\n\nTargets Manifest\nresults/{build}/m07/primer_targets_manifest.yaml\nYAML\nStructured list of target zones with consensus sequences.",
     "crumbs": [
       "<img src='assets/images/faculty_biology_ugm.png' style='height: 38px; width: auto; padding: 2px 0;' />",
       "Technical Architecture",
@@ -1136,8 +1149,8 @@
     "objectID": "m07.html#troubleshooting-limitations",
     "href": "m07.html#troubleshooting-limitations",
     "title": "Module 07: Bridge Scoring Engine",
-    "section": "7. Troubleshooting & Limitations",
-    "text": "7. Troubleshooting & Limitations\n\n7.1. Low Scores in Full Segment Mode\n\nProblem: In full_segment mode, the composite score is very low (e.g. \\(0.40\\)), resulting in Grade D.\nCause: Evaluating an entire 1000+ bp segment as a single window includes hyper-variable loops and non-coding mutations, accumulating homopolymer and mismatch penalties that lower the score.\nSolution: This is expected behavior. The grade in full_segment mode is not used to exclude the segment, but simply reflects overall segment variation. The consensus sequence is still successfully exported to PrimerLab, which will perform local thermodynamic sliding scans to find individual primer pairs.",
+    "section": "8. Troubleshooting & Limitations",
+    "text": "8. Troubleshooting & Limitations\n\n8.1. Low Scores in Full Segment Mode\n\nProblem: In full_segment mode, the composite score is very low (e.g. \\(0.40\\)), resulting in Grade D.\nCause: Evaluating an entire 1000+ bp segment as a single window includes hyper-variable loops and non-coding mutations, accumulating homopolymer and mismatch penalties that lower the score.\nSolution: This is expected behavior. The grade in full_segment mode is not used to exclude the segment, but simply reflects overall segment variation. The consensus sequence is still successfully exported to PrimerLab, which will perform local thermodynamic sliding scans to find individual primer pairs.",
     "crumbs": [
       "<img src='assets/images/faculty_biology_ugm.png' style='height: 38px; width: auto; padding: 2px 0;' />",
       "Technical Architecture",

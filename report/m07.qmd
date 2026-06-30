@@ -211,24 +211,163 @@ candidate_regions:
 
 ---
 
-## 6. Inputs, Outputs & Files
+## 6. Interactive IGV Genomic Track Explorer
+
+To visualize the target zones and how they map onto the Influenza A MP segment, we have embedded a live, interactive instance of the **Integrative Genomics Viewer (IGV.js)**. 
+
+You can zoom in to see individual nucleotide bases, inspect the `M1` and `M2` gene boundaries (GFF3 annotation), and compare the conserved target zones (`conserved_regions.bed`) across the three different design scenarios.
+
+```{=html}
+<div id="igv-container" style="margin: 25px 0; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); background-color: #f8fafc; padding: 20px;">
+  <div id="igv-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span style="font-family: system-ui, -apple-system, sans-serif; font-weight: 700; font-size: 15px; color: #1e293b;">Interactive IGV Genomic Track Explorer</span>
+      <span id="igv-status" style="font-size: 11px; padding: 3px 8px; border-radius: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; background-color: #f1f5f9; color: #475569;">Initializing...</span>
+    </div>
+    
+    <div id="igv-selector-wrapper" style="display: none; align-items: center; gap: 8px;">
+      <label for="igv-track-select" style="font-family: system-ui, sans-serif; font-size: 12px; font-weight: 600; color: #475569;">Select Design Scenario:</label>
+      <select id="igv-track-select" style="font-family: system-ui, sans-serif; font-size: 12px; padding: 4px 8px; border-radius: 6px; border: 1px solid #cbd5e1; background-color: #ffffff; color: #1e293b; font-weight: 500; cursor: pointer; outline: none;">
+        <option value="assets/sea_only_conserved_regions.bed">Southeast Asia Only</option>
+        <option value="assets/indo_only_conserved_regions.bed">Indonesia Only</option>
+        <option value="assets/all_partial_conserved_regions.bed">All-Partial Database</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="igv-cors-warning" style="display: none; padding: 15px; border-radius: 6px; background-color: #fef2f2; border: 1px solid #fecaca; color: #991b1b; font-size: 13px; margin-bottom: 15px; font-family: system-ui, -apple-system, sans-serif; line-height: 1.5;">
+    <strong>⚠️ Browser Security Restriction (CORS) Detected</strong><br>
+    Anda membuka laporan ini langsung dari file lokal menggunakan protokol <code>file:///</code>. Karena kebijakan keamanan web browser, pemuatan track data dinamis dari harddisk lokal diblokir.<br>
+    <div style="margin-top: 10px; font-weight: 600; color: #7f1d1d;">Untuk berinteraksi dengan browser genome IGV ini secara langsung:</div>
+    <ul style="margin-top: 5px; margin-bottom: 5px; padding-left: 20px;">
+      <li><strong>Opsi A (Rekomendasi)</strong>: Jalankan server lokal dengan mengetik <code>quarto preview report</code> di terminal project Anda, lalu buka halaman ini di browser Anda (<code>http://localhost:4200</code>).</li>
+      <li><strong>Opsi B (Drag & Drop Manual)</strong>: Buka aplikasi web resmi <a href="https://igv.org/app/" target="_blank" style="color: #b91c1c; text-decoration: underline; font-weight: bold;">igv.org/app</a>, lalu seret dan lepas (drag & drop) file-file di bawah ini dari folder project Anda langsung ke layar browser tersebut:
+        <ul style="margin-top: 3px; font-family: monospace; font-size: 11px; color: #475569;">
+          <li><code>config/references/flu_a_mp_reference.fasta</code> (Reference Genome)</li>
+          <li><code>config/references/flu_a_mp_annotation.gff</code> (Gene Map)</li>
+          <li><code>ssh-output/results/{build}/m07/conserved_regions.bed</code> (Selected Target Zones)</li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+
+  <div id="igv-browser-div" style="min-height: 380px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px;"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/igv@3.0.4/dist/igv.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  var isLocalFile = window.location.protocol === 'file:';
+  var statusBadge = document.getElementById("igv-status");
+  var warningDiv = document.getElementById("igv-cors-warning");
+  var browserDiv = document.getElementById("igv-browser-div");
+  var selectorWrapper = document.getElementById("igv-selector-wrapper");
+  var trackSelect = document.getElementById("igv-track-select");
+  var igvBrowserInstance = null;
+
+  if (isLocalFile) {
+    statusBadge.textContent = "Offline Mode (CORS)";
+    statusBadge.style.backgroundColor = "#fee2e2";
+    statusBadge.style.color = "#991b1b";
+    warningDiv.style.display = "block";
+    browserDiv.style.display = "none";
+    return;
+  }
+
+  var igvOptions = {
+    showCommandBar: true,
+    showIdeogram: false,
+    genome: {
+      id: "Influenza_A_MP",
+      fastaURL: "assets/flu_a_mp_reference.fasta",
+      indexURL: "assets/flu_a_mp_reference.fasta.fai"
+    },
+    tracks: [
+      {
+        name: "Reference Sequence",
+        type: "sequence",
+        order: 1
+      },
+      {
+        name: "Gene Annotations (GFF3)",
+        type: "annotation",
+        format: "gff3",
+        url: "assets/flu_a_mp_annotation.gff",
+        order: 2,
+        displayMode: "EXPANDED",
+        color: "#2563eb",
+        nameField: "Name"
+      },
+      {
+        id: "target-zones-track",
+        name: "Conserved Target Zones (BED)",
+        type: "annotation",
+        format: "bed",
+        url: "assets/sea_only_conserved_regions.bed",
+        order: 3,
+        displayMode: "EXPANDED",
+        color: "#16a34a"
+      }
+    ]
+  };
+
+  igv.createBrowser(browserDiv, igvOptions)
+    .then(function (browser) {
+      igvBrowserInstance = browser;
+      statusBadge.textContent = "Live / Interactive";
+      statusBadge.style.backgroundColor = "#dcfce7";
+      statusBadge.style.color = "#166534";
+      selectorWrapper.style.display = "flex";
+
+      trackSelect.addEventListener("change", function(e) {
+        var selectedBedUrl = e.target.value;
+        
+        var tracksToRemove = browser.tracks.filter(function(t) { return t.config.id === "target-zones-track"; });
+        tracksToRemove.forEach(function(t) { browser.removeTrack(t); });
+
+        browser.loadTrack({
+          id: "target-zones-track",
+          name: "Conserved Target Zones (BED)",
+          type: "annotation",
+          format: "bed",
+          url: selectedBedUrl,
+          order: 3,
+          displayMode: "EXPANDED",
+          color: "#16a34a"
+        });
+      });
+    })
+    .catch(function (error) {
+      console.error("IGV initialization failed:", error);
+      statusBadge.textContent = "Error Loading Tracks";
+      statusBadge.style.backgroundColor = "#fee2e2";
+      statusBadge.style.color = "#991b1b";
+      warningDiv.style.display = "block";
+    });
+});
+</script>
+```
+
+---
+
+## 7. Inputs, Outputs & Files
 
 The files involved in Module 07 are summarized below:
 
 | File Role | Path | Format | Description |
 |---|---|---|---|
 | **Input Alignment** | `results/{build}/m03/aligned.fasta` | FASTA | Full sequence alignment from Module 03. |
-| **Input GFF3** | `config/references/flu_a_mp_annotation.gff` | GFF3 | Gene boundary coordinate map. |
+| **Input GFF3** | `config/references/flu_a_mp_annotation.gff` | GFF3 | Gene boundary coordinate map. Published in [assets/flu_a_mp_annotation.gff](assets/flu_a_mp_annotation.gff). |
 | **Input Selection JSONs** | `results/{build}/m05/fubar_{gene}.json` | JSON | dN/dS values per gene from Module 05. |
-| **Conserved BED** | `results/{build}/m07/conserved_regions.bed` | BED | Coordinates of graded conserved target zones. |
+| **Conserved BED** | `results/{build}/m07/conserved_regions.bed` | BED | Graded conserved target zones. Published in [assets/sea_only_conserved_regions.bed](assets/sea_only_conserved_regions.bed) / [assets/indo_only_conserved_regions.bed](assets/indo_only_conserved_regions.bed) / [assets/all_partial_conserved_regions.bed](assets/all_partial_conserved_regions.bed). |
 | **Bridge Report** | `results/{build}/m07/bridge_report.json` | JSON | Detailed statistical metrics for every target window. |
 | **Targets Manifest** | `results/{build}/m07/primer_targets_manifest.yaml` | YAML | Structured list of target zones with consensus sequences. |
 
 ---
 
-## 7. Troubleshooting & Limitations
+## 8. Troubleshooting & Limitations
 
-### 7.1. Low Scores in Full Segment Mode
+### 8.1. Low Scores in Full Segment Mode
 *   **Problem**: In `full_segment` mode, the composite score is very low (e.g. $0.40$), resulting in Grade D.
 *   **Cause**: Evaluating an entire 1000+ bp segment as a single window includes hyper-variable loops and non-coding mutations, accumulating homopolymer and mismatch penalties that lower the score.
 *   **Solution**: This is expected behavior. The grade in `full_segment` mode is not used to exclude the segment, but simply reflects overall segment variation. The consensus sequence is still successfully exported to PrimerLab, which will perform local thermodynamic sliding scans to find individual primer pairs.
