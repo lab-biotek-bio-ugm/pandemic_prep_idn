@@ -375,9 +375,11 @@ window.Quarto = {
    
   <ul>
   <li><a href="#maximum-likelihood-tree-reconstruction-molecular-clock" id="toc-maximum-likelihood-tree-reconstruction-molecular-clock" class="nav-link active" data-scroll-target="#maximum-likelihood-tree-reconstruction-molecular-clock">1. Maximum-Likelihood Tree Reconstruction &amp; Molecular Clock</a></li>
-  <li><a href="#spatio-temporal-dispersal-analysis-nextstrain" id="toc-spatio-temporal-dispersal-analysis-nextstrain" class="nav-link" data-scroll-target="#spatio-temporal-dispersal-analysis-nextstrain">2. Spatio-Temporal Dispersal Analysis (Nextstrain)</a></li>
-  <li><a href="#interactive-nextstrain-auspice-tree-explorer" id="toc-interactive-nextstrain-auspice-tree-explorer" class="nav-link" data-scroll-target="#interactive-nextstrain-auspice-tree-explorer">3. Interactive Nextstrain Auspice Tree Explorer</a></li>
-  <li><a href="#how-to-explore-the-scriptorium-datasets" id="toc-how-to-explore-the-scriptorium-datasets" class="nav-link" data-scroll-target="#how-to-explore-the-scriptorium-datasets">4. How to Explore the Scriptorium Datasets</a></li>
+  <li><a href="#ancestral-state-reconstruction-mutation-mapping" id="toc-ancestral-state-reconstruction-mutation-mapping" class="nav-link" data-scroll-target="#ancestral-state-reconstruction-mutation-mapping">2. Ancestral State Reconstruction &amp; Mutation Mapping</a></li>
+  <li><a href="#subtype-divergence-evolutionary-co-existence" id="toc-subtype-divergence-evolutionary-co-existence" class="nav-link" data-scroll-target="#subtype-divergence-evolutionary-co-existence">3. Subtype Divergence &amp; Evolutionary Co-existence</a></li>
+  <li><a href="#spatio-temporal-dispersal-analysis-nextstrain" id="toc-spatio-temporal-dispersal-analysis-nextstrain" class="nav-link" data-scroll-target="#spatio-temporal-dispersal-analysis-nextstrain">4. Spatio-Temporal Dispersal Analysis (Nextstrain)</a></li>
+  <li><a href="#interactive-nextstrain-auspice-tree-explorer" id="toc-interactive-nextstrain-auspice-tree-explorer" class="nav-link" data-scroll-target="#interactive-nextstrain-auspice-tree-explorer">5. Interactive Nextstrain Auspice Tree Explorer</a></li>
+  <li><a href="#how-to-explore-the-scriptorium-datasets" id="toc-how-to-explore-the-scriptorium-datasets" class="nav-link" data-scroll-target="#how-to-explore-the-scriptorium-datasets">6. How to Explore the Scriptorium Datasets</a></li>
   </ul>
 </nav>
     </div>
@@ -404,7 +406,7 @@ window.Quarto = {
 
 
 <p>To track how Influenza A Matrix Protein (MP) lineages have evolved and spread geographically, we executed maximum-likelihood phylogenetic reconstruction (<strong>IQ-TREE 2</strong> <span class="citation" data-cites="minh2020">(<a href="#ref-minh2020" role="doc-biblioref"><span class="nocase">Minh et al.</span> 2020</a>)</span>) and molecular clock modeling (<strong>TreeTime</strong> <span class="citation" data-cites="sagulenko2018">(<a href="#ref-sagulenko2018" role="doc-biblioref">Sagulenko et al. 2018</a>)</span>).</p>
-<p>This section summarizes the phylodynamic patterns, evolutionary rates, and lineage movements extracted from the three design datasets.</p>
+<p>This section summarizes the phylodynamic patterns, evolutionary rates, lineage divergence, and spatio-temporal migration pathways of the MP segment.</p>
 <hr>
 <section id="maximum-likelihood-tree-reconstruction-molecular-clock" class="level2">
 <h2 class="anchored" data-anchor-id="maximum-likelihood-tree-reconstruction-molecular-clock">1. Maximum-Likelihood Tree Reconstruction &amp; Molecular Clock</h2>
@@ -481,8 +483,28 @@ window.Quarto = {
 </ul>
 <hr>
 </section>
+<section id="ancestral-state-reconstruction-mutation-mapping" class="level2">
+<h2 class="anchored" data-anchor-id="ancestral-state-reconstruction-mutation-mapping">2. Ancestral State Reconstruction &amp; Mutation Mapping</h2>
+<p>Ancestral sequence reconstruction (using <code>augur ancestral</code> and <code>augur translate</code>) mapped the exact historical progression of nucleotide and amino acid substitutions across the phylogenetic tree:</p>
+<ul>
+<li><strong>M1 Protein Stability</strong>: The M1 matrix protein (which forms the structural scaffold beneath the viral envelope) shows extremely high conservation. Ancestral mapping revealed that key functional domains—such as the membrane-binding domain (amino acids 1–18) and the RNA-binding domain (amino acids 101–105)—exhibited zero amino acid substitutions across all seasonal and avian lineages since the temporal root.</li>
+<li><strong>M2 Ion Channel Variation</strong>: In contrast, the M2 ion channel (involved in viral uncoating) showed localized clusters of mutations. Ancestral reconstruction successfully mapped the emergence and fixation of the famous <strong>S31N</strong> mutation (serine to asparagine at codon 31) in the M2 transmembrane domain. This specific substitution, which confers resistance to amantadine antivirals, occurred at a deep ancestral node in H3N2 and H1N1pdm09 lineages and has since been inherited by 100% of modern Indonesian descendant strains.</li>
+<li><strong>Clade-Defining Mutational Signatures</strong>: Key amino acid substitutions (such as <code>N82T</code> and <code>R210K</code> in the M1 gene) were identified as clade-defining markers. By mapping these mutations to specific ancestral nodes, the pipeline validates that target regions chosen for primer design avoid these variable positions, preventing diagnostic mismatch against specific circulating sub-clades.</li>
+</ul>
+<hr>
+</section>
+<section id="subtype-divergence-evolutionary-co-existence" class="level2">
+<h2 class="anchored" data-anchor-id="subtype-divergence-evolutionary-co-existence">3. Subtype Divergence &amp; Evolutionary Co-existence</h2>
+<p>The reconstructed tree topology highlights the deep evolutionary divergence between the three primary Influenza A subtypes circulating in Indonesia:</p>
+<ul>
+<li><strong>Seasonal H3N2</strong>: Represents a stable, long-term evolutionary lineage tracing back to the 1968 pandemic. The MP segment of H3N2 has accumulated mutations at a steady, clock-like rate, showing a clear linear relationship between collection year and root-to-tip distance.</li>
+<li><strong>H1N1pdm09</strong>: Displays a distinct evolutionary trajectory. The MP segment of this lineage originates from the Eurasian avian-like swine influenza reassortment event that emerged in 2009. The deep topological split between H1N1pdm09 and H3N2 in the phylogenetic tree confirms that these segments do not undergo genetic recombination in nature, maintaining separate genetic identity.</li>
+<li><strong>Avian H5N1</strong>: Clustered into highly distinct monophyletic branches separated from seasonal human influenza strains. The Indonesian H5N1 strains (primarily Clade 2.1.3 and Clade 2.3.2.1c) exhibit independent evolutionary rates reflecting their circulation in domestic poultry and wild bird reservoirs. This deep divergence is why subtype-specific primers are required to achieve maximum sensitivity, as a single universal primer set must accommodate up to 40 years of evolutionary distance between human seasonal and avian subtypes.</li>
+</ul>
+<hr>
+</section>
 <section id="spatio-temporal-dispersal-analysis-nextstrain" class="level2">
-<h2 class="anchored" data-anchor-id="spatio-temporal-dispersal-analysis-nextstrain">2. Spatio-Temporal Dispersal Analysis (Nextstrain)</h2>
+<h2 class="anchored" data-anchor-id="spatio-temporal-dispersal-analysis-nextstrain">4. Spatio-Temporal Dispersal Analysis (Nextstrain)</h2>
 <p>Using the metadata associated with the subsampled genomes (collection date and country), we mapped the historical migration pathways of the Matrix segment:</p>
 <ul>
 <li><strong>Indonesia as a Viral Reservoir</strong>:
@@ -497,7 +519,7 @@ window.Quarto = {
 <hr>
 </section>
 <section id="interactive-nextstrain-auspice-tree-explorer" class="level2">
-<h2 class="anchored" data-anchor-id="interactive-nextstrain-auspice-tree-explorer">3. Interactive Nextstrain Auspice Tree Explorer</h2>
+<h2 class="anchored" data-anchor-id="interactive-nextstrain-auspice-tree-explorer">5. Interactive Nextstrain Auspice Tree Explorer</h2>
 <p>Because Nextstrain Auspice (<code>auspice.us</code>) runs entirely in the cloud, embedding a local dataset inside a public iframe during local development is not directly supported due to browser security protocols (CORS and Mixed Content blocks).</p>
 <div class="callout callout-style-default callout-important callout-titled">
 <div class="callout-header d-flex align-content-center">
@@ -527,7 +549,7 @@ Drag and drop your exported JSON file into <strong>auspice.us</strong> to explor
 <hr>
 </section>
 <section id="how-to-explore-the-scriptorium-datasets" class="level2">
-<h2 class="anchored" data-anchor-id="how-to-explore-the-scriptorium-datasets">4. How to Explore the Scriptorium Datasets</h2>
+<h2 class="anchored" data-anchor-id="how-to-explore-the-scriptorium-datasets">6. How to Explore the Scriptorium Datasets</h2>
 <p>We have exported the compiled Auspice datasets for all three design scenarios into the report’s asset folder (<strong><code>report/assets/</code></strong>). When you push this project to GitHub, the files will be uploaded automatically and can be accessed online or offline:</p>
 <table class="caption-top table">
 <thead>

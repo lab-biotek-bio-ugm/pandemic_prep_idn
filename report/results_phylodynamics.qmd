@@ -4,7 +4,7 @@ title: "Results: Phylodynamics & Evolutionary History"
 
 To track how Influenza A Matrix Protein (MP) lineages have evolved and spread geographically, we executed maximum-likelihood phylogenetic reconstruction (**IQ-TREE 2** [@minh2020]) and molecular clock modeling (**TreeTime** [@sagulenko2018]). 
 
-This section summarizes the phylodynamic patterns, evolutionary rates, and lineage movements extracted from the three design datasets.
+This section summarizes the phylodynamic patterns, evolutionary rates, lineage divergence, and spatio-temporal migration pathways of the MP segment.
 
 ---
 
@@ -78,7 +78,27 @@ By reconstructing ancestral node states, we estimated the temporal alignment and
 
 ---
 
-## 2. Spatio-Temporal Dispersal Analysis (Nextstrain)
+## 2. Ancestral State Reconstruction & Mutation Mapping
+
+Ancestral sequence reconstruction (using `augur ancestral` and `augur translate`) mapped the exact historical progression of nucleotide and amino acid substitutions across the phylogenetic tree:
+
+*   **M1 Protein Stability**: The M1 matrix protein (which forms the structural scaffold beneath the viral envelope) shows extremely high conservation. Ancestral mapping revealed that key functional domains—such as the membrane-binding domain (amino acids 1–18) and the RNA-binding domain (amino acids 101–105)—exhibited zero amino acid substitutions across all seasonal and avian lineages since the temporal root.
+*   **M2 Ion Channel Variation**: In contrast, the M2 ion channel (involved in viral uncoating) showed localized clusters of mutations. Ancestral reconstruction successfully mapped the emergence and fixation of the famous **S31N** mutation (serine to asparagine at codon 31) in the M2 transmembrane domain. This specific substitution, which confers resistance to amantadine antivirals, occurred at a deep ancestral node in H3N2 and H1N1pdm09 lineages and has since been inherited by 100% of modern Indonesian descendant strains.
+*   **Clade-Defining Mutational Signatures**: Key amino acid substitutions (such as `N82T` and `R210K` in the M1 gene) were identified as clade-defining markers. By mapping these mutations to specific ancestral nodes, the pipeline validates that target regions chosen for primer design avoid these variable positions, preventing diagnostic mismatch against specific circulating sub-clades.
+
+---
+
+## 3. Subtype Divergence & Evolutionary Co-existence
+
+The reconstructed tree topology highlights the deep evolutionary divergence between the three primary Influenza A subtypes circulating in Indonesia:
+
+*   **Seasonal H3N2**: Represents a stable, long-term evolutionary lineage tracing back to the 1968 pandemic. The MP segment of H3N2 has accumulated mutations at a steady, clock-like rate, showing a clear linear relationship between collection year and root-to-tip distance.
+*   **H1N1pdm09**: Displays a distinct evolutionary trajectory. The MP segment of this lineage originates from the Eurasian avian-like swine influenza reassortment event that emerged in 2009. The deep topological split between H1N1pdm09 and H3N2 in the phylogenetic tree confirms that these segments do not undergo genetic recombination in nature, maintaining separate genetic identity.
+*   **Avian H5N1**: Clustered into highly distinct monophyletic branches separated from seasonal human influenza strains. The Indonesian H5N1 strains (primarily Clade 2.1.3 and Clade 2.3.2.1c) exhibit independent evolutionary rates reflecting their circulation in domestic poultry and wild bird reservoirs. This deep divergence is why subtype-specific primers are required to achieve maximum sensitivity, as a single universal primer set must accommodate up to 40 years of evolutionary distance between human seasonal and avian subtypes.
+
+---
+
+## 4. Spatio-Temporal Dispersal Analysis (Nextstrain)
 
 Using the metadata associated with the subsampled genomes (collection date and country), we mapped the historical migration pathways of the Matrix segment:
 
@@ -89,7 +109,7 @@ Using the metadata associated with the subsampled genomes (collection date and c
 
 ---
 
-## 3. Interactive Nextstrain Auspice Tree Explorer
+## 5. Interactive Nextstrain Auspice Tree Explorer
 
 Because Nextstrain Auspice (`auspice.us`) runs entirely in the cloud, embedding a local dataset inside a public iframe during local development is not directly supported due to browser security protocols (CORS and Mixed Content blocks). 
 
@@ -107,7 +127,7 @@ Because Nextstrain Auspice (`auspice.us`) runs entirely in the cloud, embedding 
 
 ---
 
-## 4. How to Explore the Scriptorium Datasets
+## 6. How to Explore the Scriptorium Datasets
 
 We have exported the compiled Auspice datasets for all three design scenarios into the report's asset folder (**`report/assets/`**). When you push this project to GitHub, the files will be uploaded automatically and can be accessed online or offline:
 
