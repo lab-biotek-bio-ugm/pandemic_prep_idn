@@ -49,6 +49,7 @@ To support different computing environments (from local workstations to restrict
 *   **Databases**: Queries custom local database structures built upstream by `build_db.smk`:
     1.  **`human_db`**: A consolidated human reference database combining the GRCh38.p14 and T2T-CHM13v2.0 assemblies.
     2.  **`virus_db`**: A database containing common non-target respiratory pathogens (e.g., Adenovirus, Rhinovirus, Enterovirus, RSV, SARS-CoV-2) to ensure no cross-reactivity.
+
 *   **Advantage**: High-throughput execution (10–100x faster than remote queries), completely secure (clinical target sequences are not uploaded to public servers), and runs offline.
 
 ### 1.2. Remote Mode (`mode: remote`)

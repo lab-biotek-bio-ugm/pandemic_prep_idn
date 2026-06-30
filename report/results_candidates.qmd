@@ -568,6 +568,7 @@ All generated candidates were filtered through the **NCBI BLAST+ Specificity Ver
 
 ### 3' End Veto Filter Criteria
 If a candidate pair matches any non-target respiratory pathogen or human sequence with zero mismatches in the last 8 nucleotides at the 3' end, the set is vetoed (**FAIL**).
+
 *   *Indo-Only Vetoes*: Out of 100 raw candidates, **12 sets were vetoed** due to critical 3' end cross-reactivity with the human genome (e.g. Candidate 5 and 18).
 *   *All-Partial Vetoes*: **22 candidate sets were vetoed** due to human genomic cross-reactivity.
 

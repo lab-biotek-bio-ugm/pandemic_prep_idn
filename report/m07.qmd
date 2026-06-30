@@ -62,6 +62,7 @@ For a coding gene $G$ starting at nucleotide position $Start_G$ in the whole gen
 
 *   Each codon position $C$ (1-indexed) in the HyPhy output corresponds to three nucleotide positions in the whole sequence:
     $$\text{Nucleotide positions} = \{ Start_G + 3(C - 1), \;\; Start_G + 3(C - 1) + 1, \;\; Start_G + 3(C - 1) + 2 \}$$
+
 *   **Example (Influenza A M1 Gene)**: The $M1$ gene starts at nucleotide position `26` on the MP segment. If HyPhy FUBAR identifies codon `10` as being under strong purifying selection, the Bridge Engine remaps this score to nucleotide positions `53`, `54`, and `55` on the whole sequence ($26 + 3(10 - 1) = 53$).
 
 ### 2.2. Handling Non-Coding Regions (UTRs)
@@ -93,9 +94,11 @@ The base core score is calculated by weighting normalized nucleotide conservatio
 
 *   **Normalized Conservation**: Shannon Entropy ($H$) is normalized to a $[0, 1]$ scale:
     $$Cons_{norm} = 1.0 - \frac{\text{Mean Entropy}}{2.0}$$
+
 *   **Coding regions (CDS)**:
     $$\text{Core Score} = (w_{cons} \times Cons_{norm}) + (w_{fub} \times FUBAR_{prob})$$
     *(Default weights: $w_{cons} = 0.66$ and $w_{fub} = 0.34$)*
+
 *   **Non-coding regions (UTRs)**:
     $$\text{Core Score} = Cons_{norm} \times 0.95$$
 

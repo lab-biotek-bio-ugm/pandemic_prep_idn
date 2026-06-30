@@ -63,6 +63,7 @@ When configured with `database: ncbi`, the pipeline utilizes the official **NCBI
         > results/influenza-a-mp-universal/m01/raw_metadata.jsonl
     ```
 3.  **Column Mapping**: The extracted tabular fields are mapped to Nextstrain Augur compatible naming conventions:
+
     *   `Accession` $\rightarrow$ `strain`
     *   `Virus Name` $\rightarrow$ `virus`
     *   `Geographic Location` $\rightarrow$ `location`
@@ -87,11 +88,14 @@ When configured with `database: local`, the pipeline processes manually download
 Different databases output metadata with varying schemas, date formats, and missing entries. The Snakemake rule `sanitize_metadata` runs `scripts/sanitize_metadata.py` to normalize the tabular data into a consistent internal format using a **3-tier validation protocol**:
 
 1.  **Tier 1: Critical (strain, date, country)**
+
     *   *Action*: Must be present and valid. Any rows with empty strain IDs or completely unparseable dates (e.g., missing year) are **dropped** from the analysis to prevent pipeline failure.
     *   *Incomplete Dates*: Imprecise dates like `2024` or `2024-05` are normalized to `2024-XX-XX` or `2024-05-XX` to comply with Nextstrain's date format requirements.
 2.  **Tier 2: Spatio-Temporal Context (region, host, division)**
+
     *   *Action*: Missing values are **silently filled with defaults**. If `host` is empty, it defaults to `Human`. If `region` is missing, it is derived from `country` mapping.
 3.  **Tier 3: Metadata Pass-through**
+
     *   *Action*: Non-essential demographic fields (e.g., `age`, `gender`, `passage_history`) are passed through unmodified to maintain dataset richness.
 
 ---

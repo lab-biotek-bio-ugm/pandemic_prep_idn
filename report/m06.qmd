@@ -40,6 +40,7 @@ Once reconstruction is complete, the individual phylodynamic components must be 
 ```
 
 The final export aggregates:
+
 *   The calendar-dated tree structure (`tree.nwk`) and branch lengths.
 *   Enriched socio-demographic and travel metadata (`metadata_enriched.tsv`).
 *   Nucleotide and amino acid mutations mapped to every node and tip.
