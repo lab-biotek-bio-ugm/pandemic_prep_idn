@@ -729,160 +729,61 @@ window.Quarto = {
 </section>
 <section id="interactive-igv-genomic-track-explorer" class="level2">
 <h2 class="anchored" data-anchor-id="interactive-igv-genomic-track-explorer">6. Interactive IGV Genomic Track Explorer</h2>
-<p>To visualize the target zones and how they map onto the Influenza A MP segment, we have embedded a live, interactive instance of the <strong>Integrative Genomics Viewer (IGV.js)</strong>.</p>
-<p>You can zoom in to see individual nucleotide bases, inspect the <code>M1</code> and <code>M2</code> gene boundaries (GFF3 annotation), and compare the conserved target zones (<code>conserved_regions.bed</code>) across the three different design scenarios.</p>
-<div id="igv-container" style="margin: 25px 0; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); background-color: #f8fafc; padding: 20px;">
-  <div id="igv-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; flex-wrap: wrap; gap: 10px;">
-    <div style="display: flex; align-items: center; gap: 10px;">
-      <span style="font-family: system-ui, -apple-system, sans-serif; font-weight: 700; font-size: 15px; color: #1e293b;">Interactive IGV Genomic Track Explorer</span>
-      <span id="igv-status" style="font-size: 11px; padding: 3px 8px; border-radius: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; background-color: #f1f5f9; color: #475569;">Initializing...</span>
-    </div>
-    
-    <div id="igv-selector-wrapper" style="display: none; align-items: center; gap: 8px;">
-      <label for="igv-track-select" style="font-family: system-ui, sans-serif; font-size: 12px; font-weight: 600; color: #475569;">Select Design Scenario:</label>
-      <select id="igv-track-select" style="font-family: system-ui, sans-serif; font-size: 12px; padding: 4px 8px; border-radius: 6px; border: 1px solid #cbd5e1; background-color: #ffffff; color: #1e293b; font-weight: 500; cursor: pointer; outline: none;">
-        <option value="assets/sea_only_conserved_regions.bed">Southeast Asia Only</option>
-        <option value="assets/indo_only_conserved_regions.bed">Indonesia Only</option>
-        <option value="assets/all_partial_conserved_regions.bed">All-Partial Database</option>
-      </select>
-    </div>
-  </div>
-
-  <div id="igv-cors-warning" style="display: none; padding: 15px; border-radius: 6px; background-color: #fef2f2; border: 1px solid #fecaca; color: #991b1b; font-size: 13px; margin-bottom: 15px; font-family: system-ui, -apple-system, sans-serif; line-height: 1.5;">
-    <strong>⚠️ Browser Security Restriction (CORS) Detected</strong><br>
-    Anda membuka laporan ini langsung dari file lokal menggunakan protokol <code>file:///</code>. Karena kebijakan keamanan web browser, pemuatan track data dinamis dari harddisk lokal diblokir.<br>
-    <div style="margin-top: 10px; font-weight: 600; color: #7f1d1d;">Untuk berinteraksi dengan browser genome IGV ini secara langsung:</div>
-    <ul style="margin-top: 5px; margin-bottom: 5px; padding-left: 20px;">
-      <li><strong>Opsi A (Rekomendasi)</strong>: Jalankan server lokal dengan mengetik <code>quarto preview report</code> di terminal project Anda, lalu buka halaman ini di browser Anda (<code>http://localhost:4200</code>).</li>
-      <li><strong>Opsi B (Drag &amp; Drop Manual)</strong>: Buka aplikasi web resmi <a href="https://igv.org/app/" target="_blank" style="color: #b91c1c; text-decoration: underline; font-weight: bold;">igv.org/app</a>, lalu seret dan lepas (drag &amp; drop) file-file di bawah ini dari folder project Anda langsung ke layar browser tersebut:
-        <ul style="margin-top: 3px; font-family: monospace; font-size: 11px; color: #475569;">
-          <li><code>config/references/flu_a_mp_reference.fasta</code> (Reference Genome)</li>
-          <li><code>config/references/flu_a_mp_annotation.gff</code> (Gene Map)</li>
-          <li><code>ssh-output/results/{build}/m07/conserved_regions.bed</code> (Selected Target Zones)</li>
-        </ul>
-      </li>
-    </ul>
-  </div>
-
-  <div id="igv-browser-div" style="min-height: 380px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px;"></div>
-</div>
+<p>To demonstrate how output target tracks can be visualized, below is an embedded, live instance of the <strong>Integrative Genomics Viewer (IGV.js)</strong> displaying a demo Influenza A MP segment reference, gene annotations (GFF3), and output target zones (BED).</p>
+<div id="igv-browser-div" style="margin: 25px 0; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); min-height: 460px; background-color: #ffffff;"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/igv@3.0.4/dist/igv.min.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-  var isLocalFile = window.location.protocol === 'file:';
-  var statusBadge = document.getElementById("igv-status");
-  var warningDiv = document.getElementById("igv-cors-warning");
   var browserDiv = document.getElementById("igv-browser-div");
-  var selectorWrapper = document.getElementById("igv-selector-wrapper");
-  var trackSelect = document.getElementById("igv-track-select");
-  var igvBrowserInstance = null;
 
-  // Base64 Data URLs
+  // Inline Base64 Demo Data (Influenza A Segment 7)
   var fastaDataUrl = "data:text/plain;base64,Pk5DXzAwMjAxNi4xIEluZmx1ZW56YSBBIE1QIFJlZmVyZW5jZQ0KQUdDR0FBQUdDQUdHVEFHQVRBVFRHQUFBR0FUR0FHVENUVENUQUFDQ0dBR0dUQ0dBQUFDR1RBQ0dUVENUQ1RDVEFUQ0FUQ0NDR1RDQUdHQ0NDQ0NUQ0FBQUdDQ0dBR0FUQ0dDQUNBR0FHQUNUVEdBQUdBVEdUQ1RUVEdDQUdHR0FBR0FBQ0FDQ0dBVENUVEdBR0dUVENUQ0FUR0dBQVRHR0NUQUFBR0FDQUFHQUNDQUFUQ0NUR1RDQUNDVENUR0FDVEFBR0dHR0FUVFRUQUdHQVRUVEdUR1RUQ0FDR0NUQ0FDQ0dUR0NDQ0FHVEdBR0NHQUdHQUNUR0NBR0NHVEFHQUNHQ1RUVEdUQ0NBQUFBVEdDQ0NUVEFBVEdHR0FBQ0dHR0dBVENDQUFBVEFBQ0FUR0dBQ0FBQUdDQUdUVEFBQUNUR1RBVEFHR0FBR0NUQ0FBR0FHR0dBR0FUQUFDQVRUQ0NBVEdHR0dDQ0FBQUdBQUFUQ1RDQACUNBR1VFRkFUVENUR0NUR0dUR0NBQ1RUR0NDQUdUVEdURUFUR0dHQ0NUQ0FUQVRBQ0FBQ0FHR0FUR0dHR0dDVEdUR0FDQ0FDVEdBQUdUR0dDQVRUVEdHQ0NUR0dUQVRHVEdDQUFDQ1RHVEdBQUNBR0FUVEdDVEdBQ1RDQ0NBR0NBVENHR1RDVENBVEFHR0NBQUFUR0dUR0FDQUFDQUFDQ0FBQ0NDQUNUQUFUQ0FHQUNBVEdBR0FBQ0FHQUFUR0dUVFRUQUdDQ0FHQ0FDVEFDQUdDVEFBR0dDVEFUR0dBR0NBQUFUR0dDVEdHQVRDR0FHVEdBR0NBQUdDQUdDQUdBR0dDQ0FUR0dBR0dUVEdDVEFHVENBR0dDVEFHR0NBQUFUR0dUR0NBQUdDR0FUR0FHQUFDQ0FUVEdHR0FDVENBVENDVEFHQ1RDQ0FHVEdDVEdHVENUR0FBQUFBVEdBVENUVENUVEdBQUFBVFRUR0NBR0dDQ1RBVENBR0FBQUNHQUFUR0dHR0dUR0NBR0FUR0NBQUNHR1RUQ0FBR1RHQVRDQ1RDVENHQ1RBVFRHQ0NHQ0FBQVRBVENBVFRHR0dBVENUVEdDQUNUVEdBVEFUVEdUR0dBVFRDVFRHQVRDR1RDVFRUVFRUVENBQUFUR0NBVFRUQUNDR1RDR0NUVFRBQUFUQUNHR0FDVEdBQUFHR0FHR0dDQ1RUQ1RBQ0dHQUFHR0FHVEdDQ0FBQUdUQ1RBVEdBR0dHQUFHQUFUQVRDR0FBQUdHQUFDQUdDQUdBR1RHQ1RHVEdHQVRHQ1RHQUNHQVRHR1RDQVRUVFRHVENBR0NBVEFHQUdDVEdHQUdUQUFBQUFHQ1RBQ0NUVEdUVFRDVEFDVA0K";
   var faiDataUrl = "data:text/plain;base64,TkNfMDAyMDE2LjEJMTAyNwkzOQkxMDI3CTEwMjkNCg==";
   var gffDataUrl = "data:text/plain;base64,IyNnZmYtdmVyc2lvbiAzDQojI3NlcXVlbmNlLXJlZ2lvbiBOQ18wMDIwMTYuMSAxIDEwMjcNCk5DXzAwMjAxNi4xCU5DQkkJZ2VuZQkxCTEwMjcJLgkrCS4JSUQ9c2VnbWVudC1NUA0KTkNfMDAyMDE2LjEJTkNCSQlDRFMJMjYJNTEJLgkrCTAJSUQ9Y2RzLU0yX3AxO1BhcmVudD1zZWdtZW50LU1QO2dlbmU9TTINCk5DXzAwMjAxNi4xCU5DQkkJQ0RTCTc0MAkxMDA3CS4JKwkwCUlEPWNkcy1NMl9wMjtQYXJlbnQ9c2VnbWVudC1NUDtnZW5lPU0yDQpOQ18wMDIwMTYuMQlOQ0JJCWdlbmUJMjYJNzg0CS4JKwkuCUlEPWdlbmUtTTE7Z2VuZT1NMQ0KTkNfMDAyMDE2LjEJTkNCSQlDRFMJMjYJNzg0CS4JKwkwCUlEPWNkcy1NMTtQYXJlbnQ9Z2VuZS1NMTtnZW5lPU0xDQpOQ18wMDIwMTYuMQlOQ0JJCWZpdmVfcHJpbWVfVVRSCTEJMjUJLgkrCS4JSUQ9dXRyLTU7UGFyZW50PXNlZ21lbnQtTVANCk5DXzAwMjAxNi4xCU5DQkkJdGhyZWVfcHJpbWVfVVRSCTEwMDgJMTAyNwkuCSsJLglJRD11dHItMztQYXJlbnQ9c2VnbWVudC1NUA0K";
-  var bedSeaDataUrl = "data:text/plain;base64,TkNfMDAyMDE2LjEJMAkxMDI3CXNlZ21lbnQtTVBfcmVnaW9uXzEJMC40MDk4CSsKTkNfMDAyMDE2LjEJMAkyNQk1J1VUUl9yZWdpb25fMgkwLjAJKwpOQ18wMDIwMTYuMQkyNQkxMDA3CU0yX3JlZ2lvbl8zCTAuMAkrCk5DXzAwMjAxNi4xCTI1CTc4NAlNMV9yZWdpb25fNAkwLjAJKwpOQ18wMDIwMTYuMQkxMDA3CTEwMjcJMydVVFJfcmVnaW9uXzUJMC4wCSsK";
-  var bedIndoDataUrl = "data:text/plain;base64,TkNfMDAyMDE2LjEJMAkxMDI3CXNlZ21lbnQtTVBfcmVnaW9uXzEJMC40MDcxCSsKTkNfMDAyMDE2LjEJMAkyNQk1J1VUUl9yZWdpb25fMgkwLjAJKwpOQ18wMDIwMTYuMQkyNQkxMDA3CU0yX3JlZ2lvbl8zCTAuMAkrCk5DXzAwMjAxNi4xCTI1CTc4NAlNMV9yZWdpb25fNAkwLjAJKwpOQ18wMDIwMTYuMQkxMDA3CTEwMjcJMydVVFJfcmVnaW9uXzUJMC4wCSsK";
-  var bedAllDataUrl = "data:text/plain;base64,TkNfMDAyMDE2LjEJMAkxMDI3CXNlZ21lbnQtTVBfcmVnaW9uXzEJMC40MDIyCSsKTkNfMDAyMDE2LjEJMAkyNQk1J1VUUl9yZWdpb25fMgkwLjAJKwpOQ18wMDIwMTYuMQkyNQkxMDA3CU0yX3JlZ2lvbl8zCTAuMAkrCk5DXzAwMjAxNi4xCTI1CTc4NAlNMV9yZWdpb25fNAkwLjAJKwpOQ18wMDIwMTYuMQkxMDA3CTEwMjcJMydVVFJfcmVnaW9uXzUJMC4wCSsK";
-
-  // Determine paths
-  var fastaURL = isLocalFile ? fastaDataUrl : "assets/flu_a_mp_reference.fasta";
-  var indexURL = isLocalFile ? faiDataUrl : "assets/flu_a_mp_reference.fasta.fai";
-  var gffURL = isLocalFile ? gffDataUrl : "assets/flu_a_mp_annotation.gff";
-
-  function getBedUrl(val) {
-    if (isLocalFile) {
-      if (val.includes("sea")) return bedSeaDataUrl;
-      if (val.includes("indo")) return bedIndoDataUrl;
-      return bedAllDataUrl;
-    }
-    return val;
-  }
+  var bedDataUrl = "data:text/plain;base64,TkNfMDAyMDE2LjEJMAkxMDI3CXNlZ21lbnQtTVBfcmVnaW9uXzEJMC40MDk4CSsKTkNfMDAyMDE2LjEJMAkyNQk1J1VUUl9yZWdpb25fMgkwLjAJKwpOQ18wMDIwMTYuMQkyNQkxMDA3CU0yX3JlZ2lvbl8zCTAuMAkrCk5DXzAwMjAxNi4xCTI1CTc4NAlNMV9yZWdpb25fNAkwLjAJKwpOQ18wMDIwMTYuMQkxMDA3CTEwMjcJMydVVFJfcmVnaW9uXzUJMC4wCSsK";
 
   var igvOptions = {
     showCommandBar: true,
     showIdeogram: false,
     genome: {
-      id: "Influenza_A_MP",
-      fastaURL: fastaURL,
-      indexURL: indexURL
+      id: "Influenza_A_MP (Demo)",
+      fastaURL: fastaDataUrl,
+      indexURL: faiDataUrl
     },
     tracks: [
       {
         name: "Reference Sequence",
         type: "sequence",
-        order: 1
+        order: 1,
+        height: 30
       },
       {
         name: "Gene Annotations (GFF3)",
         type: "annotation",
         format: "gff3",
-        url: gffURL,
+        url: gffDataUrl,
         order: 2,
         displayMode: "EXPANDED",
         color: "#2563eb",
-        nameField: "Name"
+        nameField: "Name",
+        height: 120
       },
       {
-        id: "target-zones-track",
         name: "Conserved Target Zones (BED)",
         type: "annotation",
         format: "bed",
-        url: getBedUrl("assets/sea_only_conserved_regions.bed"),
+        url: bedDataUrl,
         order: 3,
         displayMode: "EXPANDED",
-        color: "#16a34a"
+        color: "#16a34a",
+        height: 120
       }
     ]
   };
-
-  // Adjust display for local file
-  if (isLocalFile) {
-    warningDiv.style.backgroundColor = "#eff6ff";
-    warningDiv.style.borderColor = "#bfdbfe";
-    warningDiv.style.color = "#1e3a8a";
-    warningDiv.innerHTML = `
-      <strong>💡 Local Demo Mode (CORS Bypassed)</strong><br>
-      Laporan ini dibuka langsung dari penyimpanan lokal (<code>file:///</code>). 
-      Kami secara otomatis memuat data secara inline (Base64) agar browser genome interaktif di bawah dapat berjalan secara luring tanpa hambatan keamanan CORS.
-    `;
-    warningDiv.style.display = "block";
-  }
-
   igv.createBrowser(browserDiv, igvOptions)
-    .then(function (browser) {
-      igvBrowserInstance = browser;
-      statusBadge.textContent = isLocalFile ? "Local Demo (Offline)" : "Live / Interactive";
-      statusBadge.style.backgroundColor = isLocalFile ? "#dbeafe" : "#dcfce7";
-      statusBadge.style.color = isLocalFile ? "#1e40af" : "#166534";
-      selectorWrapper.style.display = "flex";
-
-      trackSelect.addEventListener("change", function(e) {
-        var selectedValue = e.target.value;
-        var selectedBedUrl = getBedUrl(selectedValue);
-        
-        var tracksToRemove = browser.tracks.filter(function(t) { return t.config.id === "target-zones-track"; });
-        tracksToRemove.forEach(function(t) { browser.removeTrack(t); });
-
-        browser.loadTrack({
-          id: "target-zones-track",
-          name: "Conserved Target Zones (BED)",
-          type: "annotation",
-          format: "bed",
-          url: selectedBedUrl,
-          order: 3,
-          displayMode: "EXPANDED",
-          color: "#16a34a"
-        });
-      });
-    })
     .catch(function (error) {
       console.error("IGV initialization failed:", error);
-      statusBadge.textContent = "Error Loading Tracks";
-      statusBadge.style.backgroundColor = "#fee2e2";
-      statusBadge.style.color = "#991b1b";
-      warningDiv.style.display = "block";
     });
 });
 </script>
