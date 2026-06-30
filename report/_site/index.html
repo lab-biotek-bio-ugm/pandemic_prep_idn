@@ -875,6 +875,23 @@ document.addEventListener("DOMContentLoaded", function() {
       a.setAttribute('href', 'references.html' + refId);
     }
   });
+
+  var tables = document.querySelectorAll("main table");
+  tables.forEach(function(table) {
+    var firstTh = table.querySelector("thead th");
+    if (firstTh) {
+      var text = firstTh.textContent.trim().toLowerCase();
+      if (text.includes("parameter name")) {
+        table.classList.add("parameter-table");
+      }
+    }
+    if (!table.parentNode.classList.contains("table-responsive")) {
+      var wrapper = document.createElement("div");
+      wrapper.className = "table-responsive";
+      table.parentNode.insertBefore(wrapper, table);
+      wrapper.appendChild(table);
+    }
+  });
 });
 </script>
 
