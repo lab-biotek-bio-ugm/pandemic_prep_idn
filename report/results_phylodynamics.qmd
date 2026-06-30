@@ -4,11 +4,24 @@ title: "Results: Phylodynamics & Evolutionary History"
 
 To track how Influenza A Matrix Protein (MP) lineages have evolved and spread geographically, we executed maximum-likelihood phylogenetic reconstruction (**IQ-TREE 2** [@minh2020]) and molecular clock modeling (**TreeTime** [@sagulenko2018]). 
 
-This section summarizes the phylodynamic patterns, evolutionary rates, lineage divergence, and spatio-temporal migration pathways of the MP segment.
+This section summarizes the database composition, quality filtering metrics, evolutionary rates, ancestral mutation paths, and spatio-temporal migration patterns of the MP segment.
 
 ---
 
-## 1. Maximum-Likelihood Tree Reconstruction & Molecular Clock
+## 1. Sequence Dataset Composition & Quality Control
+
+To ensure high-fidelity evolutionary modeling, raw sequence libraries were subjected to strict quality control (QC) and deduplication filters:
+
+*   **Raw Sequence Database**: The initial raw dataset compiled from GISAID and NCBI databases comprised **50,750 sequences** covering the Influenza A MP segment.
+*   **Quality Filtering & Deduplication**: High-standard sequence quality filtering (discarding sequences with $> 5\%$ ambiguous N-content or invalid characters) followed by sequence deduplication of identical genomes resulted in **20,720 high-quality unique sequences**.
+*   **Phylogenetic Subsampling**: To run computational reconstruction while preserving evolutionary diversity, a balanced spatio-temporal subsampling strategy (grouped by clade, host, country, and collection year) was applied:
+    *   **Indonesia Only Build**: Selected **646 representative sequences** (capturing H1N1, H3N2, and H5N1 subtypes collected in Indonesia).
+    *   **Southeast Asia Only Build**: Subsampled **2,000 representative sequences** (from 2,681 available genomes).
+    *   **All-Partial Database Build**: Subsampled **2,000 representative sequences** (from the global alignment).
+
+---
+
+## 2. Maximum-Likelihood Tree Reconstruction & Molecular Clock
 
 By reconstructing ancestral node states, we estimated the temporal alignment and evolutionary velocity of the MP segment:
 
@@ -67,9 +80,9 @@ By reconstructing ancestral node states, we estimated the temporal alignment and
 ```
 
 *   **Mutation Velocity (Substitution Rate)**:
-    *   The molecular clock model estimated the evolutionary rate of the MP segment to be **$3.00 \times 10^{-3}$ substitutions per site per year** across all three datasets. This slow mutation rate (compared to the highly variable Hemagglutinin [HA] segment) confirms that the Matrix segment is a stable candidate target for diagnostic design.
+    *   The molecular clock model estimated the evolutionary rate of the MP segment to be **$3.00 \times 10^{-3}$ substitutions per site per year** across all three datasets (as calculated by TreeTime). This slow mutation rate (compared to the highly variable Hemagglutinin [HA] segment) confirms that the Matrix segment is a stable candidate target for diagnostic design.
 *   **Temporal Root Estimation (TMRCA)**:
-    *   The most recent common ancestor (TMRCA) varies slightly by dataset due to sampling differences:
+    *   The most recent common ancestor (TMRCA) varies by dataset due to sampling scope:
         *   **Indonesia Only**: Estimated around the year **1981.43** (indicating localized ancestral roots tracing to early 1980s).
         *   **Southeast Asia Only**: Estimated around the year **1970.24**.
         *   **All-Partial Database**: Estimated around the year **1986.76**.
@@ -78,7 +91,7 @@ By reconstructing ancestral node states, we estimated the temporal alignment and
 
 ---
 
-## 2. Ancestral State Reconstruction & Mutation Mapping
+## 3. Ancestral State Reconstruction & Mutation Mapping
 
 Ancestral sequence reconstruction (using `augur ancestral` and `augur translate`) mapped the exact historical progression of nucleotide and amino acid substitutions across the phylogenetic tree:
 
@@ -88,7 +101,7 @@ Ancestral sequence reconstruction (using `augur ancestral` and `augur translate`
 
 ---
 
-## 3. Subtype Divergence & Evolutionary Co-existence
+## 4. Subtype Divergence & Evolutionary Co-existence
 
 The reconstructed tree topology highlights the deep evolutionary divergence between the three primary Influenza A subtypes circulating in Indonesia:
 
@@ -98,7 +111,7 @@ The reconstructed tree topology highlights the deep evolutionary divergence betw
 
 ---
 
-## 4. Spatio-Temporal Dispersal Analysis (Nextstrain)
+## 5. Spatio-Temporal Dispersal Analysis (Nextstrain)
 
 Using the metadata associated with the subsampled genomes (collection date and country), we mapped the historical migration pathways of the Matrix segment:
 
@@ -109,7 +122,7 @@ Using the metadata associated with the subsampled genomes (collection date and c
 
 ---
 
-## 5. Interactive Nextstrain Auspice Tree Explorer
+## 6. Interactive Nextstrain Auspice Tree Explorer
 
 Because Nextstrain Auspice (`auspice.us`) runs entirely in the cloud, embedding a local dataset inside a public iframe during local development is not directly supported due to browser security protocols (CORS and Mixed Content blocks). 
 
@@ -127,7 +140,7 @@ Because Nextstrain Auspice (`auspice.us`) runs entirely in the cloud, embedding 
 
 ---
 
-## 6. How to Explore the Scriptorium Datasets
+## 7. How to Explore the Scriptorium Datasets
 
 We have exported the compiled Auspice datasets for all three design scenarios into the report's asset folder (**`report/assets/`**). When you push this project to GitHub, the files will be uploaded automatically and can be accessed online or offline:
 
