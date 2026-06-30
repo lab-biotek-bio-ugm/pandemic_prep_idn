@@ -358,7 +358,12 @@ window.Quarto = {
   <li><a href="#biophysical-and-thermodynamic-profiles-of-candidate-sets" id="toc-biophysical-and-thermodynamic-profiles-of-candidate-sets" class="nav-link active" data-scroll-target="#biophysical-and-thermodynamic-profiles-of-candidate-sets">1. Biophysical and Thermodynamic Profiles of Candidate Sets</a></li>
   <li><a href="#secondary-structure-stability-thermodynamic-safety" id="toc-secondary-structure-stability-thermodynamic-safety" class="nav-link" data-scroll-target="#secondary-structure-stability-thermodynamic-safety">2. Secondary Structure Stability (Thermodynamic Safety)</a></li>
   <li><a href="#iupac-degeneracy-and-target-coverage-trade-offs" id="toc-iupac-degeneracy-and-target-coverage-trade-offs" class="nav-link" data-scroll-target="#iupac-degeneracy-and-target-coverage-trade-offs">3. IUPAC Degeneracy and Target Coverage Trade-offs</a></li>
-  <li><a href="#specificity-verification-and-blast-veto-filtering" id="toc-specificity-verification-and-blast-veto-filtering" class="nav-link" data-scroll-target="#specificity-verification-and-blast-veto-filtering">4. Specificity Verification and BLAST Veto Filtering</a></li>
+  <li><a href="#specificity-verification-and-blast-veto-filtering" id="toc-specificity-verification-and-blast-veto-filtering" class="nav-link" data-scroll-target="#specificity-verification-and-blast-veto-filtering">4. Specificity Verification and BLAST Veto Filtering</a>
+  <ul class="collapse">
+  <li><a href="#end-veto-filter-criteria" id="toc-end-veto-filter-criteria" class="nav-link" data-scroll-target="#end-veto-filter-criteria">3’ End Veto Filter Criteria</a></li>
+  <li><a href="#specificity-summary-table-top-10-candidates---indonesia-only" id="toc-specificity-summary-table-top-10-candidates---indonesia-only" class="nav-link" data-scroll-target="#specificity-summary-table-top-10-candidates---indonesia-only">Specificity Summary Table (Top 10 Candidates - Indonesia Only)</a></li>
+  <li><a href="#accessing-full-blast-specificity-reports" id="toc-accessing-full-blast-specificity-reports" class="nav-link" data-scroll-target="#accessing-full-blast-specificity-reports">Accessing Full BLAST Specificity Reports</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -401,383 +406,431 @@ window.Quarto = {
 <div class="tab-content">
 <div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
 <div style="display: flex; flex-direction: column; gap: 20px; margin: 20px 0;">
-<div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border-left: 4px solid #3b82f6;">
-<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 15px;">
-<p><span style="font-weight: 700; color: #1e3a8a; font-size: 16px;">Rank 1 Candidate Set</span> <span style="background-color: #eff6ff; color: #1e40af; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px;">Amplicon: 155 bp</span></p>
-</div>
-<div style="margin-bottom: 15px;">
-<div style="margin-bottom: 10px;">
-<pre><code>&lt;span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;"&gt;Forward Primer (31 bp, Degeneracy: 16)&lt;/span&gt;
-&lt;code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;"&gt;CTGACTAARGGRATTTTRGGRTTTGTATTCA&lt;/code&gt;</code></pre>
-</div>
-<div style="margin-bottom: 10px;">
-<pre><code>&lt;span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;"&gt;Reverse Primer (31 bp, Degeneracy: 16)&lt;/span&gt;
-&lt;code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;"&gt;GCAGTTAAACTATATARGAARCTGAARAGRG&lt;/code&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;"&gt;TaqMan Probe (51 bp, Degeneracy: 4)&lt;/span&gt;
-&lt;code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;"&gt;CCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCARAATGCCC&lt;/code&gt;</code></pre>
-</div>
-</div>
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; background-color: #f9fafb; padding: 12px; border-radius: 6px; border: 1px solid #f3f4f6;">
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Forward Tm&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #1f2937; font-weight: 600;"&gt;58.94 - 64.98 °C&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Reverse Tm&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #1f2937; font-weight: 600;"&gt;58.03 - 63.12 °C&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Probe Tm&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #1f2937; font-weight: 600;"&gt;80.96 - 82.57 °C&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Hairpin ΔG&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #10b981; font-weight: 600;"&gt;-4.21 kcal/mol&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Cross-Dimer ΔG&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #10b981; font-weight: 600;"&gt;-9.30 kcal/mol&lt;/span&gt;</code></pre>
-</div>
-</div>
-</div>
-<div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border-left: 4px solid #94a3b8;">
-<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 15px;">
-<p><span style="font-weight: 700; color: #475569; font-size: 16px;">Rank 2 Candidate Set</span> <span style="background-color: #f1f5f9; color: #475569; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px;">Amplicon: 154 bp</span></p>
-</div>
-<div style="margin-bottom: 15px;">
-<div style="margin-bottom: 10px;">
-<pre><code>&lt;span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;"&gt;Forward Primer (31 bp, Degeneracy: 16)&lt;/span&gt;
-&lt;code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;"&gt;CTGACTAARGGRATTTTRGGRTTTGTATTCA&lt;/code&gt;</code></pre>
-</div>
-<div style="margin-bottom: 10px;">
-<pre><code>&lt;span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;"&gt;Reverse Primer (31 bp, Degeneracy: 16)&lt;/span&gt;
-&lt;code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;"&gt;AGCAGTTAAACTATATARGAARCTGAARAGR&lt;/code&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;"&gt;TaqMan Probe (51 bp, Degeneracy: 4)&lt;/span&gt;
-&lt;code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;"&gt;CCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCARAATGCCC&lt;/code&gt;</code></pre>
-</div>
-</div>
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; background-color: #f9fafb; padding: 12px; border-radius: 6px; border: 1px solid #f3f4f6;">
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Forward Tm&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #1f2937; font-weight: 600;"&gt;58.94 - 64.98 °C&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Reverse Tm&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #1f2937; font-weight: 600;"&gt;58.27 - 62.49 °C&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Probe Tm&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #1f2937; font-weight: 600;"&gt;80.96 - 82.57 °C&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Hairpin ΔG&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #10b981; font-weight: 600;"&gt;-4.21 kcal/mol&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Cross-Dimer ΔG&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #10b981; font-weight: 600;"&gt;-9.30 kcal/mol&lt;/span&gt;</code></pre>
-</div>
-</div>
-</div>
-<div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border-left: 4px solid #94a3b8;">
-<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 15px;">
-<p><span style="font-weight: 700; color: #475569; font-size: 16px;">Rank 3 Candidate Set</span> <span style="background-color: #f1f5f9; color: #475569; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px;">Amplicon: 154 bp</span></p>
-</div>
-<div style="margin-bottom: 15px;">
-<div style="margin-bottom: 10px;">
-<pre><code>&lt;span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;"&gt;Forward Primer (31 bp, Degeneracy: 16)&lt;/span&gt;
-&lt;code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;"&gt;CTGACTAARGGRATTTTRGGRTTTGTATTCA&lt;/code&gt;</code></pre>
-</div>
-<div style="margin-bottom: 10px;">
-<pre><code>&lt;span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;"&gt;Reverse Primer (30 bp, Degeneracy: 16)&lt;/span&gt;
-&lt;code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;"&gt;GCAGTTAAACTATATARGAARCTGAARAGR&lt;/code&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;"&gt;TaqMan Probe (51 bp, Degeneracy: 4)&lt;/span&gt;
-&lt;code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;"&gt;CCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCARAATGCCC&lt;/code&gt;</code></pre>
-</div>
-</div>
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; background-color: #f9fafb; padding: 12px; border-radius: 6px; border: 1px solid #f3f4f6;">
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Forward Tm&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #1f2937; font-weight: 600;"&gt;58.94 - 64.98 °C&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Reverse Tm&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #1f2937; font-weight: 600;"&gt;57.25 - 61.55 °C&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Probe Tm&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #1f2937; font-weight: 600;"&gt;80.96 - 82.57 °C&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Hairpin ΔG&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #10b981; font-weight: 600;"&gt;-4.21 kcal/mol&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Cross-Dimer ΔG&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #10b981; font-weight: 600;"&gt;-9.30 kcal/mol&lt;/span&gt;</code></pre>
-</div>
-</div>
-</div>
+
+  <!-- Card 1 -->
+  <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border-left: 4px solid #3b82f6;">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 15px;">
+      <span style="font-weight: 700; color: #1e3a8a; font-size: 16px;">Rank 1 Candidate Set</span>
+      <span style="background-color: #eff6ff; color: #1e40af; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px;">Amplicon: 155 bp</span>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <div style="margin-bottom: 10px;">
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">Forward Primer (31 bp, Degeneracy: 16)</span>
+        <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">CTGACTAARGGRATTTTRGGRTTTGTATTCA</code>
+      </div>
+      <div style="margin-bottom: 10px;">
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">Reverse Primer (31 bp, Degeneracy: 16)</span>
+        <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">GCAGTTAAACTATATARGAARCTGAARAGRG</code>
+      </div>
+      <div>
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">TaqMan Probe (51 bp, Degeneracy: 4)</span>
+        <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">CCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCARAATGCCC</code>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; background-color: #f9fafb; padding: 12px; border-radius: 6px; border: 1px solid #f3f4f6;">
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Forward Tm</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">58.94 - 64.98 °C</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Reverse Tm</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">58.03 - 63.12 °C</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Probe Tm</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">80.96 - 82.57 °C</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Hairpin ΔG</span>
+        <span style="font-size: 12px; color: #10b981; font-weight: 600;">-4.21 kcal/mol</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Cross-Dimer ΔG</span>
+        <span style="font-size: 12px; color: #10b981; font-weight: 600;">-9.30 kcal/mol</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 2 -->
+  <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border-left: 4px solid #94a3b8;">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 15px;">
+      <span style="font-weight: 700; color: #475569; font-size: 16px;">Rank 2 Candidate Set</span>
+      <span style="background-color: #f1f5f9; color: #475569; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px;">Amplicon: 154 bp</span>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <div style="margin-bottom: 10px;">
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">Forward Primer (31 bp, Degeneracy: 16)</span>
+        <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">CTGACTAARGGRATTTTRGGRTTTGTATTCA</code>
+      </div>
+      <div style="margin-bottom: 10px;">
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">Reverse Primer (31 bp, Degeneracy: 16)</span>
+        <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">AGCAGTTAAACTATATARGAARCTGAARAGR</code>
+      </div>
+      <div>
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">TaqMan Probe (51 bp, Degeneracy: 4)</span>
+        <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">CCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCARAATGCCC</code>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; background-color: #f9fafb; padding: 12px; border-radius: 6px; border: 1px solid #f3f4f6;">
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Forward Tm</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">58.94 - 64.98 °C</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Reverse Tm</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">58.27 - 62.49 °C</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Probe Tm</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">80.96 - 82.57 °C</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Hairpin ΔG</span>
+        <span style="font-size: 12px; color: #10b981; font-weight: 600;">-4.21 kcal/mol</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Cross-Dimer ΔG</span>
+        <span style="font-size: 12px; color: #10b981; font-weight: 600;">-9.30 kcal/mol</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 3 -->
+  <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border-left: 4px solid #94a3b8;">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 15px;">
+      <span style="font-weight: 700; color: #475569; font-size: 16px;">Rank 3 Candidate Set</span>
+      <span style="background-color: #f1f5f9; color: #475569; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px;">Amplicon: 154 bp</span>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <div style="margin-bottom: 10px;">
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">Forward Primer (31 bp, Degeneracy: 16)</span>
+        <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">CTGACTAARGGRATTTTRGGRTTTGTATTCA</code>
+      </div>
+      <div style="margin-bottom: 10px;">
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">Reverse Primer (30 bp, Degeneracy: 16)</span>
+        <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">GCAGTTAAACTATATARGAARCTGAARAGR</code>
+      </div>
+      <div>
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">TaqMan Probe (51 bp, Degeneracy: 4)</span>
+        <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">CCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCARAATGCCC</code>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; background-color: #f9fafb; padding: 12px; border-radius: 6px; border: 1px solid #f3f4f6;">
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Forward Tm</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">58.94 - 64.98 °C</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Reverse Tm</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">57.25 - 61.55 °C</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Probe Tm</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">80.96 - 82.57 °C</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Hairpin ΔG</span>
+        <span style="font-size: 12px; color: #10b981; font-weight: 600;">-4.21 kcal/mol</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Cross-Dimer ΔG</span>
+        <span style="font-size: 12px; color: #10b981; font-weight: 600;">-9.30 kcal/mol</span>
+      </div>
+    </div>
+  </div>
+
 </div>
 </div>
 <div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
 <div style="display: flex; flex-direction: column; gap: 20px; margin: 20px 0;">
-<div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border-left: 4px solid #3b82f6;">
-<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 15px;">
-<p><span style="font-weight: 700; color: #1e3a8a; font-size: 16px;">Rank 1 Candidate Set</span> <span style="background-color: #eff6ff; color: #1e40af; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px;">Amplicon: 166 bp</span></p>
-</div>
-<div style="margin-bottom: 15px;">
-<div style="margin-bottom: 10px;">
-<pre><code>&lt;span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;"&gt;Forward Primer (29 bp, Degeneracy: 16)&lt;/span&gt;
-&lt;code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;"&gt;CTGACTAAGGGRATTTTRGGRTTTGTKTT&lt;/code&gt;</code></pre>
-</div>
-<div style="margin-bottom: 10px;">
-<pre><code>&lt;span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;"&gt;Reverse Primer (31 bp, Degeneracy: 16)&lt;/span&gt;
-&lt;code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;"&gt;GAAYGTTATYTCYCTYTTAAGTTTCCTATAC&lt;/code&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;"&gt;TaqMan Probe (51 bp, Degeneracy: 2)&lt;/span&gt;
-&lt;code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;"&gt;ACCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCAAAATGCC&lt;/code&gt;</code></pre>
-</div>
-</div>
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; background-color: #f9fafb; padding: 12px; border-radius: 6px; border: 1px solid #f3f4f6;">
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Forward Tm&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #1f2937; font-weight: 600;"&gt;59.07 - 65.40 °C&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Reverse Tm&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #1f2937; font-weight: 600;"&gt;56.43 - 61.29 °C&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Probe Tm&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #1f2937; font-weight: 600;"&gt;80.76 - 81.85 °C&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Hairpin ΔG&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #10b981; font-weight: 600;"&gt;-4.21 kcal/mol&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Cross-Dimer ΔG&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #10b981; font-weight: 600;"&gt;-7.59 kcal/mol&lt;/span&gt;</code></pre>
-</div>
-</div>
-</div>
-<div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border-left: 4px solid #94a3b8;">
-<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 15px;">
-<p><span style="font-weight: 700; color: #475569; font-size: 16px;">Rank 2 Candidate Set</span> <span style="background-color: #f1f5f9; color: #475569; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px;">Amplicon: 165 bp</span></p>
-</div>
-<div style="margin-bottom: 15px;">
-<div style="margin-bottom: 10px;">
-<pre><code>&lt;span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;"&gt;Forward Primer (29 bp, Degeneracy: 16)&lt;/span&gt;
-&lt;code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;"&gt;CTGACTAAGGGRATTTTRGGRTTTGTKTT&lt;/code&gt;</code></pre>
-</div>
-<div style="margin-bottom: 10px;">
-<pre><code>&lt;span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;"&gt;Reverse Primer (32 bp, Degeneracy: 16)&lt;/span&gt;
-&lt;code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;"&gt;AAYGTTATYTCYCTYTTAAGTTTCCTATACAG&lt;/code&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;"&gt;TaqMan Probe (51 bp, Degeneracy: 2)&lt;/span&gt;
-&lt;code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;"&gt;ACCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCAAAATGCC&lt;/code&gt;</code></pre>
-</div>
-</div>
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; background-color: #f9fafb; padding: 12px; border-radius: 6px; border: 1px solid #f3f4f6;">
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Forward Tm&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #1f2937; font-weight: 600;"&gt;59.07 - 65.40 °C&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Reverse Tm&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #1f2937; font-weight: 600;"&gt;57.62 - 62.38 °C&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Probe Tm&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #1f2937; font-weight: 600;"&gt;80.76 - 81.85 °C&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Hairpin ΔG&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #10b981; font-weight: 600;"&gt;-4.21 kcal/mol&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Cross-Dimer ΔG&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #10b981; font-weight: 600;"&gt;-7.59 kcal/mol&lt;/span&gt;</code></pre>
-</div>
-</div>
-</div>
-<div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border-left: 4px solid #94a3b8;">
-<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 15px;">
-<p><span style="font-weight: 700; color: #475569; font-size: 16px;">Rank 3 Candidate Set</span> <span style="background-color: #f1f5f9; color: #475569; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px;">Amplicon: 171 bp</span></p>
-</div>
-<div style="margin-bottom: 15px;">
-<div style="margin-bottom: 10px;">
-<pre><code>&lt;span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;"&gt;Forward Primer (31 bp, Degeneracy: 16)&lt;/span&gt;
-&lt;code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;"&gt;CTCTGACTAAGGGRATTTTRGGRTTTGTKTT&lt;/code&gt;</code></pre>
-</div>
-<div style="margin-bottom: 10px;">
-<pre><code>&lt;span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;"&gt;Reverse Primer (31 bp, Degeneracy: 16)&lt;/span&gt;
-&lt;code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;"&gt;TAGGAAACTTAAAAGRGARATAACRTTCCAY&lt;/code&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;"&gt;TaqMan Probe (51 bp, Degeneracy: 2)&lt;/span&gt;
-&lt;code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;"&gt;ACCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCAAAATGCC&lt;/code&gt;</code></pre>
-</div>
-</div>
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; background-color: #f9fafb; padding: 12px; border-radius: 6px; border: 1px solid #f3f4f6;">
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Forward Tm&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #1f2937; font-weight: 600;"&gt;60.69 - 66.72 °C&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Reverse Tm&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #1f2937; font-weight: 600;"&gt;58.45 - 63.13 °C&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Probe Tm&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #1f2937; font-weight: 600;"&gt;80.76 - 81.85 °C&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Hairpin ΔG&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #10b981; font-weight: 600;"&gt;-4.21 kcal/mol&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Cross-Dimer ΔG&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #10b981; font-weight: 600;"&gt;-7.59 kcal/mol&lt;/span&gt;</code></pre>
-</div>
-</div>
-</div>
+
+  <!-- Card 1 -->
+  <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border-left: 4px solid #3b82f6;">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 15px;">
+      <span style="font-weight: 700; color: #1e3a8a; font-size: 16px;">Rank 1 Candidate Set</span>
+      <span style="background-color: #eff6ff; color: #1e40af; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px;">Amplicon: 166 bp</span>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <div style="margin-bottom: 10px;">
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">Forward Primer (29 bp, Degeneracy: 16)</span>
+        <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">CTGACTAAGGGRATTTTRGGRTTTGTKTT</code>
+      </div>
+      <div style="margin-bottom: 10px;">
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">Reverse Primer (31 bp, Degeneracy: 16)</span>
+        <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">GAAYGTTATYTCYCTYTTAAGTTTCCTATAC</code>
+      </div>
+      <div>
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">TaqMan Probe (51 bp, Degeneracy: 2)</span>
+        <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">ACCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCAAAATGCC</code>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; background-color: #f9fafb; padding: 12px; border-radius: 6px; border: 1px solid #f3f4f6;">
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Forward Tm</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">59.07 - 65.40 °C</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Reverse Tm</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">56.43 - 61.29 °C</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Probe Tm</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">80.76 - 81.85 °C</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Hairpin ΔG</span>
+        <span style="font-size: 12px; color: #10b981; font-weight: 600;">-4.21 kcal/mol</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Cross-Dimer ΔG</span>
+        <span style="font-size: 12px; color: #10b981; font-weight: 600;">-7.59 kcal/mol</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 2 -->
+  <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border-left: 4px solid #94a3b8;">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 15px;">
+      <span style="font-weight: 700; color: #475569; font-size: 16px;">Rank 2 Candidate Set</span>
+      <span style="background-color: #f1f5f9; color: #475569; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px;">Amplicon: 165 bp</span>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <div style="margin-bottom: 10px;">
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">Forward Primer (29 bp, Degeneracy: 16)</span>
+        <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">CTGACTAAGGGRATTTTRGGRTTTGTKTT</code>
+      </div>
+      <div style="margin-bottom: 10px;">
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">Reverse Primer (32 bp, Degeneracy: 16)</span>
+        <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">AAYGTTATYTCYCTYTTAAGTTTCCTATACAG</code>
+      </div>
+      <div>
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">TaqMan Probe (51 bp, Degeneracy: 2)</span>
+        <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">ACCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCAAAATGCC</code>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; background-color: #f9fafb; padding: 12px; border-radius: 6px; border: 1px solid #f3f4f6;">
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Forward Tm</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">59.07 - 65.40 °C</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Reverse Tm</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">57.62 - 62.38 °C</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Probe Tm</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">80.76 - 81.85 °C</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Hairpin ΔG</span>
+        <span style="font-size: 12px; color: #10b981; font-weight: 600;">-4.21 kcal/mol</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Cross-Dimer ΔG</span>
+        <span style="font-size: 12px; color: #10b981; font-weight: 600;">-7.59 kcal/mol</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 3 -->
+  <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border-left: 4px solid #94a3b8;">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 15px;">
+      <span style="font-weight: 700; color: #475569; font-size: 16px;">Rank 3 Candidate Set</span>
+      <span style="background-color: #f1f5f9; color: #475569; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px;">Amplicon: 171 bp</span>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <div style="margin-bottom: 10px;">
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">Forward Primer (31 bp, Degeneracy: 16)</span>
+        <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">CTCTGACTAAGGGRATTTTRGGRTTTGTKTT</code>
+      </div>
+      <div style="margin-bottom: 10px;">
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">Reverse Primer (31 bp, Degeneracy: 16)</span>
+        <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">TAGGAAACTTAAAAGRGARATAACRTTCCAY</code>
+      </div>
+      <div>
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">TaqMan Probe (51 bp, Degeneracy: 2)</span>
+        <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">ACCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCAAAATGCC</code>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; background-color: #f9fafb; padding: 12px; border-radius: 6px; border: 1px solid #f3f4f6;">
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Forward Tm</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">60.69 - 66.72 °C</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Reverse Tm</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">58.45 - 63.13 °C</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Probe Tm</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">80.76 - 81.85 °C</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Hairpin ΔG</span>
+        <span style="font-size: 12px; color: #10b981; font-weight: 600;">-4.21 kcal/mol</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Cross-Dimer ΔG</span>
+        <span style="font-size: 12px; color: #10b981; font-weight: 600;">-7.59 kcal/mol</span>
+      </div>
+    </div>
+  </div>
+
 </div>
 </div>
 <div id="tabset-1-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-3-tab">
 <div style="display: flex; flex-direction: column; gap: 20px; margin: 20px 0;">
-<div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border-left: 4px solid #3b82f6;">
-<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 15px;">
-<p><span style="font-weight: 700; color: #1e3a8a; font-size: 16px;">Rank 1 Candidate Set</span> <span style="background-color: #eff6ff; color: #1e40af; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px;">Amplicon: 151 bp</span></p>
-</div>
-<div style="margin-bottom: 15px;">
-<div style="margin-bottom: 10px;">
-<pre><code>&lt;span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;"&gt;Forward Primer (31 bp, Degeneracy: 16)&lt;/span&gt;
-&lt;code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;"&gt;AATGCATTTATCGTCGCTTYAAAYACGGYYT&lt;/code&gt;</code></pre>
-</div>
-<div style="margin-bottom: 10px;">
-<pre><code>&lt;span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;"&gt;Reverse Primer (30 bp, Degeneracy: 16)&lt;/span&gt;
-&lt;code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;"&gt;TTTACTCYARYTCTATGYTGACAAAATGAC&lt;/code&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;"&gt;TaqMan Probe (51 bp, Degeneracy: 16)&lt;/span&gt;
-&lt;code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;"&gt;AGGAGTGCCTGAGTCTATGAGGGAAGAATATCGRMAGGARCAGCAGARTGC&lt;/code&gt;</code></pre>
-</div>
-</div>
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; background-color: #f9fafb; padding: 12px; border-radius: 6px; border: 1px solid #f3f4f6;">
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Forward Tm&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #1f2937; font-weight: 600;"&gt;63.22 - 69.28 °C&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Reverse Tm&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #1f2937; font-weight: 600;"&gt;57.44 - 63.67 °C&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Probe Tm&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #1f2937; font-weight: 600;"&gt;75.22 - 78.66 °C&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Hairpin ΔG&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #10b981; font-weight: 600;"&gt;-2.81 kcal/mol&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Cross-Dimer ΔG&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #10b981; font-weight: 600;"&gt;-8.23 kcal/mol&lt;/span&gt;</code></pre>
-</div>
-</div>
-</div>
-<div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border-left: 4px solid #94a3b8;">
-<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 15px;">
-<p><span style="font-weight: 700; color: #475569; font-size: 16px;">Rank 2 Candidate Set</span> <span style="background-color: #f1f5f9; color: #475569; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px;">Amplicon: 151 bp</span></p>
-</div>
-<div style="margin-bottom: 15px;">
-<div style="margin-bottom: 10px;">
-<pre><code>&lt;span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;"&gt;Forward Primer (31 bp, Degeneracy: 16)&lt;/span&gt;
-&lt;code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;"&gt;AATGCATTTATCGTCGCTTYAAAYACGGYYT&lt;/code&gt;</code></pre>
-</div>
-<div style="margin-bottom: 10px;">
-<pre><code>&lt;span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;"&gt;Reverse Primer (29 bp, Degeneracy: 16)&lt;/span&gt;
-&lt;code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;"&gt;TTTACTCYARYTCTATGYTGACAAAATGA&lt;/code&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;"&gt;TaqMan Probe (51 bp, Degeneracy: 16)&lt;/span&gt;
-&lt;code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;"&gt;AGGAGTGCCTGAGTCTATGAGGGAAGAATATCGRMAGGARCAGCAGARTGC&lt;/code&gt;</code></pre>
-</div>
-</div>
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; background-color: #f9fafb; padding: 12px; border-radius: 6px; border: 1px solid #f3f4f6;">
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Forward Tm&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #1f2937; font-weight: 600;"&gt;63.22 - 69.28 °C&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Reverse Tm&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #1f2937; font-weight: 600;"&gt;56.39 - 62.90 °C&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Probe Tm&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #1f2937; font-weight: 600;"&gt;75.22 - 78.66 °C&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Hairpin ΔG&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #10b981; font-weight: 600;"&gt;-2.81 kcal/mol&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Cross-Dimer ΔG&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #10b981; font-weight: 600;"&gt;-8.23 kcal/mol&lt;/span&gt;</code></pre>
-</div>
-</div>
-</div>
-<div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border-left: 4px solid #94a3b8;">
-<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 15px;">
-<p><span style="font-weight: 700; color: #475569; font-size: 16px;">Rank 3 Candidate Set</span> <span style="background-color: #f1f5f9; color: #475569; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px;">Amplicon: 188 bp</span></p>
-</div>
-<div style="margin-bottom: 15px;">
-<div style="margin-bottom: 10px;">
-<pre><code>&lt;span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;"&gt;Forward Primer (31 bp, Degeneracy: 32)&lt;/span&gt;
-&lt;code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;"&gt;CACYTGATATTGTGGATTMYTGATCGTCTTT&lt;/code&gt;</code></pre>
-</div>
-<div style="margin-bottom: 10px;">
-<pre><code>&lt;span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;"&gt;Reverse Primer (30 bp, Degeneracy: 16)&lt;/span&gt;
-&lt;code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;"&gt;TTTACTCYARYTCTATGYTGACAAAATGAC&lt;/code&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;"&gt;TaqMan Probe (51 bp, Degeneracy: 16)&lt;/span&gt;
-&lt;code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;"&gt;AGGAGTGCCTGAGTCTATGAGGGAAGAATATCGRMAGGARCAGCAGARTGC&lt;/code&gt;</code></pre>
-</div>
-</div>
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; background-color: #f9fafb; padding: 12px; border-radius: 6px; border: 1px solid #f3f4f6;">
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Forward Tm&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #1f2937; font-weight: 600;"&gt;60.87 - 64.86 °C&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Reverse Tm&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #1f2937; font-weight: 600;"&gt;57.44 - 63.67 °C&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Probe Tm&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #1f2937; font-weight: 600;"&gt;75.22 - 78.66 °C&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Hairpin ΔG&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #10b981; font-weight: 600;"&gt;-2.81 kcal/mol&lt;/span&gt;</code></pre>
-</div>
-<div>
-<pre><code>&lt;span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;"&gt;Cross-Dimer ΔG&lt;/span&gt;
-&lt;span style="font-size: 13px; color: #10b981; font-weight: 600;"&gt;-8.23 kcal/mol&lt;/span&gt;</code></pre>
-</div>
-</div>
-</div>
+
+  <!-- Card 1 -->
+  <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border-left: 4px solid #3b82f6;">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 15px;">
+      <span style="font-weight: 700; color: #1e3a8a; font-size: 16px;">Rank 1 Candidate Set</span>
+      <span style="background-color: #eff6ff; color: #1e40af; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px;">Amplicon: 151 bp</span>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <div style="margin-bottom: 10px;">
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">Forward Primer (31 bp, Degeneracy: 16)</span>
+        <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">AATGCATTTATCGTCGCTTYAAAYACGGYYT</code>
+      </div>
+      <div style="margin-bottom: 10px;">
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">Reverse Primer (30 bp, Degeneracy: 16)</span>
+        <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">TTTACTCYARYTCTATGYTGACAAAATGAC</code>
+      </div>
+      <div>
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">TaqMan Probe (51 bp, Degeneracy: 16)</span>
+        <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">AGGAGTGCCTGAGTCTATGAGGGAAGAATATCGRMAGGARCAGCAGARTGC</code>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; background-color: #f9fafb; padding: 12px; border-radius: 6px; border: 1px solid #f3f4f6;">
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Forward Tm</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">63.22 - 69.28 °C</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Reverse Tm</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">57.44 - 63.67 °C</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Probe Tm</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">75.22 - 78.66 °C</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Hairpin ΔG</span>
+        <span style="font-size: 12px; color: #10b981; font-weight: 600;">-2.81 kcal/mol</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Cross-Dimer ΔG</span>
+        <span style="font-size: 12px; color: #10b981; font-weight: 600;">-8.23 kcal/mol</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 2 -->
+  <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border-left: 4px solid #94a3b8;">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 15px;">
+      <span style="font-weight: 700; color: #475569; font-size: 16px;">Rank 2 Candidate Set</span>
+      <span style="background-color: #f1f5f9; color: #475569; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px;">Amplicon: 151 bp</span>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <div style="margin-bottom: 10px;">
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">Forward Primer (31 bp, Degeneracy: 16)</span>
+        <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">AATGCATTTATCGTCGCTTYAAAYACGGYYT</code>
+      </div>
+      <div style="margin-bottom: 10px;">
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">Reverse Primer (29 bp, Degeneracy: 16)</span>
+        <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">TTTACTCYARYTCTATGYTGACAAAATGA</code>
+      </div>
+      <div>
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">TaqMan Probe (51 bp, Degeneracy: 16)</span>
+        <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">AGGAGTGCCTGAGTCTATGAGGGAAGAATATCGRMAGGARCAGCAGARTGC</code>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; background-color: #f9fafb; padding: 12px; border-radius: 6px; border: 1px solid #f3f4f6;">
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Forward Tm</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">63.22 - 69.28 °C</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Reverse Tm</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">56.39 - 62.90 °C</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Probe Tm</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">75.22 - 78.66 °C</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Hairpin ΔG</span>
+        <span style="font-size: 12px; color: #10b981; font-weight: 600;">-2.81 kcal/mol</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Cross-Dimer ΔG</span>
+        <span style="font-size: 12px; color: #10b981; font-weight: 600;">-8.23 kcal/mol</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 3 -->
+  <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border-left: 4px solid #94a3b8;">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 15px;">
+      <span style="font-weight: 700; color: #475569; font-size: 16px;">Rank 3 Candidate Set</span>
+      <span style="background-color: #f1f5f9; color: #475569; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px;">Amplicon: 188 bp</span>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+      <div style="margin-bottom: 10px;">
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">Forward Primer (31 bp, Degeneracy: 32)</span>
+        <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">CACYTGATATTGTGGATTMYTGATCGTCTTT</code>
+      </div>
+      <div style="margin-bottom: 10px;">
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">Reverse Primer (30 bp, Degeneracy: 16)</span>
+        <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">TTTACTCYARYTCTATGYTGACAAAATGAC</code>
+      </div>
+      <div>
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">TaqMan Probe (51 bp, Degeneracy: 16)</span>
+        <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">AGGAGTGCCTGAGTCTATGAGGGAAGAATATCGRMAGGARCAGCAGARTGC</code>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; background-color: #f9fafb; padding: 12px; border-radius: 6px; border: 1px solid #f3f4f6;">
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Forward Tm</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">60.87 - 64.86 °C</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Reverse Tm</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">57.44 - 63.67 °C</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Probe Tm</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">75.22 - 78.66 °C</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Hairpin ΔG</span>
+        <span style="font-size: 12px; color: #10b981; font-weight: 600;">-2.81 kcal/mol</span>
+      </div>
+      <div>
+        <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Cross-Dimer ΔG</span>
+        <span style="font-size: 12px; color: #10b981; font-weight: 600;">-8.23 kcal/mol</span>
+      </div>
+    </div>
+  </div>
+
 </div>
 </div>
 </div>
@@ -810,22 +863,140 @@ window.Quarto = {
 </section>
 <section id="specificity-verification-and-blast-veto-filtering" class="level2">
 <h2 class="anchored" data-anchor-id="specificity-verification-and-blast-veto-filtering">4. Specificity Verification and BLAST Veto Filtering</h2>
-<p>All generated candidates were filtered through the <strong>NCBI BLAST+ Specificity Verification Engine</strong> (Module 09) using local databases (<code>human_db</code> for host DNA and <code>virus_db</code> for non-target respiratory viruses):</p>
+<p>All generated candidates were filtered through the <strong>NCBI BLAST+ Specificity Verification Engine</strong> (Module 09) using local databases (<code>human_db</code> for host DNA and <code>virus_db</code> for non-target respiratory viruses).</p>
+<section id="end-veto-filter-criteria" class="level3">
+<h3 class="anchored" data-anchor-id="end-veto-filter-criteria">3’ End Veto Filter Criteria</h3>
+<p>If a candidate pair matches any non-target respiratory pathogen or human sequence with zero mismatches in the last 8 nucleotides at the 3’ end, the set is vetoed (<strong>FAIL</strong>). * <em>Indo-Only Vetoes</em>: Out of 100 raw candidates, <strong>12 sets were vetoed</strong> due to critical 3’ end cross-reactivity with the human genome (e.g.&nbsp;Candidate 5 and 18). * <em>All-Partial Vetoes</em>: <strong>22 candidate sets were vetoed</strong> due to human genomic cross-reactivity.</p>
+</section>
+<section id="specificity-summary-table-top-10-candidates---indonesia-only" class="level3">
+<h3 class="anchored" data-anchor-id="specificity-summary-table-top-10-candidates---indonesia-only">Specificity Summary Table (Top 10 Candidates - Indonesia Only)</h3>
+<p>The table below summarizes the in-silico specificity scores for the first 10 generated candidates for the <code>indo-only</code> build, highlighting the veto trigger system:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Candidate</th>
+<th>Status</th>
+<th>PrimerLab Penalty</th>
+<th>Human Score (Grade)</th>
+<th>Human 3’ Off-targets</th>
+<th>Virus Score (Grade)</th>
+<th>Virus Pathogen Hits</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Candidate 1</strong></td>
+<td><strong>PASS</strong></td>
+<td>6.0</td>
+<td>92.6 (A)</td>
+<td>6</td>
+<td>100.0 (A)</td>
+<td>200</td>
+</tr>
+<tr class="even">
+<td><strong>Candidate 2</strong></td>
+<td><strong>PASS</strong></td>
+<td>7.0</td>
+<td>93.9 (A)</td>
+<td>6</td>
+<td>100.0 (A)</td>
+<td>200</td>
+</tr>
+<tr class="odd">
+<td><strong>Candidate 3</strong></td>
+<td><strong>PASS</strong></td>
+<td>8.0</td>
+<td>92.6 (A)</td>
+<td>6</td>
+<td>100.0 (A)</td>
+<td>200</td>
+</tr>
+<tr class="even">
+<td><strong>Candidate 4</strong></td>
+<td><strong>PASS</strong></td>
+<td>9.0</td>
+<td>91.5 (A)</td>
+<td>8</td>
+<td>100.0 (A)</td>
+<td>200</td>
+</tr>
+<tr class="odd">
+<td><strong>Candidate 5</strong></td>
+<td><span style="color: #ef4444; font-weight: bold;">FAIL</span></td>
+<td>10.0</td>
+<td>61.1 (D)</td>
+<td>18</td>
+<td>100.0 (A)</td>
+<td>200</td>
+</tr>
+<tr class="even">
+<td><strong>Candidate 6</strong></td>
+<td><strong>PASS</strong></td>
+<td>11.0</td>
+<td>92.9 (A)</td>
+<td>8</td>
+<td>100.0 (A)</td>
+<td>200</td>
+</tr>
+<tr class="odd">
+<td><strong>Candidate 7</strong></td>
+<td><strong>PASS</strong></td>
+<td>13.0</td>
+<td>72.5 (C)</td>
+<td>18</td>
+<td>100.0 (A)</td>
+<td>200</td>
+</tr>
+<tr class="even">
+<td><strong>Candidate 8</strong></td>
+<td><strong>PASS</strong></td>
+<td>14.0</td>
+<td>91.5 (A)</td>
+<td>8</td>
+<td>100.0 (A)</td>
+<td>200</td>
+</tr>
+<tr class="odd">
+<td><strong>Candidate 9</strong></td>
+<td><strong>PASS</strong></td>
+<td>16.0</td>
+<td>71.1 (C)</td>
+<td>18</td>
+<td>100.0 (A)</td>
+<td>200</td>
+</tr>
+<tr class="even">
+<td><strong>Candidate 10</strong></td>
+<td><strong>PASS</strong></td>
+<td>18.0</td>
+<td>92.6 (A)</td>
+<td>6</td>
+<td>100.0 (A)</td>
+<td>200</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="accessing-full-blast-specificity-reports" class="level3">
+<h3 class="anchored" data-anchor-id="accessing-full-blast-specificity-reports">Accessing Full BLAST Specificity Reports</h3>
+<p>The complete specificity report files generated by Module 09 listing all 100 candidates and their exact alignment coordinate details can be accessed locally:</p>
 <ul>
-<li><strong>The 3’ End Veto Filter</strong>: If a candidate pair matches any non-target respiratory pathogen or human sequence with zero mismatches in the last 8 nucleotides at the 3’ end, the set is vetoed (<strong>FAIL</strong>).</li>
-<li><strong>In-Silico Specificity Scores</strong>:
-<ul>
-<li><strong>Virus Specificity</strong>: All top candidates achieved a perfect <strong>100.0 score</strong> with 0 off-target viral alignments, confirming no cross-reactivity with common respiratory pathogens (including SARS-CoV-2, RSV, Adenovirus, and Rhinovirus).</li>
-<li><strong>Human Specificity</strong>: The candidates showed high specificity, with human safety scores ranging from <strong>73.6 to 93.9</strong> (where scores above 70 indicate negligible off-target binding).</li>
-</ul></li>
-<li><strong>Veto Action Statistics</strong>:
-<ul>
-<li><em>Indo-Only</em>: Out of 100 raw candidates, <strong>12 sets were vetoed</strong> due to critical 3’ end cross-reactivity with the human genome.</li>
-<li><em>All-Partial</em>: <strong>22 candidate sets were vetoed</strong> due to human genomic cross-reactivity, reflecting the higher sequence complexity of the 3’ M2 region.</li>
-</ul></li>
+<li>📋 <strong><a href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-indo-only/m09/degenerate/segment-MP_region_1/blast_specificity_summary.csv">Full BLAST Specificity Summary (CSV)</a></strong></li>
+<li>📝 <strong><a href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-indo-only/m09/degenerate/segment-MP_region_1/blast_specificity_summary.md">Full BLAST Specificity Summary (Markdown)</a></strong></li>
+<li>📄 <strong><a href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-indo-only/m09/degenerate/segment-MP_region_1/final_candidates_report.md">Detailed Final Candidate Validation Report (Markdown)</a></strong></li>
 </ul>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->
