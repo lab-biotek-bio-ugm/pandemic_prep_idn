@@ -9,6 +9,7 @@ project:
     - img/
     - logos/
     - "*.svg"
+    - functions/
 
 bibliography: references.bib
 
