@@ -36,89 +36,79 @@ For transparency and verification, the pipeline generated interactive HTML repor
     background-color: #f8fafc;
     color: #475569;
     font-weight: 700;
+    border: 1px solid #e2e8f0;
+    padding: 12px;
   }
   .btn-report {
     display: inline-block;
-    padding: 6px 12px;
+    padding: 6px 14px;
     font-size: 12px;
     font-weight: 600;
-    border-radius: 6px;
+    border-radius: 4px;
     text-decoration: none;
-    transition: all 0.2s;
+    transition: all 0.15s ease-in-out;
     text-align: center;
-    min-width: 130px;
+    min-width: 140px;
+    color: #475569 !important;
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
     margin: 2px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
   }
-  .btn-comp {
-    background-color: #3b82f6;
-    color: #ffffff !important;
-    border: 1px solid #2563eb;
+  .btn-report:hover {
+    background-color: #f8fafc;
+    border-color: #94a3b8;
+    color: #1e293b !important;
   }
-  .btn-comp:hover {
-    background-color: #2563eb;
-  }
-  .btn-deg {
-    background-color: #10b981;
-    color: #ffffff !important;
-    border: 1px solid #059669;
-  }
-  .btn-deg:hover {
-    background-color: #059669;
-  }
-  .btn-non {
-    background-color: #6366f1;
-    color: #ffffff !important;
-    border: 1px solid #4f46e5;
-  }
-  .btn-non:hover {
-    background-color: #4f46e5;
+  .btn-report:active {
+    transform: scale(0.98);
   }
 </style>
 
 <table class="table report-table" style="width: 100%; border-collapse: collapse; margin-top: 15px;">
   <thead>
     <tr>
-      <th style="border: 1px solid #e2e8f0; padding: 12px; text-align: left;">Geographic Model</th>
-      <th style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">M10 Comparison Report</th>
-      <th style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">Degenerate Heatmap</th>
-      <th style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">Non-Degenerate Heatmap</th>
+      <th style="text-align: left;">Geographic Model</th>
+      <th style="text-align: center;">M10 Comparison Report</th>
+      <th style="text-align: center;">Degenerate Heatmap</th>
+      <th style="text-align: center;">Non-Degenerate Heatmap</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td style="border: 1px solid #e2e8f0; padding: 12px; font-weight: bold; color: #1e3a8a;">Indonesia Only (indo-only)</td>
+      <td style="border: 1px solid #e2e8f0; padding: 12px; font-weight: bold; color: #334155;">Indonesia Only (indo-only)</td>
       <td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
-        <a class="btn-report btn-comp" href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-indo-only/m10/comparison_report.html">📊 Comparison Report</a>
+        <a class="btn-report" href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-indo-only/m10/comparison_report.html">Comparison Report</a>
       </td>
       <td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
-        <a class="btn-report btn-deg" href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-indo-only/m10/degenerate/coverage_heatmap.html">📈 Degenerate Heatmap</a>
+        <a class="btn-report" href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-indo-only/m10/degenerate/coverage_heatmap.html">Degenerate Heatmap</a>
       </td>
       <td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
-        <a class="btn-report btn-non" href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-indo-only/m10/non_degenerate/coverage_heatmap.html">📉 Non-Degenerate</a>
-      </td>
-    </tr>
-    <tr>
-      <td style="border: 1px solid #e2e8f0; padding: 12px; font-weight: bold; color: #1e3a8a;">Southeast Asia (sea-only)</td>
-      <td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
-        <a class="btn-report btn-comp" href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-sea-only/m10/comparison_report.html">📊 Comparison Report</a>
-      </td>
-      <td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
-        <a class="btn-report btn-deg" href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-sea-only/m10/degenerate/coverage_heatmap.html">📈 Degenerate Heatmap</a>
-      </td>
-      <td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
-        <a class="btn-report btn-non" href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-sea-only/m10/non_degenerate/coverage_heatmap.html">📉 Non-Degenerate</a>
+        <a class="btn-report" href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-indo-only/m10/non_degenerate/coverage_heatmap.html">Non-Degenerate</a>
       </td>
     </tr>
     <tr>
-      <td style="border: 1px solid #e2e8f0; padding: 12px; font-weight: bold; color: #1e3a8a;">All-Partial Database</td>
+      <td style="border: 1px solid #e2e8f0; padding: 12px; font-weight: bold; color: #334155;">Southeast Asia (sea-only)</td>
       <td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
-        <a class="btn-report btn-comp" href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-all-partial/m10/comparison_report.html">📊 Comparison Report</a>
+        <a class="btn-report" href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-sea-only/m10/comparison_report.html">Comparison Report</a>
       </td>
       <td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
-        <a class="btn-report btn-deg" href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-all-partial/m10/degenerate/coverage_heatmap.html">📈 Degenerate Heatmap</a>
+        <a class="btn-report" href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-sea-only/m10/degenerate/coverage_heatmap.html">Degenerate Heatmap</a>
       </td>
       <td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
-        <a class="btn-report btn-non" href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-all-partial/m10/non_degenerate/coverage_heatmap.html">📉 Non-Degenerate</a>
+        <a class="btn-report" href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-sea-only/m10/non_degenerate/coverage_heatmap.html">Non-Degenerate</a>
+      </td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #e2e8f0; padding: 12px; font-weight: bold; color: #334155;">All-Partial Database</td>
+      <td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+        <a class="btn-report" href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-all-partial/m10/comparison_report.html">Comparison Report</a>
+      </td>
+      <td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+        <a class="btn-report" href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-all-partial/m10/degenerate/coverage_heatmap.html">Degenerate Heatmap</a>
+      </td>
+      <td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+        <a class="btn-report" href="file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-all-partial/m10/non_degenerate/coverage_heatmap.html">Non-Degenerate</a>
       </td>
     </tr>
   </tbody>
