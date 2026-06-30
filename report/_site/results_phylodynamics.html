@@ -419,7 +419,7 @@ window.Quarto = {
 <ul>
 <li><strong>Indonesia Only Build</strong>: Selected <strong>646 representative sequences</strong> (capturing H1N1, H3N2, and H5N1 subtypes collected in Indonesia).</li>
 <li><strong>Southeast Asia Only Build</strong>: Subsampled <strong>2,000 representative sequences</strong> (from 2,681 available genomes).</li>
-<li><strong>All-Partial Database Build</strong>: Subsampled <strong>2,000 representative sequences</strong> (from the global alignment).</li>
+<li><strong>All-Partial Database Build</strong>: Subsampled <strong>2,000 representative sequences</strong> (from 6,629 available sequences in the all-partial database, comprising local Indonesian and global contextual strains).</li>
 </ul></li>
 </ul>
 <hr>
@@ -481,7 +481,7 @@ window.Quarto = {
 <ul>
 <li><strong>Mutation Velocity (Substitution Rate)</strong>:
 <ul>
-<li>The molecular clock model estimated the evolutionary rate of the MP segment to be <strong><span class="math inline">\(3.00 \times 10^{-3}\)</span> substitutions per site per year</strong> across all three datasets (as calculated by TreeTime). This slow mutation rate (compared to the highly variable Hemagglutinin [HA] segment) confirms that the Matrix segment is a stable candidate target for diagnostic design.</li>
+<li>The molecular clock model estimated the evolutionary rate of the MP segment to be <strong><span class="math inline">\(3.00 \times 10^{-3}\)</span> substitutions per site per year</strong> across all three datasets (as calculated by TreeTime <span class="citation" data-cites="sagulenko2018">(<a href="#ref-sagulenko2018" role="doc-biblioref">Sagulenko et al. 2018</a>)</span>). This estimate is consistent with published nucleotide substitution rates for human influenza A, where HA typically evolves at <span class="math inline">\(3\)</span>–<span class="math inline">\(5 \times 10^{-3}\)</span> substitutions per site per year <span class="citation" data-cites="bhatt2011">(<a href="#ref-bhatt2011" role="doc-biblioref">Bhatt et al. 2011</a>)</span>, while the more structurally constrained Matrix segment exhibits lower rates in purely human seasonal lineages. The convergent rate across all three geographically diverse datasets confirms that the Matrix segment is a stable and temporally calibrated target for diagnostic design.</li>
 </ul></li>
 <li><strong>Temporal Root Estimation (TMRCA)</strong>:
 <ul>
@@ -504,7 +504,7 @@ window.Quarto = {
 <p>Ancestral sequence reconstruction (using <code>augur ancestral</code> and <code>augur translate</code>) mapped the exact historical progression of nucleotide and amino acid substitutions across the phylogenetic tree:</p>
 <ul>
 <li><strong>M1 Protein Stability &amp; High-Entropy Sites</strong>: The M1 matrix protein (which forms the structural scaffold beneath the viral envelope) is highly conserved overall, but contains specific highly variable residues. Diversity analysis identified several high-entropy positions—most notably at <strong>amino acid positions 15, 27, 30, 37, and 42</strong> (with entropy <span class="math inline">\(\ge 0.6\)</span>). These prominent peaks are primarily driven by subtype-specific differences between seasonal H1N1, H3N2, and avian H5N1. In contrast, the surrounding structural regions of M1 show complete conservation (diversity near <span class="math inline">\(0.0\)</span>) across all lineages. This highlights why localized target scanning is critical to bypass these specific variable residues and focus on subtype-common anchors.</li>
-<li><strong>M2 Ion Channel Variation</strong>: In contrast, the M2 ion channel (involved in viral uncoating) showed localized clusters of mutations. Ancestral reconstruction successfully mapped the emergence and fixation of the famous <strong>S31N</strong> mutation (serine to asparagine at codon 31) in the M2 transmembrane domain. This specific substitution, which confers resistance to amantadine antivirals, occurred at a deep ancestral node in H3N2 and H1N1pdm09 lineages and has since been inherited by 100% of modern Indonesian descendant strains.</li>
+<li><strong>M2 Ion Channel Variation</strong>: In contrast, the M2 ion channel (involved in viral uncoating) showed localized clusters of mutations. Ancestral reconstruction successfully mapped the emergence and fixation of the <strong>S31N</strong> mutation (serine to asparagine at codon 31) in the M2 transmembrane domain. This substitution, which confers resistance to adamantane-class antivirals (amantadine and rimantadine), has been identified as a deep ancestral node event in H3N2 and H1N1pdm09 lineages <span class="citation" data-cites="hayden2006 deyde2007">(<a href="#ref-hayden2006" role="doc-biblioref">Hayden 2006</a>; <a href="#ref-deyde2007" role="doc-biblioref"><span class="nocase">Deyde et al.</span> 2007</a>)</span>, and is now a near-universal feature of circulating seasonal Influenza A strains globally—including all Indonesian H3N2 and H1N1pdm09 sequences in this dataset.</li>
 <li><strong>Clade-Defining Mutational Signatures</strong>: Key amino acid substitutions (such as <code>N82T</code> and <code>R210K</code> in the M1 gene) were identified as clade-defining markers. By mapping these mutations to specific ancestral nodes, the pipeline validates that target regions chosen for primer design avoid these variable positions, preventing diagnostic mismatch against specific circulating sub-clades.</li>
 </ul>
 <hr>
@@ -514,8 +514,8 @@ window.Quarto = {
 <p>The reconstructed tree topology highlights the deep evolutionary divergence between the three primary Influenza A subtypes circulating in Indonesia:</p>
 <ul>
 <li><strong>Seasonal H3N2</strong>: Represents a stable, long-term evolutionary lineage tracing back to the 1968 pandemic. The MP segment of H3N2 has accumulated mutations at a steady, clock-like rate, showing a clear linear relationship between collection year and root-to-tip distance.</li>
-<li><strong>H1N1pdm09</strong>: Displays a distinct evolutionary trajectory. The MP segment of this lineage originates from the Eurasian avian-like swine influenza reassortment event that emerged in 2009. The deep topological split between H1N1pdm09 and H3N2 in the phylogenetic tree confirms that these segments do not undergo genetic recombination in nature, maintaining separate genetic identity.</li>
-<li><strong>Avian H5N1</strong>: Clustered into highly distinct monophyletic branches separated from seasonal human influenza strains. The Indonesian H5N1 strains (primarily Clade 2.1.3 and Clade 2.3.2.1c) exhibit independent evolutionary rates reflecting their circulation in domestic poultry and wild bird reservoirs. This deep divergence is why subtype-specific primers are required to achieve maximum sensitivity, as a single universal primer set must accommodate up to 40 years of evolutionary distance between human seasonal and avian subtypes.</li>
+<li><strong>H1N1pdm09</strong>: Displays a distinct evolutionary trajectory. The MP segment of this lineage originates from the Eurasian avian-like (EA) swine influenza lineage, as established by genomic analysis of the 2009 pandemic origin <span class="citation" data-cites="smith2009">(<a href="#ref-smith2009" role="doc-biblioref"><span class="nocase">Smith et al.</span> 2009</a>)</span>. The deep topological split between H1N1pdm09 and H3N2 in the phylogenetic tree confirms that these segments maintain separate genetic identity without inter-lineage recombination.</li>
+<li><strong>Avian H5N1</strong>: Clustered into highly distinct monophyletic branches separated from seasonal human influenza strains. The Indonesian H5N1 strains, primarily belonging to Clade 2.1.3 <span class="citation" data-cites="kandun2006">(<a href="#ref-kandun2006" role="doc-biblioref"><span class="nocase">Kandun et al.</span> 2006</a>)</span>, exhibit independent evolutionary rates reflecting their circulation in domestic poultry and wild bird reservoirs. This deep divergence—representing up to four decades of independent evolution—underscores why a single universal primer set must accommodate broad sequence variation to achieve adequate cross-subtype sensitivity.</li>
 </ul>
 <hr>
 </section>
@@ -621,11 +621,26 @@ Drag and drop your exported JSON file into <strong>auspice.us</strong> to explor
 </section>
 
 <div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" role="list">
+<div id="ref-bhatt2011" class="csl-entry" role="listitem">
+Bhatt, Samir, Edward C. Holmes, and Oliver G. Pybus. 2011. <span>“The Genomic Rate of Molecular Adaptation of the Human Influenza a Virus.”</span> <em>Molecular Biology and Evolution</em> 28 (9): 2443–51. <a href="https://doi.org/10.1093/molbev/msr044">https://doi.org/10.1093/molbev/msr044</a>.
+</div>
+<div id="ref-deyde2007" class="csl-entry" role="listitem">
+<span class="nocase">Deyde, V. M. et al.</span> 2007. <span>“Surveillance of Resistance to Adamantanes Among Influenza a(H3N2) and a(H1N1) Viruses Isolated Worldwide.”</span> <em>Journal of Infectious Diseases</em> 196 (2): 249–57. <a href="https://doi.org/10.1086/518936">https://doi.org/10.1086/518936</a>.
+</div>
+<div id="ref-hayden2006" class="csl-entry" role="listitem">
+Hayden, Frederick G. 2006. <span>“Antiviral Resistance in Influenza Viruses — Implications for Management and Pandemic Response.”</span> <em>New England Journal of Medicine</em> 354 (8): 785–88. <a href="https://doi.org/10.1056/NEJMp068030">https://doi.org/10.1056/NEJMp068030</a>.
+</div>
+<div id="ref-kandun2006" class="csl-entry" role="listitem">
+<span class="nocase">Kandun, I. Nyoman et al.</span> 2006. <span>“Three Indonesian Clusters of H5N1 Virus Infection in 2005.”</span> <em>New England Journal of Medicine</em> 355 (21): 2186–94. <a href="https://doi.org/10.1056/NEJMoa060930">https://doi.org/10.1056/NEJMoa060930</a>.
+</div>
 <div id="ref-minh2020" class="csl-entry" role="listitem">
 <span class="nocase">Minh, Bui Quang et al.</span> 2020. <span>“IQ-TREE 2: New Models and Efficient Methods for Phylogenomic Reconstruction in the Genomic Era.”</span> <em>Molecular Biology and Evolution</em> 37 (5): 1530–34. <a href="https://doi.org/10.1093/molbev/msaa030">https://doi.org/10.1093/molbev/msaa030</a>.
 </div>
 <div id="ref-sagulenko2018" class="csl-entry" role="listitem">
 Sagulenko, Pavel, Vadim Puller, and Richard A. Neher. 2018. <span>“TreeTime: Maximum-Likelihood Phylodynamic Analysis.”</span> <em>Virus Evolution</em> 4 (1): vex042. <a href="https://doi.org/10.1093/ve/vex042">https://doi.org/10.1093/ve/vex042</a>.
+</div>
+<div id="ref-smith2009" class="csl-entry" role="listitem">
+<span class="nocase">Smith, Gavin J. D. et al.</span> 2009. <span>“Origins and Evolutionary Genomics of the 2009 Swine-Origin H1N1 Influenza a Epidemic.”</span> <em>Nature</em> 459: 1122–25. <a href="https://doi.org/10.1038/nature08182">https://doi.org/10.1038/nature08182</a>.
 </div>
 </div></section></div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">

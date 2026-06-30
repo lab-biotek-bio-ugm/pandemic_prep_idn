@@ -536,16 +536,16 @@ window.Quarto = {
 <h2 class="anchored" data-anchor-id="metadata-sanitization-3-tier-column-validation">2. Metadata Sanitization &amp; 3-Tier Column Validation</h2>
 <p>Different databases output metadata with varying schemas, date formats, and missing entries. The Snakemake rule <code>sanitize_metadata</code> runs <code>scripts/sanitize_metadata.py</code> to normalize the tabular data into a consistent internal format using a <strong>3-tier validation protocol</strong>:</p>
 <ol type="1">
-<li><strong>Tier 1: Critical (strain, date, country)</strong>
+<li><p><strong>Tier 1: Critical (strain, date, country)</strong></p>
 <ul>
 <li><em>Action</em>: Must be present and valid. Any rows with empty strain IDs or completely unparseable dates (e.g., missing year) are <strong>dropped</strong> from the analysis to prevent pipeline failure.</li>
 <li><em>Incomplete Dates</em>: Imprecise dates like <code>2024</code> or <code>2024-05</code> are normalized to <code>2024-XX-XX</code> or <code>2024-05-XX</code> to comply with Nextstrain’s date format requirements.</li>
 </ul></li>
-<li><strong>Tier 2: Spatio-Temporal Context (region, host, division)</strong>
+<li><p><strong>Tier 2: Spatio-Temporal Context (region, host, division)</strong></p>
 <ul>
 <li><em>Action</em>: Missing values are <strong>silently filled with defaults</strong>. If <code>host</code> is empty, it defaults to <code>Human</code>. If <code>region</code> is missing, it is derived from <code>country</code> mapping.</li>
 </ul></li>
-<li><strong>Tier 3: Metadata Pass-through</strong>
+<li><p><strong>Tier 3: Metadata Pass-through</strong></p>
 <ul>
 <li><em>Action</em>: Non-essential demographic fields (e.g., <code>age</code>, <code>gender</code>, <code>passage_history</code>) are passed through unmodified to maintain dataset richness.</li>
 </ul></li>
