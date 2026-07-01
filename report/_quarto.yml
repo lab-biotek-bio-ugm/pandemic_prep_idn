@@ -16,6 +16,7 @@ bibliography: references.bib
 
 website:
   title: "Pandemic Preparedness Report"
+  favicon: assets/images/UGM-logo-blue.png
   page-footer:
     left: |
       <div style="display: flex; flex-direction: column; gap: 8px;"><div style="display: flex; flex-direction: row; align-items: center; gap: 15px; flex-wrap: nowrap;"><img src="assets/images/faculty_biology_ugm.png" style="height: 32px; width: auto; vertical-align: middle;" class="img-fluid"><img src="img/Alt_Logo_BRIN.png" style="height: 28px; width: auto; vertical-align: middle;" class="img-fluid"><img src="img/kemenkes.png" style="height: 38px; width: auto; vertical-align: middle;" class="img-fluid"><img src="img/WHO (World Health Organization) Logo (PNG720p) - Vector69Com.png" style="height: 26px; width: auto; vertical-align: middle;" class="img-fluid"></div><div style="font-size: 0.82rem; color: #475569; margin-top: 2px; white-space: nowrap; vertical-align: middle;">Supported by Badan Riset dan Inovasi Nasional (BRIN) FY 2026</div></div>
@@ -93,6 +94,25 @@ highlight-style: pygments
 
 format:
   html:
+    include-in-header:
+      - text: |
+          <script>
+            (function() {
+              const dm = window.matchMedia('(prefers-color-scheme: dark)');
+              function update() {
+                const fav = document.querySelector('link[rel="icon"]');
+                if (!fav) return;
+                const base = fav.getAttribute('href');
+                const target = dm.matches ? 'UGM-logo-white.png' : 'UGM-logo-blue.png';
+                if (base.indexOf(target) === -1) {
+                  fav.setAttribute('href', base.replace(/UGM-logo-.*\.png/, target));
+                }
+              }
+              update();
+              document.addEventListener("DOMContentLoaded", update);
+              try { dm.addEventListener('change', update); } catch (e) { dm.addListener(update); }
+            })();
+          </script>
     css: styles.css
     smooth-scroll: true
     link-external-icon: false

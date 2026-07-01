@@ -87,6 +87,7 @@ div.csl-indent {
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
+<link href="./assets/images/UGM-logo-blue.png" rel="icon" type="image/png">
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
@@ -125,6 +126,23 @@ div.csl-indent {
   }
 }</script>
 <style>html{ scroll-behavior: smooth; }</style>
+<script>
+  (function() {
+    const dm = window.matchMedia('(prefers-color-scheme: dark)');
+    function update() {
+      const fav = document.querySelector('link[rel="icon"]');
+      if (!fav) return;
+      const base = fav.getAttribute('href');
+      const target = dm.matches ? 'UGM-logo-white.png' : 'UGM-logo-blue.png';
+      if (base.indexOf(target) === -1) {
+        fav.setAttribute('href', base.replace(/UGM-logo-.*\.png/, target));
+      }
+    }
+    update();
+    document.addEventListener("DOMContentLoaded", update);
+    try { dm.addEventListener('change', update); } catch (e) { dm.addListener(update); }
+  })();
+</script>
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
   <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
