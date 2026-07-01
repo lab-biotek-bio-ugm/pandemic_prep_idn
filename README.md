@@ -84,57 +84,29 @@ snakemake --use-conda --cores 16 --configfile config/config_influenza_a_mp.yaml
 
 ---
 
-## Getting Started
+## Documentation Index (Mintlify-Ready)
 
-### Prerequisites
+A professional, modular documentation is located in the [`docs/`](file:///e:/Project/pandemic-preparedness/docs) folder. Below is the navigation index:
 
-- Linux/WSL2 or MacOS
-- Conda or Mamba (recommended)
+### 1. Getting Started
+*   [**Introduction**](file:///e:/Project/pandemic-preparedness/docs/introduction.md): Project overview and collaboration context (BRIN, UGM, UI, and international partners).
+*   [**Quickstart Guide**](file:///e:/Project/pandemic-preparedness/docs/getting-started/quickstart.md): Environmental setup, Snakemake installation, and dry-run guidelines.
+*   [**Configuration Manual**](file:///e:/Project/pandemic-preparedness/docs/getting-started/configuration.md): Parameter calibration, clock rate reference tables, and target-subsampling weights.
 
-### Installation
+### 2. Pipeline Modules Reference
+*   [**Architecture Overview**](file:///e:/Project/pandemic-preparedness/docs/pipeline-architecture/overview.md): High-level modular flowchart and workspace directories.
+*   [**Modules M01 - M03**](file:///e:/Project/pandemic-preparedness/docs/pipeline-architecture/m01-m03-qc-alignment.md): Sequence acquisition, Nextclade lineages, QC thresholds, and MAFFT alignment.
+*   [**Modules M04 - M06**](file:///e:/Project/pandemic-preparedness/docs/pipeline-architecture/m04-m06-phylodynamics.md): Maximum Likelihood trees, temporal clock fitting, and HyPhy selection pressure (FUBAR/MEME/GARD).
+*   [**Module M07 (Bridge Builder)**](file:///e:/Project/pandemic-preparedness/docs/pipeline-architecture/m07-bridge-builder.md): Mathematical scoring, weighted parameters, and candidate grading tiers.
+*   [**Module M08 (Thermodynamic Design)**](file:///e:/Project/pandemic-preparedness/docs/pipeline-architecture/m08-primer-design.md): Isothermal/PCR design, degeneracy limits, and ViennaRNA secondary fold constraints.
+*   [**Module M09 (Specificity Check)**](file:///e:/Project/pandemic-preparedness/docs/pipeline-architecture/m09-blast-specificity.md): Local/remote BLAST validation, GFF3/BED file creation, and IGV session.
+*   [**Module M10 (In-Silico Validation)**](file:///e:/Project/pandemic-preparedness/docs/pipeline-architecture/m10-insilico-validation.md): seqkit amplicon binding kinetics, temporal/regional reports, and dashboard output.
 
-1. Clone the repository:
+### 3. Operations & Development
+*   [**Troubleshooting**](file:///e:/Project/pandemic-preparedness/docs/operations/troubleshooting.md): Step-by-step resolution for common errors (molecular clock, conda, HyPhy stop-codons, memory limits).
+*   [**Developer Guide**](file:///e:/Project/pandemic-preparedness/docs/development/developer-guide.md): Code conventions (PEP8), Snakemake rule conventions, git workflow (Conventional Commits), and PR checklist.
 
-   ```bash
-   git clone https://github.com/lab-biotek-bio-ugm/pandemic_prep_idn.git
-   cd pandemic_prep_idn
-   ```
-
-2. Set up the core environment:
-
-   ```bash
-   conda env create -f workflow/envs/environment.yaml
-   conda activate pandemic-prep
-   ```
-
-### Running the Pipeline
-
-Configure your target pathogen in `config/config.yaml` and execute the pipeline:
-
-```bash
-snakemake --use-conda --cores 16
-```
-
-### Visualising Results
-
-After the pipeline completes:
-
-1. **Entropy Plot**: Generate a publication-quality entropy profile:
-   ```bash
-   python scripts/m07_plot_entropy.py \
-       --entropy-tsv results/{BUILD}/m07/entropy_profile.tsv \
-       --bridge-json results/{BUILD}/m07/bridge_report.json \
-       --candidates results/{BUILD}/m09/final_candidates.json \
-       --outdir results/{BUILD}/plots \
-       --format png
-   ```
-
-2. **IGV Visualization**: Open the pre-configured IGV session:
-   ```
-   File → Open Session → results/{BUILD}/m09/igv_session.xml
-   ```
-
-
+---
 
 ## License
 
