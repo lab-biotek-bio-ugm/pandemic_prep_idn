@@ -13,37 +13,42 @@
     "dark": "#1a202c"
   },
   "navigation": {
-    "groups": [
+    "tabs": [
       {
-        "group": "Getting Started",
-        "pages": [
-          "docs/introduction",
-          "docs/getting-started/quickstart",
-          "docs/getting-started/configuration"
-        ]
-      },
-      {
-        "group": "Pipeline Architecture",
-        "pages": [
-          "docs/pipeline-architecture/overview",
-          "docs/pipeline-architecture/m01-m03-qc-alignment",
-          "docs/pipeline-architecture/m04-m06-phylodynamics",
-          "docs/pipeline-architecture/m07-bridge-builder",
-          "docs/pipeline-architecture/m08-primer-design",
-          "docs/pipeline-architecture/m09-blast-specificity",
-          "docs/pipeline-architecture/m10-insilico-validation"
-        ]
-      },
-      {
-        "group": "Operations",
-        "pages": [
-          "docs/operations/troubleshooting"
-        ]
-      },
-      {
-        "group": "Development",
-        "pages": [
-          "docs/development/developer-guide"
+        "tab": "Docs",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "docs/introduction",
+              "docs/getting-started/quickstart",
+              "docs/getting-started/configuration"
+            ]
+          },
+          {
+            "group": "Pipeline Architecture",
+            "pages": [
+              "docs/pipeline-architecture/overview",
+              "docs/pipeline-architecture/m01-m03-qc-alignment",
+              "docs/pipeline-architecture/m04-m06-phylodynamics",
+              "docs/pipeline-architecture/m07-bridge-builder",
+              "docs/pipeline-architecture/m08-primer-design",
+              "docs/pipeline-architecture/m09-blast-specificity",
+              "docs/pipeline-architecture/m10-insilico-validation"
+            ]
+          },
+          {
+            "group": "Operations",
+            "pages": [
+              "docs/operations/troubleshooting"
+            ]
+          },
+          {
+            "group": "Development",
+            "pages": [
+              "docs/development/developer-guide"
+            ]
+          }
         ]
       }
     ]
