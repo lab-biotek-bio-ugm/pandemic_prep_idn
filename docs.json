@@ -3,10 +3,10 @@
   "name": "Pandemic Preparedness",
   "theme": "willow",
   "logo": {
-    "light": "/docs/assets/images/faculty_biology_ugm.png",
-    "dark": "/docs/assets/images/faculty_biology_ugm.png"
+    "light": "docs/assets/images/faculty_biology_ugm.png",
+    "dark": "docs/assets/images/faculty_biology_ugm.png"
   },
-  "favicon": "/docs/assets/images/UGM-logo-blue.png",
+  "favicon": "docs/assets/images/UGM-logo-blue.png",
   "colors": {
     "primary": "#1a365d",
     "light": "#2b6cb0",
