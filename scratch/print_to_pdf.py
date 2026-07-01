@@ -33,6 +33,7 @@ def main():
         "results_selection.html",
         "results_candidates.html",
         "results_performance.html",
+        "supplementary.html",
         "references.html"
     ]
     

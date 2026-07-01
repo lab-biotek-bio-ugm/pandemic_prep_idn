@@ -84,6 +84,8 @@ website:
             text: "Candidate Diagnostics"
           - href: results_performance.qmd
             text: "In-silico Evaluation"
+          - href: supplementary.qmd
+            text: "Supplementary: IUPAC Audit"
       - href: references.qmd
         text: "References"
 
