@@ -361,7 +361,10 @@ window.Quarto = {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#iupac-degeneracy-decision-rules" id="toc-iupac-degeneracy-decision-rules" class="nav-link active" data-scroll-target="#iupac-degeneracy-decision-rules">1. IUPAC Degeneracy Decision Rules</a></li>
+  <li><a href="#iupac-degeneracy-decision-rules" id="toc-iupac-degeneracy-decision-rules" class="nav-link active" data-scroll-target="#iupac-degeneracy-decision-rules">1. IUPAC Degeneracy Decision Rules</a>
+  <ul class="collapse">
+  <li><a href="#understanding-the-degeneracy-multiplier" id="toc-understanding-the-degeneracy-multiplier" class="nav-link" data-scroll-target="#understanding-the-degeneracy-multiplier">1.1. Understanding the Degeneracy Multiplier</a></li>
+  </ul></li>
   <li><a href="#forward-primer-audit" id="toc-forward-primer-audit" class="nav-link" data-scroll-target="#forward-primer-audit">2. Forward Primer Audit</a></li>
   <li><a href="#reverse-primer-audit" id="toc-reverse-primer-audit" class="nav-link" data-scroll-target="#reverse-primer-audit">3. Reverse Primer Audit</a></li>
   <li><a href="#probe-audit" id="toc-probe-audit" class="nav-link" data-scroll-target="#probe-audit">4. Probe Audit</a></li>
@@ -411,7 +414,15 @@ window.Quarto = {
 <li><strong>Unambiguous Base (A/T/G/C)</strong>: If a single base occurs at a frequency <span class="math inline">\(&gt; 85\%\)</span> (minor alleles <span class="math inline">\(&lt; 15\%\)</span>) at a given position, it is written as a standard nucleotide. Minor variations under <span class="math inline">\(15\%\)</span> are ignored to prevent excessive degeneracy multipliers.</li>
 <li><strong>Degenerate Base (IUPAC)</strong>: If two or more nucleotides at a single position each clear the <strong><span class="math inline">\(15\%\)</span> threshold</strong>, the position is mapped to the appropriate IUPAC degeneracy code (e.g., <code>R</code> for A/G, <code>Y</code> for C/T, <code>D</code> for A/G/T).</li>
 </ol>
+<section id="understanding-the-degeneracy-multiplier" class="level3">
+<h3 class="anchored" data-anchor-id="understanding-the-degeneracy-multiplier">1.1. Understanding the Degeneracy Multiplier</h3>
+<p>A degenerate primer is not a single sequence, but a physical mixture of multiple unique primer sequences synthesized together in the same tube. The <strong>Degeneracy Multiplier</strong> (e.g., <code>16x</code>) represents the total number of unique sequence combinations resulting from the IUPAC positions in the primer.</p>
+<p>It is calculated by multiplying the number of possible bases at each degenerate position: <span class="math display">\[M = \prod_{i=1}^{L} \text{options}(c_i)\]</span></p>
+<p>Where: * Standard bases (<code>A</code>, <code>T</code>, <code>G</code>, <code>C</code>) have <strong>1</strong> option. * Two-base degeneracies (<code>R</code>, <code>Y</code>, <code>W</code>, <code>S</code>, <code>K</code>, <code>M</code>) have <strong>2</strong> options. * Three-base degeneracies (<code>B</code>, <code>D</code>, <code>H</code>, <code>V</code>) have <strong>3</strong> options. * Four-base degeneracies (<code>N</code>) have <strong>4</strong> options.</p>
+<p>For example, a forward primer with sequence <code>CTGACTAARGGRATTTTRGGRTTTGTATTCA</code> has four <code>R</code> positions (each allowing <code>A</code> or <code>G</code>). This results in a multiplier of <span class="math inline">\(2 \times 2 \times 2 \times 2 = 16\text{x}\)</span>. Thus, the final tube contains exactly 16 distinct primer variations in equal proportions.</p>
+<p><strong>Why limit the multiplier?</strong> * <strong>Primer Dilution</strong>: If the multiplier is too high (e.g., <span class="math inline">\(&gt;64\text{x}\)</span>), the concentration of any single primer variant in the reaction buffer becomes too low, which can severely reduce amplification efficiency. * <strong>Non-Specific Amplification</strong>: High degeneracy increases the risk of off-target binding and primer-dimer formation. To balance universality and performance, the pipeline enforces a maximum degeneracy limit of <strong><span class="math inline">\(16\text{x}\)</span></strong> for RAA designs.</p>
 <hr>
+</section>
 </section>
 <section id="forward-primer-audit" class="level2">
 <h2 class="anchored" data-anchor-id="forward-primer-audit">2. Forward Primer Audit</h2>
