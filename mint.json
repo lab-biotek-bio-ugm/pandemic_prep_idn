@@ -1,9 +1,10 @@
 {
   "$schema": "https://mintlify.com/schema.json",
   "name": "Pandemic Preparedness",
+  "theme": "willow",
   "logo": {
-    "light": "/docs/assets/images/UGM-logo-blue.png",
-    "dark": "/docs/assets/images/UGM-logo-white.png"
+    "light": "/docs/assets/images/faculty_biology_ugm.png",
+    "dark": "/docs/assets/images/faculty_biology_ugm.png"
   },
   "favicon": "/docs/assets/images/UGM-logo-blue.png",
   "colors": {
