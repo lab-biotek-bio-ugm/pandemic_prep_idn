@@ -69,7 +69,7 @@ def audit_primer(profile, start, end, seq, maj_seq, is_rev=False):
 
 def generate_markdown_table(rows):
     lines = []
-    lines.append("| Primer Pos (5' &arr; 3') | Segment Position | Majority Base | IUPAC Base | A (%) | T (%) | G (%) | C (%) | Decision Rationale |")
+    lines.append("| Primer Pos (5' → 3') | Segment Position | Majority Base | IUPAC Base | A (%) | T (%) | G (%) | C (%) | Decision Rationale |")
     lines.append("| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |")
     
     for r in rows:

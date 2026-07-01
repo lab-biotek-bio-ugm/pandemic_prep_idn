@@ -27,7 +27,7 @@ In our pipeline, designed primers are back-mapped to the alignment consensus. Am
 * **Degeneracy Multiplier**: `16x`
 
 ::: {.small-table}
-| Primer Pos (5' &arr; 3') | Segment Position | Majority Base | IUPAC Base | A (%) | T (%) | G (%) | C (%) | Decision Rationale |
+| Primer Pos (5' → 3') | Segment Position | Majority Base | IUPAC Base | A (%) | T (%) | G (%) | C (%) | Decision Rationale |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
 | 0 | 187 | C | **Y** | 0.0% | 26.6% | 0.0% | 73.4% | **Degenerate**: Cleared &ge;15% MAF threshold: **T** (26.6%), **C** (73.4%) |
 | 1 | 188 | T | T | 0.0% | 100.0% | 0.0% | 0.0% | 100% Conserved |
@@ -73,7 +73,7 @@ In our pipeline, designed primers are back-mapped to the alignment consensus. Am
 * **Degeneracy Multiplier**: `16x`
 
 ::: {.small-table}
-| Primer Pos (5' &arr; 3') | Segment Position | Majority Base | IUPAC Base | A (%) | T (%) | G (%) | C (%) | Decision Rationale |
+| Primer Pos (5' → 3') | Segment Position | Majority Base | IUPAC Base | A (%) | T (%) | G (%) | C (%) | Decision Rationale |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
 | 0 | 340 | G | G | 0.0% | 0.0% | 100.0% | 0.0% | 100% Conserved |
 | 1 | 339 | A | **R** | 67.2% | 0.0% | 32.8% | 0.0% | **Degenerate**: Cleared &ge;15% MAF threshold: **A** (67.2%), **G** (32.8%) |
@@ -118,7 +118,7 @@ In our pipeline, designed primers are back-mapped to the alignment consensus. Am
 * **Degeneracy Multiplier**: `4x`
 
 ::: {.small-table}
-| Primer Pos (5' &arr; 3') | Segment Position | Majority Base | IUPAC Base | A (%) | T (%) | G (%) | C (%) | Decision Rationale |
+| Primer Pos (5' → 3') | Segment Position | Majority Base | IUPAC Base | A (%) | T (%) | G (%) | C (%) | Decision Rationale |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
 | 0 | 224 | C | C | 0.0% | 0.0% | 0.0% | 100.0% | 100% Conserved |
 | 1 | 225 | C | C | 0.0% | 0.0% | 0.0% | 100.0% | 100% Conserved |
