@@ -9,28 +9,25 @@ The pipeline is organized into ten distinct, modular steps (M01 to M10), orchest
 The diagram below outlines how genomic data and selection scores flow from raw sequences to validated diagnostic assays:
 
 ```mermaid
-flowchart TD
-    subgraph Data Prep
-        M01[M01: Acquisition] --> M02[M02: Quality Control]
-        M02 --> M03[M03: MAFFT Alignment]
+flowchart LR
+    subgraph Prep [Data Prep]
+        M01[M01: Acquisition] --> M02[M02: QC & Filter] --> M03[M03: Alignment]
     end
 
-    subgraph Evolution
-        M03 --> M04[M04: IQ-TREE & Timetree]
-        M04 --> M05[M05: HyPhy Selection Engine]
+    subgraph Evo [Evolutionary Analysis]
+        M03 --> M04[M04: IQ-TREE & Clock]
+        M04 --> M05[M05: HyPhy Selection]
         M04 --> M06[M06: Ancestral Mapping]
     end
 
-    subgraph Design & Verification
-        M03 & M05 & M06 --> M07[M07: Bridge Builder Scoring]
-        M07 --> M08[M08: PrimerLab Thermodynamic Design]
-        M08 --> M09[M09: BLAST Specificity Check]
-        M09 --> M10[M10: In-Silico PCR/RAA Emulation]
+    subgraph Design [Design & Verification]
+        M03 --> M07[M07: Bridge Builder]
+        M05 --> M07
+        M06 --> M07
+        M07 --> M08[M08: Primer Design]
+        M08 --> M09[M09: Specificity Check]
+        M09 --> M10[M10: In-Silico Validation]
     end
-
-    style M07 fill:#1a365d,stroke:#333,stroke-width:2px,color:#fff
-    style M08 fill:#2b6cb0,stroke:#333,stroke-width:2px,color:#fff
-    style M10 fill:#2b6cb0,stroke:#333,stroke-width:2px,color:#fff
 ```
 
 ---
