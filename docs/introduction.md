@@ -8,16 +8,7 @@ Welcome to the **Evolutionary Diagnostic Pipeline for Pandemic Preparedness** do
 
 This repository hosts a state-of-the-art bioinformatics pipeline designed for the rapid identification and validation of robust diagnostic targets in emerging pathogens. The core science integrates **physical sequence conservation** (Shannon Entropy) with **evolutionary selection pressure signals** (purifying vs. episodic selection) to identify regions of the viral genome that are biochemically stable and evolutionarily constrained.
 
-```mermaid
-flowchart LR
-    A[Raw Data] --> B[QC & Filter]
-    B --> C[Phylogeny]
-    C --> D[Selection Pressure]
-    D --> E[Bridge Builder]
-    E --> F[Primer Design]
-    F --> G[Validation]
-    style E fill:#1a365d,stroke:#1a365d,stroke-width:1px,color:#fff
-```
+
 
 ---
 
