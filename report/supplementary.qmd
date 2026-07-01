@@ -24,17 +24,20 @@ It is calculated by multiplying the number of possible bases at each degenerate 
 $$M = \prod_{i=1}^{L} \text{options}(c_i)$$
 
 Where:
-* Standard bases (`A`, `T`, `G`, `C`) have **1** option.
-* Two-base degeneracies (`R`, `Y`, `W`, `S`, `K`, `M`) have **2** options.
-* Three-base degeneracies (`B`, `D`, `H`, `V`) have **3** options.
-* Four-base degeneracies (`N`) have **4** options.
 
-For example, a forward primer with sequence `CTGACTAARGGRATTTTRGGRTTTGTATTCA` has four `R` positions (each allowing `A` or `G`). This results in a multiplier of $2 \times 2 \times 2 \times 2 = 16\text{x}$. Thus, the final tube contains exactly 16 distinct primer variations in equal proportions.
+*   **Standard bases** (`A`, `T`, `G`, `C`) have **1** option.
+*   **Two-base degeneracies** (`R`, `Y`, `W`, `S`, `K`, `M`) have **2** options.
+*   **Three-base degeneracies** (`B`, `D`, `H`, `V`) have **3** options.
+*   **Four-base degeneracies** (`N`) have **4** options.
+
+For example, a forward primer with sequence `CTGACTAARGGRATTTTRGGRTTTGTATTCA` has four `R` positions (each allowing `A` or `G`). This results in a multiplier of $2 \times 2 \times 2 \times 2 = 16\text{x}$. Thus, the final tube contains exactly 16 distinct primer variations in equal proportions [@linhart2005].
 
 **Why limit the multiplier?**
-* **Primer Dilution**: If the multiplier is too high (e.g., $>64\text{x}$), the concentration of any single primer variant in the reaction buffer becomes too low, which can severely reduce amplification efficiency.
-* **Non-Specific Amplification**: High degeneracy increases the risk of off-target binding and primer-dimer formation.
-To balance universality and performance, the pipeline enforces a maximum degeneracy limit of **$16\text{x}$** for RAA designs.
+
+*   **Primer Dilution Effect** [@chassalevris2020]: Since a degenerate primer pool is a physical mixture of many different sequences, the concentration of the *specific* primer variant that matches a patient's viral strain is significantly lower than the total primer concentration. If the degeneracy multiplier is too high, the effective concentration of the matching variant drops below the threshold required for efficient hybridization, leading to a loss of diagnostic sensitivity.
+*   **Non-Specific Amplification & Competition**: High degeneracy increases the pool complexity, raising the risk of off-target binding to the host genome and primer-dimer formation. The excess non-matching sequences can also compete for enzyme binding, reducing reaction efficiency.
+
+To balance universality (broad coverage) and sensitivity, the pipeline enforces a maximum degeneracy limit of **$16\text{x}$** for RAA designs.
 
 ---
 

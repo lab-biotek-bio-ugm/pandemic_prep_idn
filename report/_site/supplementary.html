@@ -23,7 +23,26 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
-</style>
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
 
 
 <script src="site_libs/quarto-nav/quarto-nav.js"></script>
@@ -418,9 +437,20 @@ window.Quarto = {
 <h3 class="anchored" data-anchor-id="understanding-the-degeneracy-multiplier">1.1. Understanding the Degeneracy Multiplier</h3>
 <p>A degenerate primer is not a single sequence, but a physical mixture of multiple unique primer sequences synthesized together in the same tube. The <strong>Degeneracy Multiplier</strong> (e.g., <code>16x</code>) represents the total number of unique sequence combinations resulting from the IUPAC positions in the primer.</p>
 <p>It is calculated by multiplying the number of possible bases at each degenerate position: <span class="math display">\[M = \prod_{i=1}^{L} \text{options}(c_i)\]</span></p>
-<p>Where: * Standard bases (<code>A</code>, <code>T</code>, <code>G</code>, <code>C</code>) have <strong>1</strong> option. * Two-base degeneracies (<code>R</code>, <code>Y</code>, <code>W</code>, <code>S</code>, <code>K</code>, <code>M</code>) have <strong>2</strong> options. * Three-base degeneracies (<code>B</code>, <code>D</code>, <code>H</code>, <code>V</code>) have <strong>3</strong> options. * Four-base degeneracies (<code>N</code>) have <strong>4</strong> options.</p>
-<p>For example, a forward primer with sequence <code>CTGACTAARGGRATTTTRGGRTTTGTATTCA</code> has four <code>R</code> positions (each allowing <code>A</code> or <code>G</code>). This results in a multiplier of <span class="math inline">\(2 \times 2 \times 2 \times 2 = 16\text{x}\)</span>. Thus, the final tube contains exactly 16 distinct primer variations in equal proportions.</p>
-<p><strong>Why limit the multiplier?</strong> * <strong>Primer Dilution</strong>: If the multiplier is too high (e.g., <span class="math inline">\(&gt;64\text{x}\)</span>), the concentration of any single primer variant in the reaction buffer becomes too low, which can severely reduce amplification efficiency. * <strong>Non-Specific Amplification</strong>: High degeneracy increases the risk of off-target binding and primer-dimer formation. To balance universality and performance, the pipeline enforces a maximum degeneracy limit of <strong><span class="math inline">\(16\text{x}\)</span></strong> for RAA designs.</p>
+<p>Where:</p>
+<ul>
+<li><strong>Standard bases</strong> (<code>A</code>, <code>T</code>, <code>G</code>, <code>C</code>) have <strong>1</strong> option.</li>
+<li><strong>Two-base degeneracies</strong> (<code>R</code>, <code>Y</code>, <code>W</code>, <code>S</code>, <code>K</code>, <code>M</code>) have <strong>2</strong> options.</li>
+<li><strong>Three-base degeneracies</strong> (<code>B</code>, <code>D</code>, <code>H</code>, <code>V</code>) have <strong>3</strong> options.</li>
+<li><strong>Four-base degeneracies</strong> (<code>N</code>) have <strong>4</strong> options.</li>
+</ul>
+<p>For example, a forward primer with sequence <code>CTGACTAARGGRATTTTRGGRTTTGTATTCA</code> has four <code>R</code> positions (each allowing <code>A</code> or <code>G</code>). This results in a multiplier of <span class="math inline">\(2 \times 2 \times 2 \times 2 = 16\text{x}\)</span>. Thus, the final tube contains exactly 16 distinct primer variations in equal proportions <span class="citation" data-cites="linhart2005">(<a href="#ref-linhart2005" role="doc-biblioref">Linhart and Shamir 2005</a>)</span>.</p>
+<p><strong>Why limit the multiplier?</strong></p>
+<ul>
+<li><strong>Primer Dilution Effect</strong> <span class="citation" data-cites="chassalevris2020">(<a href="#ref-chassalevris2020" role="doc-biblioref">Chassalevris et al. 2020</a>)</span>: Since a degenerate primer pool is a physical mixture of many different sequences, the concentration of the <em>specific</em> primer variant that matches a patient’s viral strain is significantly lower than the total primer concentration. If the degeneracy multiplier is too high, the effective concentration of the matching variant drops below the threshold required for efficient hybridization, leading to a loss of diagnostic sensitivity.</li>
+<li><strong>Non-Specific Amplification &amp; Competition</strong>: High degeneracy increases the pool complexity, raising the risk of off-target binding to the host genome and primer-dimer formation. The excess non-matching sequences can also compete for enzyme binding, reducing reaction efficiency.</li>
+</ul>
+<p>To balance universality (broad coverage) and sensitivity, the pipeline enforces a maximum degeneracy limit of <strong><span class="math inline">\(16\text{x}\)</span></strong> for RAA designs.</p>
 <hr>
 </section>
 </section>
@@ -1789,9 +1819,17 @@ window.Quarto = {
 </div>
 
 
+
 </section>
 
-</main> <!-- /main -->
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" role="list">
+<div id="ref-chassalevris2020" class="csl-entry" role="listitem">
+Chassalevris, T., Serafeim C. Chaintoutis, Evangelia D. Apostolidi, et al. 2020. <span>“A Highly Sensitive Semi-Nested Real-Time PCR Utilizing Oligospermine-Conjugated Degenerate Primers for the Detection of Diverse Strains of Small Ruminant Lentiviruses.”</span> <em>Molecular and Cellular Probes</em> 49: 101528. <a href="https://doi.org/10.1016/j.mcp.2020.101528">https://doi.org/10.1016/j.mcp.2020.101528</a>.
+</div>
+<div id="ref-linhart2005" class="csl-entry" role="listitem">
+Linhart, Chaim, and Ron Shamir. 2005. <span>“The Degenerate Primer Design Problem: Theory and Applications.”</span> <em>Journal of Computational Biology</em> 12 (4): 431–56. <a href="https://doi.org/10.1089/cmb.2005.12.431">https://doi.org/10.1089/cmb.2005.12.431</a>.
+</div>
+</div></section></div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
     const icon = "";
