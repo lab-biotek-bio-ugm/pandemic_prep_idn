@@ -151,6 +151,26 @@ In our pipeline, designed primers are back-mapped to the alignment consensus. Am
 1. **Unambiguous Base (A/T/G/C)**: If a single base occurs at a frequency $> 85\\%$ (minor alleles $< 15\\%$) at a given position, it is written as a standard nucleotide. Minor variations under $15\\%$ are ignored to prevent excessive degeneracy multipliers.
 2. **Degenerate Base (IUPAC)**: If two or more nucleotides at a single position each clear the **$15\\%$ threshold**, the position is mapped to the appropriate IUPAC degeneracy code (e.g., `R` for A/G, `Y` for C/T, `D` for A/G/T).
 
+### 1.1. Understanding the Degeneracy Multiplier
+
+A degenerate primer is not a single sequence, but a physical mixture of multiple unique primer sequences synthesized together in the same tube. The **Degeneracy Multiplier** (e.g., `16x`) represents the total number of unique sequence combinations resulting from the IUPAC positions in the primer.
+
+It is calculated by multiplying the number of possible bases at each degenerate position:
+$$M = \prod_{{i=1}}^{{L}} \\text{{options}}(c_i)$$
+
+Where:
+* Standard bases (`A`, `T`, `G`, `C`) have **1** option.
+* Two-base degeneracies (`R`, `Y`, `W`, `S`, `K`, `M`) have **2** options.
+* Three-base degeneracies (`B`, `D`, `H`, `V`) have **3** options.
+* Four-base degeneracies (`N`) have **4** options.
+
+For example, a forward primer with sequence `CTGACTAARGGRATTTTRGGRTTTGTATTCA` has four `R` positions (each allowing `A` or `G`). This results in a multiplier of $2 \\times 2 \\times 2 \\times 2 = 16\\text{{x}}$. Thus, the final tube contains exactly 16 distinct primer variations in equal proportions.
+
+**Why limit the multiplier?**
+* **Primer Dilution**: If the multiplier is too high (e.g., $>64\\text{{x}}$), the concentration of any single primer variant in the reaction buffer becomes too low, which can severely reduce amplification efficiency.
+* **Non-Specific Amplification**: High degeneracy increases the risk of off-target binding and primer-dimer formation.
+To balance universality and performance, the pipeline enforces a maximum degeneracy limit of **$16\\text{{x}}$** for RAA designs.
+
 ---
 
 ## 2. Forward Primer Audit
