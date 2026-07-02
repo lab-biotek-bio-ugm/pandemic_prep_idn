@@ -450,14 +450,14 @@ def _evaluate_candidate(idx_cand, args, seq_mappings, actual_candidates, seqkit_
     # Strategy: run seqkit against the main --sequences (surveillance/50k DB).
     # For degenerate: pool includes majority + all IUPAC variants.
     if has_deg_pool:
-        print(f"  → [SURVEILLANCE] seqkit pool {n_combinations} combos (rev in genomic orientation, will RC for seqkit)...")
+        print(f"  -> [SURVEILLANCE] seqkit pool {n_combinations} combos (rev in genomic orientation, will RC for seqkit)...")
         matches_max = run_seqkit_amplicon_pool(
             fwd_possible, rev_possible,
             args.max_mismatch, args.sequences,
             seqkit_threads, cand_id,
             rev_list_is_genomic=True,  # rev_possible stored as RC of 5'->3' primer
         )
-        print(f"  → [SURVEILLANCE] Union matched: {len(matches_max)} sequences")
+        print(f"  -> [SURVEILLANCE] Union matched: {len(matches_max)} sequences")
     else:
         try:
             matches_max = run_seqkit_amplicon(fwd, rev, args.max_mismatch, args.sequences, seqkit_threads)
@@ -471,7 +471,7 @@ def _evaluate_candidate(idx_cand, args, seq_mappings, actual_candidates, seqkit_
     # metric: how well the primer covers the dataset it was actually designed for.
     design_matches = {}
     if args.design_sequences:
-        print(f"  → [DESIGN-DB] Running against design sequences...")
+        print(f"  -> [DESIGN-DB] Running against design sequences...")
         if has_deg_pool:
             design_matches = run_seqkit_amplicon_pool(
                 fwd_possible, rev_possible,
@@ -484,7 +484,7 @@ def _evaluate_candidate(idx_cand, args, seq_mappings, actual_candidates, seqkit_
                 design_matches = run_seqkit_amplicon(fwd, rev, args.max_mismatch, args.design_sequences, seqkit_threads)
             except Exception as e:
                 print(f"[ERROR] seqkit design-db failed for {cand_id}: {e}")
-        print(f"  → [DESIGN-DB]  Matched: {len(design_matches)} sequences")
+        print(f"  -> [DESIGN-DB]  Matched: {len(design_matches)} sequences")
 
     matched_seqs = set(matches_max.keys())
 
@@ -655,8 +655,8 @@ def _evaluate_candidate(idx_cand, args, seq_mappings, actual_candidates, seqkit_
     raa_amp_pct   = round(raa_amplified / total * 100, 2) if total > 0 else 0.0
     raa_det_pct   = round(raa_detected  / total * 100, 2) if total > 0 else 0.0
 
-    print(f"  [{cand_id}] PCR → Amplified: {amplified}/{total} ({amp_pct}%), Detected: {detected}/{total} ({det_pct}%)")
-    print(f"  [{cand_id}] RAA → Amplified: {raa_amplified}/{total} ({raa_amp_pct}%), Detected: {raa_detected}/{total} ({raa_det_pct}%)")
+    print(f"  [{cand_id}] PCR -> Amplified: {amplified}/{total} ({amp_pct}%), Detected: {detected}/{total} ({det_pct}%)")
+    print(f"  [{cand_id}] RAA -> Amplified: {raa_amplified}/{total} ({raa_amp_pct}%), Detected: {raa_detected}/{total} ({raa_det_pct}%)")
 
     # ── Design-DB coverage WITH subtype/year/country breakdown ─────────────
     # seq_mappings already contains metadata for all sequences (including design DB seqs).
@@ -677,7 +677,7 @@ def _evaluate_candidate(idx_cand, args, seq_mappings, actual_candidates, seqkit_
             design_total = 0
         design_amplified = len(design_matches)
         design_amp_pct = round(design_amplified / design_total * 100, 2) if design_total else 0.0
-        print(f"  [{cand_id}] DESIGN-DB PCR → Amplified: {design_amplified}/{design_total} ({design_amp_pct}%)")
+        print(f"  [{cand_id}] DESIGN-DB PCR -> Amplified: {design_amplified}/{design_total} ({design_amp_pct}%)")
 
         # Build per-row records for design DB using seq_mappings metadata.
         # design_matches keys = amplified seq_ids; join with metadata for breakdowns.
@@ -785,7 +785,7 @@ def _evaluate_candidate(idx_cand, args, seq_mappings, actual_candidates, seqkit_
             design_raa_detected  = int(df_des["is_raa_detected"].sum())
             design_raa_amp_pct   = round(design_raa_amplified / design_total * 100, 2) if design_total else 0.0
             design_raa_det_pct   = round(design_raa_detected  / design_total * 100, 2) if design_total else 0.0
-            print(f"  [{cand_id}] DESIGN-DB RAA → Amplified: {design_raa_amplified}/{design_total} ({design_raa_amp_pct}%), Detected: {design_raa_detected}/{design_total} ({design_raa_det_pct}%)")
+            print(f"  [{cand_id}] DESIGN-DB RAA -> Amplified: {design_raa_amplified}/{design_total} ({design_raa_amp_pct}%), Detected: {design_raa_detected}/{design_total} ({design_raa_det_pct}%)")
             for _col in ["subtype", "year", "country"]:
                 _grp = df_des.groupby(_col).agg(
                     total=("seq_id", "count"),
@@ -945,7 +945,7 @@ def main():
     # We'll recompute below once actual candidate count is known.
     seqkit_threads = max(2, min(16, total_cpus // max(1, est_candidates)))
     worker_threads = max(1, total_cpus // seqkit_threads)
-    print(f"[M10] Thread pre-config: {total_cpus} total CPUs → est {worker_threads} parallel candidates × {seqkit_threads} seqkit threads each (will recompute after loading)")
+    print(f"[M10] Thread pre-config: {total_cpus} total CPUs -> est {worker_threads} parallel candidates x {seqkit_threads} seqkit threads each (will recompute after loading)")
 
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
@@ -1025,10 +1025,11 @@ def main():
     seq_mappings = []
     for header in fasta_headers:
         meta_row = find_metadata_for_header(header, strain_to_meta)
+        seq_id = header.split()[0].strip() if header.strip() else ""
         if meta_row:
             seq_mappings.append({
                 "header": header,
-                "seq_id": header,
+                "seq_id": seq_id,
                 "subtype": meta_row.get("subtype", "Unknown"),
                 "year": parse_year(meta_row.get("date", "Unknown")),
                 "country": meta_row.get("country", "Unknown")
@@ -1037,7 +1038,7 @@ def main():
             # Fallback for sequences without metadata
             seq_mappings.append({
                 "header": header,
-                "seq_id": header,
+                "seq_id": seq_id,
                 "subtype": "Unknown",
                 "year": "Unknown",
                 "country": "Unknown"
@@ -1102,7 +1103,7 @@ def main():
     # Cap at 16 to avoid memory oversubscription; seqkit handles internal threading.
     worker_threads = min(actual_candidates, total_cpus, 16)
     seqkit_threads = max(2, total_cpus // worker_threads)
-    print(f"[M10] Thread final config: {total_cpus} total CPUs → {worker_threads} parallel candidates × {seqkit_threads} seqkit threads/candidate")
+    print(f"[M10] Thread final config: {total_cpus} total CPUs -> {worker_threads} parallel candidates x {seqkit_threads} seqkit threads/candidate")
     # Strategy: run seqkit ONCE per candidate (with max_mismatch), then use sliding-window
     # mismatch detection to determine exact mismatch level per-sequence. This cuts seqkit
     # calls from 4× down to 1× per candidate while still reporting per-mismatch breakdown.
