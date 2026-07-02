@@ -1,0 +1,237 @@
+---
+title: "Module 07: Bridge Scoring Engine"
+---
+
+Designing highly sensitive molecular diagnostic assays (such as PCR or RPA) requires identifying target regions that are both highly conserved in current strains and evolutionarily stable against future escape mutations. 
+
+Module 07 implements the **Bridge Scoring Engine** (`scripts/m07_bridge_builder.py`). The engine resolves a fundamental biological challenge: integrating whole-genome conservation data (nucleotide level) with codon-specific natural selection models (protein level) into a single, unified coordinate system.
+
+---
+
+## 1. The Dual-Track Integration Challenge
+
+To understand the Bridge Engine, we must examine why data is split into whole-genome and gene-sliced tracks upstream:
+
+```
+                  ┌─────────────────────────────────────────┐
+                  │          aligned.fasta (M03)            │
+                  └────────────┬──────────────────────┬─────┘
+                               │                      │
+       [TRACK A: Whole-Sequence Track]      [TRACK B: Sliced-Gene Track]
+                               │                      │
+                (No slicing - processed as whole)     (Sliced by CDS GFF3 coordinates)
+                               │                      │
+                               ▼                      ▼
+                  ┌─────────────────────────┐   ┌──────────────────────────┐
+                  │  Shannon Entropy Scan   │   │ Selection Pressure Scan  │
+                  │  (Nucleotide level,     │   │ (Codon level, HyPhy      │
+                  │   sites 1 to 1027)      │   │  FUBAR/MEME per gene)    │
+                  └────────────┬────────────┘   └─────────────┬────────────┘
+                               │                              │
+                               └──────────────┬───────────────┘
+                                              ▼
+                                 ┌──────────────────────────┐
+                                 │      Bridge Engine       │
+                                 │   (Coordinate Remap &    │
+                                 │    Biomechanical Scoring)│
+                                 └────────────┬─────────────┘
+                                              ▼
+                                 ┌──────────────────────────┐
+                                 │ conserved_regions.bed    │
+                                 │ primer_targets_manifest  │
+                                 └──────────────────────────┘
+```
+
+### 1.1. Track A: Whole-Sequence Nucleotide Scan (Shannon Entropy)
+*   **Why Whole Sequence?** PCR primers and diagnostic probes can physically bind to any region along the viral segment—including non-coding regions (5' UTR and 3' UTR) which are often highly conserved. Therefore, nucleotide conservation (Shannon Entropy) must be calculated continuously across the **entire alignment** without skipping any positions.
+*   **Calculation**: For each nucleotide column $i$ in the alignment (positions 1 to 1027 for Influenza A MP), Shannon Entropy ($H_i$) is calculated based on base frequencies:
+    $$H_i = - \sum_{b \in \{A, T, G, C, -\}} P(b) \log_2 P(b)$$
+    A score of $0.0$ indicates absolute conservation (100% of sequences share the same base).
+
+### 1.2. Track B: Sliced-Gene Codon Scan (dN/dS Selection Pressure)
+*   **Why Sliced Genes?** Natural selection pressures—synonymous ($dS$) and non-synonymous ($dN$) substitution rates—are defined by amino acid translations. Non-coding regions (UTRs) do not contain codons and cannot be analyzed by selection models. Thus, alignments must be sliced into individual coding sequences (CDS) (e.g., $M1$ and $M2$ genes) to run HyPhy FUBAR/MEME.
+
+---
+
+## 2. Coordinate Remapping & Score Fusion
+
+The Bridge Engine merges these two tracks by mapping the codon-level selection scores from HyPhy back onto the exact nucleotide positions of the whole-sequence reference genome using coordinate boundaries extracted from the GFF3 annotation file.
+
+### 2.1. Remapping Logic
+For a coding gene $G$ starting at nucleotide position $Start_G$ in the whole genome:
+
+*   Each codon position $C$ (1-indexed) in the HyPhy output corresponds to three nucleotide positions in the whole sequence:
+    $$\text{Nucleotide positions} = \{ Start_G + 3(C - 1), \;\; Start_G + 3(C - 1) + 1, \;\; Start_G + 3(C - 1) + 2 \}$$
+
+*   **Example (Influenza A M1 Gene)**: The $M1$ gene starts at nucleotide position `26` on the MP segment. If HyPhy FUBAR identifies codon `10` as being under strong purifying selection, the Bridge Engine remaps this score to nucleotide positions `53`, `54`, and `55` on the whole sequence ($26 + 3(10 - 1) = 53$).
+
+### 2.2. Handling Non-Coding Regions (UTRs)
+Because UTRs lack codon structures and selection data, the Bridge Engine assigns them a neutral selection penalty (recombination/selection penalty = $0$). These regions are scored solely on their nucleotide Shannon Entropy and local mutation frequencies.
+
+---
+
+## 3. Targeting Strategies: Windowed vs. Full Segment
+
+Depending on the length and layout of the viral genome, the Bridge Engine can be configured to run in one of two distinct strategies:
+
+### 3.1. Sliced Window Strategy (`strategy: windowed`)
+*   **How it works**: The engine scans the alignment using a sliding window of a fixed size (e.g., 150 bp). Each window is scored individually.
+*   **Use Case**: Ideal for long genomes (like SARS-CoV-2, ~30,000 bp). It breaks the genome into small target zones, allowing the pipeline to select and rank only the highest-scoring zones (S or A+) for downstream primer design.
+
+### 3.2. Full Segment Strategy (`strategy: full_segment`)
+*   **How it works**: The engine does not slice the sequence. Instead, it treats the **entire viral segment** (e.g., all 1027 bp of the Influenza A MP segment) as a single, contiguous target candidate.
+*   **Use Case**: Ideal for short viral segments (such as Influenza MP or HA, ~1000 bp) where the segment is short enough to be passed directly to the primer design tool.
+*   **Impact on Grading**: In this mode, the entire segment receives one overall composite score and grade (often a lower grade like C or D if the segment contains variable regions). The local "zone grading" becomes irrelevant because we are not picking subset windows; rather, we are exporting the entire IUPAC consensus sequence to let PrimerLab scan and design primers across the whole segment.
+
+---
+
+## 4. Biomechanical Scoring & Grading System
+
+To evaluate target regions, the engine implements a multi-parametric **Core $\times$ Multipliers** scoring function.
+
+### 4.1. Core Score Calculation
+The base core score is calculated by weighting normalized nucleotide conservation ($Cons_{norm}$) and FUBAR codon purifying selection probability ($FUBAR_{prob}$):
+
+*   **Normalized Conservation**: Shannon Entropy ($H$) is normalized to a $[0, 1]$ scale:
+    $$Cons_{norm} = 1.0 - \frac{\text{Mean Entropy}}{2.0}$$
+
+*   **Coding regions (CDS)**:
+    $$\text{Core Score} = (w_{cons} \times Cons_{norm}) + (w_{fub} \times FUBAR_{prob})$$
+    *(Default weights: $w_{cons} = 0.66$ and $w_{fub} = 0.34$)*
+
+*   **Non-coding regions (UTRs)**:
+    $$\text{Core Score} = Cons_{norm} \times 0.95$$
+
+### 4.2. Biomechanical Multipliers (Penalties)
+The Core Score is multiplied by penalty multipliers (values $\le 1.0$) to discount regions with undesirable thermodynamic or mechanical traits:
+$$\text{Final Score} = \text{Core Score} \times M_{MEME} \times M_{recomb} \times M_{GC} \times M_{block} \times M_{homo}$$
+
+*   **Episodic Selection ($M_{MEME}$)**: Penalizes regions with sites undergoing transient positive selection (episodic escape hotspots).
+*   **Recombination ($M_{recomb}$)**: Multiplies by $0.5$ if the region is close to recombination breakpoints.
+*   **GC-Content ($M_{GC}$)**: Lowers the score if the GC content falls outside the thermodynamically optimal range ($40\% - 60\%$).
+*   **Conserved Block ($M_{block}$)**: Penalizes windows lacking long contiguous conserved blocks.
+*   **Homopolymer ($M_{homo}$)**: Applies a penalty if the sequence contains homopolymer repeats (e.g., $\ge 5$ identical nucleotides).
+
+### 4.3. Target Grade Classification
+The calculated **Final Score** determines the target grade and recommendation:
+
+| Grade | Final Score Range | Recommendation & Description |
+|---|---|---|
+| **S** | $\ge 0.95$ | **Optimal Target** — Highest conservation, no selection danger; gold standard for universal primers. |
+| **A+** | $\ge 0.90$ | **High-Priority Target** — Near-optimal conservation with negligible evolutionary risk. |
+| **A** | $\ge 0.85$ | **Recommended Target** — Strong conservation profile with minor penalties. |
+| **A-** | $\ge 0.80$ | **Acceptable Target** — Suitable for validation, minor biomechanical caveats. |
+| **B+** | $\ge 0.75$ | **Moderate Priority** — Satisfactory conservation with moderate penalties. |
+| **B** | $\ge 0.70$ | **Low Priority** — Requires careful thermodynamic validation. |
+| **C** | $\ge 0.60$ | **At-Risk Target** — Significant penalties; not recommended without review. |
+| **D** | $< 0.60$ | **Excluded** — Failed critical biomechanical or evolutionary constraints. |
+
+---
+
+## 5. Configuration & Parameterization
+
+The Bridge Scoring Engine is configured in `config.yaml` to define search strategies and weights for evolutionary conservation versus selection pressure:
+
+```yaml
+# [M07] Bridge scoring and window definitions
+bridge:
+  strategy: "full_segment"        # Treat whole segment as target (options: sliding_window, full_segment)
+  design_regions:
+    - "segment-MP"
+  include_utr: true
+  min_region_length: 150
+  scoring:
+    core:
+      conservation_weight: 0.66   # Weight for Shannon Entropy conservation score (0.0 to 1.0)
+      purifying_weight: 0.34      # Weight for HyPhy FUBAR negative selection probability (0.0 to 1.0)
+```
+
+### 5.1. Parameter Tuning Dictionary
+
+| Parameter Name | Allowed Values | Default Value | Purpose & Biological Meaning |
+|---|---|---|---|
+| `bridge.strategy` | `"sliding_window"`, `"full_segment"` | `"full_segment"` | Defines how target regions are carved. `"sliding_window"` divides the genome into slices, which is ideal for long genomes (like Coronaviruses). `"full_segment"` passes the entire segment, which is ideal for short segments (like Influenza MP) so PrimerLab can scan the whole region. |
+| `bridge.scoring.core.conservation_weight` | Float `0.0` to `1.0` | `0.66` | The weight given to sequence alignment conservation (Shannon Entropy). A high weight favors regions with high identity in current databases. |
+| `bridge.scoring.core.purifying_weight` | Float `0.0` to `1.0` | `0.34` | The weight given to HyPhy FUBAR purifying selection probability. A high weight favors codons that are evolutionary forbidden to mutate, ensuring the diagnostic target will remain stable against future drift. |
+
+### 5.2. How to Interpret Target Grades
+
+Module 07 outputs a targets list (`primer_targets_manifest.yaml`):
+
+*   **Grade S / A+**: Highly recommended for design. Indicates a conserved hot-spot under strong negative selection.
+*   **Grade D**: If running in `full_segment` mode, a Grade D is normal and represents the average variability of the entire segment. It should not be used as a veto; PrimerLab will still perform localized scans to find optimal candidate positions.
+
+::: {.panel-tabset}
+
+### 1. Active Configuration Schema (active_config.yaml)
+```yaml
+# Active parameters used in the run:
+bridge:
+  strategy: "full_segment"
+  include_utr: true
+  scoring:
+    core:
+      conservation_weight: 0.66
+      purifying_weight: 0.34
+```
+
+### 2. Bridge Run Command
+```bash
+# Run the Bridge Engine Builder
+python scripts/m07_bridge_builder.py \
+    --msa results/influenza-a-mp-sea/m03/aligned.fasta \
+    --gff config/references/flu_a_mp_annotation.gff \
+    --hyphy-dir results/influenza-a-mp-sea/m05 \
+    --reference config/references/flu_a_mp_genome.fasta \
+    --metadata results/influenza-a-mp-sea/m01/metadata_enriched.tsv \
+    --outdir results/influenza-a-mp-sea/m07 \
+    --config results/influenza-a-mp-sea/m07/active_config.yaml \
+    --build-name influenza-a-mp-sea \
+    --strategy full_segment \
+    --min-subtype-count 30 \
+    --iupac-threshold 0.15
+```
+
+### 3. Output: Primer Targets Manifest Snippet
+This manifest contains the exported full-segment consensus sequence ready for PrimerLab:
+```yaml
+pipeline_run_id: influenza-a-mp-indo-only_bridge
+total_candidates: 1
+candidate_regions:
+  - region_id: "segment-MP_region_1"
+    gene: "segment-MP"
+    tier: 2
+    grade: "D"
+    composite_score: 0.4071
+    conserved_zone:
+      start: 0
+      end: 1027
+      length: 1027
+    consensus_sequence: "ATGAGTCTTCTAACCGAGGTCGAAACGTACGTTCTCTCTATCGTCCCGTCAGGCCCCCTC..."
+    iupac_consensus_sequence: "ATGAGTCTTCTAACCGAGGTCGAAACGTACGTTCTCTCTATCGTCCCGTCAGGCCCCCTC..."
+```
+:::
+
+---
+
+## 6. Inputs, Outputs & Files
+
+The files involved in Module 07 are summarized below:
+
+| File Role | Path | Format | Description |
+|---|---|---|---|
+| **Input Alignment** | `results/{build}/m03/aligned.fasta` | FASTA | Full sequence alignment from Module 03. |
+| **Input GFF3** | `config/references/flu_a_mp_annotation.gff` | GFF3 | Gene boundary coordinate map. |
+| **Input Selection JSONs** | `results/{build}/m05/fubar_{gene}.json` | JSON | dN/dS values per gene from Module 05. |
+| **Conserved BED** | `results/{build}/m07/conserved_regions.bed` | BED | Graded conserved target zones. |
+| **Bridge Report** | `results/{build}/m07/bridge_report.json` | JSON | Detailed statistical metrics for every target window. |
+| **Targets Manifest** | `results/{build}/m07/primer_targets_manifest.yaml` | YAML | Structured list of target zones with consensus sequences. |
+
+---
+
+## 7. Troubleshooting & Limitations
+
+### 7.1. Low Scores in Full Segment Mode
+*   **Problem**: In `full_segment` mode, the composite score is very low (e.g. $0.40$), resulting in Grade D.
+*   **Cause**: Evaluating an entire 1000+ bp segment as a single window includes hyper-variable loops and non-coding mutations, accumulating homopolymer and mismatch penalties that lower the score.
+*   **Solution**: This is expected behavior. The grade in `full_segment` mode is not used to exclude the segment, but simply reflects overall segment variation. The consensus sequence is still successfully exported to PrimerLab, which will perform local thermodynamic sliding scans to find individual primer pairs.

@@ -1,0 +1,180 @@
+---
+title: "Module 05: Selection Pressure Engine"
+---
+
+Evolutionary pressure shapes pathogen genomes, driving the emergence of diagnostic escape mutations. Module 05 calculates codon-specific selection pressures ($dN/dS$ ratios) using the **HyPhy (Hypothesis Testing using Phylogenies)** software suite [@kosakovsky2020].
+
+By identifying sites under purifying (negative) selection, the pipeline targets positions that are evolutionarily stable, ensuring long-term diagnostic assay durability.
+
+---
+
+## 1. Diversity-Aware Subsampling & Reading Frame Extraction
+
+Because molecular evolutionary selection models scale non-linearly with sequence counts, the pipeline partitions sequence data before selection profiling:
+
+1.  **Diversity-Aware Subsampling (`scripts/hyphy_subsample.py`)**: Subsamples the global MSA into a representative subset (default: 50 to 2000 sequences) using a balanced stratification strategy based on `subtype x country x year` metadata. This maintains evolutionary diversity while reducing the computational load from thousands to a few hundred sequences.
+2.  **Coding-Gene Extraction (`scripts/extract_genes.py`)**: Slices the nucleotide sequence alignments into distinct open reading frames (ORFs) based on the CDS coordinate annotations in the input GFF3 file (e.g., extracting $M1$ and $M2$ genes for the Influenza A MP segment).
+3.  **Harsh Masking**: Codons containing frame-breaking insertions, deletions, or high rates of ambiguous bases ($N$) are masked out. This step is critical because codon selection analyses require gap-free, in-frame codon triplets (length divisible by 3) to execute.
+4.  **Phylogenetic Tree Pruning (`scripts/prune_tree.py`)**: Prunes the main dated tree (`tree.nwk`) to only retain the tips present in the subsampled gene alignment, preventing tree-alignment dimension mismatches.
+
+---
+
+## 2. Selection Pressure Profiling Models
+
+The engine executes two complementary selection models to discover mutations:
+
+### 2.1. Pervasive Selection Analysis (FUBAR)
+Pervasive (constant) selection pressure across the entire phylogeny is calculated using the **FUBAR (Fast Unconstrained Bayesian Approximation)** model [@murrell2013]:
+
+*   **Objective**: Computes the posterior probability of non-synonymous ($dN$) and synonymous ($dS$) substitution rates per codon site.
+*   **Purifying Selection**: Codon positions with $dN/dS < 1$ (specifically $dN < dS$ with a posterior probability threshold $\ge 0.9$) are classified as conserved sites under negative selection. These sites are the primary targets for diagnostic primer and probe design.
+
+### 2.2. Episodic Selection Analysis (MEME)
+Periodical or branch-specific selection pressure is modeled using the **MEME (Mixed Effects Model of Episodic Selection)** model [@murrell2012]:
+
+*   **Objective**: Detects individual codon sites subject to episodic diversifying selection (positive selection occurring on only a subset of lineages/branches).
+*   **Relevance**: Identifies hotspots where transient mutations arise (e.g., vaccine escape or antiviral resistance sites), which must be flagged as high-risk regions to avoid in diagnostic design.
+
+---
+
+## 3. Configuration & Execution Commands (Tabset Examples)
+
+Below are the configuration parameters and terminal commands of Module 05:
+
+::: {.panel-tabset}
+
+### 1. Configuration (config_influenza_a_mp.yaml)
+```yaml
+# [M05] Evolutionary Selection Pressure (HyPhy)
+hyphy:
+  threads: 8                      # Number of CPU threads assigned to HyPhy
+  p_value_threshold: 0.1          # Significance threshold for positive selection
+  methods:
+    - "FUBAR"
+    - "MEME"
+  target_genes:
+    - "ALL"                       # Process all CDS genes detected in GFF
+  subsample:
+    enabled: true                 # Subsample dataset to optimize HyPhy compute
+    max_sequences: 2000
+    min_sequences: 50
+    strategy: "balanced"          # Balanced metadata distribution
+    group_by:
+      subtype: true
+      country: true
+      year: true
+    seed: 42
+```
+
+### 2. FUBAR Run Command
+Note the cache clearing step to prevent dimension mismatches from previous runs:
+```bash
+# 1. Clear stale cache files
+rm -f results/influenza-a-mp-sea/m05/cleaned_M1_NT.fasta.FUBAR.cache
+
+# 2. Run HyPhy FUBAR
+hyphy CPU=8 fubar \
+    --alignment results/influenza-a-mp-sea/m05/cleaned_M1_NT.fasta \
+    --tree results/influenza-a-mp-sea/m05/tree_M1.nwk \
+    --output results/influenza-a-mp-sea/m05/fubar_M1.json
+```
+
+### 3. MEME Run Command
+```bash
+# 1. Clear stale cache files
+rm -f results/influenza-a-mp-sea/m05/cleaned_M1_NT.fasta.MEME.cache
+
+# 2. Run HyPhy MEME
+hyphy CPU=8 meme \
+    --alignment results/influenza-a-mp-sea/m05/cleaned_M1_NT.fasta \
+    --tree results/influenza-a-mp-sea/m05/tree_M1.nwk \
+    --output results/influenza-a-mp-sea/m05/meme_M1.json
+```
+
+### 4. Output: FUBAR JSON Snippet
+This snippet illustrates the FUBAR output JSON format, detailing the synonymous/non-synonymous rates and selection probabilities per codon position (e.g. index `0` represents codon 1):
+```json
+{
+  "analysis": {
+    "info": {
+      "model": "FUBAR",
+      "sequences": 300,
+      "codons": 252
+    }
+  },
+  "MLE": {
+    "headers": [
+      ["alpha", "Synonymous substitution rate (dS)"],
+      ["beta", "Non-synonymous substitution rate (dN)"],
+      ["beta-alpha", "dN - dS"],
+      ["prob_positive", "Posterior probability of positive selection (dN > dS)"],
+      ["prob_negative", "Posterior probability of negative selection (dN < dS)"]
+    ],
+    "content": {
+      "0": [
+        [0.85, 0.12, -0.73, 0.01, 0.94],
+        [1.12, 0.05, -1.07, 0.00, 0.98],
+        [0.94, 2.45, 1.51, 0.92, 0.02]
+      ]
+    }
+  }
+}
+```
+:::
+
+---
+
+## 3. Configuration & Parameterization
+
+The selection pressure modeling is constrained by sequence limits and statistical cutoffs defined in `config.yaml`:
+
+```yaml
+# [M05] Selection Pressure (HyPhy)
+hyphy:
+  max_sequences: 300              # Limit of sequences to run in HyPhy to prevent time explosion
+  min_sequences: 50               # Minimum sequences required to run HyPhy
+  seed: 42                        # Subsample seed for selection pressure
+  fubar_threshold: 0.90           # Posterior probability cutoff for purifying selection (dN < dS)
+  meme_threshold: 0.05            # P-value cutoff for episodic selection (dN > dS)
+```
+
+### 3.1. Parameter Tuning Dictionary
+
+| Parameter Name | Allowed Values | Default Value | Purpose & Biological Meaning |
+|---|---|---|---|
+| `hyphy.max_sequences` | Integer `50` to `2000` | `300` | HyPhy's FUBAR and MEME computations scale non-linearly with sequence count. Setting a limit of 300 sequences balances statistical accuracy and execution speed (averaging ~10 minutes per run). Increasing this beyond 1000 can lead to days of computation on standard CPUs. |
+| `hyphy.min_sequences` | Integer $\ge 10$ | `50` | The minimum sample size. Below 50 sequences, the statistical power of FUBAR is insufficient to resolve site-by-site selection patterns safely. |
+| `hyphy.fubar_threshold` | Float `0.5` to `1.0` | `0.90` | The posterior probability cutoff. Codons with a FUBAR probability $\ge 0.90$ for $\text{dN} < \text{dS}$ are flagged as highly conserved and under strong purifying selection. |
+| `hyphy.meme_threshold` | Float `0.0` to `1.0` | `0.05` | The significance level (p-value). Codons with a MEME p-value $\le 0.05$ are flagged as undergoing episodic positive selection (mutational hot-spots). |
+
+### 3.2. How to Interpret HyPhy JSON Outputs
+
+Module 05 outputs raw JSON files (`fubar_M1.json` and `meme_M1.json`):
+
+*   **FUBAR Columns**: Look for the parameters `alpha` (synonymous rate, $dS$) and `beta` (non-synonymous rate, $dN$). If `beta` is close to 0 and `prob_negative` is high ($\ge 0.90$), this site is extremely stable and a **gold-standard target** for diagnostic design.
+*   **MEME Columns**: Look for `p-value`. A low value indicates that at least one branch of the phylogenetic tree has experienced sudden diversification. These coordinates must be avoided.
+
+---
+
+## 4. Inputs, Outputs & Files
+
+The files involved in Module 05 are summarized below:
+
+| File Role | Path | Format | Description |
+|---|---|---|---|
+| **Input Alignment** | `results/{build}/m03/aligned.fasta` | FASTA | Full sequence alignment from Module 03. |
+| **Input Tree** | `results/{build}/m04/tree.nwk` | Newick | Dated timetree from Module 04. |
+| **Subsampled Fasta** | `results/{build}/m05/aligned_hyphy.fasta` | FASTA | Subsampled FASTA sequences. |
+| **Extracted Gene** | `results/{build}/m05/cleaned_{gene}_NT.fasta` | FASTA | Extracted coding gene sequences (in-frame). |
+| **Pruned Tree** | `results/{build}/m05/tree_{gene}.nwk` | Newick | Pruned phylogenetic tree matching the gene subset. |
+| **FUBAR Output** | `results/{build}/m05/fubar_{gene}.json` | JSON | dN/dS ratios and posterior probability stats. |
+| **MEME Output** | `results/{build}/m05/meme_{gene}.json` | JSON | Episodic diversifying selection statistics. |
+
+---
+
+## 5. Troubleshooting & Limitations
+
+### 5.1. HyPhy Stale Cache Dimension Mismatches
+*   **Problem**: HyPhy exits with a fatal error: `Index out of range` or `Matrix dimensions do not match`.
+*   **Cause**: When running FUBAR or MEME, HyPhy automatically generates and reads a binary cache file (e.g. `*.FUBAR.cache`) in the input folder. If you rerun the pipeline with a different number of sequences, the old cache size will conflict with the new alignment.
+*   **Solution**: The Snakemake pipeline resolves this by programmatically purging any existing `*.cache` files in the output directory before invoking HyPhy.

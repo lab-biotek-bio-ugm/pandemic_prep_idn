@@ -1,0 +1,142 @@
+---
+title: "Results: In-silico Performance Validation"
+---
+
+This section details the final in-silico validation of the designed primer and probe candidates against a global database of **50,750 Influenza A sequences**. We compare the diagnostic sensitivity of the three design scenarios, analyze the impact of degenerate bases on sequence coverage, and provide direct access to the validation heatmaps and report files.
+
+---
+
+## 1. Overall In-Silico Coverage and Degeneracy Uplift
+
+To verify the necessity of IUPAC degenerate bases, all candidate sets were evaluated in two forms:
+1.  **Degenerate**: Primers and probes containing degenerate bases (e.g., `R` for A/G, `Y` for C/T) as designed by the pipeline.
+2.  **Non-Degenerate**: Primers and probes where degenerate bases were replaced with their consensus base, simulating non-degenerate diagnostic design.
+
+The table below summarizes the overall PCR and RAA amplification coverage achieved on the global dataset ($N=50,750$ sequences), demonstrating the **degeneracy uplift (gain)**:
+
+| Scenario | PCR (Non-Degen) | PCR (Degenerate) | PCR Uplift | RAA (Non-Degen) | RAA (Degenerate) | RAA Uplift |
+|---|---|---|---|---|---|---|
+| **Indonesia Only** <br> *(`indo-only`)* | 18.61% | **91.20%** | <span style="color: #10b981; font-weight: bold;">+72.59%</span> | 18.33% | **88.83%** | <span style="color: #10b981; font-weight: bold;">+70.50%</span> |
+| **Southeast Asia** <br> *(`sea-only`)* | 33.87% | **34.53%** | <span style="color: #10b981; font-weight: bold;">+0.66%</span> | 33.87% | **34.53%** | <span style="color: #10b981; font-weight: bold;">+0.66%</span> |
+| **All-Partial** <br> *(`all-partial`)* | 17.24% | **17.56%** | <span style="color: #10b981; font-weight: bold;">+0.32%</span> | 17.14% | **17.52%** | <span style="color: #10b981; font-weight: bold;">+0.38%</span> |
+
+### Key Findings:
+*   **The Degeneracy Necessity**: For the `indo-only` design, removing degenerate bases collapses the coverage from **91.20%** down to **18.61%** (a drop of over 70 percentage points). This demonstrates mathematically that IUPAC degenerate bases are essential to accommodate the natural genomic variation in circulating Influenza A strains [@elnifro2000]. Non-degenerate primers carrying a consensus-only sequence are systematically excluded from large fractions of the viral sequence space, consistent with documented primer mismatch failures in diagnostic assays [@khan2020].
+*   **Regional Design Limitation**: The regional `sea-only` and global `all-partial` candidates achieved very low global coverage (~34% and ~17% respectively). This is due to sequence entropy at the design target and the fact that their degenerate slots were spent accommodating rare regional sequencing artifacts rather than high-frequency global consensus transitions.
+
+---
+
+## 2. In-Silico Validation Report Dashboard
+
+For transparency and verification, the pipeline generated interactive HTML reports for each scenario under Module 10 (M10). You can click the links below to open the real data tables and coverage heatmaps directly in your browser:
+
+```{=html}
+<style>
+  .report-table th {
+    background-color: #f8fafc;
+    color: #475569;
+    font-weight: 700;
+    border: 1px solid #e2e8f0;
+    padding: 12px;
+  }
+  .btn-report {
+    display: inline-block;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: all 0.15s ease-in-out;
+    text-align: center;
+    min-width: 140px;
+    color: #475569 !important;
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    margin: 2px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  }
+  .btn-report:hover {
+    background-color: #f8fafc;
+    border-color: #94a3b8;
+    color: #1e293b !important;
+  }
+  .btn-report:active {
+    transform: scale(0.98);
+  }
+</style>
+
+<table class="table report-table" style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+  <thead>
+    <tr>
+      <th style="text-align: left;">Geographic Model</th>
+      <th style="text-align: center;">M10 Comparison Report</th>
+      <th style="text-align: center;">Degenerate Heatmap</th>
+      <th style="text-align: center;">Non-Degenerate Heatmap</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border: 1px solid #e2e8f0; padding: 12px; font-weight: bold; color: #334155;">Indonesia Only (indo-only)</td>
+      <td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+        <a class="btn-report" href="results/influenza-a-mp-indo-only/m10/comparison_report.html">Comparison Report</a>
+      </td>
+      <td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+        <a class="btn-report" href="results/influenza-a-mp-indo-only/m10/degenerate/coverage_heatmap.html">Degenerate Heatmap</a>
+      </td>
+      <td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+        <a class="btn-report" href="results/influenza-a-mp-indo-only/m10/non_degenerate/coverage_heatmap.html">Non-Degenerate</a>
+      </td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #e2e8f0; padding: 12px; font-weight: bold; color: #334155;">Southeast Asia (sea-only)</td>
+      <td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+        <a class="btn-report" href="results/influenza-a-mp-sea-only/m10/comparison_report.html">Comparison Report</a>
+      </td>
+      <td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+        <a class="btn-report" href="results/influenza-a-mp-sea-only/m10/degenerate/coverage_heatmap.html">Degenerate Heatmap</a>
+      </td>
+      <td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+        <a class="btn-report" href="results/influenza-a-mp-sea-only/m10/non_degenerate/coverage_heatmap.html">Non-Degenerate</a>
+      </td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #e2e8f0; padding: 12px; font-weight: bold; color: #334155;">All-Partial Database</td>
+      <td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+        <a class="btn-report" href="results/influenza-a-mp-all-partial/m10/comparison_report.html">Comparison Report</a>
+      </td>
+      <td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+        <a class="btn-report" href="results/influenza-a-mp-all-partial/m10/degenerate/coverage_heatmap.html">Degenerate Heatmap</a>
+      </td>
+      <td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+        <a class="btn-report" href="results/influenza-a-mp-all-partial/m10/non_degenerate/coverage_heatmap.html">Non-Degenerate</a>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+---
+
+## 3. Subtype-Specific Performance Analysis
+
+To ensure that the designs are effective across different lineages, coverage was analyzed across major Influenza A subtypes:
+
+| Subtype | Metric | Indo-Only Coverage | SEA-Only Coverage | All-Partial Coverage |
+|---|---|---|---|---|
+| **A / H5N1** <br> *(N=253)* | PCR <br> RAA (Amp) <br> RAA (Det) | **98.42%** <br> **98.42%** <br> **98.02%** | 0.00% <br> 0.00% <br> 0.00% | 47.37% <br> 47.19% <br> 34.91% |
+| **A / H3N2** <br> *(N=187)* | PCR <br> RAA (Amp) <br> RAA (Det) | **99.47%** <br> **99.47%** <br> **99.47%** | **86.67%** <br> **86.67%** <br> **86.67%** | 3.17% <br> 3.17% <br> 3.17% |
+| **A / H1N1** <br> *(N=154)* | PCR <br> RAA (Amp) <br> RAA (Det) | **96.10%** <br> 81.82% <br> 81.82% | 0.53% <br> 0.53% <br> 0.53% | 35.17% <br> 35.17% <br> 35.11% |
+
+*   **Subtype Inclusivity**:
+    *   The `indo-only` design is highly effective across all major subtypes, achieving $>96\%$ PCR coverage for H5N1, H3N2, and H1N1.
+    *   The `sea-only` design is heavily biased toward H3N2 ($86.67\%$), failing to detect H5N1 and H1N1 due to regional sequence mismatches.
+    *   The `all-partial` design shows moderate coverage for H5N1 ($47.37\%$) and H1N1 ($35.17\%$), but fails to detect H3N2 ($3.17\%$), indicating a significant design bias.
+
+---
+
+## 4. Temporal Robustness & Antigenic Drift
+
+Aggregating simulated detection rates over time shows how well each design resists viral evolution (antigenic drift) from 2015 to 2025:
+
+*   **Indo-Only**: Maintains stable coverage above 90% across the 10-year span, confirming that the **187–341 bp** target region remains highly conserved.
+*   **SEA-Only**: Shows significant annual fluctuations, indicating vulnerability to seasonal mutations.
+*   **All-Partial**: Exhibits a steady decline in coverage in recent years, indicating that its target region is undergoing evolutionary drift in modern global lineages.

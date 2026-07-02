@@ -1,0 +1,141 @@
+---
+title: "Module 03: Multiple Sequence Alignment"
+---
+
+Multiple Sequence Alignment (MSA) is a foundational step in viral phylogenomics. Module 03 aligns the filtered, high-quality query sequences against a standardized reference genome to establish a unified coordinate system for mutation calling, selection pressure profiling, and diagnostic target design.
+
+---
+
+## 1. Multiple Alignment Methodology
+
+The module executes the Snakemake rule `augur_align` which wraps the **MAFFT** alignment engine [@katoh2013] through Nextstrain's **Augur Toolkit** [@hadfield2018].
+
+```
+┌────────────────────────────────┐
+│   filtered_sequences.fasta     │
+└───────────────┬────────────────┘
+                │
+                ├────────────────◄ Reference: NC_002016.1
+                ▼
+  ┌────────────────────────────┐
+  │         augur align        │
+  ├────────────────────────────┤
+  │   Align against reference  │
+  │   --fill-gaps              │
+  │   --remove-reference       │
+  └─────────────┬──────────────┘
+                │
+                ▼
+┌────────────────────────────────┐
+│         aligned.fasta          │
+└────────────────────────────────┘
+```
+
+The alignment workflow applies the following computational procedures:
+
+1.  **Reference-Based Coordinate Stabilization**: Rather than performing a *de novo* alignment (which can shift coordinates if insertion mutations are present), queries are aligned relative to the reference sequence (`NC_002016.1` for Influenza A MP). This ensures that every position in the output alignment corresponds exactly to the official NCBI reference coordinates.
+2.  **Gap Filling (`--fill-gaps`)**: Deletions or missing sequences at the $5'$ and $3'$ ends are automatically padded with ambiguous bases ($N$) instead of alignment gaps ($-$). This padding prevents downstream tools (especially HyPhy selection pressure scripts) from misinterpreting missing terminal sequencing data as evolutionary deletion events.
+3.  **Thread Optimization**: Scaling the alignment is achieved by partitioning input query streams across multiple CPU cores (configured via `augur.threads` in `config.yaml`), allowing rapid alignment of thousands of sequences.
+
+---
+
+## 2. Configuration & Outputs (Tabset Examples)
+
+Below are the configuration schemas, terminal commands, and structural data transitions of Module 03:
+
+::: {.panel-tabset}
+
+### 1. Configuration (config_influenza_a_mp.yaml)
+```yaml
+# [GLOBAL] References used in Alignment & Annotation
+references:
+  reference_id: "NC_002016.1"
+  genome: "config/references/flu_a_mp_reference.fasta"
+  annotation: "config/references/flu_a_mp_annotation.gff"
+
+# [M04] Thread settings for Augur tools (Align, Tree)
+augur:
+  threads: 16
+```
+
+### 2. Generated Command CLI
+```bash
+# Run Augur Align wrapping MAFFT
+augur align \
+    --sequences results/influenza-a-mp-sea/m02/filtered_sequences.fasta \
+    --reference-sequence config/references/flu_a_mp_reference.fasta \
+    --output results/influenza-a-mp-sea/m03/aligned.fasta \
+    --fill-gaps \
+    --nthreads 16
+```
+
+### 3. Fasta Transition (Before vs. After)
+Notice how sequences are padded with `N`s and aligned to the exact same starting nucleotide positions relative to the reference:
+
+#### Raw Input (Unaligned)
+```fasta
+>EPI_ISL_16613629
+atgagtcttctaaccgaggtcgaaacgtacgttctttctatcatcccatcaggccccctc...
+>EPI_ISL_19661433
+tcttctaaccgaggtcgaaacgtacgttctttctatcatcccatcaggccccctcaaagc...
+```
+
+#### Aligned Output (MSA Padded)
+```fasta
+>EPI_ISL_16613629
+atgagtcttctaaccgaggtcgaaacgtacgttctttctatcatcccatcaggccccctc...
+>EPI_ISL_19661433
+NNNNNttctaaccgaggtcgaaacgtacgttctttctatcatcccatcaggccccctcaa...
+```
+:::
+
+---
+
+## 2. Configuration & Parameterization
+
+The alignment behavior is controlled by the reference anchor settings and MAFFT arguments defined in the pipeline scripts:
+
+```bash
+# MAFFT alignment command parameters
+mafft \
+    --add results/m02/filtered_sequences.fasta \
+    --keeplength \
+    config/references/flu_a_mp_reference.fasta \
+    > results/m03/aligned.fasta
+```
+
+### 2.1. Parameter Tuning Dictionary
+
+| Parameter Name / Option | Allowed Values | Default Value | Purpose & Biological Meaning |
+|---|---|---|---|
+| `--add` | File path | Filtered fasta | Instructs MAFFT to align the query sequences *to* the reference genome template rather than recalculating the entire multiple sequence alignment from scratch. This accelerates alignment from hours to seconds. |
+| `--keeplength` | Boolean flag | `True` | **Crucial Diagnostic Veto**. Forces MAFFT to keep the exact length of the reference sequence. Any insertions in the query sequences that extend beyond the reference length are discarded (clipped), and deletions are padded with gaps ($-$). This guarantees that all aligned sequences have the exact same nucleotide coordinates (e.g., pos 187 is position 187 in *every* sequence). |
+| Subsampling Group-by | Column list | `subtype country year month` | Defines the stratification keys for subsampling. Splitting sequences into these buckets ensures a homogeneous distribution over time and space, preventing H3N2 or US-based strains from dominating the target search. |
+
+### 2.2. How to Interpret Alignment Visualizations
+
+During alignment, sequences are padded at the terminal ends:
+
+*   **Terminal `N` Padding**: If a query sequence begins at nucleotide 5 (e.g., due to primer clipping during wet-lab sequencing), the alignment will pad positions 1–4 with `NNNN`. This is expected and does not count as a true mutation.
+*   **Internal Gaps (`-`)**: A gap represents a deletion mutation. If a gap occurs in a target primer region, it represents a major mismatch that will block recombinase or polymerase binding.
+
+---
+
+## 3. Inputs, Outputs & Files
+
+The files involved in Module 03 are summarized below:
+
+| File Role | Path | Format | Description |
+|---|---|---|---|
+| **Input Sequences** | `results/{build}/m02/filtered_sequences.fasta` | FASTA | High-quality, subsampled nucleotide sequences. |
+| **Reference Fasta** | `config/references/flu_a_mp_reference.fasta` | FASTA | NC_002016.1 nucleotide reference genome. |
+| **Aligned Output** | `results/{build}/m03/aligned.fasta` | FASTA | Multiple sequence alignment output (same length). |
+
+---
+
+## 4. Troubleshooting & Limitations
+
+### 4.1. Terminal Insertion Loops (Gaps)
+*   **Problem**: Downstream translation of alignment (`augur translate`) fails with "invalid codon length" or indicates massive frameshifts.
+*   **Cause**: Heavy insertion mutations in non-standard isolates can introduce gaps ($-$) in the middle of sequences that break the 3-nucleotide codon reading frame.
+*   **Solution**: Switch from standard MAFFT parameters to codon-aware alignment (e.g. using MACSE) if the target virus is highly divergent. For Influenza A segment 7, MAFFT combined with reference anchoring is highly stable and does not suffer from frame disruptions.

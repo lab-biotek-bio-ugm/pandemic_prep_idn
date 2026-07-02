@@ -1,0 +1,85 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "Pandemic Preparedness",
+  "theme": "maple",
+  "logo": {
+    "light": "assets/images/faculty_biology_ugm.png",
+    "dark": "assets/images/faculty_biology_ugm.png"
+  },
+  "favicon": "assets/images/UGM-logo-blue.png",
+  "colors": {
+    "primary": "#1a365d",
+    "light": "#2b6cb0",
+    "dark": "#1a202c"
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Docs",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "index",
+              "getting-started/quickstart",
+              "getting-started/data-preparation",
+              "getting-started/configuration"
+            ]
+          },
+          {
+            "group": "Concepts",
+            "pages": [
+              "concepts/evolutionary-diagnostics",
+              "concepts/shannon-entropy",
+              "concepts/selection-pressure",
+              "concepts/primerlab-framework"
+            ]
+          },
+          {
+            "group": "Pipeline Architecture",
+            "pages": [
+              "pipeline-architecture/overview",
+              "pipeline-architecture/m01-acquisition",
+              "pipeline-architecture/m02-qc-subsampling",
+              "pipeline-architecture/m03-alignment",
+              "pipeline-architecture/m04-phylogenetics",
+              "pipeline-architecture/m05-selection-analysis",
+              "pipeline-architecture/m06-ancestral-mapping",
+              "pipeline-architecture/m07-bridge-builder",
+              "pipeline-architecture/m08-primer-design",
+              "pipeline-architecture/m09-blast-specificity",
+              "pipeline-architecture/m10-insilico-validation"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "reference/configuration-reference",
+              "reference/output-files",
+              "reference/supported-pathogens"
+            ]
+          },
+          {
+            "group": "Operations",
+            "pages": [
+              "operations/monitoring",
+              "operations/troubleshooting",
+              "operations/data-management"
+            ]
+          },
+          {
+            "group": "Development",
+            "pages": [
+              "development/developer-guide",
+              "development/testing",
+              "development/pipeline-changelog"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "footerSocials": {
+    "github": "https://github.com/lab-biotek-bio-ugm/pandemic_prep_idn"
+  }
+}

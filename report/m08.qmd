@@ -1,0 +1,232 @@
+---
+title: "Module 08: Primer & Probe RAA Design"
+---
+
+Isothermal amplification technologies, such as **Recombinase Aid Amplification (RAA)** and **Recombinase Polymerase Amplification (RPA)**, are vital for point-of-care (POC) molecular diagnostics. Unlike thermal cycling PCR, RAA operates at a constant low temperature ($37^\circ\text{C}$ to $42^\circ\text{C}$).
+
+Module 08 integrates **PrimerLab-Genomic**, an in-house tool developed by the **CORE-Lab Research** group ([GitHub Repository](https://github.com/CORE-Lab-Research/primerlab-genomic.git)). PrimerLab-Genomic utilizes the core engine of **Primer3** [@koressaar2007; @untergasser2012] for candidate search and incorporates the **ViennaRNA** [@lorenz2011] package to evaluate complex secondary structures under isothermal, high-magnesium conditions.
+
+---
+
+## 1. Biophysical and Thermodynamic Rules for RAA Design
+
+RAA reaction dynamics differ fundamentally from traditional PCR. Because the double-stranded DNA template is unwound by a recombinase-primer complex rather than heat denaturation, the primers must satisfy strict biophysical criteria:
+
+```
+                       ◄─── 30 to 35 bp Forward Primer ───►
+5'- ... NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN ... -3'
+        ||||||||||||||||||||||||||||||||||||||||||||||||||||||
+3'- ... NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN ... -5'
+                                            ▲
+                     [Critical 3' End: 100% Conserved (No IUPAC)]
+```
+
+### 1.1. Primer and Probe Dimensions
+*   **Primer Length**: RAA primers must be **30 to 35 nucleotides** long (compared to 18–22 bp for PCR). Shorter primers cannot form a stable recombinase filament and fail to initiate strand exchange at $37^\circ\text{C}$.
+*   **Amplicon Length**: The ideal product size range is **100 to 300 base pairs** (maximum 500 bp) to ensure rapid amplification within 15–20 minutes under isothermal conditions.
+*   **Exo-Probe Structure**: Fluorescent RAA exo-probes must be **46 to 52 nucleotides** long. The probe sequence is modified internally:
+    *   An abasic site analog, **Tetrahydrofuran (THF / dSpacer)**, is placed in the middle (at least 30 bp from the 5' end and 15 bp from the 3' end).
+    *   A **Fluorophore** (e.g., FAM) and a **Quencher** (e.g., BHQ-1) are attached immediately adjacent to the THF site.
+    *   A 3' blocking group (e.g., phosphate or C3 spacer) prevents the probe from acting as a primer. During hybridization, the enzyme Exonuclease III cleaves the THF site, separating the fluorophore from the quencher to generate a fluorescent signal.
+
+### 1.2. Temperature & Salt Corrections
+Isothermal assay dynamics require distinct salt formulations (typically $14\text{ mM}$ Magnesium acetate $[Mg^{2+}]$ and $50\text{ mM}$ monovalent cations $[K^+]$). 
+
+To ensure accurate melting temperature ($T_m$) prediction, PrimerLab-Genomic integrates thermodynamic parameters with salt-correction corrections [@lorenz2011] adjusted to these high-magnesium conditions. Standard PCR formulas underestimate the stabilizing effect of $14\text{ mM}$ $Mg^{2+}$, which raises the effective $T_m$ of long primers.
+
+---
+
+## 2. Evolutionary Exclusion Check
+
+To prevent diagnostic escape (false negatives caused by ongoing viral evolution), the Snakemake rule `m08_generate_payload` programmatically extracts high-entropy positions and positive selection sites (identified by MEME/ASR in Modules 05 & 06) and converts them into **Exclusion Blocks**:
+
+*   **3' End Protection**: Primers are strictly forbidden from having any mutations or degenerate bases within the **last 5 to 8 nucleotides of their 3' end**. Mismatches at the 3' terminal block prevent DNA polymerase extension, causing assay failure.
+*   **Probe Body Protection**: Probes are restricted from containing high-entropy coordinates to maintain binding stability.
+
+---
+
+## 3. Degenerate Rescue System
+
+In highly variable viral genomes, finding a 100% conserved 30–35 bp target is frequently impossible. Module 08 resolves this through the **Degenerate Rescue Engine** (`scripts/m08_degenerate_rescue.py`):
+
+1.  **IUPAC Incorporation**: If a position within a candidate primer has a Minor Allele Frequency (MAF) above the threshold (default: $0.10$), the engine "rescues" the candidate by introducing a degenerate IUPAC base (e.g., $R$ for $A/G$, $Y$ for $C/T$).
+2.  **Complexity Constraint**: To prevent signal dilution, the total degeneracy (calculated as the product of the degenerate base multiplicities) is capped at a maximum multiplier (default: $16$, e.g., a primer with two 2-fold degenerate bases has a complexity of $2 \times 2 = 4$).
+3.  **Worst-Case Thermodynamic Evaluation**: The engine invokes **ViennaRNA** [@lorenz2011] to model secondary structures (hairpins, homodimers, heterodimers) for *every* individual nucleotide combination represented by the degenerate primer. The thermodynamic score is determined by the worst-performing variant to ensure amplification stability across all target viral strains.
+
+---
+
+## 4. Configuration & Execution Commands (Tabset Examples)
+
+Below are the configuration schemas, execution commands, and output data formats of Module 08:
+
+::: {.panel-tabset}
+
+### 1. Configuration (config_influenza_a_mp.yaml)
+```yaml
+# [M08] PrimerLab execution settings
+primerlab:
+  repo_path: "E:/Project/primerlab-genomic" # Path to local editable package
+  template: "config/primerlab_templates/raa_exo_template.yaml"
+  design:
+    num_candidates: 100           # Number of primer-probe candidates to rank
+    window_size: 150              # Sliding window for probe placement
+    search_strategy: "exhaustive" # Search space mode
+    hard_qc_filter: true          # Veto candidates failing GC or homopolymer checks
+    degenerate:
+      maf_threshold: 0.10         # Minimum MAF to trigger degenerate base rescue
+      max_multiplier: 16          # Max degeneracy combination complexity limit
+      thermo_eval_mode: "worst_case"
+      vienna_temp: 37.0           # Reaction temperature (isothermal)
+```
+
+### 2. Payload Generation (YAML Config)
+```bash
+# Convert M07 manifest to PrimerLab payload config
+python scripts/m08_payload_generator.py \
+    --manifest results/influenza-a-mp-sea/m07/primer_targets_manifest.yaml \
+    --template config/primerlab_templates/raa_exo_template.yaml \
+    --outdir results/influenza-a-mp-sea/m08/degenerate \
+    --mode degenerate \
+    --num-candidates 100 \
+    --window-size 150 \
+    --search-strategy exhaustive \
+    --hard-qc-filter True
+```
+
+### 3. PrimerLab Execution CLI
+```bash
+# Execute PrimerLab isothermal RAA search
+primerlab raa \
+    --config results/influenza-a-mp-sea/m08/degenerate/primerlab_config_segment-MP.yaml \
+    --out results/influenza-a-mp-sea/m08/degenerate \
+    --validate
+```
+
+### 4. Degenerate Rescue CLI
+```bash
+# Run Degenerate Rescue on candidate output files
+python scripts/m08_degenerate_rescue.py \
+    --manifest results/influenza-a-mp-sea/m07/primer_targets_manifest.yaml \
+    --summary results/influenza-a-mp-sea/m08/degenerate/segment-MP/summary.json \
+    --alternatives results/influenza-a-mp-sea/m08/degenerate/segment-MP/alternatives.json \
+    --best-primers results/influenza-a-mp-sea/m08/degenerate/segment-MP/best_primers.json \
+    --outdir results/influenza-a-mp-sea/m08/degenerate/segment-MP \
+    --maf-threshold 0.10 \
+    --max-multiplier 16 \
+    --thermo-mode worst_case \
+    --vienna-temp 37.0
+```
+
+### 5. Output: best_primers.json
+This JSON contains the top ranked primer pair and probe designed by PrimerLab-Genomic, including degenerate base positions and internal fluorescent modifications:
+```json
+{
+  "forward": {
+    "id": "forward_0",
+    "sequence": "CTGACTAARGGRATTTTRGGRTTTGTATTCA",
+    "labeled_sequence": null,
+    "tm": "58.94 - 64.97 °C",
+    "gc": "29.03 - 41.94 %",
+    "length": 32,
+    "hairpin_dg": "-1.35 kcal/mol",
+    "homodimer_dg": "-2.95 kcal/mol",
+    "heterodimer_dg": "-3.08 kcal/mol",
+    "end_stability_dg": "-2.88 kcal/mol",
+    "start": 187,
+    "end": 218,
+    "degeneracy_multiplier": 16
+  },
+  "reverse": {
+    "id": "reverse_0",
+    "sequence": "GCAGTTAAACTATATARGAARCTGAARAGRG",
+    "labeled_sequence": null,
+    "tm": "58.03 - 63.12 °C",
+    "gc": "29.03 - 41.94 %",
+    "length": 32,
+    "hairpin_dg": "-0.77 kcal/mol",
+    "homodimer_dg": "-8.97 kcal/mol",
+    "heterodimer_dg": "-3.08 kcal/mol",
+    "end_stability_dg": "-4.07 kcal/mol",
+    "start": 310,
+    "end": 341,
+    "degeneracy_multiplier": 16
+  },
+  "probe": {
+    "id": "manual_probe",
+    "sequence": "CCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCARAATGCCC",
+    "labeled_sequence": "CCGTGCCCAGTGAGCGAGGACTGCAGC[FAM-dT][THF][BHQ1-dT]GACGCTTTGTCCAAAATGCCCT[C3-spacer]",
+    "tm": "80.96 - 82.57 °C",
+    "gc": "58.82 - 62.75 %",
+    "length": 52,
+    "hairpin_dg": "-4.21 kcal/mol",
+    "homodimer_dg": "-12.01 kcal/mol",
+    "heterodimer_dg": "-9.30 kcal/mol",
+    "end_stability_dg": "-4.32 kcal/mol",
+    "start": 236,
+    "end": 287,
+    "degeneracy_multiplier": 4
+  }
+}
+```
+:::
+
+---
+
+## 4. Configuration & Parameterization
+
+The assay design phase is controlled by the design parameters in `config.yaml` and the detailed thermodynamic template **`config/primerlab_template.yaml`**:
+
+```yaml
+# [M08] Primer & Probe Design (PrimerLab)
+design:
+  min_primer_length: 30
+  max_primer_length: 35
+  min_probe_length: 46
+  max_probe_length: 52
+  max_degeneracy: 16
+```
+
+### 4.1. PrimerLab Thermodynamic Master Template (`primerlab_template.yaml`)
+
+PrimerLab calculates DNA melting temperatures ($T_m$) using nearest-neighbor thermodynamic parameters and models secondary structures using ViennaRNA [@lorenz2011]. Below are the key parameters defined in the template:
+
+| Parameter Path | Allowed Values | Default Value | Purpose & Biological Meaning |
+|---|---|---|---|
+| `parameters.thermodynamics.salt_monovalent` | Float $\ge 0.0$ | `50.0` | Monovalent salt concentration (Na+ / K+ in mM). Used for salt-correction of DNA melting temperature. |
+| `parameters.thermodynamics.salt_divalent` | Float $\ge 0.0$ | `14.0` | Divalent salt concentration (Mg2+ in mM). **RAA specific**. Isothermal amplification relies on high magnesium concentrations (~14 mM) to stabilize recombinase-DNA complexes. |
+| `parameters.thermodynamics.dntp_conc` | Float $\ge 0.0$ | `0.8` | Concentration of dNTPs (mM). Higher than standard PCR to fuel fast isothermal transcription. |
+| `parameters.thermodynamics.dna_conc` | Float $\ge 0.0$ | `480.0` | Total primer concentration (nM). RAA requires a highly crowded environment to drive recombinase-mediated strand invasion. |
+| `parameters.primer_size.opt` | Integer | `32` | Optimal length of RAA primers. Isothermal recombinase binding requires long primers ($30-35$ bp) to successfully invade double-stranded DNA templates. |
+| `parameters.probe.type` | `"exo"`, `"taqman"` | `"exo"` | The chemistry type. `"exo"` designs TwistAmp Exo-style probes ($46-52$ bp) with an internal abasic site (THF spacer) for Endonuclease IV cleavage. |
+| `qc.vienna_ranking_limit` | Integer | `50` | The top 50 candidates from Primer3 are sent to ViennaRNA to calculate secondary structures (hairpins, homodimers, heterodimers) at the isothermal temperature of $37^\circ\text{C}$. |
+
+### 4.2. How to Interpret PrimerLab Design Outputs
+
+Module 08 outputs `best_primers.json` containing the physical profiles of the designed set:
+
+*   **Hairpin & Dimer $\Delta G$**: Represents the Gibbs free energy change of self-folding. Values **closer to 0** (e.g. $>-2.0\text{ kcal/mol}$) are stable and safe. Values more negative than $-5.0\text{ kcal/mol}$ indicate a high risk of primer-dimer formation, which will consume master-mix and cause false positives.
+*   **Degeneracy Multiplier**: The number of unique primer sequences in the synthesized mix. A multiplier of 16 (e.g. 4 degenerate positions) means the active concentration of any single primer sequence is diluted to $1/16$-th. Keeping this below 16 ensures high diagnostic sensitivity.
+
+---
+
+## 5. Inputs, Outputs & Files
+
+The files involved in Module 08 are summarized below:
+
+| File Role | Path | Format | Description |
+|---|---|---|---|
+| **Input Manifest** | `results/{build}/m07/primer_targets_manifest.yaml` | YAML | Targets and target sequences from Module 07. |
+| **Payload Config** | `results/{build}/m08/{mode}/primerlab_config_{region}.yaml` | YAML | Formatted input configuration for PrimerLab. |
+| **Best Primers** | `results/{build}/m08/{mode}/{region}/best_primers.json` | JSON | Ranked list of the top primer-probe candidate combinations. |
+| **Alternatives** | `results/{build}/m08/{mode}/{region}/alternatives.json` | JSON | Extended backup list of additional valid design candidates. |
+| **Design Summary** | `results/{build}/m08/{mode}/{region}/summary.json` | JSON | Detailed design metrics, thermodynamics, and alignment stats. |
+
+---
+
+## 6. Troubleshooting & Limitations
+
+### 6.1. High-Degeneracy Failures (Exceeding Multiplier)
+
+*   **Problem**: PrimerLab fails to return candidates, throwing warnings that the degeneracy complexity limit ($16$) was exceeded.
+*   **Cause**: This happens in variable zones (such as UTRs or HA loops) where multiple minor variants exist at rates $>10\%$. 
+*   **Solution**: Shift the design target to a conserved coding region (e.g. M1 segment), increase the `maf_threshold` to $0.15$ (to ignore rarer variants), or increase the `max_multiplier` to $32$ (noting that this may lower overall reaction sensitivity).

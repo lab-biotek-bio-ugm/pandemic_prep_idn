@@ -1,0 +1,13 @@
+---
+title: "References"
+bibliography: references.bib
+nocite: |
+  @*
+---
+
+The scientific literature and methodology references cited throughout this development report:
+
+<div class="references-page-container">
+::: {#refs}
+:::
+</div>

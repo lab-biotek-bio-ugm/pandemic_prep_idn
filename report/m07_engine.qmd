@@ -1,0 +1,14 @@
+# M07 Bridge Scoring Engine
+
+This section explains the core scoring logic of the Bridge Builder module.
+
+## Entropy Profiling
+Placeholder text explaining Shannon entropy calculations on multiple sequence alignments.
+
+## Evolutionary Robustness
+Placeholder text detailing the exclusion of selection hotspots and mutation-prone regions from candidate target selection.
+
+## Output Structure
+- Conserved Region BED tracks
+- IUPAC consensus sequences
+- Candidate rank lists

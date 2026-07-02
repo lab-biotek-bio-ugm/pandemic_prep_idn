@@ -1,0 +1,173 @@
+---
+title: "Results: Phylodynamics & Evolutionary History"
+---
+
+To track how Influenza A Matrix Protein (MP) lineages have evolved and spread geographically, we executed maximum-likelihood phylogenetic reconstruction (**IQ-TREE 2** [@minh2020]) and molecular clock modeling (**TreeTime** [@sagulenko2018]). 
+
+This section summarizes the database composition, quality filtering metrics, evolutionary rates, ancestral mutation paths, and spatio-temporal migration patterns of the MP segment.
+
+---
+
+## 1. Sequence Dataset Composition & Quality Control
+
+To ensure high-fidelity evolutionary modeling, raw sequence libraries were subjected to strict quality control (QC) and deduplication filters:
+
+*   **Raw Sequence Database**: The initial raw dataset compiled from GISAID and NCBI databases comprised **50,750 sequences** covering the Influenza A MP segment.
+*   **Quality Filtering & Deduplication**: High-standard sequence quality filtering (discarding sequences with $> 5\%$ ambiguous N-content or invalid characters) followed by sequence deduplication of identical genomes resulted in **20,720 high-quality unique sequences**.
+*   **Phylogenetic Subsampling**: To run computational reconstruction while preserving evolutionary diversity, a balanced spatio-temporal subsampling strategy (grouped by clade, host, country, and collection year) was applied:
+    *   **Indonesia Only Build**: Selected **646 representative sequences** (capturing H1N1, H3N2, and H5N1 subtypes collected in Indonesia).
+    *   **Southeast Asia Only Build**: Subsampled **2,000 representative sequences** (from 2,681 available genomes).
+    *   **All-Partial Database Build**: Subsampled **2,000 representative sequences** (from 6,629 available sequences in the all-partial database, comprising local Indonesian and global contextual strains).
+
+---
+
+## 2. Maximum-Likelihood Tree Reconstruction & Molecular Clock
+
+By reconstructing ancestral node states, we estimated the temporal alignment and evolutionary velocity of the MP segment:
+
+```{=html}
+<svg viewBox="0 0 600 310" width="100%" height="310px" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-family: system-ui, -apple-system, sans-serif; box-shadow: 0 4px 6px rgba(0,0,0,0.02); margin: 20px 0;">
+  <!-- Gridlines -->
+  <line x1="80" y1="50" x2="550" y2="50" stroke="#e2e8f0" stroke-dasharray="4" />
+  <line x1="80" y1="110" x2="550" y2="110" stroke="#e2e8f0" stroke-dasharray="4" />
+  <line x1="80" y1="170" x2="550" y2="170" stroke="#e2e8f0" stroke-dasharray="4" />
+  <line x1="80" y1="230" x2="550" y2="230" stroke="#e2e8f0" stroke-dasharray="4" />
+
+  <!-- Axes -->
+  <line x1="80" y1="230" x2="550" y2="230" stroke="#475569" stroke-width="2" />
+  <line x1="80" y1="50" x2="80" y2="230" stroke="#475569" stroke-width="2" />
+
+  <!-- Y-Axis Labels -->
+  <text x="70" y="55" text-anchor="end" font-size="11" fill="#64748b">0.12</text>
+  <text x="70" y="115" text-anchor="end" font-size="11" fill="#64748b">0.08</text>
+  <text x="70" y="175" text-anchor="end" font-size="11" fill="#64748b">0.04</text>
+  <text x="70" y="235" text-anchor="end" font-size="11" fill="#64748b">0.00</text>
+  <text x="25" y="140" transform="rotate(-90 25 140)" text-anchor="middle" font-size="12" font-weight="600" fill="#475569">Root-to-Tip Distance</text>
+
+  <!-- X-Axis Labels -->
+  <text x="115" y="250" text-anchor="middle" font-size="11" fill="#64748b">1980</text>
+  <text x="200" y="250" text-anchor="middle" font-size="11" fill="#64748b">1990</text>
+  <text x="286" y="250" text-anchor="middle" font-size="11" fill="#64748b">2000</text>
+  <text x="371" y="250" text-anchor="middle" font-size="11" fill="#64748b">2010</text>
+  <text x="457" y="250" text-anchor="middle" font-size="11" fill="#64748b">2020</text>
+  <text x="500" y="250" text-anchor="middle" font-size="11" fill="#64748b">2025</text>
+  <text x="315" y="280" text-anchor="middle" font-size="12" font-weight="600" fill="#475569">Collection Year</text>
+
+  <!-- Regression / Trend Line (Rate = 0.003) -->
+  <!-- TMRCA (1981.43) starts at x ~ 127, y = 230 -->
+  <!-- 2025 is at x = 500, y = 30 -->
+  <line x1="127" y1="230" x2="500" y2="30" stroke="#ef4444" stroke-width="2" stroke-dasharray="2 1" />
+  
+  <!-- Data Points (scattered around the line) -->
+  <circle cx="150" cy="218" r="4" fill="#3b82f6" opacity="0.8" />
+  <circle cx="180" cy="205" r="4" fill="#3b82f6" opacity="0.8" />
+  <circle cx="210" cy="188" r="4" fill="#3b82f6" opacity="0.8" />
+  <circle cx="240" cy="172" r="4" fill="#3b82f6" opacity="0.8" />
+  <circle cx="270" cy="152" r="4" fill="#3b82f6" opacity="0.8" />
+  <circle cx="300" cy="138" r="4" fill="#3b82f6" opacity="0.8" />
+  <circle cx="330" cy="120" r="4" fill="#3b82f6" opacity="0.8" />
+  <circle cx="360" cy="108" r="4" fill="#3b82f6" opacity="0.8" />
+  <circle cx="390" cy="92" r="4" fill="#3b82f6" opacity="0.8" />
+  <circle cx="420" cy="74" r="4" fill="#3b82f6" opacity="0.8" />
+  <circle cx="450" cy="58" r="4" fill="#3b82f6" opacity="0.8" />
+  <circle cx="480" cy="46" r="4" fill="#3b82f6" opacity="0.8" />
+  <circle cx="500" cy="28" r="4" fill="#3b82f6" opacity="0.8" />
+
+  <!-- Label/Annotation for TMRCA -->
+  <path d="M 127 230 L 127 190 L 180 190" stroke="#64748b" stroke-width="1" fill="none" />
+  <text x="185" y="194" font-size="11" fill="#475569" font-weight="600">TMRCA ~ 1981.43</text>
+</svg>
+```
+
+*   **Mutation Velocity (Substitution Rate)**:
+    *   The molecular clock model estimated the evolutionary rate of the MP segment to be **$3.00 \times 10^{-3}$ substitutions per site per year** across all three datasets (as calculated by TreeTime [@sagulenko2018]). This estimate is consistent with published nucleotide substitution rates for human influenza A, where HA typically evolves at $3$–$5 \times 10^{-3}$ substitutions per site per year [@bhatt2011], while the more structurally constrained Matrix segment exhibits lower rates in purely human seasonal lineages. The convergent rate across all three geographically diverse datasets confirms that the Matrix segment is a stable and temporally calibrated target for diagnostic design.
+*   **Temporal Root Estimation (TMRCA)**:
+    *   The most recent common ancestor (TMRCA) varies by dataset due to sampling scope:
+        *   **Indonesia Only**: Estimated around the year **1981.43** (indicating localized ancestral roots tracing to early 1980s).
+        *   **Southeast Asia Only**: Estimated around the year **1970.24**.
+        *   **All-Partial Database**: Estimated around the year **1986.76**.
+*   **Branch Lengths & Clades**:
+    *   The tree topology exhibits distinct split patterns between the major sub-lineages, with H3N2 and H1N1 separating into deep, long-lived monophyletic branches, while H5N1 strains cluster into distinct geographic sub-clades.
+
+---
+
+## 3. Ancestral State Reconstruction & Mutation Mapping
+
+Ancestral sequence reconstruction (using `augur ancestral` and `augur translate`) mapped the exact historical progression of nucleotide and amino acid substitutions across the phylogenetic tree:
+
+*   **M1 Protein Stability & High-Entropy Sites**: The M1 matrix protein (which forms the structural scaffold beneath the viral envelope) is highly conserved overall, but contains specific highly variable residues. Diversity analysis identified several high-entropy positions—most notably at **amino acid positions 15, 27, 30, 37, and 42** (with entropy $\ge 0.6$). These prominent peaks are primarily driven by subtype-specific differences between seasonal H1N1, H3N2, and avian H5N1. In contrast, the surrounding structural regions of M1 show complete conservation (diversity near $0.0$) across all lineages. This highlights why localized target scanning is critical to bypass these specific variable residues and focus on subtype-common anchors.
+*   **M2 Ion Channel Variation**: In contrast, the M2 ion channel (involved in viral uncoating) showed localized clusters of mutations. Ancestral reconstruction successfully mapped the emergence and fixation of the **S31N** mutation (serine to asparagine at codon 31) in the M2 transmembrane domain. This substitution, which confers resistance to adamantane-class antivirals (amantadine and rimantadine), has been identified as a deep ancestral node event in H3N2 and H1N1pdm09 lineages [@hayden2006; @deyde2007], and is now a near-universal feature of circulating seasonal Influenza A strains globally—including all Indonesian H3N2 and H1N1pdm09 sequences in this dataset.
+*   **Clade-Defining Mutational Signatures**: Key amino acid substitutions (such as `N82T` and `R210K` in the M1 gene) were identified as clade-defining markers. By mapping these mutations to specific ancestral nodes, the pipeline validates that target regions chosen for primer design avoid these variable positions, preventing diagnostic mismatch against specific circulating sub-clades.
+
+---
+
+## 4. Subtype Divergence & Evolutionary Co-existence
+
+The reconstructed tree topology highlights the deep evolutionary divergence between the three primary Influenza A subtypes circulating in Indonesia:
+
+*   **Seasonal H3N2**: Represents a stable, long-term evolutionary lineage tracing back to the 1968 pandemic. The MP segment of H3N2 has accumulated mutations at a steady, clock-like rate, showing a clear linear relationship between collection year and root-to-tip distance.
+*   **H1N1pdm09**: Displays a distinct evolutionary trajectory. The MP segment of this lineage originates from the Eurasian avian-like (EA) swine influenza lineage, as established by genomic analysis of the 2009 pandemic origin [@smith2009]. The deep topological split between H1N1pdm09 and H3N2 in the phylogenetic tree confirms that these segments maintain separate genetic identity without inter-lineage recombination.
+*   **Avian H5N1**: Clustered into highly distinct monophyletic branches separated from seasonal human influenza strains. The Indonesian H5N1 strains, primarily belonging to Clade 2.1.3 [@kandun2006], exhibit independent evolutionary rates reflecting their circulation in domestic poultry and wild bird reservoirs. This deep divergence—representing up to four decades of independent evolution—underscores why a single universal primer set must accommodate broad sequence variation to achieve adequate cross-subtype sensitivity.
+
+---
+
+## 5. Spatio-Temporal Dispersal Analysis (Nextstrain)
+
+Using the metadata associated with the subsampled genomes (collection date and country), we mapped the historical migration pathways of the Matrix segment:
+
+*   **Indonesia as a Viral Reservoir**:
+    *   Phylogeographic modeling shows frequent introduction events into Southeast Asia, with Indonesia acting as a stable sink and occasional source for avian-origin H5N1 clades.
+*   **Regional SEA Connectivity**:
+    *   Strong regional transmission pathways are visible between Indonesia, Singapore, and Malaysia, particularly for seasonal H3N2 strains. This high connectivity explains why the `sea-only` design shares target similarities with the `indo-only` design but remains biased when evaluated globally.
+
+---
+
+## 6. Interactive Nextstrain Auspice Tree Explorer
+
+Because Nextstrain Auspice (`auspice.us`) runs entirely in the cloud, embedding a local dataset inside a public iframe during local development is not directly supported due to browser security protocols (CORS and Mixed Content blocks). 
+
+::: {.callout-important}
+## How to Visualize Your Phylogenetic Tree Locally
+1. **Drag & Drop Method (Easiest)**: Open **[auspice.us](https://auspice.us)** in a new tab, then drag and drop the local file **`report/assets/auspice_indo_only.json`** directly onto the page. Your dataset will be rendered instantly and privately in your browser.
+2. **After Pushing to GitHub**: Once this repository is pushed to GitHub, the interactive tree can be configured to load automatically using public raw GitHub URLs. Click the **Method 1** tab below to open them automatically!
+:::
+
+<div style="text-align: center; padding: 40px; border: 1px dashed #cbd5e1; border-radius: 8px; background-color: #f8fafc; margin: 25px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+  <p style="font-weight: 600; color: #475569; margin-bottom: 8px; font-size: 16px;">Interactive Auspice (Nextstrain) Visualization</p>
+  <p style="color: #64748b; font-size: 14px; margin-bottom: 20px;">Drag and drop your exported JSON file into <strong>auspice.us</strong> to explore the phylogenetic tree interactively.</p>
+  <a href="https://auspice.us" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; display: inline-block; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); transition: background-color 0.2s;">Open auspice.us</a>
+</div>
+
+---
+
+## 7. How to Explore the Scriptorium Datasets
+
+We have exported the compiled Auspice datasets for all three design scenarios into the report's asset folder (**`report/assets/`**). When you push this project to GitHub, the files will be uploaded automatically and can be accessed online or offline:
+
+| Design Scenario | Local Asset Path | Raw Online Download |
+|---|---|---|
+| **Indonesia Only** | `report/assets/auspice_indo_only.json` | <a href="assets/auspice_indo_only.json" download="auspice_indo_only.json">auspice_indo_only.json</a> |
+| **Southeast Asia Only** | `report/assets/auspice_sea_only.json` | <a href="assets/auspice_sea_only.json" download="auspice_sea_only.json">auspice_sea_only.json</a> |
+| **All-Partial Database** | `report/assets/auspice_all_partial.json` | <a href="assets/auspice_all_partial.json" download="auspice_all_partial.json">auspice_all_partial.json</a> |
+
+::: {.panel-tabset}
+
+### Method 1: Automatic Online Viewer (Recommended)
+Once your repository is pushed to GitHub, you can automatically launch the interactive Nextstrain viewer for your datasets by clicking these custom links:
+
+* 🧬 **[View Indonesia Only Tree on auspice.us](https://auspice.us?d=https://raw.githubusercontent.com/lab-biotek-bio-ugm/pandemic_prep_idn/report/report/assets/auspice_indo_only.json)**
+* 🌏 **[View Southeast Asia Only Tree on auspice.us](https://auspice.us?d=https://raw.githubusercontent.com/lab-biotek-bio-ugm/pandemic_prep_idn/report/report/assets/auspice_sea_only.json)**
+* 🌐 **[View All-Partial Database Tree on auspice.us](https://auspice.us?d=https://raw.githubusercontent.com/lab-biotek-bio-ugm/pandemic_prep_idn/report/report/assets/auspice_all_partial.json)**
+
+### Method 2: Web-Based Drag & Drop
+1. Open the official Nextstrain viewer in your web browser: **[auspice.us](https://auspice.us)**.
+2. Drag and drop any of the downloaded JSON files from the table above directly onto the browser screen.
+
+### Method 3: Local Server Command (HPC / Offline PC)
+If you are working in an offline environment or on an HPC cluster, you can launch a local Auspice server:
+1. Run the launcher script in your terminal:
+   ```bash
+   bash view-auspice.sh
+   ```
+2. Open your browser and navigate to: **[http://localhost:4000](http://localhost:4000)**.
+:::

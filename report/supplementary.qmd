@@ -1,0 +1,197 @@
+---
+title: "Supplementary Material: IUPAC Degeneracy Audit"
+subtitle: "A detailed biochemical validation appendix for Candidate 1 primers & probe"
+---
+
+::: {.callout-note}
+## Purpose of this Appendix
+This supplementary document provides a granular, nucleotide-by-nucleotide audit of the degenerate IUPAC positions within the designed primers and probe for **Candidate 1** (designed under the **Indonesia Only** evolutionary model). All figures are derived directly from the Multiple Sequence Alignment (MSA) of Indonesian H5N1, H3N2, and H1N1 isolates, and are recorded in the raw database:
+[Download Raw Entropy Profile TSV (entropy_profile.tsv)](results/influenza-a-mp-indo-only/entropy_profile.tsv)
+:::
+
+## 1. IUPAC Degeneracy Decision Rules
+
+In our pipeline, designed primers are back-mapped to the alignment consensus. Ambiguity codes (degeneracy) are selected using a strict minor-allele frequency (MAF) cutoff:
+
+1. **Unambiguous Base (A/T/G/C)**: If a single base occurs at a frequency $> 85\%$ (minor alleles $< 15\%$) at a given position, it is written as a standard nucleotide. Minor variations under $15\%$ are ignored to prevent excessive degeneracy multipliers.
+2. **Degenerate Base (IUPAC)**: If two or more nucleotides at a single position each clear the **$15\%$ threshold**, the position is mapped to the appropriate IUPAC degeneracy code (e.g., `R` for A/G, `Y` for C/T, `D` for A/G/T).
+
+### 1.1. Understanding the Degeneracy Multiplier
+
+A degenerate primer is not a single sequence, but a physical mixture of multiple unique primer sequences synthesized together in the same tube. The **Degeneracy Multiplier** (e.g., `16x`) represents the total number of unique sequence combinations resulting from the IUPAC positions in the primer.
+
+It is calculated by multiplying the number of possible bases at each degenerate position:
+$$M = \prod_{i=1}^{L} \text{options}(c_i)$$
+
+Where:
+
+*   **Standard bases** (`A`, `T`, `G`, `C`) have **1** option.
+*   **Two-base degeneracies** (`R`, `Y`, `W`, `S`, `K`, `M`) have **2** options.
+*   **Three-base degeneracies** (`B`, `D`, `H`, `V`) have **3** options.
+*   **Four-base degeneracies** (`N`) have **4** options.
+
+For example, a forward primer with sequence `CTGACTAARGGRATTTTRGGRTTTGTATTCA` has four `R` positions (each allowing `A` or `G`). This results in a multiplier of $2 \times 2 \times 2 \times 2 = 16\text{x}$. Thus, the final tube contains exactly 16 distinct primer variations in equal proportions [@linhart2005].
+
+**Why limit the multiplier?**
+
+*   **Primer Dilution Effect** [@chassalevris2020]: Since a degenerate primer pool is a physical mixture of many different sequences, the concentration of the *specific* primer variant that matches a patient's viral strain is significantly lower than the total primer concentration. If the degeneracy multiplier is too high, the effective concentration of the matching variant drops below the threshold required for efficient hybridization, leading to a loss of diagnostic sensitivity.
+*   **Non-Specific Amplification & Competition**: High degeneracy increases the pool complexity, raising the risk of off-target binding to the host genome and primer-dimer formation. The excess non-matching sequences can also compete for enzyme binding, reducing reaction efficiency.
+
+To balance universality (broad coverage) and sensitivity, the pipeline enforces a maximum degeneracy limit of **$16\text{x}$** for RAA designs.
+
+---
+
+## 2. Forward Primer Audit
+
+* **ID**: `forward_0`
+* **Position on Segment**: `187 - 218 bp` (0-based)
+* **Degenerate Sequence (5' &rarr; 3')**: `CTGACTAARGGRATTTTRGGRTTTGTATTCA`
+* **Majority Sequence (5' &rarr; 3')**: `CTGACTAAGGGGATTTTAGGATTTGTATTCAC`
+* **Degeneracy Multiplier**: `16x`
+
+::: {.small-table}
+| Primer Pos (5' → 3') | Segment Position | Majority Base | IUPAC Base | A (%) | T (%) | G (%) | C (%) | Decision Rationale |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| 0 | 187 | C | **Y** | 0.0% | 26.6% | 0.0% | 73.4% | **Degenerate**: Cleared &ge;15% MAF threshold: **T** (26.6%), **C** (73.4%) |
+| 1 | 188 | T | T | 0.0% | 100.0% | 0.0% | 0.0% | 100% Conserved |
+| 2 | 189 | G | G | 0.0% | 0.0% | 100.0% | 0.0% | 100% Conserved |
+| 3 | 190 | A | A | 100.0% | 0.0% | 0.0% | 0.0% | 100% Conserved |
+| 4 | 191 | C | C | 0.0% | 0.0% | 0.0% | 100.0% | 100% Conserved |
+| 5 | 192 | T | T | 0.5% | 98.6% | 0.5% | 0.5% | Conserved (minor variation &lt;15% ignored: A (0.5%), G (0.5%), C (0.5%)) |
+| 6 | 193 | A | A | 100.0% | 0.0% | 0.0% | 0.0% | 100% Conserved |
+| 7 | 194 | A | A | 100.0% | 0.0% | 0.0% | 0.0% | 100% Conserved |
+| 8 | 195 | G | **R** | 28.3% | 0.0% | 71.7% | 0.0% | **Degenerate**: Cleared &ge;15% MAF threshold: **A** (28.3%), **G** (71.7%) |
+| 9 | 196 | G | G | 0.0% | 0.0% | 100.0% | 0.0% | 100% Conserved |
+| 10 | 197 | G | G | 0.1% | 0.0% | 99.9% | 0.0% | Conserved (minor variation &lt;15% ignored: A (0.1%)) |
+| 11 | 198 | G | **R** | 22.3% | 0.0% | 77.7% | 0.0% | **Degenerate**: Cleared &ge;15% MAF threshold: **A** (22.3%), **G** (77.7%) |
+| 12 | 199 | A | A | 100.0% | 0.0% | 0.0% | 0.0% | 100% Conserved |
+| 13 | 200 | T | T | 0.0% | 100.0% | 0.0% | 0.0% | 100% Conserved |
+| 14 | 201 | T | T | 0.3% | 90.4% | 0.0% | 9.3% | Conserved (minor variation &lt;15% ignored: A (0.3%), C (9.3%)) |
+| 15 | 202 | T | T | 0.0% | 99.2% | 0.0% | 0.8% | Conserved (minor variation &lt;15% ignored: C (0.8%)) |
+| 16 | 203 | T | T | 0.0% | 100.0% | 0.0% | 0.0% | 100% Conserved |
+| 17 | 204 | A | **R** | 58.7% | 0.0% | 41.3% | 0.0% | **Degenerate**: Cleared &ge;15% MAF threshold: **A** (58.7%), **G** (41.3%) |
+| 18 | 205 | G | G | 0.0% | 0.0% | 100.0% | 0.0% | 100% Conserved |
+| 19 | 206 | G | G | 0.0% | 0.0% | 100.0% | 0.0% | 100% Conserved |
+| 20 | 207 | A | **R** | 60.7% | 0.6% | 38.7% | 0.0% | **Degenerate**: Cleared &ge;15% MAF threshold: **A** (60.7%), **G** (38.7%) |
+| 21 | 208 | T | T | 0.0% | 100.0% | 0.0% | 0.0% | 100% Conserved |
+| 22 | 209 | T | T | 0.0% | 100.0% | 0.0% | 0.0% | 100% Conserved |
+| 23 | 210 | T | T | 0.0% | 99.5% | 0.0% | 0.5% | Conserved (minor variation &lt;15% ignored: C (0.5%)) |
+| 24 | 211 | G | G | 0.0% | 0.0% | 100.0% | 0.0% | 100% Conserved |
+| 25 | 212 | T | T | 0.0% | 100.0% | 0.0% | 0.0% | 100% Conserved |
+| 26 | 213 | A | **D** | 39.6% | 25.7% | 34.2% | 0.5% | **Degenerate**: Cleared &ge;15% MAF threshold: **A** (39.6%), **T** (25.7%), **G** (34.2%) |
+| 27 | 214 | T | T | 0.0% | 100.0% | 0.0% | 0.0% | 100% Conserved |
+| 28 | 215 | T | T | 0.0% | 100.0% | 0.0% | 0.0% | 100% Conserved |
+| 29 | 216 | C | C | 0.0% | 3.6% | 0.0% | 96.4% | Conserved (minor variation &lt;15% ignored: T (3.6%)) |
+| 30 | 217 | A | A | 100.0% | 0.0% | 0.0% | 0.0% | 100% Conserved |
+:::
+
+---
+
+## 3. Reverse Primer Audit
+
+* **ID**: `reverse_0`
+* **Position on Segment**: `310 - 341 bp` (0-based)
+* **Degenerate Sequence (5' &rarr; 3')**: `GCAGTTAAACTATATARGAARCTGAARAGRG`
+* **Majority Sequence (5' &rarr; 3')**: `TCTCTTTTCAGCTTCTTATATAGTTTAACTGC`
+* **Degeneracy Multiplier**: `16x`
+
+::: {.small-table}
+| Primer Pos (5' → 3') | Segment Position | Majority Base | IUPAC Base | A (%) | T (%) | G (%) | C (%) | Decision Rationale |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| 0 | 340 | G | G | 0.0% | 0.0% | 100.0% | 0.0% | 100% Conserved |
+| 1 | 339 | A | **R** | 67.2% | 0.0% | 32.8% | 0.0% | **Degenerate**: Cleared &ge;15% MAF threshold: **A** (67.2%), **G** (32.8%) |
+| 2 | 338 | G | G | 0.0% | 0.0% | 100.0% | 0.0% | 100% Conserved |
+| 3 | 337 | A | A | 100.0% | 0.0% | 0.0% | 0.0% | 100% Conserved |
+| 4 | 336 | A | **R** | 66.2% | 0.0% | 33.8% | 0.0% | **Degenerate**: Cleared &ge;15% MAF threshold: **A** (66.2%), **G** (33.8%) |
+| 5 | 335 | A | A | 100.0% | 0.0% | 0.0% | 0.0% | 100% Conserved |
+| 6 | 334 | A | A | 100.0% | 0.0% | 0.0% | 0.0% | 100% Conserved |
+| 7 | 333 | G | **B** | 2.2% | 26.0% | 46.9% | 24.9% | **Degenerate**: Cleared &ge;15% MAF threshold: **T** (26.0%), **G** (46.9%), **C** (24.9%) |
+| 8 | 332 | T | T | 0.0% | 100.0% | 0.0% | 0.0% | 100% Conserved |
+| 9 | 331 | C | C | 0.0% | 0.6% | 0.1% | 99.2% | Conserved (minor variation &lt;15% ignored: T (0.6%), G (0.1%)) |
+| 10 | 330 | G | **R** | 49.4% | 0.0% | 50.6% | 0.0% | **Degenerate**: Cleared &ge;15% MAF threshold: **A** (49.4%), **G** (50.6%) |
+| 11 | 329 | A | A | 100.0% | 0.0% | 0.0% | 0.0% | 100% Conserved |
+| 12 | 328 | A | A | 100.0% | 0.0% | 0.0% | 0.0% | 100% Conserved |
+| 13 | 327 | G | G | 0.8% | 0.0% | 99.2% | 0.0% | Conserved (minor variation &lt;15% ignored: A (0.8%)) |
+| 14 | 326 | A | **R** | 66.1% | 0.0% | 33.9% | 0.0% | **Degenerate**: Cleared &ge;15% MAF threshold: **A** (66.1%), **G** (33.9%) |
+| 15 | 325 | A | A | 100.0% | 0.0% | 0.0% | 0.0% | 100% Conserved |
+| 16 | 324 | T | **Y** | 0.0% | 67.3% | 0.0% | 32.7% | **Degenerate**: Cleared &ge;15% MAF threshold: **T** (67.3%), **C** (32.7%) |
+| 17 | 323 | A | A | 100.0% | 0.0% | 0.0% | 0.0% | 100% Conserved |
+| 18 | 322 | T | T | 0.0% | 100.0% | 0.0% | 0.0% | 100% Conserved |
+| 19 | 321 | A | **R** | 64.7% | 0.3% | 35.0% | 0.0% | **Degenerate**: Cleared &ge;15% MAF threshold: **A** (64.7%), **G** (35.0%) |
+| 20 | 320 | T | T | 0.0% | 100.0% | 0.0% | 0.0% | 100% Conserved |
+| 21 | 319 | C | C | 0.5% | 3.9% | 0.0% | 95.7% | Conserved (minor variation &lt;15% ignored: A (0.5%), T (3.9%)) |
+| 22 | 318 | A | **R** | 57.9% | 0.0% | 42.1% | 0.0% | **Degenerate**: Cleared &ge;15% MAF threshold: **A** (57.9%), **G** (42.1%) |
+| 23 | 317 | A | A | 90.6% | 0.0% | 9.4% | 0.0% | Conserved (minor variation &lt;15% ignored: G (9.4%)) |
+| 24 | 316 | A | A | 100.0% | 0.0% | 0.0% | 0.0% | 100% Conserved |
+| 25 | 315 | T | **Y** | 0.0% | 79.4% | 0.0% | 20.6% | **Degenerate**: Cleared &ge;15% MAF threshold: **T** (79.4%), **C** (20.6%) |
+| 26 | 314 | T | T | 0.0% | 100.0% | 0.0% | 0.0% | 100% Conserved |
+| 27 | 313 | G | G | 0.0% | 0.0% | 100.0% | 0.0% | 100% Conserved |
+| 28 | 312 | A | A | 98.8% | 0.5% | 0.1% | 0.6% | Conserved (minor variation &lt;15% ignored: T (0.5%), G (0.1%), C (0.6%)) |
+| 29 | 311 | C | C | 0.0% | 0.0% | 0.0% | 100.0% | 100% Conserved |
+| 30 | 310 | G | G | 0.0% | 0.0% | 100.0% | 0.0% | 100% Conserved |
+:::
+
+---
+
+## 4. Probe Audit
+
+* **ID**: `manual_probe`
+* **Position on Segment**: `224 - 275 bp` (0-based)
+* **Degenerate Sequence (5' &rarr; 3')**: `CCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCARAATGCCC`
+* **Degeneracy Multiplier**: `4x`
+
+::: {.small-table}
+| Primer Pos (5' → 3') | Segment Position | Majority Base | IUPAC Base | A (%) | T (%) | G (%) | C (%) | Decision Rationale |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| 0 | 224 | C | C | 0.0% | 0.0% | 0.0% | 100.0% | 100% Conserved |
+| 1 | 225 | C | C | 0.0% | 0.0% | 0.0% | 100.0% | 100% Conserved |
+| 2 | 226 | G | G | 0.0% | 0.0% | 100.0% | 0.0% | 100% Conserved |
+| 3 | 227 | T | T | 0.0% | 100.0% | 0.0% | 0.0% | 100% Conserved |
+| 4 | 228 | G | G | 0.0% | 0.1% | 99.9% | 0.0% | Conserved (minor variation &lt;15% ignored: T (0.1%)) |
+| 5 | 229 | C | C | 0.0% | 0.0% | 0.0% | 100.0% | 100% Conserved |
+| 6 | 230 | C | C | 0.0% | 0.0% | 0.0% | 100.0% | 100% Conserved |
+| 7 | 231 | C | C | 0.1% | 0.0% | 0.0% | 99.9% | Conserved (minor variation &lt;15% ignored: A (0.1%)) |
+| 8 | 232 | A | A | 100.0% | 0.0% | 0.0% | 0.0% | 100% Conserved |
+| 9 | 233 | G | G | 0.0% | 0.0% | 100.0% | 0.0% | 100% Conserved |
+| 10 | 234 | T | T | 0.0% | 100.0% | 0.0% | 0.0% | 100% Conserved |
+| 11 | 235 | G | G | 0.0% | 0.0% | 100.0% | 0.0% | 100% Conserved |
+| 12 | 236 | A | A | 100.0% | 0.0% | 0.0% | 0.0% | 100% Conserved |
+| 13 | 237 | G | G | 0.0% | 0.0% | 100.0% | 0.0% | 100% Conserved |
+| 14 | 238 | C | C | 0.0% | 0.0% | 0.0% | 100.0% | 100% Conserved |
+| 15 | 239 | G | G | 0.0% | 0.0% | 100.0% | 0.0% | 100% Conserved |
+| 16 | 240 | A | A | 85.9% | 0.0% | 14.1% | 0.0% | Conserved (minor variation &lt;15% ignored: G (14.1%)) |
+| 17 | 241 | G | G | 0.0% | 0.0% | 100.0% | 0.0% | 100% Conserved |
+| 18 | 242 | G | G | 0.0% | 0.0% | 100.0% | 0.0% | 100% Conserved |
+| 19 | 243 | A | A | 99.9% | 0.0% | 0.0% | 0.1% | Conserved (minor variation &lt;15% ignored: C (0.1%)) |
+| 20 | 244 | C | C | 0.1% | 0.0% | 0.0% | 99.9% | Conserved (minor variation &lt;15% ignored: A (0.1%)) |
+| 21 | 245 | T | T | 0.0% | 100.0% | 0.0% | 0.0% | 100% Conserved |
+| 22 | 246 | G | G | 0.0% | 0.0% | 100.0% | 0.0% | 100% Conserved |
+| 23 | 247 | C | C | 0.0% | 0.0% | 0.0% | 100.0% | 100% Conserved |
+| 24 | 248 | A | A | 100.0% | 0.0% | 0.0% | 0.0% | 100% Conserved |
+| 25 | 249 | G | G | 0.1% | 0.0% | 99.9% | 0.0% | Conserved (minor variation &lt;15% ignored: A (0.1%)) |
+| 26 | 250 | C | C | 0.3% | 0.0% | 0.0% | 99.7% | Conserved (minor variation &lt;15% ignored: A (0.3%)) |
+| 27 | 251 | G | G | 0.0% | 0.0% | 100.0% | 0.0% | 100% Conserved |
+| 28 | 252 | T | T | 0.0% | 99.9% | 0.0% | 0.1% | Conserved (minor variation &lt;15% ignored: C (0.1%)) |
+| 29 | 253 | A | A | 100.0% | 0.0% | 0.0% | 0.0% | 100% Conserved |
+| 30 | 254 | G | G | 0.0% | 0.0% | 99.9% | 0.1% | Conserved (minor variation &lt;15% ignored: C (0.1%)) |
+| 31 | 255 | A | A | 100.0% | 0.0% | 0.0% | 0.0% | 100% Conserved |
+| 32 | 256 | C | C | 0.0% | 0.0% | 0.0% | 100.0% | 100% Conserved |
+| 33 | 257 | G | G | 0.0% | 0.0% | 100.0% | 0.0% | 100% Conserved |
+| 34 | 258 | C | C | 2.2% | 12.2% | 0.1% | 85.5% | Conserved (minor variation &lt;15% ignored: A (2.2%), T (12.2%), G (0.1%)) |
+| 35 | 259 | T | T | 0.0% | 100.0% | 0.0% | 0.0% | 100% Conserved |
+| 36 | 260 | T | T | 0.0% | 100.0% | 0.0% | 0.0% | 100% Conserved |
+| 37 | 261 | T | T | 0.0% | 99.9% | 0.0% | 0.1% | Conserved (minor variation &lt;15% ignored: C (0.1%)) |
+| 38 | 262 | G | **R** | 22.1% | 0.0% | 77.9% | 0.0% | **Degenerate**: Cleared &ge;15% MAF threshold: **A** (22.1%), **G** (77.9%) |
+| 39 | 263 | T | T | 0.0% | 100.0% | 0.0% | 0.0% | 100% Conserved |
+| 40 | 264 | C | C | 0.0% | 1.4% | 0.0% | 98.6% | Conserved (minor variation &lt;15% ignored: T (1.4%)) |
+| 41 | 265 | C | C | 0.0% | 0.0% | 0.0% | 100.0% | 100% Conserved |
+| 42 | 266 | A | A | 100.0% | 0.0% | 0.0% | 0.0% | 100% Conserved |
+| 43 | 267 | A | **R** | 57.1% | 0.0% | 42.7% | 0.1% | **Degenerate**: Cleared &ge;15% MAF threshold: **A** (57.1%), **G** (42.7%) |
+| 44 | 268 | A | A | 100.0% | 0.0% | 0.0% | 0.0% | 100% Conserved |
+| 45 | 269 | A | A | 99.9% | 0.0% | 0.0% | 0.1% | Conserved (minor variation &lt;15% ignored: C (0.1%)) |
+| 46 | 270 | T | T | 0.0% | 96.8% | 0.0% | 3.2% | Conserved (minor variation &lt;15% ignored: C (3.2%)) |
+| 47 | 271 | G | G | 0.0% | 0.0% | 100.0% | 0.0% | 100% Conserved |
+| 48 | 272 | C | C | 0.0% | 0.0% | 0.0% | 100.0% | 100% Conserved |
+| 49 | 273 | C | C | 0.0% | 12.8% | 0.0% | 87.2% | Conserved (minor variation &lt;15% ignored: T (12.8%)) |
+| 50 | 274 | C | C | 0.0% | 0.5% | 0.0% | 99.5% | Conserved (minor variation &lt;15% ignored: T (0.5%)) |
+:::

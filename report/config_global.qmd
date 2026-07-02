@@ -1,0 +1,56 @@
+---
+title: "Global Pipeline Configuration"
+---
+
+The global section of `config.yaml` establishes the foundational metadata, database routing, reference genome coordinates, and cross-module evolutionary cutoffs that govern the entire diagnostic discovery pipeline. 
+
+---
+
+## 1. YAML Configuration Profile
+
+This section of the configuration file is defined at the very beginning of the profile:
+
+```yaml
+# --- GLOBAL PARAMETERS ---
+global_params:
+  min_subtype_count: 30           # Minimum sequences per subtype to be included in any analysis
+  iupac_threshold: 0.15           # Minor allele frequency to trigger IUPAC encoding (0.15 = 15%)
+
+# --- PIPELINE CONFIGURATION ---
+build_name: "influenza-a-mp-sea"  # Unique run directory identifier
+database: "local"                 # "local" for GISAID/manual FASTA | "ncbi" for automated remote API download
+
+# --- REFERENCE REGISTRY ---
+references:
+  reference_id: "NC_002016.1"
+  genome: "config/references/flu_a_mp_reference.fasta"
+  annotation: "config/references/flu_a_mp_annotation.gff"
+```
+
+---
+
+## 2. Parameter Dictionary & Biological Rationale
+
+| Parameter Name | Allowed Values | Default Value | Biological & Algorithmic Rationale |
+|---|---|---|---|
+| `global_params.min_subtype_count` | Integer $\ge 1$ | `30` | Prevents the inclusion of highly underrepresented viral subtypes or sequencing artifacts. If a subtype has fewer than 30 representative sequences in the database, it is excluded from phylogenetic and selection pressure steps to avoid statistical skew and skewing conservation averages. |
+| `global_params.iupac_threshold` | Float `0.0` to `1.0` | `0.15` | The Minor Allele Frequency (MAF) cutoff. If a non-consensus nucleotide occurs at a frequency $\ge 15\%$ at a specific genomic coordinate, the pipeline automatically encodes it as an IUPAC degenerate base (e.g., $R$ for $A/G$) in the consensus alignment. Setting this below $10\%$ leads to hyper-degenerated primers that dilute active concentration, while setting it above $25\%$ risks diagnostic escape from major circulating variants. |
+| `build_name` | String (No spaces) | `"influenza-a-mp-sea"` | Defines the output folder name under the `results/` directory. Changing this allows running parallel experiments (e.g. `indo-only`, `sea-only`, `all-partial`) without overwriting previous runs. |
+| `database` | `"local"`, `"ncbi"` | `"local"` | Sets the input mode. `"local"` forces the pipeline to ingest manual GISAID/EpiFlu FASTA and CSV files. `"ncbi"` instructs Module 01 to download the latest raw sequences directly from the NCBI GenBank repository using the NCBI datasets API. |
+| `references.reference_id` | String | `"NC_002016.1"` | The NCBI accession ID of the official wildtype reference sequence used for coordinate mapping. All downstream selections, primers, and selection codons are reported relative to this reference coordinate system. |
+| `references.genome` | File Path | `*.fasta` | Path to the single-record FASTA file of the reference genome. Used in Module 03 for sequence alignment anchoring and Module 07 for coordinate selection. |
+| `references.annotation` | File Path | `*.gff` | Path to the General Feature Format (GFF) file. The pipeline parses this annotation to map nucleotide coordinates to exact coding sequences (CDS), such as the overlapping Matrix 1 (M1) and Matrix 2 (M2) reading frames on the Influenza MP segment. |
+
+---
+
+## 3. How to Interpret & Validate Reference Alignments
+
+The reference genome acts as the "anchor" for the entire pipeline. During Module 03 (Alignment), the raw sequences are mapped against the reference:
+
+*   **Coordinate Drift**: If the selected reference sequence is too divergent from the target population (e.g. using a 1934 H1N1 reference for a 2026 seasonal design), the alignment will suffer from excessive gaps. This will cause coordinate mismatch downstream.
+*   **CDS Mapping**: Ensure the `references.annotation` matches the reference sequence exactly. If the coordinates in the GFF file do not match the exons in the FASTA reference, the translation step in Module 05 (Selection Pressure) will fail, producing frame-shift errors or early stop codons in the HyPhy input.
+
+::: {.callout-important}
+## Verification Step
+Before initiating a run, verify that the reference FASTA header matches the GFF sequence ID exactly (e.g. both must read `NC_002016.1`). If they do not match, Snakemake will crash in Module 03 due to reference header mismatch.
+:::

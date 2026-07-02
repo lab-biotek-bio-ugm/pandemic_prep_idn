@@ -1,0 +1,52 @@
+---
+title: "Home"
+subtitle: "Progress Development Report: Evolutionary-Aware Target Discovery"
+author: "UGM Pandemic Preparedness Team"
+date: "2026-06-29"
+---
+
+Welcome to the **Pandemic Preparedness Progress Report**. This portal serves as the official documentation for the development of our *Evolutionary-Aware Target Discovery Pipeline*, designed to identify robust and mutation-resistant diagnostic targets for emerging pathogens.
+
+## Executive Summary
+
+Pathogens with epidemic potential, particularly those causing **Acute Respiratory Infections (ARI)** such as Influenza A and Coronaviruses, exhibit high mutation rates. Conventional molecular diagnostics (e.g., RT-PCR and Recombinase Polymerase Amplification - RAA) frequently suffer from diagnostic escape due to **primer mismatch** at target sites.
+
+To address this challenge, our pipeline integrates global genomic surveillance data with phylogenetic and evolutionary selection pressure analyses. By mapping codon-by-codon evolutionary dynamics, the pipeline identifies target regions under strong **purifying selection** (negative selection) and high ancestral conservation. Targeting these genetically constrained regions ensures the longevity and diagnostic sensitivity of designed assays, mitigating the risk of diagnostic escape.
+
+---
+
+## Technical Pipeline Workflow
+
+The target discovery pipeline is structured into four main phases spanning ten core modules (M01 to M10):
+
+| Phase | Core Modules | Objective & Key Activities |
+|:---|:---:|:---|
+| **Phase 1: Genomic & Phylodynamics** | M01 – M04 | Acquisition, quality control, multiple sequence alignment, and phylogenetic tree reconstruction. |
+| **Phase 2: Selection & Conservation** | M05 – M07 | Mapping of codon-by-codon evolutionary selection pressure (HyPhy) and ancestral sequence conservation scoring. |
+| **Phase 3: Design & Specificity** | M08 – M09 | Design of RAA primers/probes (using PrimerLab) and BLAST-based specificity filtering. |
+| **Phase 4: Simulated Evaluation** | M10 | Simulated multi-metric in-silico validation of candidates across global databases. |
+
+---
+
+## Document Navigation Structure
+
+The documentation portal is organized into distinct functional sections:
+
+*   **Genomic Surveillance**: Details the data acquisition logic (including socio-demographic tourist traffic justification from BPS data) and sequence statistics of target pathogen datasets.
+*   **Technical Architecture**: A step-by-step walkthrough of Modules M01 through M10, documenting execution commands, underlying methodologies, and troubleshooting protocols.
+*   **Results & Biological Insights**: Evaluates candidate primers/probes and presents in-silico PCR/RAA evaluation heatmaps across global database strains.
+
+---
+
+## Consortium & Funding
+
+This development initiative is part of the national project **"Peningkatan Kapasitas Laboratorium untuk Deteksi Patogen Berpotensi Pandemik bagi Human Dalam Persiapan Menghadapi Pandemi"** (FY 2026), supported and funded by the **Badan Riset dan Inovasi Nasional (BRIN)**.
+
+The project is carried out through a multi-institutional research consortium:
+
+*   **Pusat Riset Biomedis, Organisasi Riset Kesehatan, BRIN**
+*   **Universitas Gadjah Mada (UGM)**
+*   **Universitas Indonesia (UI)**
+*   **Universitas Telkom**
+*   **University of Bern, Switzerland** *(International Collaborator)*
+*   **Tokyo University of Agriculture and Technology, Japan** *(International Collaborator)*

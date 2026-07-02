@@ -1,0 +1,211 @@
+---
+title: "Module 02: Quality Control & Subsampling"
+---
+
+Raw viral sequencing data from global databases contains significant sampling biases, sequence duplicates, and low-quality assemblies. Module 02 resolves these issues by implementing a two-stage quality control and spatio-temporal subsampling pipeline before phylogenetic reconstruction.
+
+The module ensures phylogenetic trees and genetic selection analyses are computed on a high-quality, representative, and computationally tractable subset of genomes.
+
+---
+
+## 1. Stage 1: Quality Control & Prefiltering
+
+The first stage runs the Snakemake rule `qc_prefilter` which executes `scripts/qc_prefilter.py` using **BioPython** [@cock2009]. It applies three main filters:
+
+1.  **N-Content Filtering**: Sequences with high rates of ambiguous bases ($N$) are discarded. Ambiguous bases prevent accurate alignment and mutation identification. The threshold is set via `config["qc"]["max_n_content"]` (default: 5.0%).
+2.  **Sequence Deduplication**: Replicating sequences with identical nucleotide structures are identified via MD5 hashing and collapsed. This deduplication reduces downstream alignment and tree-building times by up to 60% without losing unique mutational variants.
+3.  **Underrepresented Subtype Filtering**: Subtypes with fewer than a minimum count (default: 30 sequences) are filtered out to ensure statistical validity during genetic selection analysis.
+
+---
+
+## 2. Stage 2: Spatio-Temporal Subsampling (Augur Filter)
+
+To prevent phylogenetic trees from being dominated by regions with massive sequencing capacity (creating a sampling bias), the Snakemake rule `augur_filter` runs `scripts/m02_filter_wrapper.py`. This wrapper dynamically executes `augur filter` [@hadfield2018] using a **Focal + Contextual Subsampling** strategy.
+
+```
+                    ┌──────────────────────────────┐
+                    │  Prefiltered Sequences FASTA │
+                    └──────────────┬───────────────┘
+                                   │
+                   ┌───────────────┴───────────────┐
+                   ▼                               ▼
+      ┌─────────────────────────┐     ┌─────────────────────────┐
+      │   Focal Subsampling     │     │ Contextual Subsampling  │
+      ├─────────────────────────┤     ├─────────────────────────┤
+      │ Targets domestic area   │     │ Targets global partners │
+      │ High sequence density   │     │ Representative samples  │
+      │ e.g. Country: Indonesia │     │ e.g. MY, SG, AU, CN, IN │
+      └────────────┬────────────┘     └────────────┬────────────┘
+                   │                               │
+                   └───────────────┬───────────────┘
+                                   ▼
+                      ┌─────────────────────────┐
+                      │    Combine & Deduplicate│
+                      ├─────────────────────────┤
+                      │ filtered_sequences.fasta│
+                      └─────────────────────────┘
+```
+
+### 2.1. Focal Sampling
+*   **Target**: The domestic region under investigation (configured via `subsampling.focal.query`). For this build, it selects Indonesian isolates (`country == 'Indonesia'`).
+*   **Density**: Retains a high density of local sequences to capture the complete picture of local transmission chains.
+
+### 2.2. Contextual Sampling
+*   **Target**: The neighboring travel corridors identified in our BPS demographic justification (Malaysia, Singapore, Australia, China, India, Japan).
+*   **Density**: Subsamples global sequences at a lower density (e.g., grouped by country, year, and month) to serve as evolutionary context for ancestral reconstruction.
+
+---
+
+## 3. Configuration & Outputs (Tabset Examples)
+
+Below are the configuration schemas and generated report files of Module 02:
+
+::: {.panel-tabset}
+
+### 1. Configuration (config_influenza_a_mp.yaml)
+```yaml
+# [M02] Quality Control & Spatio-Temporal Filter
+qc:
+  max_n_content: 5.0              # Discard sequences with >5% ambiguous bases
+  dedup: true                     # Remove identical duplicate sequences
+
+subsampling:
+  # Base Settings (used when focal.enabled is false)
+  group_by: "subtype country year month"
+  sequences_per_group: 10
+  max_sequences: null
+  min_length: 800
+  seed: 42
+  query: "country in ['Indonesia', 'Singapore', 'Malaysia', 'Thailand', 'Vietnam', 'Philippines', 'Myanmar', 'Cambodia', 'Laos', 'Brunei']"
+
+  # Targeted Background Subsampling (Focal vs Contextual)
+  focal:
+    enabled: false                # Toggle to enable split focal/contextual sampling
+    query: "country == 'Indonesia'"
+    max_sequences: null
+    sequences_per_group: 50
+    group_by: "subtype year month"
+    
+  contextual:
+    query: "country != 'Indonesia'"
+    max_sequences: null
+    sequences_per_group: 3
+    group_by: "subtype country year month"
+```
+
+### 2. Output: QC Report (qc_report.json)
+```json
+{
+  "timestamp": "2026-06-29T14:40:00Z",
+  "input_records": 50750,
+  "retained_after_n_filter": 48123,
+  "retained_after_deduplication": 12845,
+  "retained_after_subtype_filter": 12512,
+  "dropped_n_filter": 2627,
+  "dropped_duplicates": 35278,
+  "dropped_subtype_filter": 333
+}
+```
+
+### 3. Generated Command Wrapper
+Depending on whether `focal.enabled` is `true` or `false`, the pipeline invokes Augur in one of two ways:
+
+#### Option A: Base Subsampling (focal.enabled: false - Default)
+```bash
+# Filter sequences across Southeast Asia countries using base parameters
+augur filter \
+    --sequences results/influenza-a-mp-sea/m02/prefiltered_sequences.fasta \
+    --metadata results/influenza-a-mp-sea/m01/metadata_enriched.tsv \
+    --min-length 800 \
+    --subsample-seed 42 \
+    --exclude-ambiguous-dates-by any \
+    --query "country in ['Indonesia', 'Singapore', 'Malaysia', 'Thailand', 'Vietnam', 'Philippines', 'Myanmar', 'Cambodia', 'Laos', 'Brunei']" \
+    --sequences-per-group 10 \
+    --group-by subtype country year month \
+    --output-sequences results/influenza-a-mp-sea/m02/filtered_sequences.fasta
+```
+
+#### Option B: Focal + Contextual Subsampling (focal.enabled: true)
+```bash
+# 1. Filter local Indonesian isolates (Focal)
+augur filter \
+    --sequences results/influenza-a-mp-sea/m02/prefiltered_sequences.fasta \
+    --metadata results/influenza-a-mp-sea/m01/metadata_enriched.tsv \
+    --min-length 800 \
+    --subsample-seed 42 \
+    --exclude-ambiguous-dates-by any \
+    --query "country == 'Indonesia'" \
+    --sequences-per-group 50 \
+    --group-by subtype year month \
+    --output-sequences results/influenza-a-mp-sea/m02/filtered_sequences.fasta.focal.fasta
+
+# 2. Filter global/neighboring background isolates (Contextual)
+augur filter \
+    --sequences results/influenza-a-mp-sea/m02/prefiltered_sequences.fasta \
+    --metadata results/influenza-a-mp-sea/m01/metadata_enriched.tsv \
+    --min-length 800 \
+    --subsample-seed 42 \
+    --exclude-ambiguous-dates-by any \
+    --query "country != 'Indonesia'" \
+    --sequences-per-group 3 \
+    --group-by subtype country year month \
+    --output-sequences results/influenza-a-mp-sea/m02/filtered_sequences.fasta.ctx.fasta
+
+# [Pipeline merges focal.fasta and ctx.fasta, removing duplicates]
+```
+:::
+
+---
+
+## 3. Configuration & Parameterization
+
+The behavior of Module 02 is governed by the quality control and spatial filtering parameters in `config.yaml`:
+
+```yaml
+# [M02] Quality Control & Spatio-Temporal Filter
+qc:
+  max_n_content: 5.0              # Toleransi maksimal % base N (ambiguitas)
+  dedup: true                     # Hapus sekuens duplikat identik
+  min_length: 800                 # Panjang sekuens minimal (bp)
+  query: "country in ['Indonesia', 'Singapore', 'Malaysia', 'Thailand', 'Vietnam', 'Philippines', 'Myanmar', 'Cambodia', 'Laos', 'Brunei']"
+```
+
+### 3.1. Parameter Tuning Dictionary
+
+| Parameter Name | Allowed Values | Default Value | Purpose & Biological Meaning |
+|---|---|---|---|
+| `qc.max_n_content` | Float `0.0` to `100.0` | `5.0` | Sets the maximum percentage of ambiguous nucleotides ($N$) allowed in a sequence. Sequences exceeding 5% $N$ are discarded. Ambiguous sequences degrade alignment quality and lead to false mismatch counts during in-silico validation. |
+| `qc.dedup` | `true`, `false` | `true` | When enabled, identical sequences (sharing 100% identity and same length) are collapsed into a single representative sequence. This significantly reduces downstream computational overhead for multiple sequence alignment and phylogenetic building without losing epidemiological diversity. |
+| `qc.min_length` | Integer $\ge 0$ | `800` | Excludes short or partial sequence fragments. For the Influenza MP segment (~1024 bp), setting this to 800 bp ensures that only near-full-length records are processed, preserving structural integrity for primer design. |
+| `qc.query` | Pandas query string | SEA Countries | Defines the geographic and metadata boundary of your dataset. Only sequences matching this query are retained for the subsampling pool. Changing this is how you switch between regional designs (e.g. `indo-only` vs `sea-only`). |
+
+### 3.2. How to Interpret the QC Report
+
+Module 02 outputs a tabular and JSON summary (`qc_report.json`):
+
+*   **`input_records`**: Total raw input sequences.
+*   **`retained_after_n_filter`**: Number of sequences passing the $N$-content threshold. A major drop here indicates poor sequencing quality in your raw data.
+*   **`retained_after_deduplication`**: Number of sequences after collapsing duplicates. For highly sampled pathogens, deduplication can shrink the database by $>70\%$, which is normal and desirable.
+
+---
+
+## 4. Inputs, Outputs & Files
+
+The files involved in Module 02 are summarized below:
+
+| File Role | Path | Format | Description |
+|---|---|---|---|
+| **Input Sequences** | `results/{build}/m01/raw_sequences.fasta` | FASTA | Raw sequences from Module 01. |
+| **Input Metadata** | `results/{build}/m01/metadata_enriched.tsv` | TSV | Nextclade-enriched metadata table. |
+| **QC Sequences** | `results/{build}/m02/prefiltered_sequences.fasta` | FASTA | Sequences post N-filtering and deduplication. |
+| **QC Report** | `results/{build}/m02/qc_report.json` | JSON | Summary statistics of sequence filter counts. |
+| **Final Filtered** | `results/{build}/m02/filtered_sequences.fasta` | FASTA | Final subsampled sequences ready for alignment. |
+
+---
+
+## 5. Troubleshooting & Limitations
+
+### 5.1. Ambiguous Date Exclusions
+*   **Problem**: Crucial local sequences are missing in the final alignment.
+*   **Cause**: Augur filter defaults to dropping sequences with incomplete dates (e.g. `2024-XX-XX` or `2024-06-XX`). If the command includes `--exclude-ambiguous-dates-by any`, these are excluded.
+*   **Solution**: The pipeline's metadata sanitizer (Module 01) resolves this by dynamically filling day or month wildcards with standard middle-points (e.g. `15` for day, `06` for month) when exact temporal precision is not mandatory for downstream selection analyses.
