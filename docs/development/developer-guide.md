@@ -275,14 +275,14 @@ A clean dry-run shows only job counts with no `Error`, `Exception`, or `Missing`
 
 ## PrimerLab Integration Development Notes
 
-The pipeline integrates with `primerlab-genomic` as an external dependency. For local development of PrimerLab itself alongside this pipeline:
+The pipeline integrates with the [PrimerLab Genomic](https://github.com/CORE-Lab-Research/primerlab-genomic.git) framework as an external dependency. For local development of PrimerLab itself alongside this pipeline:
 
-1. Set `primerlab.repo_path` to an absolute local path:
+1. Override the production git repo URL with your absolute local development path:
    ```yaml
    primerlab:
      repo_path: "E:/Project/primerlab-genomic"
    ```
-2. M08's `m08_install_primerlab` rule installs PrimerLab in editable mode (`pip install -e`) when a local path is detected.
+2. M08's `m08_install_primerlab` rule installs PrimerLab in editable mode (`pip install -e`) when a local directory path is detected.
 3. Changes to the local PrimerLab repository are reflected immediately on the next M08 run without re-installation.
 
 **Cross-platform path handling:** The M08 install rule contains path-handling logic for Windows drive letters (e.g., `E:/Project/...`). When running inside WSL2, the rule converts Windows paths to WSL mount paths (`/mnt/e/Project/...`) automatically.

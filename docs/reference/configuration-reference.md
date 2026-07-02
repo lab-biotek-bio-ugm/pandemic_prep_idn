@@ -326,7 +326,7 @@ primerlab:
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| `primerlab.repo_path` | String | — | Installation source for PrimerLab. Use a local path (e.g., `E:/Project/primerlab-genomic`) for development, or a git URL for production. Set to `"conda"` if installed via the conda environment. |
+| `primerlab.repo_path` | String | — | Installation source for PrimerLab. Use a local path (e.g., `E:/Project/primerlab-genomic` as a development path example) for local testing, or the official remote git URL (e.g., `git+https://github.com/CORE-Lab-Research/primerlab-genomic.git@main`) for production. Set to `"conda"` if pre-installed. |
 | `primerlab.template` | String | — | Path to the PrimerLab base template YAML (`config/primerlab_template.yaml`). This defines the reaction type (RAA/PCR) and thermodynamic parameters. |
 | `primerlab.design.num_candidates` | Integer | `1000` | Total candidate primer sets to generate via Primer3 before filtering. |
 | `primerlab.design.vienna_ranking_limit` | Integer | `500` | Maximum candidates to pass through ViennaRNA secondary structure analysis. Higher values = more thorough but slower. |

@@ -31,7 +31,8 @@
             "pages": [
               "concepts/evolutionary-diagnostics",
               "concepts/shannon-entropy",
-              "concepts/selection-pressure"
+              "concepts/selection-pressure",
+              "concepts/primerlab-framework"
             ]
           },
           {
