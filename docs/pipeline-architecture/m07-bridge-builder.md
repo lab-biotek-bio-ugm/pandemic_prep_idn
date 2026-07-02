@@ -31,9 +31,9 @@ $$\text{Final Window Score} = S_{\text{avg}} \cdot M_{\text{meme}} \cdot M_{\tex
 |---|---|---|---|
 | **$M_{\text{meme}}$** | Presence of MEME episodic positive selection sites in the window. | `0.9` for 1 site, `0.7` for 3 sites. **Vetoes** if $>3$ sites. | Avoids emerging mutational hotspots. |
 | **$M_{\text{reco}}$** | Proximity to a GARD recombination breakpoint. | `0.5` within `gard_buffer_bp` (50 bp). | Prevents designing across recombinant boundaries. |
-| **$M_{\text{gc}}$** | GC content falls outside the ideal range (35%–60%). | `0.7` for marginal ranges (25%–34% or 61%–70%). **Vetoes** if $<25\%$ or $>70\%$. | Ensures primer design viability. |
+| **$M_{\text{gc}}$** | GC content falls outside the ideal range (35%–60%). | `0.7` for marginal ranges (25%–34% or 61%–70%). **Vetoes** if `&lt;` 25% or `&gt;` 70%. | Ensures primer design viability. |
 | **$M_{\text{poly}}$** | Presence of homopolymer runs exceeding `max_repeats` (e.g., 5 identical consecutive bases). | `0.6` multiplier. | Prevents primer synthesis and sequencing errors. |
-| **$M_{\text{block}}$** | Length of the contiguous conserved block (entropy $< 0.10$) is too short. | `0.8` if block length is between 20 bp and 35 bp. | Ensures sufficient space for primer binding. |
+| **$M_{\text{block}}$** | Length of the contiguous conserved block (entropy `&lt;` 0.10) is too short. | `0.8` if block length is between 20 bp and 35 bp. | Ensures sufficient space for primer binding. |
 
 ---
 
@@ -46,7 +46,7 @@ Candidate regions are classified into four tiers based on their average conserva
 | **A** | **Strict (Platinum)** | $\geq 0.95$ | $\geq 0.90$ | Highly recommended. Extremely stable targets. |
 | **B** | **Moderate (Gold)** | $\geq 0.85$ | $\geq 0.70$ | Safe for routine surveillance assays. |
 | **C** | **Survival (Silver)** | $\geq 0.80$ | Any | Targetable, but may require degenerate bases or validation. |
-| **D** | **Reject** | $< 0.80$ | — | High mutational risk. Do not target. |
+| **D** | **Reject** | `&lt;` 0.80 | — | High mutational risk. Do not target. |
 
 ---
 

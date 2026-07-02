@@ -185,7 +185,7 @@ Each `specificity_report_{CANDIDATE}.md` contains:
 
 A candidate passes verification if:
 1. Forward primer, reverse primer, and probe all have top hits to the target sequence
-2. No significant hits (E-value < `evalue_cutoff`) to the human genome
+2. No significant hits (E-value `&lt;` `evalue_cutoff`) to the human genome
 3. No significant hits to non-target pathogen sequences in `virus_db`
 
 ---

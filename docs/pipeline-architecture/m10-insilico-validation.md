@@ -66,7 +66,7 @@ A human-readable markdown report that summarizes overall performance, highlights
 ### Subtype Breakdown:
 - **H1N1**: 99.07% (535 / 540)
 - **H3N2**: 97.88% (832 / 850)
-- **Other (rare, n<30)**: 95.45% (115 / 120)
+- **Other (rare, n &lt; 30)**: 95.45% (115 / 120)
 
 ### Mismatch Analysis & Escaping Strains:
 The following accessions failed amplification due to critical 3' mismatches:
@@ -83,4 +83,4 @@ An interactive HTML dashboard containing a Plotly heatmap.
 - The **colour scale** ranges from Red (0% coverage) to Green (100% coverage).
 - Hovering over a cell shows the exact sample count (`amplified / total_sequences`) and coverage percentage.
 - **Actionable Insight**: A sudden shift from green to red in recent years indicates **antigenic/diagnostic drift**. The primer set is losing specificity to emerging strains and needs to be replaced.
-- **Filter Rare Subtypes**: Subtypes with fewer than `insilico_pcr.min_subtype_seqs` (default 30) sequences are collapsed into the `"Other (rare, n<30)"` row to prevent statistically insignificant coverage fluctuations from skewing the heatmap.
+- **Filter Rare Subtypes**: Subtypes with fewer than `insilico_pcr.min_subtype_seqs` (default 30) sequences are collapsed into the `"Other (rare, n &lt; 30)"` row to prevent statistically insignificant coverage fluctuations from skewing the heatmap.

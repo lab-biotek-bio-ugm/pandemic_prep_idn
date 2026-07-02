@@ -43,9 +43,9 @@ Where standard bases have 1 option, two-base degeneracies (R, Y, W, S, K, M) hav
 
 Every candidate primer and probe is evaluated for secondary structure thermodynamics at the target reaction temperature (e.g., 39°C for RAA) using the **ViennaRNA package (RNAfold/RNAduplex)**:
 
-1.  **Hairpins**: Calculates the minimum free energy ($\Delta G$) of self-folding. Hairpins with $\Delta G < -3.0\text{ kcal/mol}$ are flagged as high-risk.
-2.  **Self-Dimers (Homodimers)**: Simulates binding between two molecules of the same primer. Excludes candidates with homodimerization $\Delta G < -5.0\text{ kcal/mol}$.
-3.  **Cross-Dimers (Heterodimers)**: Simulates binding between the forward primer, reverse primer, and probe. Any combinations with cross-hybridization $\Delta G < -6.0\text{ kcal/mol}$ are filtered out.
+1.  **Hairpins**: Calculates the minimum free energy ($\Delta G$) of self-folding. Hairpins with $\Delta G \text{ } \lt -3.0\text{ kcal/mol}$ are flagged as high-risk.
+2.  **Self-Dimers (Homodimers)**: Simulates binding between two molecules of the same primer. Excludes candidates with homodimerization $\Delta G \text{ } \lt -5.0\text{ kcal/mol}$.
+3.  **Cross-Dimers (Heterodimers)**: Simulates binding between the forward primer, reverse primer, and probe. Any combinations with cross-hybridization $\Delta G \text{ } \lt -6.0\text{ kcal/mol}$ are filtered out.
 
 ---
 

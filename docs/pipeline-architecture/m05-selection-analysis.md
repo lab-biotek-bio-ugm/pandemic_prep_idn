@@ -151,7 +151,7 @@ hyphy CPU=32 meme \
     --output results/{BUILD}/m05/meme_{GENE}.json
 ```
 
-MEME sites with p-value < `hyphy.p_value_threshold` (default `0.1`) are flagged as episodic selection hotspots. M07 applies a **penalty score** ($E$) to these positions to disfavour them as primer binding sites.
+MEME sites with p-value `&lt;` `hyphy.p_value_threshold` (default `0.1`) are flagged as episodic selection hotspots. M07 applies a **penalty score** ($E$) to these positions to disfavour them as primer binding sites.
 
 **Output schema (`meme_{GENE}.json` — key fields):**
 
@@ -183,7 +183,7 @@ GARD detects intra-sequence recombination breakpoints using a genetic algorithm 
 </Warning>
 
 The `run_hyphy_gard_safe.py` wrapper performs pre-flight validation:
-- If `alignment_length < 4 × num_sequences` (c-AIC requirement), writes an empty JSON and exits 0 (soft-fail — pipeline continues).
+- If `alignment_length` `&lt;` `4 × num_sequences` (c-AIC requirement), writes an empty JSON and exits 0 (soft-fail — pipeline continues).
 - If GARD crashes at runtime, catches the exception and soft-fails.
 
 ```bash
@@ -226,14 +226,14 @@ Key packages: `hyphy`, `macse`, `biopython`, `pandas`
 |---|---|---|
 | FUBAR `Prob[alpha>beta]` > 0.90 | Strong pervasive purifying selection | Positive contribution to composite score ($P$) |
 | FUBAR `Prob[beta>alpha]` > 0.90 | Pervasive positive selection | Negative signal — site likely escaping immune pressure |
-| MEME p-value < 0.1 | Episodic diversifying selection detected | Penalty applied to composite score ($E$) |
+| MEME p-value `&lt;` 0.1 | Episodic diversifying selection detected | Penalty applied to composite score ($E$) |
 | GARD breakpoint | Recombination boundary detected | Recombination proximity penalty ($R$) applied |
 
 ---
 
 ## Known Limitations & Edge Cases
 
-- **Dropped: HyPhy FEL** — FEL (Fixed Effects Likelihood) detects the same pervasive selection signal as FUBAR but with a frequentist approach. It is only advantageous for very small datasets (<20 sequences). FUBAR was retained because it outperforms FEL for the typical dataset size range of this pipeline (50–1000 sequences).
+- **Dropped: HyPhy FEL** — FEL (Fixed Effects Likelihood) detects the same pervasive selection signal as FUBAR but with a frequentist approach. It is only advantageous for very small datasets (`&lt;` 20 sequences). FUBAR was retained because it outperforms FEL for the typical dataset size range of this pipeline (50–1000 sequences).
 - **Deferred: Clade-defining SNP finder (M05-1)** — Planned feature to identify mutations unique to each clade from `nt_muts.json`. Required for Route B (clade-specific primer targets). Priority: Phase 2.
 - **GARD computational cost**: On a 1,000 nt gene alignment with 300 sequences, GARD can take 12–48 hours on a single machine. Always submit GARD runs to a compute cluster (HPC/Slurm).
 - **Codon frame requirement**: FUBAR and MEME operate on codon models and require that the input alignment length is divisible by 3. The `extract_genes.py` sanitiser enforces this, but verify by checking that `len(sequence) % 3 == 0` for all sequences in `cleaned_{GENE}_NT.fasta`.

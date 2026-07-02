@@ -104,7 +104,7 @@ snakemake \
 
 | Module | Typical Runtime | Bottleneck |
 |---|---|---|
-| M01 Download / Copy | < 1 min | I/O |
+| M01 Download / Copy | `&lt;` 1 min | I/O |
 | M01 Nextclade | 2–5 min | CPU |
 | M02 QC + Filter | 1–3 min | I/O + pandas |
 | M03 Alignment (MAFFT) | 5–20 min | CPU (16 threads) |
