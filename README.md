@@ -1,141 +1,121 @@
-# Evolutionary Diagnostic Pipeline for Pandemic Preparedness
+# 🧬 Evolutionary Diagnostic Pipeline for Emerging Pathogens
 
-## Overview
+[![Pipeline Status](https://github.com/lab-biotek-bio-ugm/pandemic_prep_idn/actions/workflows/publish.yml/badge.svg)](https://github.com/lab-biotek-bio-ugm/pandemic_prep_idn/actions/workflows/publish.yml)
+[![Snakemake](https://img.shields.io/badge/snakemake-%E2%89%A57.32.4-brightgreen.svg?style=flat-square)](https://snakemake.github.io)
+[![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg?style=flat-square)](https://www.python.org/)
+[![Documentation](https://img.shields.io/badge/docs-Mintlify-blueviolet.svg?style=flat-square)](https://pandemic-prep-docs.mintlify.site/)
+[![Report](https://img.shields.io/badge/report-Quarto-orange.svg?style=flat-square)](https://pandemic.matinnu.org/)
 
-This repository hosts a state-of-the-art bioinformatics pipeline designed for the rapid identification and validation of robust diagnostic targets in emerging pathogens. This project is part of a strategic initiative led by the **National Research and Innovation Agency (BRIN)** through the **Biomedical Research Center (PR Biomedis)**, in collaboration with **Universitas Gadjah Mada (UGM)**, Universitas Indonesia (UI), and international partners from the University of Bern and Tokyo University of Agriculture and Technology.
+An enterprise-grade, **Snakemake-orchestrated bioinformatics pipeline** designed for the rapid identification, validation, and thermodynamic design of diagnostic assays (PCR and RAA/RPA) resilient to mutational escape. 
 
-The pipeline specifically addresses the challenges of detecting **Acute Respiratory Infection (ARI)** pathogens with pandemic potential, such as Influenza A and SARS-CoV-2, by integrating physical sequence conservation with evolutionary selection pressure signals.
-
----
-
-## Technical Architecture
-
-The system is orchestrated via **Snakemake** and organized into nine core modules (M01-M09) that transform raw genomic surveillance data into verified, publication-ready diagnostic primer candidates.
-
-### Key Modules
-
-1. **Data Acquisition & QC (M01-M02)**: Automated retrieval from NCBI/GISAID with rigorous filtering for sequence quality and metadata completeness.
-2. **Phylodynamic Analysis (M03-M04)**: Leveraging the **Nextstrain/Augur** engine for high-resolution phylogenetic reconstruction and spatio-temporal dynamics.
-3. **Selection Pressure Engine (M05)**: Utilizing **HyPhy (FUBAR, MEME, GARD)** to identify sites under purifying, episodic, and diversifying selection.
-4. **Annotation & Clade Assignment (M06)**: Ancestral sequence reconstruction and clade-based annotation via Augur/Nextclade.
-5. **Bridge Builder Engine (M07)**: A proprietary integration module that scores regions based on weighted physical stability (conservation) and evolutionary robustness (avoidance of mutational hotspots). Produces entropy profiles, IUPAC-aware consensus sequences, and ranked candidate targets.
-6. **PrimerLab RAA Design (M08)**: Integration with the [PrimerLab](https://github.com/CORE-Lab-Research/primerlab-genomic) engine for isothermal (RAA/RPA) primer and probe design with Primer3 + ViennaRNA thermodynamic validation.
-7. **BLAST Specificity Verification (M09)**: Post-design specificity check against human genome and respiratory virus databases (local or NCBI remote). Generates GFF3/BED tracks, IGV session files, and publication-ready candidate reports with GARD breakpoint cross-validation.
-8. **In-silico PCR & RAA Validation (M10)**: Automated in-silico PCR (`seqkit amplicon`) and isothermal RAA binding simulation against public surveillance databases and local designated databases. Generates interactive HTML dashboards, temporal breakdowns, and comparative reports.
+This pipeline specifically targets **Acute Respiratory Infection (ARI) pathogens** (e.g., Influenza A, SARS-CoV-2) by coupling physical sequence conservation (Shannon Entropy) with phylogenetic phylodynamic mapping and selection pressure models.
 
 ---
 
-## Output Files
+## 🏛️ Strategic Collaboration
 
-After a successful pipeline run, the key output files are:
-
-| File | Module | Description |
-|------|--------|-------------|
-| `results/{BUILD}/m07/entropy_profile.tsv` | M07 | Per-position Shannon entropy with IUPAC bases |
-| `results/{BUILD}/m07/bridge_report.json` | M07 | Scored & ranked conserved regions |
-| `results/{BUILD}/m07/conserved_regions.bed` | M07 | BED track of conserved zones |
-| `results/{BUILD}/m08/.../summary.json` | M08 | PrimerLab design summary |
-| `results/{BUILD}/m08/.../alternatives.json` | M08 | Ranked primer candidates |
-| `results/{BUILD}/m09/blast_specificity_summary.csv` | M09 | Master CSV comparing all candidates |
-| `results/{BUILD}/m09/final_candidates.json` | M09 | Verified candidates (PASS/BORDERLINE) |
-| `results/{BUILD}/m09/final_candidates.gff3` | M09 | GFF3 track for IGV visualisation |
-| `results/{BUILD}/m09/final_candidates.bed` | M09 | BED track for IGV/UCSC |
-| `results/{BUILD}/m09/igv_session.xml` | M09 | Pre-configured IGV session |
-| `results/{BUILD}/m09/final_candidates_report.md` | M09 | Human-readable final report |
+This research and development initiative is led and funded by:
+*   **National Research and Innovation Agency (BRIN)**, through the **Biomedical Research Center (PR Biomedis)**.
+*   **Universitas Gadjah Mada (UGM)**, Faculty of Biology.
+*   **Universitas Indonesia (UI)**.
+*   **International Partners**: University of Bern (Switzerland) and Tokyo University of Agriculture and Technology (Japan).
 
 ---
 
-## Configuration
+## ⚙️ Architecture & Data Flow
 
-### Multi-Target Support
+The workflow automatically streams raw surveillance data (NCBI/GISAID) and applies a 10-module bioinformatic cascade:
 
-The pipeline supports multiple target configurations:
+```mermaid
+flowchart LR
+    subgraph Prep [Data Prep]
+        M01[M01: Acquisition] --> M02[M02: QC & Filter] --> M03[M03: Alignment]
+    end
 
-- `config/config.yaml` — Default/global configuration
-- `config/config_influenza_a_mp.yaml` — Influenza A (MP segment) with custom local BLAST DB
-- `config/config_influenza_a_np.yaml` — Influenza A (NP segment)
+    subgraph Evo [Evolutionary Analysis]
+        M03 --> M04[M04: IQ-TREE & Clock]
+        M04 --> M05[M05: HyPhy Selection]
+        M04 --> M06[M06: Ancestral Mapping]
+    end
 
-To run with a specific config:
+    subgraph Design [Design & Verification]
+        M03 --> M07[M07: Bridge Builder]
+        M05 --> M07
+        M06 --> M07
+        M07 --> M08[M08: Primer Design]
+        M08 --> M09[M09: Specificity Check]
+        M09 --> M10[M10: In-Silico Validation]
+    end
+```
+
+### Module Breakdown
+
+1.  **M01–M02: Acquisition & Quality Control**: Automatic downloads and metadata-driven filtering (completeness, lineage distribution).
+2.  **M03–M04: Phylodynamics**: Nextstrain/Augur integration, Maximum-Likelihood trees (IQ-TREE), and molecular clock temporal scaling.
+3.  **M05–M06: Selection Pressure & Ancestral States**: HyPhy (FUBAR/MEME/GARD) codon selection models coupled with ancestral node reconstruction.
+4.  **M07: Bridge Builder Scoring**: Proprietary scoring engine weighting Shannon entropy ($H$) against evolutionary purifying selection signals to locate stable diagnostic "bridges".
+5.  **M08: Isothermal Primer Design**: PrimerLab engine wrapper applying thermodynamic constraints (Primer3 + ViennaRNA secondary structure minimization).
+6.  **M09: Specificity Filtering**: In-depth BLAST verification (local/remote databases) generating BED/GFF3 visualization tracks.
+7.  **M10: In-Silico Validation**: Emulation of PCR/RAA amplification (seqkit amplicon) against massive surveillance cohorts, exporting interactive temporal dashboards.
+
+---
+
+## 🚀 Quickstart
+
+For detailed steps, refer to the [Quickstart Guide](docs/getting-started/quickstart.md).
+
+### 1. Prerequisites
+Ensure you have Conda or Mamba installed.
+```bash
+# Clone the repository
+git clone https://github.com/lab-biotek-bio-ugm/pandemic_prep_idn.git
+cd pandemic_prep_idn
+
+# Create the master environment
+conda env create -f environment.yml
+conda activate pandemic-prep
+```
+
+### 2. Configure Your Run
+Target parameters, sequence counts, and database choices are configured in `config/config.yaml`.
+Multi-target presets are available (e.g., `config/config_influenza_a_mp.yaml`).
+
+### 3. Execute the Pipeline
+Run a dry-run to verify rule dependencies:
+```bash
+snakemake --use-conda -n
+```
+Execute with 16 cores:
 ```bash
 snakemake --use-conda --cores 16 --configfile config/config_influenza_a_mp.yaml
 ```
 
-### Key Parameters
+---
 
-| Parameter | Location | Description |
-|-----------|----------|-------------|
-| `num_candidates` | M08 design | Number of Primer3 candidates to generate |
-| `vienna_ranking_limit` | M08 design | How many candidates get ViennaRNA evaluation |
-| `blast_verification.num_candidates` | M09 | How many top candidates get BLAST verified |
-| `blast_verification.mode` | M09 | `remote` (NCBI) or `local` (custom DB) |
+## 📁 Key Outputs
+
+Key diagnostic assets are written directly to `results/{BUILD}/`:
+
+*   **Conserved targets**: `results/{BUILD}/m07/bridge_report.json`
+*   **Designed Primers**: `results/{BUILD}/m08/summary.json` (ranked candidate list)
+*   **BLAST Tracks**: `results/{BUILD}/m09/final_candidates.gff3` / `.bed`
+*   **IGV Workspace**: `results/{BUILD}/m09/igv_session.xml` (one-click visualization setup)
+*   **Validation Dashboard**: `results/{BUILD}/m10/validation_report.html`
 
 ---
 
-## Tech Stack
+## 📚 Documentation Index
 
-- **Workflow Orchestration**: Snakemake
-- **Phylogenetics**: Augur (Nextstrain), IQ-TREE, MAFFT
-- **Evolutionary Biology**: HyPhy (Hypothesis Testing using Phylogenies)
-- **Primer Design**: PrimerLab (Primer3 + ViennaRNA)
-- **Specificity**: BLAST (local & NCBI remote)
-- **Visualization**: matplotlib, IGV
-- **Environment Management**: Conda / Mamba
-- **Language**: Python 3.10+
+Our comprehensive documentation is deployed at [pandemic-prep-docs.mintlify.site](https://pandemic-prep-docs.mintlify.site) (configured in `docs/`):
+
+*   [**Getting Started**](docs/getting-started/quickstart.md) — Environmental configuration, dry-runs, and dependencies.
+*   [**Configuration Manual**](docs/getting-started/configuration.md) — Clock rate reference tables, target-subsampling, and thresholds.
+*   [**Bridge Builder scoring (M07)**](docs/pipeline-architecture/m07-bridge-builder.md) — Conservation and purifying selection algorithms.
+*   [**Thermodynamic Design (M08)**](docs/pipeline-architecture/m08-primer-design.md) — RAA isothermal parameters and hairpin loops.
+*   [**Troubleshooting**](docs/operations/troubleshooting.md) — Resolving common clock-rate outliers, memory faults, and local BLAST path issues.
+*   [**Developer Guide**](docs/development/developer-guide.md) — Coding conventions, Snakefile coding rules, and PR checklist.
 
 ---
 
-## Getting Started
-
-### Prerequisites
-
-- Linux/WSL2 or MacOS
-- Conda or Mamba (recommended)
-
-### Installation
-
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/lab-biotek-bio-ugm/pandemic_prep_idn.git
-   cd pandemic_prep_idn
-   ```
-
-2. Set up the core environment:
-
-   ```bash
-   conda env create -f workflow/envs/environment.yaml
-   conda activate pandemic-prep
-   ```
-
-### Running the Pipeline
-
-Configure your target pathogen in `config/config.yaml` and execute the pipeline:
-
-```bash
-snakemake --use-conda --cores 16
-```
-
-### Visualising Results
-
-After the pipeline completes:
-
-1. **Entropy Plot**: Generate a publication-quality entropy profile:
-   ```bash
-   python scripts/m07_plot_entropy.py \
-       --entropy-tsv results/{BUILD}/m07/entropy_profile.tsv \
-       --bridge-json results/{BUILD}/m07/bridge_report.json \
-       --candidates results/{BUILD}/m09/final_candidates.json \
-       --outdir results/{BUILD}/plots \
-       --format png
-   ```
-
-2. **IGV Visualization**: Open the pre-configured IGV session:
-   ```
-   File → Open Session → results/{BUILD}/m09/igv_session.xml
-   ```
-
-
-
-## License
-
-License details pending institutional review.
+## 📄 License
+This project is licensed under the terms of the license pending institutional review.
