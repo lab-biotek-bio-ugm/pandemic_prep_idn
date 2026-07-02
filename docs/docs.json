@@ -71,7 +71,7 @@
             "pages": [
               "development/developer-guide",
               "development/testing",
-              "development/changelog"
+              "development/pipeline-changelog"
             ]
           }
         ]
