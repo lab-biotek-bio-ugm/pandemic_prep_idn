@@ -3,7 +3,7 @@
 [![Pipeline Status](https://github.com/lab-biotek-bio-ugm/pandemic_prep_idn/actions/workflows/publish.yml/badge.svg)](https://github.com/lab-biotek-bio-ugm/pandemic_prep_idn/actions/workflows/publish.yml)
 [![Snakemake](https://img.shields.io/badge/snakemake-%E2%89%A57.32.4-brightgreen.svg?style=flat-square)](https://snakemake.github.io)
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg?style=flat-square)](https://www.python.org/)
-[![Documentation](https://img.shields.io/badge/docs-Mintlify-blueviolet.svg?style=flat-square)](https://docs.pandemic.matinnu.org/)
+[![Documentation](https://img.shields.io/badge/docs-Mintlify-blueviolet.svg?style=flat-square)](https://pandemic-prep-docs.mintlify.site/)
 [![Report](https://img.shields.io/badge/report-Quarto-orange.svg?style=flat-square)](https://pandemic.matinnu.org/)
 
 An enterprise-grade, **Snakemake-orchestrated bioinformatics pipeline** designed for the rapid identification, validation, and thermodynamic design of diagnostic assays (PCR and RAA/RPA) resilient to mutational escape. 
@@ -106,7 +106,7 @@ Key diagnostic assets are written directly to `results/{BUILD}/`:
 
 ## 📚 Documentation Index
 
-Our comprehensive documentation is deployed at [docs.pandemic.matinnu.org](https://docs.pandemic.matinnu.org) (configured in `docs/`):
+Our comprehensive documentation is deployed at [pandemic-prep-docs.mintlify.site](https://pandemic-prep-docs.mintlify.site) (configured in `docs/`):
 
 *   [**Getting Started**](docs/getting-started/quickstart.md) — Environmental configuration, dry-runs, and dependencies.
 *   [**Configuration Manual**](docs/getting-started/configuration.md) — Clock rate reference tables, target-subsampling, and thresholds.
