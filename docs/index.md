@@ -25,10 +25,6 @@ flowchart TD
     B3 --> C
     C --> D[Thermodynamic Design]
     D --> E[In-Silico PCR Verification]
-    
-    style TrackA fill:#e3f2fd,stroke:#1e88e5,stroke-width:2.5px
-    style TrackB fill:#f3e5f5,stroke:#8e24aa,stroke-width:2.5px
-    style C fill:#fff9c4,stroke:#fbc02d,stroke-width:2.5px
 ```
 
 ---
