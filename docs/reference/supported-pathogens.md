@@ -89,8 +89,9 @@ bridge:
 | Nextclade dataset | `nextstrain/flu/h3n2/ha`, `nextstrain/flu/h1n1pdm/ha/MW626062` |
 | Build name convention | `influenza-a-h3n2-ha-{region}` |
 
-> [!WARNING]
-> HA is **highly variable**. Expect significantly lower composite Bridge scores compared to MP/NP. `bridge.entropy_threshold` should be relaxed to `0.05–0.10`. Most high-scoring regions for universal assay design in HA are concentrated in the stem (HA2 domain, stalk region), not the head (HA1 domain). The head is the primary antibody target and under intense positive selection.
+<Warning>
+HA is **highly variable**. Expect significantly lower composite Bridge scores compared to MP/NP. `bridge.entropy_threshold` should be relaxed to `0.05–0.10`. Most high-scoring regions for universal assay design in HA are concentrated in the stem (HA2 domain, stalk region), not the head (HA1 domain). The head is the primary antibody target and under intense positive selection.
+</Warning>
 
 **Config notes:**
 - Set `nextclade.enabled: true` and configure `nextclade.dataset_name` to assign H3N2 or H1N1 clade/lineage labels.
@@ -112,8 +113,9 @@ bridge:
 | Nextclade dataset | `sars-cov-2` |
 | Build name convention | `sars-cov-2-{gene}-{region}` |
 
-> [!IMPORTANT]
-> For SARS-CoV-2, always restrict analysis to a **single gene** (e.g., `N`, `ORF1ab`, `E`) rather than the full genome. Aligning 29.9 kb sequences with >3,000 sequences requires ≥32 GB RAM and generates very large intermediate files. Use `hyphy.target_genes` to select only the target gene rather than running FUBAR/MEME on all 10+ CDS genes simultaneously.
+<Info>
+For SARS-CoV-2, always restrict analysis to a **single gene** (e.g., `N`, `ORF1ab`, `E`) rather than the full genome. Aligning 29.9 kb sequences with >3,000 sequences requires ≥32 GB RAM and generates very large intermediate files. Use `hyphy.target_genes` to select only the target gene rather than running FUBAR/MEME on all 10+ CDS genes simultaneously.
+</Info>
 
 **Key differences from Influenza:**
 

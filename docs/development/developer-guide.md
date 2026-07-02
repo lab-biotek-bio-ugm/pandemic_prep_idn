@@ -106,8 +106,9 @@ dependencies:
 3. Test the environment: `conda env create -f envs/new_env.yaml && conda activate new_env`
 4. Reference the environment from your rule: `conda: "../envs/new_env.yaml"`
 
-> [!IMPORTANT]
-> Do not add packages to `nextstrain.yaml` unless they are required by a nextstrain/augur tool. The nextstrain environment is the largest and most fragile — unnecessary additions risk breaking conda's dependency solver.
+<Info>
+Do not add packages to `nextstrain.yaml` unless they are required by a nextstrain/augur tool. The nextstrain environment is the largest and most fragile — unnecessary additions risk breaking conda's dependency solver.
+</Info>
 
 ---
 
@@ -293,7 +294,7 @@ The pipeline integrates with `primerlab-genomic` as an external dependency. For 
 All documentation lives in `docs/` and is rendered by Mintlify. Conventions:
 
 - Page frontmatter requires `title` and `description` fields.
-- Use `> [!NOTE]`, `> [!IMPORTANT]`, `> [!WARNING]`, `> [!CAUTION]` for callout blocks.
+- Use Mintlify callout tags (`<Note>`, `<Warning>`, `<Info>`, `<Tip>`) for callout blocks.
 - Code blocks must include a language identifier (` ```bash`, ` ```yaml`, ` ```python`, ` ```json`).
 - All file paths in docs should be relative to the project root.
 - Navigation is managed in `docs/docs.json` — add any new page to the appropriate group.

@@ -120,8 +120,9 @@ snakemake \
 | M09 BLAST remote (per region) | 30–120 min | Network + NCBI API |
 | M10 In-silico PCR | 5–20 min | seqkit + Python |
 
-> [!NOTE]
-> M05 HyPhy GARD is the single most compute-intensive step. For short segments (< 1,200 bp) with < 300 sequences, GARD may complete in 1–2 hours. For whole-genome targets or large datasets, always submit GARD to an HPC cluster.
+<Note>
+M05 HyPhy GARD is the single most compute-intensive step. For short segments (< 1,200 bp) with < 300 sequences, GARD may complete in 1–2 hours. For whole-genome targets or large datasets, always submit GARD to an HPC cluster.
+</Note>
 
 ---
 
@@ -238,5 +239,6 @@ rm results/{BUILD}/m05/cleaned_*_NT.fasta
 rm results/{BUILD}/m04/tree_raw.nwk
 ```
 
-> [!CAUTION]
-> Do **not** delete `results/{BUILD}/m07/primer_targets_manifest.yaml` after M07 completes. This file is read at pipeline startup by M10's DAG evaluation function. Deleting it requires a full M07 re-run to regenerate.
+<Warning>
+Do **not** delete `results/{BUILD}/m07/primer_targets_manifest.yaml` after M07 completes. This file is read at pipeline startup by M10's DAG evaluation function. Deleting it requires a full M07 re-run to regenerate.
+</Warning>

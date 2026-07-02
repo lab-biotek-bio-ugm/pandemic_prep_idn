@@ -9,8 +9,9 @@ M03 aligns the subsampled sequences from M02 against a fixed reference genome us
 - **Track A** (M07 Bridge Builder): per-position Shannon entropy calculation requires aligned coordinates.
 - **Track B** (M04 → M05 phylogenetics): IQ-TREE and HyPhy require gap-aware codon-position alignments.
 
-> [!NOTE]
-> trimAl (alignment column trimming) was explicitly **dropped** from the pipeline design. Reference-guided alignment via `--fill-gaps` inherently produces cleaner columns than de novo alignment, and trimming would risk removing conserved regions critical for primer design. Codon-level sanitisation for HyPhy is handled separately in M05 by `clean_alignment_for_hyphy.py`.
+<Note>
+trimAl (alignment column trimming) was explicitly **dropped** from the pipeline design. Reference-guided alignment via `--fill-gaps` inherently produces cleaner columns than de novo alignment, and trimming would risk removing conserved regions critical for primer design. Codon-level sanitisation for HyPhy is handled separately in M05 by `clean_alignment_for_hyphy.py`.
+</Note>
 
 ---
 

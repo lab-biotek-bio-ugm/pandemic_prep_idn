@@ -55,8 +55,9 @@ HyPhy's likelihood models become computationally intractable for alignments exce
 3. `subtype × clade` (further fallback)
 4. Random draw (last resort)
 
-> [!NOTE]
-> **Track A (M07 Bridge Builder entropy scan) uses the full `aligned.fasta` directly**, not this subsample. The subsample only feeds the HyPhy selection analysis (Track B).
+<Note>
+**Track A (M07 Bridge Builder entropy scan) uses the full `aligned.fasta` directly**, not this subsample. The subsample only feeds the HyPhy selection analysis (Track B).
+</Note>
 
 ```bash
 python scripts/hyphy_subsample.py \
@@ -115,8 +116,9 @@ hyphy CPU=32 fubar \
     --output results/{BUILD}/m05/fubar_{GENE}.json
 ```
 
-> [!IMPORTANT]
-> The cache-clearing step before each FUBAR run is critical. HyPhy persists its MCMC cache to disk. If the alignment dimensions change between runs (e.g., after subsampling parameter change), a stale cache causes a fatal dimension mismatch error. Always clear the cache when re-running with modified inputs.
+<Info>
+The cache-clearing step before each FUBAR run is critical. HyPhy persists its MCMC cache to disk. If the alignment dimensions change between runs (e.g., after subsampling parameter change), a stale cache causes a fatal dimension mismatch error. Always clear the cache when re-running with modified inputs.
+</Info>
 
 **Output schema (`fubar_{GENE}.json` — key fields):**
 
@@ -174,10 +176,11 @@ M07 reads the `p-value` column to determine episodic penalty positions.
 
 GARD detects intra-sequence recombination breakpoints using a genetic algorithm that optimises c-AIC across candidate breakpoint models.
 
-> [!WARNING]
-> **GARD is disabled for all Influenza A/B configurations by default.** Influenza evolves primarily via reassortment (whole-segment swapping), not intra-segment recombination. Running GARD on Influenza produces computationally expensive analyses that detect noise rather than true biological signal (Boni et al. 2010; Worobey & Holmes 1999).
->
-> **Enable GARD only for non-segmented RNA viruses** (e.g., SARS-CoV-2, Dengue, Zika) by adding `"GARD"` to `hyphy.methods`.
+<Warning>
+**GARD is disabled for all Influenza A/B configurations by default.** Influenza evolves primarily via reassortment (whole-segment swapping), not intra-segment recombination. Running GARD on Influenza produces computationally expensive analyses that detect noise rather than true biological signal (Boni et al. 2010; Worobey & Holmes 1999).
+
+**Enable GARD only for non-segmented RNA viruses** (e.g., SARS-CoV-2, Dengue, Zika) by adding `"GARD"` to `hyphy.methods`.
+</Warning>
 
 The `run_hyphy_gard_safe.py` wrapper performs pre-flight validation:
 - If `alignment_length < 4 × num_sequences` (c-AIC requirement), writes an empty JSON and exits 0 (soft-fail — pipeline continues).

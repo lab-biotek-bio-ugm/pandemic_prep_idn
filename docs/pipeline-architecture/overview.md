@@ -52,8 +52,9 @@ The table below shows the primary input and output for each module and which mod
 | **M09** BLAST Specificity | `alternatives.json`, `bridge_report.json` | `specificity_report_{ID}.md`, `final_candidates.json` | M10 |
 | **M10** In-Silico PCR | `final_candidates.json`, full sequence FASTA | `coverage_summary.tsv`, `coverage_report.md`, `coverage_heatmap.html` | — (terminal output) |
 
-> [!NOTE]
-> M07 is declared as a Snakemake **`checkpoint`**. This means Snakemake re-evaluates the downstream DAG after M07 completes, because the number of candidate regions (and therefore M08/M09/M10 job instances) is unknown until the Bridge Builder manifest is written. Avoid running M08–M10 rules directly without first ensuring M07 has completed successfully.
+<Note>
+M07 is declared as a Snakemake **`checkpoint`**. This means Snakemake re-evaluates the downstream DAG after M07 completes, because the number of candidate regions (and therefore M08/M09/M10 job instances) is unknown until the Bridge Builder manifest is written. Avoid running M08–M10 rules directly without first ensuring M07 has completed successfully.
+</Note>
 
 ---
 

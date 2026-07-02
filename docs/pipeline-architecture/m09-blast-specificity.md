@@ -105,8 +105,9 @@ python -u scripts/m09_blast_verification.py \
     --mode remote
 ```
 
-> [!NOTE]
-> Remote mode requires a stable internet connection and preferably an NCBI API key for reliable throughput. Set `NCBI_API_KEY` as an environment variable to raise the query rate limit from 3 to 10 requests/second.
+<Note>
+Remote mode requires a stable internet connection and preferably an NCBI API key for reliable throughput. Set `NCBI_API_KEY` as an environment variable to raise the query rate limit from 3 to 10 requests/second.
+</Note>
 
 ---
 

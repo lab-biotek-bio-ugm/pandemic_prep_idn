@@ -60,8 +60,9 @@ local_input:
   format:    "gisaid_epiflu"
 ```
 
-> [!IMPORTANT]
-> **GISAID Data Access Agreement**: All data downloaded from GISAID is subject to the GISAID Data Access Agreement. Do not redistribute raw GISAID sequences or metadata. The pipeline stores processed outputs only; raw GISAID files should be retained locally and not committed to public repositories.
+<Info>
+**GISAID Data Access Agreement**: All data downloaded from GISAID is subject to the GISAID Data Access Agreement. Do not redistribute raw GISAID sequences or metadata. The pipeline stores processed outputs only; raw GISAID files should be retained locally and not committed to public repositories.
+</Info>
 
 ---
 
@@ -110,8 +111,9 @@ local_input:
 
 For large-scale or automated retrieval, use the `ncbi-datasets-cli` pathway.
 
-> [!WARNING]
-> The NCBI API pathway is currently marked **experimental** in the pipeline. The API is evolving and may return inconsistent results for some organism queries. For production surveillance runs, use `database: local` with manually downloaded files.
+<Warning>
+The NCBI API pathway is currently marked **experimental** in the pipeline. The API is evolving and may return inconsistent results for some organism queries. For production surveillance runs, use `database: local` with manually downloaded files.
+</Warning>
 
 ```yaml
 database: "ncbi"

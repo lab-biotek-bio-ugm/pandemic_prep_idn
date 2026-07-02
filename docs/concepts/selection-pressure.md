@@ -78,8 +78,9 @@ GARD searches for breakpoint locations using a genetic algorithm. For each candi
 - Primers or probes that span a recombination breakpoint are highly vulnerable to assay failure if a new recombinant lineage emerges. Recombination reshuffles entire chunks of genomic material, leading to massive target sequence changes.
 - **Assay Action**: GARD output marks breakpoint coordinates. The Bridge Builder applies a **proximity penalty** ($R$) to any candidate regions within $N$ base pairs of a detected breakpoint.
 
-> [!WARNING]
-> **Pathogen Eligibility**: GARD is computationally expensive and is **disabled for all Influenza builds**. Influenza evolves via segment reassortment, not intra-segment recombination. Enable GARD only for non-segmented RNA viruses like SARS-CoV-2, Dengue, or RSV.
+<Warning>
+**Pathogen Eligibility**: GARD is computationally expensive and is **disabled for all Influenza builds**. Influenza evolves via segment reassortment, not intra-segment recombination. Enable GARD only for non-segmented RNA viruses like SARS-CoV-2, Dengue, or RSV.
+</Warning>
 
 ---
 

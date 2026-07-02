@@ -39,8 +39,9 @@ The output time-tree (`tree.nwk`) and branch-length node data (`branch_lengths.j
 | Influenza A | NA | `0.0030 – 0.0040` |
 | SARS-CoV-2 | Full genome | `0.0007 – 0.0010` |
 
-> [!IMPORTANT]
-> `clock_rate` is the single most sensitive parameter in the pipeline. Incorrect values cause `augur refine` to fail with negative branch lengths or produce a tree with implausible root date. Consult current Nextstrain builds for your target pathogen/segment before setting this value.
+<Info>
+`clock_rate` is the single most sensitive parameter in the pipeline. Incorrect values cause `augur refine` to fail with negative branch lengths or produce a tree with implausible root date. Consult current Nextstrain builds for your target pathogen/segment before setting this value.
+</Info>
 
 ---
 

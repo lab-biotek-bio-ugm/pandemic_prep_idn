@@ -20,14 +20,15 @@ flowchart TD
         B1 --> B3[MEME Episodic Hotspots]
     end
     
-    TrackA --> C[Bridge Builder Engine]
-    TrackB --> C
+    A2 --> C[Bridge Builder Engine]
+    B2 --> C
+    B3 --> C
     C --> D[Thermodynamic Design]
     D --> E[In-Silico PCR Verification]
     
-    style TrackA fill:#e3f2fd,stroke:#1e88e5,stroke-width:2px
-    style TrackB fill:#f3e5f5,stroke:#8e24aa,stroke-width:2px
-    style C fill:#fff9c4,stroke:#fbc02d,stroke-width:2px
+    style TrackA fill:#e3f2fd,stroke:#1e88e5,stroke-width:2.5px
+    style TrackB fill:#f3e5f5,stroke:#8e24aa,stroke-width:2.5px
+    style C fill:#fff9c4,stroke:#fbc02d,stroke-width:2.5px
 ```
 
 ---

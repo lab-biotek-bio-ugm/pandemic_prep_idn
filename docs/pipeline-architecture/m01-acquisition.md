@@ -31,8 +31,9 @@ M01 is the pipeline entry point. It ingests raw viral genomic data from two sele
 | `tsv` | Any tab-separated file | Copied as-is |
 | `auto` | Detection by extension | Falls back to TSV copy behaviour |
 
-> [!IMPORTANT]
-> The NCBI Datasets API pathway (`database: ncbi`) is marked **experimental** in the rule code. For reproducible production runs, use `database: local` with files manually downloaded from NCBI Virus or GISAID.
+<Info>
+The NCBI Datasets API pathway (`database: ncbi`) is marked **experimental** in the rule code. For reproducible production runs, use `database: local` with files manually downloaded from NCBI Virus or GISAID.
+</Info>
 
 ---
 
