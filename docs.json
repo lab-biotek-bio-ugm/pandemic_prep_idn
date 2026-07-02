@@ -2,6 +2,10 @@
   "$schema": "https://mintlify.com/schema.json",
   "name": "Pandemic Preparedness",
   "theme": "maple",
+  "logo": {
+    "light": "docs/assets/images/faculty_biology_ugm.png",
+    "dark": "docs/assets/images/faculty_biology_ugm.png"
+  },
   "favicon": "docs/assets/images/UGM-logo-blue.png",
   "colors": {
     "primary": "#1a365d",
@@ -16,7 +20,7 @@
           {
             "group": "Getting Started",
             "pages": [
-              "docs/introduction",
+              "docs/index",
               "docs/getting-started/quickstart",
               "docs/getting-started/configuration"
             ]
