@@ -1,31 +1,73 @@
-# Introduction
-
-Welcome to the **Evolutionary Diagnostic Pipeline for Pandemic Preparedness** documentation. This site provides comprehensive guides, technical references, and contribution guidelines for our diagnostic target discovery system.
-
+---
+title: "Introduction"
+description: "Welcome to the Evolutionary Diagnostic Pipeline for Pandemic Preparedness. Design mutation-resistant assays using molecular evolution data."
 ---
 
-## Project Overview
+# Introduction
 
-This repository hosts a state-of-the-art bioinformatics pipeline designed for the rapid identification and validation of robust diagnostic targets in emerging pathogens. The core science integrates **physical sequence conservation** (Shannon Entropy) with **evolutionary selection pressure signals** (purifying vs. episodic selection) to identify regions of the viral genome that are biochemically stable and evolutionarily constrained.
+Welcome to the **Evolutionary Diagnostic Pipeline for Pandemic Preparedness** documentation. This pipeline identifies, grades, and validates robust molecular diagnostic targets (primers and probes) for emerging pathogens. 
 
+By integrating **historical sequence conservation** with **evolutionary selection pressure models**, the pipeline designs assays that are highly resistant to future viral mutations, preventing diagnostic escape.
 
+```mermaid
+flowchart TD
+    subgraph TrackA ["Track A: Historical Frequencies"]
+        A1[Sequence Alignment] --> A2[Shannon Entropy Scan]
+    end
+    
+    subgraph TrackB ["Track B: Evolutionary Pressure"]
+        B1[Phylogenetic Tree] --> B2[FUBAR Purifying Selection]
+        B1 --> B3[MEME Episodic Hotspots]
+    end
+    
+    TrackA --> C[Bridge Builder Engine]
+    TrackB --> C
+    C --> D[Thermodynamic Design]
+    D --> E[In-Silico PCR Verification]
+    
+    style TrackA fill:#e3f2fd,stroke:#1e88e5,stroke-width:2px
+    style TrackB fill:#f3e5f5,stroke:#8e24aa,stroke-width:2px
+    style C fill:#fff9c4,stroke:#fbc02d,stroke-width:2px
+```
 
 ---
 
 ## Strategic Collaboration
 
-This project is part of a strategic research initiative funded and led by:
-*   **National Research and Innovation Agency (BRIN)**, through the **Biomedical Research Center (PR Biomedis)**.
-*   **Universitas Gadjah Mada (UGM)**, Faculty of Biology.
-*   **Universitas Indonesia (UI)**.
-*   **International Partners**: University of Bern (Switzerland) and Tokyo University of Agriculture and Technology (Japan).
+This project is part of a national genomic surveillance and pandemic preparedness research initiative funded and led by:
+- **National Research and Innovation Agency (BRIN)**, through the **Biomedical Research Center (PR Biomedis)**.
+- **Universitas Gadjah Mada (UGM)**, Faculty of Biology.
+- **Universitas Indonesia (UI)**.
+- **International Partners**: University of Bern (Switzerland) and Tokyo University of Agriculture and Technology (Japan).
 
 ---
 
-## Scientific Rationale
+## Core Scientific Pillars
 
-Standard diagnostic designs (such as those targeting SARS-CoV-2 during early 2020) often fail when the virus mutates at the primer binding site. To prevent diagnostic escape, our pipeline is built on the following pillars:
+To protect assays against mutational drift (a primary cause of false-negative clinical results in RNA viruses), the pipeline implements three scientific pillars:
 
-1.  **Purifying Selection Identification**: Using codon-based evolutionary modeling (HyPhy FUBAR) to find positions where mutations are actively rejected by natural selection. Primers targeting these sites are highly resistant to future evolutionary shifts.
-2.  **Episodic Selection Evasion**: Identifying genomic hot-spots undergoing temporary bursts of adaptive mutation (HyPhy MEME) and actively penalizing/avoiding them.
-3.  **Thermodynamic Rigor**: Validating every designed primer and probe candidate using ViennaRNA secondary structure analysis to avoid hairpins, homodimers, and heterodimers at isothermal or PCR reaction temperatures.
+<CardGroup cols={2}>
+  <Card title="Purifying Selection" icon="shield-halved">
+    Calculates codon-level constraint via FUBAR. Target sites under strict purifying selection cannot mutate without reducing viral fitness, locking in target stability.
+  </Card>
+  <Card title="Episodic Evasion" icon="triangle-exclamation">
+    Detects emerging mutational hotspots using MEME. Positional hotspots undergoing active selective sweeps are penalized and avoided.
+  </Card>
+  <Card title="Thermodynamics" icon="temperature-half">
+    Models primer-dimer, hairpin, and cross-hybridization binding energies at target temperatures (e.g. 39°C for RAA, 55°C for PCR) using ViennaRNA.
+  </Card>
+  <Card title="Amplification Kinetics" icon="chart-line">
+    Simulates in-silico PCR on surveillance sequences, enforcing strict 3' recombinase extension and probe THF endonuclease IV cleavage windows.
+  </Card>
+</CardGroup>
+
+---
+
+## Document Navigation
+
+Get started with setting up and running your first target discovery task:
+
+- **[Quickstart Guide](/getting-started/quickstart)**: Setup WSL2/Ubuntu, conda, and run a dry-run.
+- **[Data Preparation](/getting-started/data-preparation)**: Ingest GISAID, NCBI Virus, or custom sequencing data.
+- **[Pipeline Overview](/pipeline-architecture/overview)**: Learn about the 10 modules and their I/O data flow.
+- **[Evolutionary Diagnostics](/concepts/evolutionary-diagnostics)**: Dive deep into the molecular biology theory.

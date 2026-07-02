@@ -1,99 +1,94 @@
 # Configuration Guide
 
-This guide explains the parameters within the YAML configuration files (e.g., `config/config_influenza_a_mp.yaml`). Properly calibrating these values is essential for adapting the pipeline to new pathogens or surveillance targets.
+This guide explains how to configure the pipeline using the YAML configuration profiles (e.g., `config/config_influenza_a_mp.yaml`). Properly calibrating these values is essential for adapting the pipeline to new pathogens, segments, or geographic regions.
+
+For a complete list of every available configuration key and its default value, see the [Configuration Reference](/reference/configuration-reference).
 
 ---
 
-## Configuration File Structure
+## 1. Quality Control & Subsampling Calibration
 
-The pipeline uses standard YAML profiles. Below is a comprehensive breakdown of the core configuration blocks:
-
-### 1. Build Metadata & Paths
-
-*   `build_name`: A unique string identifier for the run. All outputs are placed under `results/{build_name}/`.
-*   `local_input`:
-    *   `sequences`: Path to the input FASTA file containing surveillance sequences.
-    *   `metadata`: Path to the matching CSV/TSV metadata file.
-    *   `format`: Parser layout for metadata headers (e.g., `gisaid_epiflu`, `ncbi_virus_csv`).
-
-### 2. Quality Control & Subsampling
+The subsampling parameters control how sequences are filtered and balanced before tree inference. Properly setting these values avoids computational bottlenecks in downstream modules.
 
 ```yaml
-max_n_content: 0.05       # Discards sequences with >5% N bases
-min_length: 900           # Excludes short fragments
-dedup: true               # Collapses duplicate records (MD5 hash)
+qc:
+  max_n_content: 5.0
 subsampling:
-  max_sequences: 3000     # Maximum sequences allowed into tree building
-  group_by: "country year month" # Columns used to balance the dataset
-  sequences_per_group: 10 # Sample density per stratum
+  min_length: 800
+  max_sequences: 3000
+  group_by: "subtype country year month"
+  sequences_per_group: 10
 ```
-
----
-
-## 3. Evolutionary Selection Parameters
-
-These parameters control the clock-fitting and selection pressure models:
-
-| Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `clock_rate` | Float | `0.003` | Substitution rate (substitutions/site/year). Pathogen-dependent. |
-| `clock_std_dev` | Float | `0.001` | Permitted deviation in molecular clock fitting. |
-| `hyphy.methods` | List | `["FUBAR", "MEME"]` | HyPhy methods to run (`FUBAR` for purifying selection, `MEME` for episodic selection, `GARD` for recombination). |
-| `hyphy.p_value_threshold` | Float | `0.1` | Statistical significance threshold for selection tests. |
-
----
-
-## 4. Bridge Builder Scoring (M07)
-
-The `composite_score` balances physical conservation against evolutionary pressure to rate target regions.
-
-$$\text{Composite Score} = (w_c \cdot C) + (w_p \cdot P) - (w_e \cdot E) - (w_r \cdot R)$$
-
-Where:
-*   $C$: Conservation score (Shannon Entropy)
-*   $P$: Purifying selection density (FUBAR posterior probability)
-*   $E$: Episodic diversifying selection penalty (MEME)
-*   $R$: Recombination breakpoint proximity penalty (GARD)
-
-### Default Parameter Weights (50/25/8/17)
-These weights are pre-calibrated via sensitivity parameter sweeps:
-```yaml
-scoring_weights:
-  conservation: 0.50
-  purifying_selection: 0.25
-  episodic_penalty: 0.08
-  recombination_penalty: 0.17
-```
-
----
-
-## 5. PrimerLab Design & Specificity (M08-M09)
-
-```yaml
-primer_design:
-  target_type: "RAA"            # "RAA" (isothermal) or "PCR"
-  num_candidates: 10            # Number of candidates to generate from Primer3
-  max_multiplier: 16            # Max degeneracy pool size (e.g., 16x)
-  vienna_ranking_limit: 5       # Max candidates sent to ViennaRNA secondary structure analysis
-  optimal_temperature: 39       # Reaction temperature in °C (39°C for RAA, 55-60°C for PCR)
-blast_verification:
-  mode: "local"                 # "local" (custom DB) or "remote" (NCBI)
-  local_db_path: "data/blast_db/pathogen_db"
-  evalue_cutoff: 0.01
-```
-
----
-
-## Calibration Guidelines
 
 ### Setting `min_length`
-*   Locate your target pathogen/segment in the [NCBI Virus Database](https://www.ncbi.nlm.nih.gov/labs/virus/).
-*   Identify the full length of the segment (e.g., Influenza A HA segment is ~1700bp).
-*   Set `min_length` to **80% - 90%** of the full length to prevent short sequencing fragments from introducing gap artifacts during alignment.
+- **Rule of thumb**: Set `min_length` to **80%–90%** of the full segment size.
+- **Example**: The Influenza A MP segment is 1,027 bp. We set `min_length: 800` to discard short sequencing reads or partial PCR fragments that would introduce massive gap columns in the alignment.
+- For whole-genome targets (like SARS-CoV-2, 29.9 kb), set `min_length` to `25000` or higher to select only complete genome assemblies.
 
-### Setting `clock_rate`
-*   Refer to active [Nextstrain builds](https://nextstrain.org/) or literature.
-*   Standard reference values:
-    *   **Influenza A HA**: `0.0035 - 0.0045` (fast evolving)
-    *   **Influenza A MP**: `0.0020 - 0.0030` (slow internal gene)
-    *   **SARS-CoV-2**: `0.0008` (proofread, slow)
+### Managing Subsampling Density
+- If your input dataset is very large (>10,000 sequences), setting `max_sequences: null` with a dense `sequences_per_group` will cause the phylogenetic tree inference (M04) to crash due to running out of memory.
+- Enforce a hard cap using `max_sequences: 3000` (or `2000` for faster runs) to ensure the alignment and tree building finish in a reasonable time.
+
+---
+
+## 2. Molecular Clock Rate Calibration (M04)
+
+`timetree` parameters control how TreeTime fits a strict molecular clock to the Maximum Likelihood tree topology.
+
+```yaml
+timetree:
+  clock_rate: 0.003
+  clock_std_dev: 0.0015
+```
+
+### Reference Clock Rates by Pathogen
+The molecular clock rate prior (`clock_rate`) is the most sensitive parameter in the pipeline. Using an incorrect rate will cause time-calibration to fail with negative branch length errors.
+
+| Pathogen / Segment | `clock_rate` Prior | `clock_std_dev` | Rationale |
+|---|---|---|---|
+| Influenza A MP | `0.003` | `0.0015` | Conserved internal segment, slower rate. |
+| Influenza A NP | `0.003` | `0.0015` | Conserved internal nucleoprotein. |
+| Influenza A HA | `0.004` | `0.0010` | Highly dynamic surface antigen, fast rate. |
+| SARS-CoV-2 | `0.0008` | `0.0002` | Proofread RNA virus, very slow rate. |
+
+If `augur refine` crashes with clock fitting errors:
+1. Verify that all dates in the metadata are valid ISO dates (`YYYY-MM-DD`). Look for placeholder dates like `2024-XX-XX` and verify they are handled correctly.
+2. Try relaxing `clock_std_dev` to a larger value (e.g., `0.0020`) to accommodate higher rate variation among lineages.
+
+---
+
+## 3. Bridge Builder Scoring Weights (M07)
+
+The `bridge.scoring` weights balance the importance of historical sequence conservation against current evolutionary selection pressure.
+
+```yaml
+bridge:
+  scoring:
+    core:
+      conservation_weight: 0.66
+      purifying_weight: 0.34
+```
+
+### Adjusting the Balance
+- **Default (0.66 / 0.34)**: Prioritizes physical conservation while utilizing purifying selection as a verification signal. This is optimal for routine universal diagnostic design.
+- **Strict Evolutionary Focus (0.50 / 0.50)**: Increases the weight of purifying selection. Recommended when designing assays for highly variable regions (like HA or S genes) where physical conservation is low, forcing the design to rely on functional constraint.
+- **Pure Conservation (1.00 / 0.00)**: Disables selection pressure analysis. The composite score is determined purely by Shannon Entropy. Use only if HyPhy is disabled or fails to run.
+
+---
+
+## 4. PrimerLab Degeneracy Bounds (M08)
+
+Degenerate bases allow primers to bind to multiple variant sequences, but excessive degeneracy dilutes the active primer concentration in the reaction tube.
+
+```yaml
+primerlab:
+  design:
+    degenerate:
+      enabled: true
+      maf_threshold: 0.10
+      max_multiplier: 16
+```
+
+### Calibration Rules
+- **`maf_threshold`**: Set to `0.10` (10% Minor Allele Frequency). Any position where a minor allele is present in at least 10% of the population will receive a degenerate base.
+- **`max_multiplier`**: Set to `16` or `32` maximum. A multiplier of 16 means there are 16 unique sequence combinations in the primer pool. Going beyond 32 will lead to a **primer dilution effect** and cause amplification failure due to non-specific binding and primer-dimers.

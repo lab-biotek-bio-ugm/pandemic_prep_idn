@@ -1,26 +1,46 @@
 # Quickstart Guide
 
-This guide will help you set up your environment and run the pipeline for the first time.
+This guide will help you set up your local environment and execute your first diagnostic target discovery run on Windows WSL2 or Ubuntu.
 
 ---
 
-## Prerequisites
+## 1. Setup Windows Subsystem for Linux (WSL2)
 
-*   **Operating System**: Linux (Ubuntu 20.04+ recommended) or macOS. For Windows users, **WSL2** is required.
-*   **Package Manager**: [Miniforge3/Mambaforge](https://github.com/conda-forge/miniforge) (recommended) or Miniconda. Mamba is strongly preferred due to its faster dependency resolution.
+If you are using Windows, you must configure a Linux environment to run bioconda packages (such as ViennaRNA, HyPhy, and MAFFT).
+
+1. Open PowerShell as Administrator and enable WSL:
+   ```powershell
+   wsl --install -d Ubuntu-22.04
+   ```
+2. Restart your computer if prompted.
+3. Launch Ubuntu from your Windows Start Menu, configure your username and password, and update packages:
+   ```bash
+   sudo apt update && sudo apt upgrade -y
+   sudo apt install git unzip wget graphviz -y
+   ```
 
 ---
 
-## 1. Setup Conda & Clone Repository
+## 2. Install Mambaforge (Conda)
 
-Clone the project repository and navigate into the workspace:
+Within your WSL2/Linux terminal, download and install Miniforge3 (with `mamba` pre-configured):
 
 ```bash
-git clone https://github.com/lab-biotek-bio-ugm/pandemic_prep_idn.git
-cd pandemic_prep_idn
+# Download the installer
+wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
+
+# Run the installer script
+bash Miniforge3-Linux-x86_64.sh -b
+
+# Initialise mamba shell
+~/miniforge3/bin/conda init bash
+~/miniforge3/bin/mamba init bash
+
+# Restart your terminal session
+exec bash
 ```
 
-Configure your conda shell (if not already done) and set up the channels:
+Set up channels for bioinformatics dependency resolution:
 
 ```bash
 conda config --add channels defaults
@@ -31,9 +51,16 @@ conda config --set channel_priority strict
 
 ---
 
-## 2. Install Snakemake
+## 3. Clone Repository & Setup Snakemake
 
-We recommend installing Snakemake in a dedicated environment using `mamba`:
+Clone the pipeline repository:
+
+```bash
+git clone https://github.com/lab-biotek-bio-ugm/pandemic_prep_idn.git
+cd pandemic_prep_idn
+```
+
+Create an isolated Snakemake environment:
 
 ```bash
 mamba create -c conda-forge -c bioconda -n snakemake snakemake=8.10.8 python=3.10 -y
@@ -42,38 +69,18 @@ conda activate snakemake
 
 ---
 
-## 3. Configure Pathogen Metadata & BLAST
+## 4. Run a Validation Dry-Run
 
-The pipeline integrates with **local BLAST** for primer specificity checks. To set up a local database (e.g., human genome or targeted pathogen genomes):
-
-1.  Download your reference DB (e.g., NCBI RefSeq).
-2.  Index it using `makeblastdb`:
-    ```bash
-    makeblastdb -in reference.fasta -dbtype nucl -out data/blast_db/pathogen_db
-    ```
-3.  Configure the path in your profile under the `blast_verification` section (see the [Configuration Guide](configuration)).
-
----
-
-## 4. Run the Pipeline
-
-Always run a **dry-run** first to verify that Snakemake can construct the execution graph without syntax or path errors:
+Always perform a dry-run first to check that your paths, configurations, and DAG dependencies are properly resolved:
 
 ```bash
-snakemake --configfile config/config_influenza_a_mp.yaml -n
+snakemake --configfile config/config_influenza_a_mp.yaml --dryrun --printshellcmds
 ```
 
-To run the pipeline and allow Snakemake to automatically download and manage separate conda environments for each step, use:
+If the dry-run succeeds, launch the complete workflow. Snakemake will automatically create isolated conda environments for every rule (this takes 10-15 minutes on the first run to build all environments):
 
 ```bash
-snakemake --use-conda --cores 16 --configfile config/config_influenza_a_mp.yaml
+snakemake --use-conda --cores 8 --configfile config/config_influenza_a_mp.yaml
 ```
 
-### High-Performance Computing (HPC/Slurm)
-
-If you are running the pipeline on a shared server with a Slurm scheduler:
-
-```bash
-sbatch slurm-run.sh
-```
-This script allocates resources, activates the conda environment, and executes the Snakemake workflow in the background.
+Once completed, the final validated assays, specificity reports, and interactive HTML coverage heatmaps will be available in `results/influenza-a-mp-sea/m10/`.

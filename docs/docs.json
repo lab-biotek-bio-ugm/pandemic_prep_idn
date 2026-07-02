@@ -29,7 +29,9 @@
           {
             "group": "Concepts",
             "pages": [
-              "concepts/evolutionary-diagnostics"
+              "concepts/evolutionary-diagnostics",
+              "concepts/shannon-entropy",
+              "concepts/selection-pressure"
             ]
           },
           {
@@ -60,13 +62,16 @@
             "group": "Operations",
             "pages": [
               "operations/monitoring",
-              "operations/troubleshooting"
+              "operations/troubleshooting",
+              "operations/data-management"
             ]
           },
           {
             "group": "Development",
             "pages": [
-              "development/developer-guide"
+              "development/developer-guide",
+              "development/testing",
+              "development/changelog"
             ]
           }
         ]
