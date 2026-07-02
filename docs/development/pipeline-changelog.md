@@ -1,43 +1,58 @@
 # Changelog
 
-All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+All notable changes to the Evolutionary Diagnostic Pipeline will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <Note>
-**Release Versioning Note**: Since this repository does not have formal GitHub release tags yet, versions in this changelog represent **major development milestones** corresponding to key functional updates (e.g., initial pipeline stability vs. documentation and verification expansion).
+**Semantic Milestone Versioning**: Since this repository does not yet have official GitHub release tags, the versions below document **actual development milestones** reconstructed directly from the Git commit history.
 </Note>
 
 ---
 
-## [1.1.0] - 2026-07-02
+## [1.1.1] - 2026-07-02
+
+This patch release fixes build compilation errors on the Mintlify documentation platform, improves contrast styling in light/dark themes, and resolves file-naming conflicts.
+
+### Fixed
+- **MDX Parser Exceptions**: Escaped all raw less-than (`<`) signs outside code spans across all `.md` files to `&lt;` to prevent the MDX parser from throwing JSX compilation errors (e.g. `Unexpected character 2 (U+0032) before name`).
+- **LaTeX Math Support**: Converted standard math inequality operators in equations to LaTeX-safe expressions (e.g. `\lt` instead of `<`) to permanently bypass MDX parser conflicts in thermodynamic design equations.
+- **Adaptive Flowchart Colors**: Removed hardcoded inline CSS fills (`fill:#e3f2fd`, etc.) from the Mermaid flowcharts in `index.md` and `overview.md` to allow theme-switching between light and dark modes to render high-contrast outlines and text natively.
+- **Changelog 404 Resolution**: Renamed `changelog.md` to `pipeline-changelog.md` and updated the navigation index to bypass Mintlify's default auto-ignore rules for `changelog.md` files.
+
+---
+
+## [1.1.0] - 2026-07-01
+
+This minor release introduces configuration profiles for new viral segments, parameterization of computing resource allocations, and stability fixes for evolutionary models.
 
 ### Added
-- **Separate Module Documentation**: Split the old combined module documentation into individual pages: `m01-acquisition.md`, `m02-qc-subsampling.md`, `m03-alignment.md`, `m04-phylogenetics.md`, `m05-selection-analysis.md`, `m06-ancestral-mapping.md`.
-- **Shannon Entropy Concept Page**: Math, formulas, step-by-step calculations, and gap handling logic.
-- **Selection Pressure Concept Page**: Comparison between FUBAR, MEME, and GARD with molecular biology rationale.
-- **Data Preparation Guide**: Detailed GISAID, NCBI Virus, GenBank download processes and schemas.
-- **Output Files Catalog**: Complete schemas for `metadata_enriched.tsv`, `fubar_{gene}.json`, `meme_{gene}.json`, and more.
-- **Supported Pathogens**: Configuration profiles, clock rates, reference IDs, and parameter defaults for Flu A MP, NP, HA, and SARS-CoV-2.
-- **Monitoring Operations Page**: CPU/HPC/Slurm configs, checkpoint behaviors, and disk estimates.
-- **Data Management & GISAID Compliance**: Guidelines for database compliance, DAA terms, and workspace conventions.
-- **Developer & Testing Guides**: Complete repository layouts, rule/script coding standards, and unit/integration testing suites.
+- **Multi-Pathogen Configurations**: Added curated reference genomes, annotations, and default parameters for:
+  - **Influenza A NP Segment** (`config_influenza_a_np.yaml` / reference `NC_002019.1`)
+  - **Influenza A HA Segment** (`CY121680.1` and `MK626062.1` templates)
+  - **SARS-CoV-2 Whole-Genome / Segmented ORFs** (`NC_045512.2` template)
+- **HPC Parallelism & Threading Control**:
+  - Parameterized CPU thread limits for `augur align`, `augur tree` (`augur.threads`), and HyPhy rules (`hyphy.threads`).
+  - Added SLURM job submission script templates (`sbatch slurm-run.sh`) to support background job execution on compute clusters.
+- **GARD Pre-Flight Validation**: Implemented `run_hyphy_gard_safe.py` wrapper to automatically bypass GARD and soft-fail (writing empty outputs and exiting code 0) if the sequence alignment length is too short to satisfy the c-AIC model criteria (`alignment_length < 4 * num_sequences`).
 
 ### Changed
-- **Navigation Structure (`docs.json`)**: Restructured Mintlify navigation to separate Getting Started, Concepts, Pipeline Architecture, Reference, Operations, Development.
-- **Overview.md Rewrite**: Added full module Input/Output reference table, environment maps, and deferred features tracker.
-- **Configuration.md Rewrite**: Expansion on molecular clock rate priors, subsampling limits, and degeneracy multipliers.
+- **Modular Documentation Migration**: Dismantled the bundled module documentation (`m01-m03-qc-alignment.md` and `m04-m06-phylodynamics.md`) and refactored them into individual, technically deep documentation pages.
+- **M07 Scoring Optimization**: Refactored scoring weights, implemented Non-Maximum Suppression (NMS) for overlapping candidate regions, and added support for a sliding 150bp probe search window.
+- **M02 Subsampling Refinement**: Standardized subsampling to use `--subsample-max-sequences` (mutually exclusive with `--sequences-per-group`) to prevent Augur execution errors.
 
 ---
 
 ## [1.0.0] - 2026-06-30
 
+This major release marks the first stable, end-to-end version of the 10-Module Evolutionary Diagnostic Pipeline.
+
 ### Added
-- **Initial Snakemake Diagnostic Pipeline**: Complete 10-module workflow orchestration.
-- **Augur Integration**: Subsampling (`augur filter`), alignment (`mafft`), tree building (`iqtree`), ancestral reconstruction (`augur ancestral/translate`).
-- **Selection Pressure Engine**: Local integration with HyPhy FUBAR, MEME, and GARD.
-- **Diagnostic Bridge Builder (M07)**: Merging physical conservation and evolutionary constraint into a composite score.
-- **PrimerLab (M08)**: Degenerate primer design, ViennaRNA hairpin and dimer thermodynamic constraints.
-- **BLAST Specificity (M09)**: Cross-reactivity screening (human + target genomes) using remote NCBI nt or custom local indexed databases.
-- **In-silico PCR (M10)**: seqkit amplicon-based validation with custom RAA 3' kinetic extension and probe THF cleavage windows.
-- **Interactive HTML Dashboard**: Plotly-based HTML heatmaps displaying temporal × subtype diagnostic sensitivity.
-- **Conda Environments**: Isolated bioconda/conda-forge environments for every step.
-- **Initial Mintlify Documentation**: Overview, quickstart, troubleshooting, and developer guide stubs.
+- **M01 Data Ingestion**: Added a metadata sanitizer with 3-tier validation and auto-format detection (supporting GISAID EpiFlu `.xls` spreadsheets, local GenBank CSV files, and NCBI Datasets API).
+- **M02 Quality Control**: Implemented sequence deduplication (MD5 hashing), N-content filtering, and early query filtering.
+- **M03 Alignment**: Integrated MAFFT reference-guided alignment with `--fill-gaps` to establish a uniform coordinate system.
+- **M04 Phylogenetics**: Configured maximum-likelihood tree construction (IQ-TREE2) and temporal tree reconstruction (TreeTime).
+- **M05 Selection Analysis**: Integrated HyPhy selection engine (FUBAR for pervasive selection, MEME for episodic hotspots, and GARD for recombination boundaries) with spliced-gene support.
+- **M06 Ancestral Mapping**: Configured ancestral state reconstruction and Auspice JSON exports for Nextstrain visualization.
+- **M07 Bridge Builder**: Integrated entropy scores (Track A) and selection pressure posterior probabilities (Track B) into a unified target ranking manifest.
+- **M08 PrimerLab Integration**: Configured thermodynamic primer and probe design with degeneracy constraints (max 16x multiplier) and secondary structure validations (ViennaRNA).
+- **M09 Specificity Check**: Built custom respiratory database generator (`build_db.smk`) and local BLAST specificity checks (including critical 3' end mismatch weighting).
+- **M10 In-Silico PCR**: Simulated diagnostic coverage using `seqkit amplicon` with custom RAA 3' kinetic extension and probe THF cleavage validation.
