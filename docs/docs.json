@@ -52,12 +52,14 @@
             "group": "Reference",
             "pages": [
               "reference/configuration-reference",
-              "reference/output-files"
+              "reference/output-files",
+              "reference/supported-pathogens"
             ]
           },
           {
             "group": "Operations",
             "pages": [
+              "operations/monitoring",
               "operations/troubleshooting"
             ]
           },
