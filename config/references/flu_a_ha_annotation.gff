@@ -1,0 +1,7 @@
+##gff-version 3
+##sequence-region NC_002017.1 1 1778
+NC_002017.1	NCBI	gene	1	1778	.	+	.	ID=segment-HA
+NC_002017.1	NCBI	gene	33	1733	.	+	.	ID=gene-HA;gene=HA
+NC_002017.1	NCBI	CDS	33	1733	.	+	0	ID=cds-HA;Parent=gene-HA;gene=HA
+NC_002017.1	NCBI	five_prime_UTR	1	32	.	+	.	ID=utr-5;Parent=segment-HA
+NC_002017.1	NCBI	three_prime_UTR	1734	1778	.	+	.	ID=utr-3;Parent=segment-HA
