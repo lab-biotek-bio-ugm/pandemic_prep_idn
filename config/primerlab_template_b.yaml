@@ -1,0 +1,125 @@
+# ==============================================================================
+# PRIMERLAB MASTER CONFIGURATION: RT-RAA WORKFLOW (INFLUENZA B - HEX DYE)
+# ==============================================================================
+# File ini mencakup semua parameter yang didukung oleh PrimerLab v1.2.x.
+# Diatur menggunakan fluorophore HEX untuk kompatibilitas Multiplex dengan FAM (Inf A).
+
+workflow: raa
+preset: raa
+
+# --- INPUT SETTINGS ---
+input:
+  sequence: null             # String sekuens DNA (jika tidak pakai file)
+  sequence_path: null        # Path ke file .fasta atau .gb
+  preserve_iupac: true       # true: pertahankan kode IUPAC | false: ganti N
+  type: auto                 # Tipe input: auto, fasta, genbank, raw
+
+# --- DESIGN PARAMETERS ---
+parameters:
+  # 1. THERMODYNAMIC CONDITIONS (RAA Specific)
+  thermodynamics:
+    salt_monovalent: 50.0    # Konsentrasi K+ / Na+ (mM)
+    salt_divalent: 14.0      # Konsentrasi Mg2+ (RAA butuh tinggi, ~14mM)
+    dntp_conc: 0.8           # Konsentrasi dNTP (mM)
+    dna_conc: 480.0          # Konsentrasi primer (nM) - RAA sangat pekat
+    tm_method: santalucia    # Algoritma Tm (santalucia | breslauer)
+    salt_corrections: owczarzy # Koreksi garam (owczarzy | schildkraut)
+
+  # 2. SEARCH STRATEGY & REGIONS
+  num_candidates: 1000       # Jumlah pasang kandidat yang dicari Primer3
+  search_strategy: standard  # Options: standard, diversified (size buckets), probe_centered
+  hard_qc_filter: false      # true: terus mencari sampai kuota terpenuhi dengan hasil Tier 1
+  max_search_iterations: 5   # Batas maksimal looping pencarian
+  
+  # a. Included Region: Batasi pencarian HANYA di area ini
+  included_region: null      # Contoh: {start: 0, length: 150}
+  
+  # b. Target Region: Daerah yang WAJIB DIAPIT oleh primer (di tengah)
+  target_region: null        # Contoh: {start: 400, length: 150}
+  
+  # c. Excluded Regions: Daerah yang HARUS DIHINDARI
+  excluded_regions: []
+  
+  # d. Forced Positions: Paksa posisi spesifik (untuk ujung 3' konservatif)
+  force_left_start: null     # Paksa Forward mulai di index X
+  force_left_end: null       # Paksa Forward berakhir (3') di index X
+  force_right_start: null    # Paksa Reverse mulai di index X
+  force_right_end: null      # Paksa Reverse berakhir (3') di index X
+
+  # 3. PRIMER CONSTRAINTS
+  primer_size:
+    min: 30
+    opt: 32
+    max: 35
+  
+  tm:
+    min: 54.0
+    opt: 60.0
+    max: 75.0
+    
+  gc:
+    min: 30.0
+    opt: 50.0
+    max: 70.0
+
+  product_size_range: [[150, 300]] # Rentang panjang amplikon yang diinginkan (Min 120 untuk probe 50nt)
+  max_poly_x: 4                   # Maksimal repetisi basa yang sama (AAAA, dsb)
+
+  # 4. PROBE SETTINGS (Exo-Probe / qPCR)
+  # Pilih tipe probe yang sesuai dengan chemistry Anda:
+  # - exo: Standar RAA/RPA (Panjang 46-52nt, butuh THF untuk Exonuclease III)
+  # - taqman: Standar qPCR (Panjang 20-30nt, label HEX di 5' dan BHQ1 di 3')
+  # - fpg: Alternatif RAA (Butuh dR-Biotin/situs FPG)
+  probe:
+    enabled: true
+    type: "exo"          # Options: exo, taqman, fpg
+    size:
+      min: 46
+      opt: 48
+      max: 52
+    tm:
+      min: 54.0
+      opt: 65.0
+      max: 85.0
+    thf_upstream_min: 30
+    thf_downstream_min: 15
+    # Labels library
+    labels:
+      fluorophore: "HEX"   # Diganti menjadi HEX untuk multiplexing dengan FAM (Influenza A)
+      quencher: "BHQ1"
+      blocker: "C3-spacer"
+      abasic: "THF"       # Use 'THF' for exo, 'dR-Biotin' for fpg
+
+  # 5. CLONING / OVERHANGS
+  add_sites: []              # Tambah restriksi di ujung 5' (Contoh: ["EcoRI", "BamHI"])
+
+# --- QUALITY CONTROL (QC) SETTINGS ---
+qc:
+  mode: strict               # strict | relaxed
+  vienna_ranking_limit: 50   # Jumlah top kandidat yang akan di-crosscheck pakai ViennaRNA
+  blast_offtarget_check: false # [NEW] Cek spesifisitas via BLAST (bisa lambat)
+  blast_ranking_limit: 10      # [NEW] Jumlah top kandidat (setelah Vienna) yang di-BLAST
+  blast_database: "nt"         # [NEW] Target database NCBI
+  tm_diff_max: 3.0           # Maksimal selisih Tm antara FWD dan REV
+  hairpin_dg_min: -2.0       # Batas minimal dG hairpin (semakin negatif semakin buruk)
+  dimer_dg_min: -6.0         # Batas minimal dG homodimer
+  cross_dimer_dg_min: -7.0   # Batas minimal dG cross-dimer (F/R/P)
+  end_3prime_check: true     # Wajib cek stabilitas ujung 3' (kritis untuk RAA)
+  max_3prime_entropy: 0.15   # Filter kompleksitas rendah di ujung 3'
+  gc_clamp: true             # Wajib ada GC di ujung 3' (GC Clamp)
+  probe_end_check: true      # Cegah G/C berlebih di ujung 5' probe (fluorescence quenching)
+
+# --- OUTPUT SETTINGS ---
+output:
+  directory: "primerlab_out" # Folder hasil
+  format: json               # Format database hasil (json | csv)
+  num_results_to_export: 100 # Jumlah kandidat yang diexport ke alternatives.json
+
+# --- ADVANCED / HPC SETTINGS ---
+advanced:
+  auto_validate: true       # [NEW] Jalankan validasi in-silico (PCR & probe) setelah desain
+  debug: false               # true: tampilkan log teknis Primer3
+  timeout: 600               # Waktu tunggu maksimal (detik)
+  assay_type: "RT-RAA"
+  reaction_temperature: 39.0  # Suhu inkubasi (°C)
+  cores: 4                   # Jumlah core CPU yang digunakan
