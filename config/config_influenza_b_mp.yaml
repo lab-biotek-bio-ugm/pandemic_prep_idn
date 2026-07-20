@@ -1,0 +1,214 @@
+# Pandemic Preparedness Diagnostic Pipeline — Configuration Profile
+# Target: Influenza B (Universal) - MP Segment
+---
+
+# [GLOBAL] Pipeline Metadata
+# --- GLOBAL PARAMETERS ---
+# Use this section to control thresholds across all modules (QC, HyPhy, Bridge)
+global_params:
+  min_subtype_count: 30           # Minimum sequences per subtype to be included in any analysis
+  iupac_threshold: 0.15           # Minor allele frequency to trigger IUPAC encoding (0.15 = 15%)
+
+# --- PIPELINE CONFIGURATION ---
+build_name: "influenza-b-mp-sea"
+database: "local"
+
+references:
+  reference_id: "NC_002210.1"
+  genome: "config/references/flu_b_mp_reference.fasta"
+  annotation: "config/references/flu_b_mp_annotation.gff"
+
+# [M01] Data Acquisition
+local_input:
+  sequences: "dataset/EpiFlu/B_MP/EpiFlu_B_MP_Combined_Sequence.fasta"
+  metadata: "dataset/EpiFlu/B_MP/EpiFlu_B_MP_Combined_Metadata.csv"
+  format: "gisaid_epiflu"
+
+# [M01a] Early Filtering (Pre-Nextclade)
+early_filter:
+  enabled: true
+  query: null                     # Contoh: "subtype == 'B'"
+  min_date: null          
+  max_date: "2026-04-01"
+
+# [M02] Quality Control & Spatio-Temporal Filter
+qc:
+  max_n_content: 5.0              # Toleransi maksimal % base N (ambiguitas)
+  dedup: true                     # Hapus sekuens duplikat identik
+
+subsampling:
+  # Pengaturan Dasar (digunakan jika focal dimatikan)
+  group_by: "subtype country year month"
+  sequences_per_group: 10
+  max_sequences: null
+  min_length: 1000
+  seed: 42
+  query: "country in ['Indonesia', 'Singapore', 'Malaysia', 'Thailand', 'Vietnam', 'Philippines', 'Myanmar', 'Cambodia', 'Laos', 'Brunei']"
+  
+  # Targeted Background Subsampling (Focal vs Contextual)
+  focal:
+    enabled: false
+    query: "country == 'Indonesia'"
+    max_sequences: null
+    sequences_per_group: 50
+    group_by: "subtype year month"
+    
+  contextual:
+    query: "country != 'Indonesia'"
+    max_sequences: null
+    sequences_per_group: 3
+    group_by: "subtype country year month"
+
+# [M03] Sequence Alignment
+# Menggunakan Augur Align dengan parameter GLOBAL references
+
+# [M04] Phylogenetic Inference (Tree Builder)
+augur:
+  threads: 16
+
+timetree:
+  clock_rate: 0.002
+  clock_std_dev: 0.001
+
+# [M05] Evolutionary Selection Pressure (HyPhy)
+hyphy:
+  threads: 8          
+  p_value_threshold: 0.1
+  methods:
+    - "FUBAR"
+    - "MEME"
+  target_genes:
+    - "ALL"
+  subsample:
+    enabled: true
+    max_sequences: 2000          
+    min_sequences: 50
+    strategy: "balanced"
+    group_by:
+      subtype: true               
+      country: true
+      year: true
+    seed: 42
+
+# [M06] Annotation & Clade Assignment
+nextclade:
+  enabled: false
+
+bridge:
+  strategy: "full_segment"       # "windowed" (slices) or "full_segment" (global)
+  window_size: 300               # Sliding window size
+  min_region_length: 150
+  overlap_threshold: 0.75
+  buffer_bp: 50
+  entropy_threshold: 0.020    
+  gard_buffer_bp: 50
+  include_utr: true
+  design_regions:
+    - "segment-MP"
+  scoring:
+    core:
+      conservation_weight: 0.66
+      purifying_weight: 0.34
+    multipliers:
+      meme:
+        thresholds:
+          - max_sites: 0
+            multiplier: 1.0
+          - max_sites: 1
+            multiplier: 0.9
+          - max_sites: 3
+            multiplier: 0.7
+        veto_above: 3
+      recombination:
+        near_penalty: 0.5
+      gc_content:
+        ideal_min: 35
+        ideal_max: 60
+        marginal_ranges:
+          - min: 25
+            max: 34
+          - min: 61
+            max: 70
+        marginal_multiplier: 0.7
+        veto_below: 25
+        veto_above: 70
+      conserved_block:
+        entropy_threshold: 0.10
+        ideal_min_len: 35
+        penalty_min_len: 20
+        penalty_multiplier: 0.8
+      homopolymer:
+        max_repeats: 5
+        penalty_multiplier: 0.6
+  tiers:
+    strict:                   
+      min_conservation: 0.95
+      min_purifying_prob: 0.9
+    moderate:                 
+      min_conservation: 0.85
+      min_purifying_prob: 0.7
+    survival:                 
+      min_conservation: 0.80
+
+# 9. Clade SNP Finder (Discriminative Genotyping)
+snp_finder:
+  enabled: true
+  overlap_threshold: 0.75        
+  buffer_bp: 150                 
+  gard_buffer_bp: 50             
+  min_fixation_freq: 0.90        
+  min_coverage: 0.80             
+  p_value_threshold: 0.01        
+  group_by: "subtype"            
+
+# [M08] PrimerLab Integration
+primerlab:
+  repo_path: "git+https://github.com/CORE-Lab-Research/primerlab-genomic.git@main"
+  template: "config/primerlab_template.yaml"
+  design:
+    num_candidates: 1000
+    search_strategy: "standard"
+    hard_qc_filter: "false"
+    max_search_iterations: 5
+    vienna_ranking_limit: 500
+    window_size: null
+    overlap: 200
+    validate: true                
+    blast_offtarget_check: false  
+    blast_ranking_limit: 10
+    blast_database: "nt"
+    blast_mode: "remote"          
+    blast_local_db_path: null     
+    blast_targeted_check: false   
+    blast_targeted_db_path: null  
+    entropy_threshold: 0.50       
+    degenerate:
+      vienna_temp: 37.0
+      positional_frequency: true
+      consensus_ratio: 0.15
+      max_degeneracy: 128
+      max_degenerate_slots: 6
+      rescue:
+        enabled: true
+        threshold: 0.90
+        depth: 3
+        depth_non_focal: 1
+
+# [M09] Local BLAST Specificity Screen
+blast_specificity:
+  db_name: "human_refseq"
+  db_path: "resources/blast_db/human_refseq/human_refseq"
+  evalue: 1000
+  word_size: 7
+  threads: 8
+  max_target_seqs: 100
+  pcr_mismatch: 2
+
+# [M10] In-silico validation settings
+insilico_pcr:
+  max_mismatch: 3                 # Maximum mismatches allowed for virtual PCR
+  num_candidates: 10              # Verify the top N candidates
+  raa_3prime_bp: 8                # Critical 3' end zone size for RAA
+  raa_max_3prime_mm: 1            # Max mismatches allowed in 3' critical zone
+  raa_max_internal_mm: 4          # Max mismatches allowed in non-3' body
+  min_subtype_seqs: 30            # Minimum sequences to report subtype stats
