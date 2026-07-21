@@ -738,6 +738,62 @@
     ]
   },
   {
+    "objectID": "m11.html",
+    "href": "m11.html",
+    "title": "Module 11: Dual-Target Multiplex Compatibility",
+    "section": "",
+    "text": "Module 11 (scripts/m11_multiplex_checker.py & rules/m11_multiplex.smk) is the final verification stage of the pipeline. It evaluates the physical and thermodynamic feasibility of mixing candidate diagnostic assays for two distinct pathogens (e.g. Influenza A MP + Influenza B MP) into a single multiplex reaction vessel (Dual RT-RAA or qPCR)."
+  },
+  {
+    "objectID": "m11.html#core-screening-capabilities",
+    "href": "m11.html#core-screening-capabilities",
+    "title": "Module 11: Dual-Target Multiplex Compatibility",
+    "section": "🔬 Core Screening Capabilities",
+    "text": "🔬 Core Screening Capabilities\n\nPairwise 6-Oligo Cross-Dimer Thermodynamics (\\(\\Delta G\\)): Evaluates all 15 pairwise inter-assay combinations (\\(\\text{Fwd}_A, \\text{Rev}_A, \\text{Probe}_A \\times \\text{Fwd}_B, \\text{Rev}_B, \\text{Probe}_B\\)). Uses IUPAC base expansion to test worst-case secondary structure binding energies across all degenerate variants.\nDual Temperature Regimes:\n\n\\(39.0^\\circ\\text{C}\\) (RT-RAA Isothermal): Reaction temperature for recombinase polymerase/recombinase amplification.\n\\(55.0^\\circ\\text{C}\\) (qPCR Benchmark): Thermal cycling annealing benchmark.\n\nKinetic Melting Temperature Alignment (\\(\\Delta T_m\\)): Verifies that the \\(T_m\\) delta across all 4 primers is \\(\\le 3.5^\\circ\\text{C}\\) to maintain balanced amplification rates.\nSpectral Dye Separation: Verifies probe channel independence (e.g. 5'-FAM / 3'-BHQ1 vs 5'-HEX / 3'-BHQ1)."
+  },
+  {
+    "objectID": "m11.html#multi-target-batch-orchestrator",
+    "href": "m11.html#multi-target-batch-orchestrator",
+    "title": "Module 11: Dual-Target Multiplex Compatibility",
+    "section": "🛠️ Multi-Target Batch Orchestrator",
+    "text": "🛠️ Multi-Target Batch Orchestrator\nTo run batching across multiple target virus configs and trigger Module 11 automatically, use the master batch script:\npython scripts/run_multiplex_batch.py \\\n  --configs config/config_influenza_a_mp.yaml config/config_influenza_b_mp.yaml \\\n  --cores 64 \\\n  --snakemake-args \"--use-conda --rerun-incomplete\"\n\nPassing Snakemake Flags\nYou can pass any standard Snakemake flag (such as --unlock, --use-conda, --rerun-incomplete, or --rerun-triggers mtime) directly through --snakemake-args:\n# Example: Unlocking directory if previous run was interrupted\npython scripts/run_multiplex_batch.py \\\n  --configs config/config_influenza_a_mp.yaml config/config_influenza_b_mp.yaml \\\n  --cores 64 \\\n  --snakemake-args \"--unlock\""
+  },
+  {
+    "objectID": "m11.html#module-outputs",
+    "href": "m11.html#module-outputs",
+    "title": "Module 11: Dual-Target Multiplex Compatibility",
+    "section": "📊 Module Outputs",
+    "text": "📊 Module Outputs\nModule 11 generates three primary assets in results/multiplex-&lt;build_a&gt;_x_&lt;build_b&gt;/:\n\nmultiplex_candidates.json: Structured dataset containing scores, full oligo sequence synthesis specs, \\(T_m\\), GC%, positions, and 9-pair cross-dimer \\(\\Delta G\\) breakdown.\nmultiplex_report.md: Human-readable synthesis table and top recommended pairs.\nmultiplex_matrix.html: Interactive HTML compatibility matrix."
+  },
+  {
+    "objectID": "m07_engine.html",
+    "href": "m07_engine.html",
+    "title": "M07 Bridge Scoring Engine",
+    "section": "",
+    "text": "This section explains the core scoring logic of the Bridge Builder module.\n\n\nPlaceholder text explaining Shannon entropy calculations on multiple sequence alignments.\n\n\n\nPlaceholder text detailing the exclusion of selection hotspots and mutation-prone regions from candidate target selection.\n\n\n\n\nConserved Region BED tracks\nIUPAC consensus sequences\nCandidate rank lists"
+  },
+  {
+    "objectID": "m07_engine.html#entropy-profiling",
+    "href": "m07_engine.html#entropy-profiling",
+    "title": "M07 Bridge Scoring Engine",
+    "section": "",
+    "text": "Placeholder text explaining Shannon entropy calculations on multiple sequence alignments."
+  },
+  {
+    "objectID": "m07_engine.html#evolutionary-robustness",
+    "href": "m07_engine.html#evolutionary-robustness",
+    "title": "M07 Bridge Scoring Engine",
+    "section": "",
+    "text": "Placeholder text detailing the exclusion of selection hotspots and mutation-prone regions from candidate target selection."
+  },
+  {
+    "objectID": "m07_engine.html#output-structure",
+    "href": "m07_engine.html#output-structure",
+    "title": "M07 Bridge Scoring Engine",
+    "section": "",
+    "text": "Conserved Region BED tracks\nIUPAC consensus sequences\nCandidate rank lists"
+  },
+  {
     "objectID": "results_multiplex.html",
     "href": "results_multiplex.html",
     "title": "Results: Dual-Target Multiplex Compatibility",
@@ -808,34 +864,6 @@
       "Results & Biological Insights",
       "Multiplex Compatibility"
     ]
-  },
-  {
-    "objectID": "m07_engine.html",
-    "href": "m07_engine.html",
-    "title": "M07 Bridge Scoring Engine",
-    "section": "",
-    "text": "This section explains the core scoring logic of the Bridge Builder module.\n\n\nPlaceholder text explaining Shannon entropy calculations on multiple sequence alignments.\n\n\n\nPlaceholder text detailing the exclusion of selection hotspots and mutation-prone regions from candidate target selection.\n\n\n\n\nConserved Region BED tracks\nIUPAC consensus sequences\nCandidate rank lists"
-  },
-  {
-    "objectID": "m07_engine.html#entropy-profiling",
-    "href": "m07_engine.html#entropy-profiling",
-    "title": "M07 Bridge Scoring Engine",
-    "section": "",
-    "text": "Placeholder text explaining Shannon entropy calculations on multiple sequence alignments."
-  },
-  {
-    "objectID": "m07_engine.html#evolutionary-robustness",
-    "href": "m07_engine.html#evolutionary-robustness",
-    "title": "M07 Bridge Scoring Engine",
-    "section": "",
-    "text": "Placeholder text detailing the exclusion of selection hotspots and mutation-prone regions from candidate target selection."
-  },
-  {
-    "objectID": "m07_engine.html#output-structure",
-    "href": "m07_engine.html#output-structure",
-    "title": "M07 Bridge Scoring Engine",
-    "section": "",
-    "text": "Conserved Region BED tracks\nIUPAC consensus sequences\nCandidate rank lists"
   },
   {
     "objectID": "m06.html",
