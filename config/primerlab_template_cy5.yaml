@@ -1,0 +1,108 @@
+# ==============================================================================
+# PRIMERLAB MASTER CONFIGURATION: RT-RAA WORKFLOW (CY5 DYE - TARGET 3 / MEASLES)
+# ==============================================================================
+# Single-tube multiplex dye channel separation:
+#   - Target 1 (Flu A):   FAM (Emission ~520 nm)
+#   - Target 2 (Flu B):   HEX (Emission ~556 nm)
+#   - Target 3 (Measles): Cy5 (Emission ~670 nm, Quencher: BHQ2)
+
+workflow: raa
+preset: raa
+
+# --- INPUT SETTINGS ---
+input:
+  sequence: null
+  sequence_path: null
+  preserve_iupac: true
+  type: auto
+
+# --- DESIGN PARAMETERS ---
+parameters:
+  thermodynamics:
+    salt_monovalent: 50.0
+    salt_divalent: 14.0
+    dntp_conc: 0.8
+    dna_conc: 480.0
+    tm_method: santalucia
+    salt_corrections: owczarzy
+
+  num_candidates: 1000
+  search_strategy: standard
+  hard_qc_filter: false
+  max_search_iterations: 5
+  
+  included_region: null
+  target_region: null
+  excluded_regions: []
+  
+  force_left_start: null
+  force_left_end: null
+  force_right_start: null
+  force_right_end: null
+
+  primer_size:
+    min: 30
+    opt: 32
+    max: 35
+  
+  tm:
+    min: 54.0
+    opt: 60.0
+    max: 75.0
+    
+  gc:
+    min: 30.0
+    opt: 50.0
+    max: 70.0
+
+  product_size_range: [[150, 300]]
+  max_poly_x: 4
+
+  probe:
+    enabled: true
+    type: "exo"
+    size:
+      min: 46
+      opt: 48
+      max: 52
+    tm:
+      min: 54.0
+      opt: 65.0
+      max: 85.0
+    thf_upstream_min: 30
+    thf_downstream_min: 15
+    labels:
+      fluorophore: "Cy5"   # Channel Far-Red (~670 nm) untuk multiplex 3 target (Flu A + Flu B + Measles)
+      quencher: "BHQ2"      # Quencher spesifik untuk Cy5 (absorpsi ~670 nm)
+      blocker: "C3-spacer"
+      abasic: "THF"
+
+  add_sites: []
+
+qc:
+  mode: strict
+  vienna_ranking_limit: 50
+  blast_offtarget_check: false
+  blast_ranking_limit: 10
+  blast_database: "nt"
+  tm_diff_max: 3.0
+  hairpin_dg_min: -2.0
+  dimer_dg_min: -6.0
+  cross_dimer_dg_min: -7.0
+  end_3prime_check: true
+  max_3prime_entropy: 0.15
+  gc_clamp: true
+  probe_end_check: true
+
+output:
+  directory: "primerlab_out"
+  format: json
+  num_results_to_export: 100
+
+advanced:
+  auto_validate: true
+  debug: false
+  timeout: 600
+  assay_type: "RT-RAA"
+  reaction_temperature: 39.0
+  cores: 4

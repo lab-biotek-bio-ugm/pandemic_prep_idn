@@ -166,7 +166,7 @@ snp_finder:
 # [M08] PrimerLab Integration (Isothermal RAA Design)
 primerlab:
   repo_path: "git+https://github.com/CORE-Lab-Research/primerlab-genomic.git@main"
-  template: "config/primerlab_template.yaml"
+  template: "config/primerlab_template_cy5.yaml"
   design:
     num_candidates: 1000
     search_strategy: "standard"
