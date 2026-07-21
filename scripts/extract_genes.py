@@ -257,7 +257,8 @@ def main():
                 SeqRecord(Seq(cleaned_seq_str), id=r.id, description="")
             )
 
-        out_path = os.path.join(args.outdir, f"cleaned_{gene_name}_NT.fasta")
+        safe_gene_name = gene_name.replace("/", "_").replace("\\", "_").replace(" ", "_")
+        out_path = os.path.join(args.outdir, f"cleaned_{safe_gene_name}_NT.fasta")
         SeqIO.write(out_records, out_path, "fasta")
 
         n_codons = (msa_length + pad_len) // 3
