@@ -28,6 +28,7 @@ def main():
     parser.add_argument("--configs", nargs="+", required=True, help="List of target config files (e.g., config_influenza_a_mp.yaml config_influenza_b_mp.yaml)")
     parser.add_argument("--cores", type=int, default=64, help="Number of CPU cores for Snakemake execution")
     parser.add_argument("--skip-snakemake", action="store_true", help="Skip Snakemake runs if result folders already exist")
+    parser.add_argument("--snakemake-args", type=str, default="--use-conda --rerun-incomplete", help="Additional flags to pass directly to Snakemake (e.g., '--use-conda --unlock --rerun-incomplete')")
     parser.add_argument("--num-candidates", type=int, default=10, help="Number of top candidates per target to screen for multiplexing")
     args = parser.parse_args()
 
@@ -46,7 +47,8 @@ def main():
         if args.skip_snakemake:
             print(f"[Info] --skip-snakemake flag set. Skipping Snakemake execution for {build_name}.")
         else:
-            snakemake_cmd = f"snakemake -c {args.cores} --configfile {cfg}"
+            extra_args = args.snakemake_args if args.snakemake_args else ""
+            snakemake_cmd = f"snakemake -c {args.cores} --configfile {cfg} {extra_args}".strip()
             run_cmd(snakemake_cmd)
 
     # Step 2: Execute Module 11 Multiplex Compatibility for all unique target pairs
