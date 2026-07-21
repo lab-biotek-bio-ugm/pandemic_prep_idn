@@ -45,6 +45,7 @@ flowchart LR
         M07 --> M08[M08: Primer Design]
         M08 --> M09[M09: Specificity Check]
         M09 --> M10[M10: In-Silico Validation]
+        M10 --> M11[M11: Multiplex Compatibility]
     end
 ```
 
@@ -57,6 +58,7 @@ flowchart LR
 5.  **M08: Isothermal Primer Design**: PrimerLab engine wrapper applying thermodynamic constraints (Primer3 + ViennaRNA secondary structure minimization).
 6.  **M09: Specificity Filtering**: In-depth BLAST verification (local/remote databases) generating BED/GFF3 visualization tracks.
 7.  **M10: In-Silico Validation**: Emulation of PCR/RAA amplification (seqkit amplicon) against massive surveillance cohorts, exporting interactive temporal dashboards.
+8.  **M11: Multiplex Compatibility**: Dual-target heterodimerization ($\Delta G$) screening across all 6 oligo interactions, dye channel separation (FAM vs. HEX), and kinetic $T_m$ alignment.
 
 ---
 
@@ -78,9 +80,9 @@ conda activate pandemic-prep
 
 ### 2. Configure Your Run
 Target parameters, sequence counts, and database choices are configured in `config/config.yaml`.
-Multi-target presets are available (e.g., `config/config_influenza_a_mp.yaml`).
+Multi-target presets are available (e.g., `config/config_influenza_a_mp.yaml` and `config/config_influenza_b_mp.yaml`).
 
-### 3. Execute the Pipeline
+### 3. Execute Single-Target Pipeline
 Run a dry-run to verify rule dependencies:
 ```bash
 snakemake --use-conda -n
@@ -88,6 +90,17 @@ snakemake --use-conda -n
 Execute with 16 cores:
 ```bash
 snakemake --use-conda --cores 16 --configfile config/config_influenza_a_mp.yaml
+```
+
+### 4. Multi-Target Batching & Multiplex Screening
+To batch-execute multiple target configs sequentially and automatically run Module 11 Multiplex Compatibility screening, use the master bash orchestrator script:
+
+```bash
+# Batch run across Influenza A and Influenza B configs with 64 cores
+bash scripts/run_multiplex_batch.sh config/config_influenza_a_mp.yaml config/config_influenza_b_mp.yaml --use-conda -c 64
+
+# Handle directory lock or rerun incomplete jobs
+bash scripts/run_multiplex_batch.sh config/config_influenza_a_mp.yaml config/config_influenza_b_mp.yaml --use-conda -c 64 --unlock
 ```
 
 ---
@@ -101,6 +114,7 @@ Key diagnostic assets are written directly to `results/{BUILD}/`:
 *   **BLAST Tracks**: `results/{BUILD}/m09/final_candidates.gff3` / `.bed`
 *   **IGV Workspace**: `results/{BUILD}/m09/igv_session.xml` (one-click visualization setup)
 *   **Validation Dashboard**: `results/{BUILD}/m10/validation_report.html`
+*   **Multiplex Results**: `results/multiplex-<targetA>_x_<targetB>/multiplex_report.md` & `multiplex_matrix.html`
 
 ---
 

@@ -1,0 +1,53 @@
+---
+title: "Module 11: Dual-Target Multiplex Compatibility"
+---
+
+Module 11 (`scripts/m11_multiplex_checker.py` & `rules/m11_multiplex.smk`) is the final verification stage of the pipeline. It evaluates the physical and thermodynamic feasibility of mixing candidate diagnostic assays for two distinct pathogens (e.g. **Influenza A MP** + **Influenza B MP**) into a single multiplex reaction vessel (Dual RT-RAA or qPCR).
+
+---
+
+## 🔬 Core Screening Capabilities
+
+1.  **Pairwise 6-Oligo Cross-Dimer Thermodynamics ($\Delta G$)**:
+    Evaluates all 15 pairwise inter-assay combinations ($\text{Fwd}_A, \text{Rev}_A, \text{Probe}_A \times \text{Fwd}_B, \text{Rev}_B, \text{Probe}_B$). Uses IUPAC base expansion to test worst-case secondary structure binding energies across all degenerate variants.
+2.  **Dual Temperature Regimes**:
+    *   **$39.0^\circ\text{C}$ (RT-RAA Isothermal)**: Reaction temperature for recombinase polymerase/recombinase amplification.
+    *   **$55.0^\circ\text{C}$ (qPCR Benchmark)**: Thermal cycling annealing benchmark.
+3.  **Kinetic Melting Temperature Alignment ($\Delta T_m$)**:
+    Verifies that the $T_m$ delta across all 4 primers is $\le 3.5^\circ\text{C}$ to maintain balanced amplification rates.
+4.  **Spectral Dye Separation**:
+    Verifies probe channel independence (e.g. `5'-FAM / 3'-BHQ1` vs `5'-HEX / 3'-BHQ1`).
+
+---
+
+## 🛠️ Multi-Target Batch Orchestrator
+
+To run batching across multiple target virus configs and trigger Module 11 automatically, use the master batch script:
+
+```bash
+python scripts/run_multiplex_batch.py \
+  --configs config/config_influenza_a_mp.yaml config/config_influenza_b_mp.yaml \
+  --cores 64 \
+  --snakemake-args "--use-conda --rerun-incomplete"
+```
+
+### Passing Snakemake Flags
+You can pass any standard Snakemake flag (such as `--unlock`, `--use-conda`, `--rerun-incomplete`, or `--rerun-triggers mtime`) directly through `--snakemake-args`:
+
+```bash
+# Example: Unlocking directory if previous run was interrupted
+python scripts/run_multiplex_batch.py \
+  --configs config/config_influenza_a_mp.yaml config/config_influenza_b_mp.yaml \
+  --cores 64 \
+  --snakemake-args "--unlock"
+```
+
+---
+
+## 📊 Module Outputs
+
+Module 11 generates three primary assets in `results/multiplex-<build_a>_x_<build_b>/`:
+
+1.  **`multiplex_candidates.json`**: Structured dataset containing scores, full oligo sequence synthesis specs, $T_m$, GC%, positions, and 9-pair cross-dimer $\Delta G$ breakdown.
+2.  **`multiplex_report.md`**: Human-readable synthesis table and top recommended pairs.
+3.  **`multiplex_matrix.html`**: Interactive HTML compatibility matrix.
