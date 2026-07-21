@@ -1,0 +1,67 @@
+---
+title: "Results: Dual-Target Multiplex Compatibility"
+---
+
+To enable simultaneous point-of-care detection of **Influenza A** and **Influenza B** in a single reaction tube, candidate assays designed for the Indonesian cohort were evaluated using the **Multiplex Compatibility Screening Engine** (`scripts/m11_multiplex_checker.py`).
+
+The screening engine evaluates all pairwise heterodimerization thermodynamics ($\Delta G$), kinetic melting temperature alignment ($\Delta T_m$), and fluorophore channel separation across a 6-oligo reaction mixture ($\text{Fwd}_A, \text{Rev}_A, \text{Probe}_A, \text{Fwd}_B, \text{Rev}_B, \text{Probe}_B$).
+
+---
+
+## 1. Dual-Temperature Screening Regimes
+
+To guarantee assay robustness, **100 candidate combinations** ($10 \times 10$ matrix of top Influenza A MP and Influenza B MP candidates) were evaluated across two temperature regimes:
+
+1.  **Isothermal RT-RAA Mode ($39.0^\circ\text{C}$)**: Primary operational temperature for point-of-care recombinase-mediated amplification.
+2.  **qPCR Comparative Benchmark ($55.0^\circ\text{C}$)**: Gold-standard laboratory thermal cycling benchmark.
+
+---
+
+## 2. Top Recommended Multiplex Assay Combinations
+
+The table below highlights the top 5 multiplex combinations ranked by overall compatibility score ($0 - 100\%$), accounting for cross-dimer penalties and kinetic alignment:
+
+| Rank | Candidate Pair | Compatibility Score | RAA ΔG (39°C) | qPCR ΔG (55°C) | ΔTm (°C) | Channel Separation | Status (39°C) |
+|---|---|---|---|---|---|---|---|
+| **1** | **`FluA_Rank7_x_FluB_Rank6`** | **73.9%** | **-7.13 kcal/mol** | **-5.01 kcal/mol** | **0.29°C** | FAM / HEX | <span style="color: #10b981; font-weight: bold;">PASS</span> |
+| **2** | **`FluA_Rank7_x_FluB_Rank11`** | **73.8%** | **-7.13 kcal/mol** | **-5.01 kcal/mol** | **0.31°C** | FAM / HEX | <span style="color: #10b981; font-weight: bold;">PASS</span> |
+| **3** | **`FluA_Rank7_x_FluB_Rank5`** | **73.2%** | **-7.13 kcal/mol** | **-5.01 kcal/mol** | **0.45°C** | FAM / HEX | <span style="color: #10b981; font-weight: bold;">PASS</span> |
+| **4** | **`FluA_Rank4_x_FluB_Rank6`** | **72.1%** | **-7.13 kcal/mol** | **-5.01 kcal/mol** | **0.74°C** | FAM / HEX | <span style="color: #10b981; font-weight: bold;">PASS</span> |
+| **5** | **`FluA_Rank6_x_FluB_Rank6`** | **72.1%** | **-7.13 kcal/mol** | **-5.01 kcal/mol** | **0.74°C** | FAM / HEX | <span style="color: #10b981; font-weight: bold;">PASS</span> |
+
+### Key Biophysical Observations:
+*   **Zero Veto Violations**: All top combinations exhibit a worst-case cross-dimer binding energy $\Delta G > -9.0\text{ kcal/mol}$, preventing spontaneous primer-dimer formation or competition during strand exchange.
+*   **Kinetic Balance**: The rank 1 combination (`FluA_Rank7_x_FluB_Rank6`) achieves an exceptionally tight $T_m$ delta of **$0.29^\circ\text{C}$** across all four primers, ensuring synchronized amplification rates.
+*   **Fluorophore Independence**: Influenza A probe uses FAM ($\lambda_{\text{em}} = 520\text{ nm}$) and Influenza B probe uses HEX ($\lambda_{\text{em}} = 556\text{ nm}$), eliminating optical crosstalk.
+
+---
+
+## 3. Oligo Cross-Dimer Interactions (Rank 1 Assay)
+
+Below is the complete 9-pair inter-assay cross-dimer thermodynamic breakdown for the primary recommended multiplex set (`FluA_Rank7_x_FluB_Rank6`):
+
+| Oligo Pair Combination | Cross-Dimer ΔG (39°C RT-RAA) | Cross-Dimer ΔG (55°C qPCR) | Risk Assessment |
+|---|---|---|---|
+| **Forward A vs. Forward B** | -4.14 kcal/mol | -2.05 kcal/mol | <span style="color: #10b981; font-weight: bold;">Negligible</span> |
+| **Forward A vs. Reverse B** | -7.13 kcal/mol | -5.01 kcal/mol | <span style="color: #10b981; font-weight: bold;">Low / Safe</span> |
+| **Forward A vs. Probe B** | -3.09 kcal/mol | -1.53 kcal/mol | <span style="color: #10b981; font-weight: bold;">Negligible</span> |
+| **Reverse A vs. Forward B** | -5.95 kcal/mol | -3.06 kcal/mol | <span style="color: #10b981; font-weight: bold;">Low / Safe</span> |
+| **Reverse A vs. Reverse B** | -4.37 kcal/mol | -2.27 kcal/mol | <span style="color: #10b981; font-weight: bold;">Negligible</span> |
+| **Reverse A vs. Probe B** | -5.69 kcal/mol | -3.49 kcal/mol | <span style="color: #10b981; font-weight: bold;">Low / Safe</span> |
+| **Probe A vs. Forward B** | -4.77 kcal/mol | -2.83 kcal/mol | <span style="color: #10b981; font-weight: bold;">Negligible</span> |
+| **Probe A vs. Reverse B** | -6.12 kcal/mol | -3.49 kcal/mol | <span style="color: #10b981; font-weight: bold;">Low / Safe</span> |
+| **Probe A vs. Probe B** | -6.76 kcal/mol | -1.29 kcal/mol | <span style="color: #10b981; font-weight: bold;">Low / Safe</span> |
+
+---
+
+## 4. Interactive 10x10 Compatibility Dashboard
+
+Click the button below to launch the interactive HTML matrix dashboard, visualising the $10 \times 10$ candidate score matrix:
+
+```{=html}
+<div style="margin: 20px 0;">
+  <a class="btn btn-primary" href="results/multiplex-indo-only/multiplex_matrix.html" target="_blank" style="display: inline-block; padding: 10px 20px; font-weight: 600; border-radius: 6px; text-decoration: none; background-color: #3b82f6; color: #ffffff;">
+    📊 Open Interactive 10x10 Multiplex Dashboard
+  </a>
+</div>
+```
