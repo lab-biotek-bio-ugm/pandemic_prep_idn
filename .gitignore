@@ -25,8 +25,4 @@ artifacts/
 # Documentation Sources (Private)
 .quarto/
 pdf-report/
-report/_site/*
-report/site_libs/*
-report/*.html
-report/**/*.html
-*.html
+report/_site/

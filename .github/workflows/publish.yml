@@ -41,3 +41,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: cf-pages
           publish_dir: report/_site
+          exclude_assets: ''
