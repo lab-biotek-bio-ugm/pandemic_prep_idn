@@ -385,12 +385,13 @@ window.Quarto = {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#dual-target-multiplex-assay-compatibility-report" id="toc-dual-target-multiplex-assay-compatibility-report" class="nav-link active" data-scroll-target="#dual-target-multiplex-assay-compatibility-report">Dual-Target Multiplex Assay Compatibility Report</a>
+  <li><a href="#dual-target-multiplex-assay-compatibility-synthesis-report" id="toc-dual-target-multiplex-assay-compatibility-synthesis-report" class="nav-link active" data-scroll-target="#dual-target-multiplex-assay-compatibility-synthesis-report">Dual-Target Multiplex Assay Compatibility &amp; Synthesis Report</a>
   <ul class="collapse">
   <li><a href="#target-pair-influenza-a-mp-fam-influenza-b-mp-hex-indonesia-cohort" id="toc-target-pair-influenza-a-mp-fam-influenza-b-mp-hex-indonesia-cohort" class="nav-link" data-scroll-target="#target-pair-influenza-a-mp-fam-influenza-b-mp-hex-indonesia-cohort">Target Pair: Influenza A MP (FAM) + Influenza B MP (HEX) — Indonesia Cohort</a>
   <ul class="collapse">
   <li><a href="#top-5-recommended-multiplex-combinations" id="toc-top-5-recommended-multiplex-combinations" class="nav-link" data-scroll-target="#top-5-recommended-multiplex-combinations">Top 5 Recommended Multiplex Combinations</a></li>
-  <li><a href="#cross-dimer-interactions-for-rank-1-combination" id="toc-cross-dimer-interactions-for-rank-1-combination" class="nav-link" data-scroll-target="#cross-dimer-interactions-for-rank-1-combination">Cross-Dimer Interactions for Rank 1 Combination</a></li>
+  <li><a href="#rank-1-oligo-synthesis-specifications-flua_rank7_x_flub_rank6" id="toc-rank-1-oligo-synthesis-specifications-flua_rank7_x_flub_rank6" class="nav-link" data-scroll-target="#rank-1-oligo-synthesis-specifications-flua_rank7_x_flub_rank6">Rank 1 Oligo Synthesis Specifications (<code>FluA_Rank7_x_FluB_Rank6</code>)</a></li>
+  <li><a href="#cross-dimer-inter-assay-interactions" id="toc-cross-dimer-inter-assay-interactions" class="nav-link" data-scroll-target="#cross-dimer-inter-assay-interactions">Cross-Dimer Inter-Assay Interactions</a></li>
   </ul></li>
   </ul></li>
   </ul>
@@ -402,8 +403,8 @@ window.Quarto = {
 
 
 
-<section id="dual-target-multiplex-assay-compatibility-report" class="level1">
-<h1>Dual-Target Multiplex Assay Compatibility Report</h1>
+<section id="dual-target-multiplex-assay-compatibility-synthesis-report" class="level1">
+<h1>Dual-Target Multiplex Assay Compatibility &amp; Synthesis Report</h1>
 <section id="target-pair-influenza-a-mp-fam-influenza-b-mp-hex-indonesia-cohort" class="level2">
 <h2 class="anchored" data-anchor-id="target-pair-influenza-a-mp-fam-influenza-b-mp-hex-indonesia-cohort">Target Pair: Influenza A MP (FAM) + Influenza B MP (HEX) — Indonesia Cohort</h2>
 <p>Screened <strong>100 candidate combinations</strong> (<span class="math inline">\(10 \times 10\)</span>) across two temperature regimes (<span class="math inline">\(39.0^\circ\text{C}\)</span> RT-RAA &amp; <span class="math inline">\(55.0^\circ\text{C}\)</span> qPCR).</p>
@@ -479,9 +480,119 @@ window.Quarto = {
 </tbody>
 </table>
 </section>
-<section id="cross-dimer-interactions-for-rank-1-combination" class="level3">
-<h3 class="anchored" data-anchor-id="cross-dimer-interactions-for-rank-1-combination">Cross-Dimer Interactions for Rank 1 Combination</h3>
-<p><strong>Pair ID</strong>: <code>FluA_Rank7_x_FluB_Rank6</code> (Score: 73.9%)</p>
+<section id="rank-1-oligo-synthesis-specifications-flua_rank7_x_flub_rank6" class="level3">
+<h3 class="anchored" data-anchor-id="rank-1-oligo-synthesis-specifications-flua_rank7_x_flub_rank6">Rank 1 Oligo Synthesis Specifications (<code>FluA_Rank7_x_FluB_Rank6</code>)</h3>
+<section id="target-a-influenza-a-mp-fam-channel" class="level4">
+<h4 class="anchored" data-anchor-id="target-a-influenza-a-mp-fam-channel">🟩 Target A: Influenza A MP (FAM Channel)</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Oligo Name</th>
+<th>Type</th>
+<th>Degenerate Sequence (5’ -&gt; 3’)</th>
+<th>Length</th>
+<th>Tm (°C)</th>
+<th>GC (%)</th>
+<th>Modification / Label</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>FluA_Fwd</td>
+<td>Fwd Primer</td>
+<td><code>CTGACTAARGGRATTTTRGGRTTTGTATT</code></td>
+<td>29 nt</td>
+<td>60.1°C</td>
+<td>27.6%</td>
+<td>Unlabeled</td>
+</tr>
+<tr class="even">
+<td>FluA_Rev</td>
+<td>Rev Primer</td>
+<td><code>AGCAGTTAAACTATATARGAARCTGAARAGR</code></td>
+<td>31 nt</td>
+<td>60.4°C</td>
+<td>25.8%</td>
+<td>Unlabeled</td>
+</tr>
+<tr class="odd">
+<td>FluA_Probe</td>
+<td>Exo-Probe</td>
+<td><code>ACCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCARAATGCC</code></td>
+<td>51 nt</td>
+<td>81.6°C</td>
+<td>56.9%</td>
+<td>5’-FAM / 3’-BHQ1 / Internal-THF</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="target-b-influenza-b-mp-hex-channel" class="level4">
+<h4 class="anchored" data-anchor-id="target-b-influenza-b-mp-hex-channel">🟨 Target B: Influenza B MP (HEX Channel)</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Oligo Name</th>
+<th>Type</th>
+<th>Degenerate Sequence (5’ -&gt; 3’)</th>
+<th>Length</th>
+<th>Tm (°C)</th>
+<th>GC (%)</th>
+<th>Modification / Label</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>FluB_Fwd</td>
+<td>Fwd Primer</td>
+<td><code>GAAATAYCTATAATGYTYGAACCATTYCAGA</code></td>
+<td>31 nt</td>
+<td>60.4°C</td>
+<td>25.8%</td>
+<td>Unlabeled</td>
+</tr>
+<tr class="even">
+<td>FluB_Rev</td>
+<td>Rev Primer</td>
+<td><code>TTTATTGTCTCTTTRTTTGGMCCYTTTATTC</code></td>
+<td>31 nt</td>
+<td>60.4°C</td>
+<td>25.8%</td>
+<td>Unlabeled</td>
+</tr>
+<tr class="odd">
+<td>FluB_Probe</td>
+<td>Exo-Probe</td>
+<td><code>TYTTATCAGCTCTCCATTTCATGGCTTGGACAATAGGRCATTTRAATC</code></td>
+<td>48 nt</td>
+<td>71.3°C</td>
+<td>35.4%</td>
+<td>5’-HEX / 3’-BHQ1 / Internal-THF</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="cross-dimer-inter-assay-interactions" class="level3">
+<h3 class="anchored" data-anchor-id="cross-dimer-inter-assay-interactions">Cross-Dimer Inter-Assay Interactions</h3>
 <table class="caption-top table">
 <thead>
 <tr class="header">
@@ -533,8 +644,8 @@ window.Quarto = {
 </tr>
 <tr class="odd">
 <td>Probe_A_vs_Probe_B</td>
-<td>-6.76 kcal/mol</td>
-<td>-1.29 kcal/mol</td>
+<td>-6.9 kcal/mol</td>
+<td>-4.22 kcal/mol</td>
 </tr>
 </tbody>
 </table>
