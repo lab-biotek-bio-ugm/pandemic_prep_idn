@@ -3,6 +3,7 @@
 Module 11: Multiplex Assay Compatibility Screening Engine (Influenza A + B MP)
 Evaluates pairwise cross-dimer thermodynamics (ViennaRNA / Primer3), spectral dye separation,
 and kinetics alignment for dual-target assays at 39.0°C (RAA) and 55.0°C (qPCR).
+Outputs full sequence synthesis specs and cross-dimer details.
 """
 
 import os
@@ -10,7 +11,6 @@ import sys
 import json
 import argparse
 import itertools
-import pandas as pd
 import primer3
 
 # IUPAC Degenerate Base Table
@@ -23,7 +23,7 @@ IUPAC_MAP = {
 }
 
 def expand_iupac(seq):
-    """Expand degenerate sequence into all possible canonical combinations (capped at 16)."""
+    """Expand degenerate sequence into canonical combinations (capped at 16)."""
     seq = seq.upper()
     options = [IUPAC_MAP.get(base, [base]) for base in seq]
     combinations = [''.join(p) for p in itertools.product(*options)]
@@ -31,10 +31,11 @@ def expand_iupac(seq):
         combinations = combinations[:16]
     return combinations
 
-def get_consensus_seq(seq):
-    """Convert degenerate sequence to standard IUPAC consensus base."""
-    # Map common degenerate bases to consensus majority if needed, or return raw string
-    return seq.upper()
+def calculate_gc(seq):
+    """Calculate GC content percentage."""
+    seq = seq.upper()
+    gc = sum(1 for b in seq if b in ['G', 'C', 'S'])
+    return round((gc / len(seq)) * 100.0, 1)
 
 def evaluate_pair_heterodimer(seq1, seq2, temp_c):
     """
@@ -86,27 +87,37 @@ def run_multiplex_screening(file_a, file_b, out_dir, num_candidates=10):
     
     for cand_a in cands_a:
         rank_a = cand_a.get("rank", 1)
-        fwd_a = cand_a.get("fwd_degenerate_seq") or cand_a.get("fwd_seq") or cand_a.get("fwd")
-        rev_a = cand_a.get("rev_degenerate_seq") or cand_a.get("rev_seq") or cand_a.get("rev")
-        prb_a = cand_a.get("probe_seq") or cand_a.get("probe")
+        fwd_a_deg = cand_a.get("fwd_degenerate_seq") or cand_a.get("fwd_seq")
+        rev_a_deg = cand_a.get("rev_degenerate_seq") or cand_a.get("rev_seq")
+        prb_a_deg = cand_a.get("probe_degenerate_seq") or cand_a.get("probe_seq")
         
-        tm_fwd_a = calculate_tm(fwd_a)
-        tm_rev_a = calculate_tm(rev_a)
+        fwd_a_ref = cand_a.get("fwd_seq")
+        rev_a_ref = cand_a.get("rev_seq")
+        prb_a_ref = cand_a.get("probe_seq")
+        
+        tm_fwd_a = calculate_tm(fwd_a_deg)
+        tm_rev_a = calculate_tm(rev_a_deg)
+        tm_prb_a = calculate_tm(prb_a_deg)
         
         for cand_b in cands_b:
             rank_b = cand_b.get("rank", 1)
-            fwd_b = cand_b.get("fwd_degenerate_seq") or cand_b.get("fwd_seq") or cand_b.get("fwd")
-            rev_b = cand_b.get("rev_degenerate_seq") or cand_b.get("rev_seq") or cand_b.get("rev")
-            prb_b = cand_b.get("probe_seq") or cand_b.get("probe")
+            fwd_b_deg = cand_b.get("fwd_degenerate_seq") or cand_b.get("fwd_seq")
+            rev_b_deg = cand_b.get("rev_degenerate_seq") or cand_b.get("rev_seq")
+            prb_b_deg = cand_b.get("probe_degenerate_seq") or cand_b.get("probe_seq")
             
-            tm_fwd_b = calculate_tm(fwd_b)
-            tm_rev_b = calculate_tm(rev_b)
+            fwd_b_ref = cand_b.get("fwd_seq")
+            rev_b_ref = cand_b.get("rev_seq")
+            prb_b_ref = cand_b.get("probe_seq")
             
-            all_tms = [tm_fwd_a, tm_rev_a, tm_fwd_b, tm_rev_b]
-            delta_tm = max(all_tms) - min(all_tms)
+            tm_fwd_b = calculate_tm(fwd_b_deg)
+            tm_rev_b = calculate_tm(rev_b_deg)
+            tm_prb_b = calculate_tm(prb_b_deg)
             
-            oligos_a = [("Fwd_A", fwd_a), ("Rev_A", rev_a), ("Probe_A", prb_a)]
-            oligos_b = [("Fwd_B", fwd_b), ("Rev_B", rev_b), ("Probe_B", prb_b)]
+            all_primer_tms = [tm_fwd_a, tm_rev_a, tm_fwd_b, tm_rev_b]
+            delta_tm = max(all_primer_tms) - min(all_primer_tms)
+            
+            oligos_a = [("Fwd_A", fwd_a_deg), ("Rev_A", rev_a_deg), ("Probe_A", prb_a_deg)]
+            oligos_b = [("Fwd_B", fwd_b_deg), ("Rev_B", rev_b_deg), ("Probe_B", prb_b_deg)]
             
             # --- Temp 1: RAA Mode (39.0°C) ---
             cross_dimers_raa = {}
@@ -130,21 +141,16 @@ def run_multiplex_screening(file_a, file_b, out_dir, num_candidates=10):
                         if dg < min_dg_qpcr:
                             min_dg_qpcr = dg
                             
-            # Dye & Compatibility Evaluation
-            # Inf A uses FAM, Inf B uses HEX
             dye_status = "PASSED (FAM vs HEX Channel Separation)"
             
-            # Status & Veto Rules
-            # Veto if min_dg_raa < -9.0 kcal/mol or delta_tm > 4.0 °C
             status_raa = "PASS" if (min_dg_raa >= -9.0 and delta_tm <= 3.5) else "WARNING"
             if min_dg_raa < -12.0:
                 status_raa = "VETO (High Dimer Risk)"
                 
-            # Score (100 - penalties)
             score = 100.0
             if min_dg_raa < 0:
-                score += min_dg_raa * 3.5  # Penalty per kcal/mol
-            score -= delta_tm * 4.0        # Penalty per degree Tm difference
+                score += min_dg_raa * 3.5
+            score -= delta_tm * 4.0
             score = max(0.0, round(score, 1))
             
             results.append({
@@ -159,18 +165,24 @@ def run_multiplex_screening(file_a, file_b, out_dir, num_candidates=10):
                 "dye_a": "FAM",
                 "dye_b": "HEX",
                 "dye_status": dye_status,
-                "oligos": {
-                    "fwd_a": fwd_a, "rev_a": rev_a, "probe_a": prb_a,
-                    "fwd_b": fwd_b, "rev_b": rev_b, "probe_b": prb_b
+                "oligos_synthesis": {
+                    "flu_a": {
+                        "fwd": {"deg_seq": fwd_a_deg, "ref_seq": fwd_a_ref, "len": len(fwd_a_deg), "tm": round(tm_fwd_a, 1), "gc": calculate_gc(fwd_a_deg), "pos": f"{cand_a.get('fwd_start')}-{cand_a.get('fwd_end')}"},
+                        "rev": {"deg_seq": rev_a_deg, "ref_seq": rev_a_ref, "len": len(rev_a_deg), "tm": round(tm_rev_a, 1), "gc": calculate_gc(rev_a_deg), "pos": f"{cand_a.get('rev_start')}-{cand_a.get('rev_end')}"},
+                        "probe": {"deg_seq": prb_a_deg, "ref_seq": prb_a_ref, "len": len(prb_a_deg), "tm": round(tm_prb_a, 1), "gc": calculate_gc(prb_a_deg), "pos": f"{cand_a.get('probe_start')}-{cand_a.get('probe_end')}", "label": "5'-FAM / 3'-BHQ1 / Internal-THF"}
+                    },
+                    "flu_b": {
+                        "fwd": {"deg_seq": fwd_b_deg, "ref_seq": fwd_b_ref, "len": len(fwd_b_deg), "tm": round(tm_fwd_b, 1), "gc": calculate_gc(fwd_b_deg), "pos": f"{cand_b.get('fwd_start')}-{cand_b.get('fwd_end')}"},
+                        "rev": {"deg_seq": rev_b_deg, "ref_seq": rev_b_ref, "len": len(rev_b_deg), "tm": round(tm_rev_b, 1), "gc": calculate_gc(rev_b_deg), "pos": f"{cand_b.get('rev_start')}-{cand_b.get('rev_end')}"},
+                        "probe": {"deg_seq": prb_b_deg, "ref_seq": prb_b_ref, "len": len(prb_b_deg), "tm": round(tm_prb_b, 1), "gc": calculate_gc(prb_b_deg), "pos": f"{cand_b.get('probe_start')}-{cand_b.get('probe_end')}", "label": "5'-HEX / 3'-BHQ1 / Internal-THF"}
+                    }
                 },
                 "cross_dimers_39c": cross_dimers_raa,
                 "cross_dimers_55c": cross_dimers_qpcr
             })
             
-    # Sort results by score descending
     results.sort(key=lambda x: x["score"], reverse=True)
     
-    # Write JSON output
     json_path = os.path.join(out_dir, "multiplex_candidates.json")
     with open(json_path, "w") as f:
         json.dump(results, f, indent=2)
@@ -179,7 +191,7 @@ def run_multiplex_screening(file_a, file_b, out_dir, num_candidates=10):
     # Write Markdown Report
     md_path = os.path.join(out_dir, "multiplex_report.md")
     with open(md_path, "w") as f:
-        f.write("# Dual-Target Multiplex Assay Compatibility Report\n")
+        f.write("# Dual-Target Multiplex Assay Compatibility & Synthesis Report\n")
         f.write("## Target Pair: Influenza A MP (FAM) + Influenza B MP (HEX) — Indonesia Cohort\n\n")
         f.write(f"Screened **{len(results)} candidate combinations** ($10 \\times 10$) across two temperature regimes ($39.0^\\circ\\text{{C}}$ RT-RAA & $55.0^\\circ\\text{{C}}$ qPCR).\n\n")
         f.write("### Top 5 Recommended Multiplex Combinations\n\n")
@@ -188,9 +200,25 @@ def run_multiplex_screening(file_a, file_b, out_dir, num_candidates=10):
         for idx, r in enumerate(results[:5], 1):
             f.write(f"| {idx} | **{r['pair_id']}** | **{r['score']}%** | {r['min_dg_raa_39c']} kcal/mol | {r['min_dg_qpcr_55c']} kcal/mol | {r['delta_tm']}°C | `{r['status_raa_39c']}` |\n")
             
-        f.write("\n\n### Cross-Dimer Interactions for Rank 1 Combination\n\n")
+        f.write("\n\n### Rank 1 Oligo Synthesis Specifications (`FluA_Rank7_x_FluB_Rank6`)\n\n")
         r1 = results[0]
-        f.write(f"**Pair ID**: `{r1['pair_id']}` (Score: {r1['score']}%)\n\n")
+        oligos = r1['oligos_synthesis']
+        
+        f.write("#### 🟩 Target A: Influenza A MP (FAM Channel)\n\n")
+        f.write("| Oligo Name | Type | Degenerate Sequence (5' -> 3') | Length | Tm (°C) | GC (%) | Modification / Label |\n")
+        f.write("|---|---|---|---|---|---|---|\n")
+        f.write(f"| FluA_Fwd | Fwd Primer | `{oligos['flu_a']['fwd']['deg_seq']}` | {oligos['flu_a']['fwd']['len']} nt | {oligos['flu_a']['fwd']['tm']}°C | {oligos['flu_a']['fwd']['gc']}% | Unlabeled |\n")
+        f.write(f"| FluA_Rev | Rev Primer | `{oligos['flu_a']['rev']['deg_seq']}` | {oligos['flu_a']['rev']['len']} nt | {oligos['flu_a']['rev']['tm']}°C | {oligos['flu_a']['rev']['gc']}% | Unlabeled |\n")
+        f.write(f"| FluA_Probe | Exo-Probe | `{oligos['flu_a']['probe']['deg_seq']}` | {oligos['flu_a']['probe']['len']} nt | {oligos['flu_a']['probe']['tm']}°C | {oligos['flu_a']['probe']['gc']}% | {oligos['flu_a']['probe']['label']} |\n\n")
+
+        f.write("#### 🟨 Target B: Influenza B MP (HEX Channel)\n\n")
+        f.write("| Oligo Name | Type | Degenerate Sequence (5' -> 3') | Length | Tm (°C) | GC (%) | Modification / Label |\n")
+        f.write("|---|---|---|---|---|---|---|\n")
+        f.write(f"| FluB_Fwd | Fwd Primer | `{oligos['flu_b']['fwd']['deg_seq']}` | {oligos['flu_b']['fwd']['len']} nt | {oligos['flu_b']['fwd']['tm']}°C | {oligos['flu_b']['fwd']['gc']}% | Unlabeled |\n")
+        f.write(f"| FluB_Rev | Rev Primer | `{oligos['flu_b']['rev']['deg_seq']}` | {oligos['flu_b']['rev']['len']} nt | {oligos['flu_b']['rev']['tm']}°C | {oligos['flu_b']['rev']['gc']}% | Unlabeled |\n")
+        f.write(f"| FluB_Probe | Exo-Probe | `{oligos['flu_b']['probe']['deg_seq']}` | {oligos['flu_b']['probe']['len']} nt | {oligos['flu_b']['probe']['tm']}°C | {oligos['flu_b']['probe']['gc']}% | {oligos['flu_b']['probe']['label']} |\n\n")
+
+        f.write("### Cross-Dimer Inter-Assay Interactions\n\n")
         f.write("| Oligo Pair | Cross-Dimer ΔG (39°C) | Cross-Dimer ΔG (55°C) |\n")
         f.write("|---|---|---|\n")
         for pair_name, dg in r1['cross_dimers_39c'].items():
@@ -198,76 +226,6 @@ def run_multiplex_screening(file_a, file_b, out_dir, num_candidates=10):
             f.write(f"| {pair_name} | {dg} kcal/mol | {dg_55} kcal/mol |\n")
             
     print(f"[M11] Saved Markdown report to: {md_path}")
-    
-    # Write HTML Heatmap Dashboard
-    html_path = os.path.join(out_dir, "multiplex_matrix.html")
-    generate_html_matrix(results, html_path)
-    print(f"[M11] Saved HTML interactive dashboard to: {html_path}")
-
-def generate_html_matrix(results, html_path):
-    # Build 10x10 matrix for HTML display
-    matrix_data = {}
-    for r in results:
-        matrix_data[(r['rank_a'], r['rank_b'])] = r
-        
-    html = """<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>🧬 Dual Multiplex Assay Compatibility Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <style>
-        :root { --bg:#0b132b; --surface:#1c2541; --accent-fam:#10b981; --accent-hex:#f59e0b; --border:rgba(255,255,255,0.1); }
-        body { font-family:'Outfit', sans-serif; background:var(--bg); color:#f0f6ff; padding:2rem; }
-        h1 { background:linear-gradient(135deg, #10b981, #f59e0b); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:0.5rem; }
-        .grid-table { width:100%; border-collapse:collapse; margin-top:1.5rem; }
-        .grid-table th, .grid-table td { border:1px solid var(--border); padding:10px; text-align:center; font-size:12px; }
-        .grid-table th { background:var(--surface); }
-        .score-good { background:rgba(16,185,129,0.25); color:#34d399; font-weight:700; }
-        .score-warn { background:rgba(245,158,11,0.25); color:#fbbf24; font-weight:700; }
-        .score-bad { background:rgba(239,68,68,0.25); color:#f87171; font-weight:700; }
-        .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.5rem; margin-bottom:2rem; }
-        .badge-fam { background:rgba(16,185,129,0.2); color:#10b981; padding:3px 8px; border-radius:6px; font-weight:600; }
-        .badge-hex { background:rgba(245,158,11,0.2); color:#f59e0b; padding:3px 8px; border-radius:6px; font-weight:600; }
-    </style>
-</head>
-<body>
-    <h1>🧬 Dual-Target Multiplex Compatibility Matrix</h1>
-    <p style="color:#8b9dc0; margin-bottom:1.5rem;">Influenza A MP (<span class="badge-fam">FAM Probe</span>) vs Influenza B MP (<span class="badge-hex">HEX Probe</span>) — Indonesia Cohort</p>
-
-    <div class="card">
-        <h3>Top Rank 1 Recommended Combination</h3>
-        <p style="margin-top:8px;"><b>Pair ID:</b> """ + results[0]['pair_id'] + """ &nbsp;|&nbsp; <b>Compatibility Score:</b> <span class="badge-fam">""" + str(results[0]['score']) + """%</span></p>
-        <p style="margin-top:4px;"><b>RT-RAA (39°C) Min ΔG:</b> """ + str(results[0]['min_dg_raa_39c']) + """ kcal/mol &nbsp;|&nbsp; <b>qPCR (55°C) Min ΔG:</b> """ + str(results[0]['min_dg_qpcr_55c']) + """ kcal/mol &nbsp;|&nbsp; <b>ΔTm:</b> """ + str(results[0]['delta_tm']) + """°C</p>
-    </div>
-
-    <h3>10x10 Pairwise Matrix (Compatibility Score %)</h3>
-    <table class="grid-table">
-        <thead>
-            <tr>
-                <th>Flu A \\ Flu B</th>
-"""
-    for rb in range(1, 11):
-        html += f"<th>Rank {rb} (Flu B)</th>"
-    html += "</tr></thead><tbody>"
-
-    for ra in range(1, 11):
-        html += f"<tr><th>Rank {ra} (Flu A)</th>"
-        for rb in range(1, 11):
-            cell = matrix_data.get((ra, rb), {})
-            score = cell.get('score', 0)
-            cls = "score-good" if score >= 85 else ("score-warn" if score >= 70 else "score-bad")
-            html += f"<td class='{cls}'>{score}%<br><span style='font-size:10px;opacity:0.8;'>{cell.get('min_dg_raa_39c', 0)} kcal/mol</span></td>"
-        html += "</tr>"
-
-    html += """
-        </tbody>
-    </table>
-</body>
-</html>
-"""
-    with open(html_path, "w") as f:
-        f.write(html)
 
 def main():
     parser = argparse.ArgumentParser(description="Multiplex Compatibility Checker")

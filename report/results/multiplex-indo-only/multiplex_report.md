@@ -1,4 +1,4 @@
-# Dual-Target Multiplex Assay Compatibility Report
+# Dual-Target Multiplex Assay Compatibility & Synthesis Report
 ## Target Pair: Influenza A MP (FAM) + Influenza B MP (HEX) — Indonesia Cohort
 
 Screened **100 candidate combinations** ($10 \times 10$) across two temperature regimes ($39.0^\circ\text{C}$ RT-RAA & $55.0^\circ\text{C}$ qPCR).
@@ -14,9 +14,25 @@ Screened **100 candidate combinations** ($10 \times 10$) across two temperature 
 | 5 | **FluA_Rank6_x_FluB_Rank6** | **72.1%** | -7.13 kcal/mol | -5.01 kcal/mol | 0.74°C | `PASS` |
 
 
-### Cross-Dimer Interactions for Rank 1 Combination
+### Rank 1 Oligo Synthesis Specifications (`FluA_Rank7_x_FluB_Rank6`)
 
-**Pair ID**: `FluA_Rank7_x_FluB_Rank6` (Score: 73.9%)
+#### 🟩 Target A: Influenza A MP (FAM Channel)
+
+| Oligo Name | Type | Degenerate Sequence (5' -> 3') | Length | Tm (°C) | GC (%) | Modification / Label |
+|---|---|---|---|---|---|---|
+| FluA_Fwd | Fwd Primer | `CTGACTAARGGRATTTTRGGRTTTGTATT` | 29 nt | 60.1°C | 27.6% | Unlabeled |
+| FluA_Rev | Rev Primer | `AGCAGTTAAACTATATARGAARCTGAARAGR` | 31 nt | 60.4°C | 25.8% | Unlabeled |
+| FluA_Probe | Exo-Probe | `ACCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCARAATGCC` | 51 nt | 81.6°C | 56.9% | 5'-FAM / 3'-BHQ1 / Internal-THF |
+
+#### 🟨 Target B: Influenza B MP (HEX Channel)
+
+| Oligo Name | Type | Degenerate Sequence (5' -> 3') | Length | Tm (°C) | GC (%) | Modification / Label |
+|---|---|---|---|---|---|---|
+| FluB_Fwd | Fwd Primer | `GAAATAYCTATAATGYTYGAACCATTYCAGA` | 31 nt | 60.4°C | 25.8% | Unlabeled |
+| FluB_Rev | Rev Primer | `TTTATTGTCTCTTTRTTTGGMCCYTTTATTC` | 31 nt | 60.4°C | 25.8% | Unlabeled |
+| FluB_Probe | Exo-Probe | `TYTTATCAGCTCTCCATTTCATGGCTTGGACAATAGGRCATTTRAATC` | 48 nt | 71.3°C | 35.4% | 5'-HEX / 3'-BHQ1 / Internal-THF |
+
+### Cross-Dimer Inter-Assay Interactions
 
 | Oligo Pair | Cross-Dimer ΔG (39°C) | Cross-Dimer ΔG (55°C) |
 |---|---|---|
@@ -28,4 +44,4 @@ Screened **100 candidate combinations** ($10 \times 10$) across two temperature 
 | Rev_A_vs_Probe_B | -5.69 kcal/mol | -3.49 kcal/mol |
 | Probe_A_vs_Fwd_B | -4.77 kcal/mol | -2.83 kcal/mol |
 | Probe_A_vs_Rev_B | -6.12 kcal/mol | -3.49 kcal/mol |
-| Probe_A_vs_Probe_B | -6.76 kcal/mol | -1.29 kcal/mol |
+| Probe_A_vs_Probe_B | -6.9 kcal/mol | -4.22 kcal/mol |

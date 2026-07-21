@@ -36,7 +36,29 @@ The table below highlights the top 5 multiplex combinations ranked by overall co
 
 ---
 
-## 3. Oligo Cross-Dimer Interactions (Rank 1 Assay)
+## 3. Oligo Synthesis Specifications (Rank 1 Recommended Pair: `FluA_Rank7_x_FluB_Rank6`)
+
+To ensure full transparency and laboratory synthesis readiness, the complete sequence strings, lengths, melting temperatures ($T_m$), GC percentages, and fluorophore dye modifications for all 6 oligos in the primary recommended multiplex set are listed below:
+
+### 🟩 Target A: Influenza A MP (FAM Channel)
+
+| Oligo Name | Type | IUPAC Degenerate Sequence (5' $\rightarrow$ 3') | Length | Tm (°C) | GC (%) | Modification / Tag |
+|---|---|---|---|---|---|---|
+| **FluA_Fwd** | Forward Primer | `CTGACTAARGGRATTTTRGGRTTTGTATT` | 29 nt | 60.1°C | 27.6% | Unlabeled |
+| **FluA_Rev** | Reverse Primer | `AGCAGTTAAACTATATARGAARCTGAARAGR` | 31 nt | 60.4°C | 25.8% | Unlabeled |
+| **FluA_Probe** | Exo-Probe | `ACCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCARAATGCC` | 51 nt | 81.6°C | 56.9% | `5'-FAM` / `3'-BHQ1` / `Internal-THF` |
+
+### 🟨 Target B: Influenza B MP (HEX Channel)
+
+| Oligo Name | Type | IUPAC Degenerate Sequence (5' $\rightarrow$ 3') | Length | Tm (°C) | GC (%) | Modification / Tag |
+|---|---|---|---|---|---|---|
+| **FluB_Fwd** | Forward Primer | `GAAATAYCTATAATGYTYGAACCATTYCAGA` | 31 nt | 60.4°C | 25.8% | Unlabeled |
+| **FluB_Rev** | Reverse Primer | `TTTATTGTCTCTTTRTTTGGMCCYTTTATTC` | 31 nt | 60.4°C | 25.8% | Unlabeled |
+| **FluB_Probe** | Exo-Probe | `TYTTATCAGCTCTCCATTTCATGGCTTGGACAATAGGRCATTTRAATC` | 48 nt | 71.3°C | 35.4% | `5'-HEX` / `3'-BHQ1` / `Internal-THF` |
+
+---
+
+## 4. Oligo Cross-Dimer Interactions (Rank 1 Assay)
 
 Below is the complete 9-pair inter-assay cross-dimer thermodynamic breakdown for the primary recommended multiplex set (`FluA_Rank7_x_FluB_Rank6`):
 
@@ -50,7 +72,7 @@ Below is the complete 9-pair inter-assay cross-dimer thermodynamic breakdown for
 | **Reverse A vs. Probe B** | -5.69 kcal/mol | -3.49 kcal/mol | <span style="color: #10b981; font-weight: bold;">Low / Safe</span> |
 | **Probe A vs. Forward B** | -4.77 kcal/mol | -2.83 kcal/mol | <span style="color: #10b981; font-weight: bold;">Negligible</span> |
 | **Probe A vs. Reverse B** | -6.12 kcal/mol | -3.49 kcal/mol | <span style="color: #10b981; font-weight: bold;">Low / Safe</span> |
-| **Probe A vs. Probe B** | -6.76 kcal/mol | -1.29 kcal/mol | <span style="color: #10b981; font-weight: bold;">Low / Safe</span> |
+| **Probe A vs. Probe B** | -6.90 kcal/mol | -4.22 kcal/mol | <span style="color: #10b981; font-weight: bold;">Low / Safe</span> |
 
 ---
 
