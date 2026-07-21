@@ -1,66 +1,189 @@
-# ==============================================================================
-# PANDEMIC PREPAREDNESS PIPELINE CONFIGURATION: MEASLES VIRUS (NCBI DATASET)
-# ==============================================================================
+# Pandemic Preparedness Diagnostic Pipeline — Configuration Profile
+# Target: Measles Virus (NCBI Dataset) - Indonesia & Global Surveillance
+---
 
+# [GLOBAL] Pipeline Metadata & Thresholds
+global_params:
+  min_subtype_count: 30           # Minimum sequences per genotype/lineage
+  iupac_threshold: 0.15           # Minor allele frequency to trigger IUPAC encoding (15%)
+
+# --- PIPELINE CONFIGURATION ---
 build_name: "measles-indo-only"
-
-# Database source selection
 database: "local"
 
-# Local input settings (NCBI Measles dataset)
+references:
+  reference_id: "NC_001498.1"
+  genome: "config/references/measles_reference.fasta"
+  annotation: "config/references/measles_annotation.gff"
+
+# [M01] Data Acquisition (Local Input from NCBI Dataset)
 local_input:
   sequences: "dataset/NCBI/Measles/sequences_clean.fasta"
   metadata: "dataset/NCBI/Measles/metadata_clean.tsv"
   format: "tsv"
 
-# Pathogen taxonomy
-pathogen:
-  name: "Measles virus"
-  genome_type: "ssRNA(-)"
+# [M01a] Early Filtering
+early_filter:
+  enabled: false
+  query: null
+  min_date: null
+  max_date: null
 
-# Reference genome and annotation files
-references:
-  genome: "config/references/measles_reference.fasta"
-  annotation: "config/references/measles_annotation.gff"
+# [M02] Quality Control & Spatio-Temporal Filter
+qc:
+  max_n_content: 5.0              # Toleransi maksimal % base N (ambiguitas)
+  dedup: true                     # Hapus sekuens duplikat identik
 
-# Subsampling & Filtering Configuration
 subsampling:
-  enabled: true
-  query: "country == 'Indonesia'"
+  group_by: "genotype country year month"
+  sequences_per_group: 10
   max_sequences: 5000
-  group_by: "country"
   min_length: 400
-  max_n_percentage: 0.10
+  seed: 42
+  query: "country == 'Indonesia'"
 
-# Alignments (MAFFT)
+  # Targeted Background Subsampling (Focal vs Contextual)
+  focal:
+    enabled: true
+    query: "country == 'Indonesia'"
+    max_sequences: null
+    sequences_per_group: 50
+    group_by: "genotype year month"
+    
+  contextual:
+    enabled: true
+    query: "country != 'Indonesia'"
+    max_sequences: null
+    sequences_per_group: 3
+    group_by: "genotype country year month"
+
+# [M03] Sequence Alignment (MAFFT)
 alignment:
   method: "mafft"
   args: "--auto"
 
-# Molecular clock temporal scaling (IQ-TREE2 & TreeTime)
-tree:
-  iqtree_args: "-m GTR+F+I+G4 -fast"
-  clock_rate: 0.0006   # Measles substitution rate (~6e-4 subs/site/year)
+# [M04] Phylogenetic Inference & Timetree (IQ-TREE2 & TreeTime)
+augur:
+  threads: 16
+
+timetree:
+  clock_rate: 0.0006              # Measles rate (~6e-4 subs/site/year)
   clock_std_dev: 0.0002
 
-# Evolutionary Selection Analysis (HyPhy)
+# [M05] Evolutionary Selection Pressure (HyPhy)
 hyphy:
-  methods: ["FUBAR"]
-  target_genes: ["N"]  # Nucleoprotein gene
-  alpha_level: 0.05
+  threads: 8
+  p_value_threshold: 0.1
+  methods:
+    - "FUBAR"
+    - "MEME"
+  target_genes:
+    - "N"                         # Nucleoprotein gene
+  subsample:
+    enabled: true
+    max_sequences: 2000
+    min_sequences: 50
+    strategy: "balanced"
+    group_by:
+      genotype: true
+      country: true
+      year: true
+    seed: 42
 
-# Conservation & Bridge Scoring (Module 07)
-conservation:
-  window_size: 30
-  min_conserved_pct: 95.0
+# [M06] Annotation & Clade Assignment
+nextclade:
+  enabled: false
+  dataset_name: null
+
+# [M07] Bridge Scoring Engine
+bridge:
+  strategy: "full_segment"
+  window_size: 300
+  min_region_length: 150
+  overlap_threshold: 0.75
+  buffer_bp: 50
   entropy_threshold: 0.20
+  gard_buffer_bp: 50
+  include_utr: true
+  design_regions:
+    - "segment-N"
+  scoring:
+    core:
+      conservation_weight: 0.66
+      purifying_weight: 0.34
+    multipliers:
+      meme:
+        thresholds:
+          - max_sites: 0
+            multiplier: 1.0
+          - max_sites: 1
+            multiplier: 0.9
+          - max_sites: 3
+            multiplier: 0.7
+        veto_above: 3
+      recombination:
+        near_penalty: 0.5
+      gc_content:
+        ideal_min: 35
+        ideal_max: 60
+        marginal_ranges:
+          - min: 25
+            max: 34
+          - min: 61
+            max: 70
+        marginal_multiplier: 0.7
+        veto_below: 25
+        veto_above: 70
+      conserved_block:
+        entropy_threshold: 0.10
+        ideal_min_len: 35
+        penalty_min_len: 20
+        penalty_multiplier: 0.8
+      homopolymer:
+        max_repeats: 5
+        penalty_multiplier: 0.6
+  tiers:
+    strict:
+      min_conservation: 0.95
+      min_purifying_prob: 0.9
+    moderate:
+      min_conservation: 0.85
+      min_purifying_prob: 0.7
+    survival:
+      min_conservation: 0.80
 
-# PrimerLab RAA Isothermal Design Parameters (Module 08)
+# [M07a] Clade SNP Finder
+snp_finder:
+  enabled: true
+  overlap_threshold: 0.75
+  buffer_bp: 150
+  gard_buffer_bp: 50
+  min_fixation_freq: 0.90
+  min_coverage: 0.80
+  p_value_threshold: 0.01
+  group_by: "genotype"
+
+# [M08] PrimerLab Integration (Isothermal RAA Design)
 primerlab:
   repo_path: "git+https://github.com/CORE-Lab-Research/primerlab-genomic.git@main"
   template: "config/primerlab_template.yaml"
   design:
     num_candidates: 1000
+    search_strategy: "standard"
+    hard_qc_filter: "false"
+    max_search_iterations: 5
+    vienna_ranking_limit: 500
+    window_size: null
+    overlap: 200
+    validate: true
+    blast_offtarget_check: false
+    blast_ranking_limit: 10
+    blast_database: "nt"
+    blast_mode: "remote"
+    blast_local_db_path: null
+    blast_targeted_check: false
+    blast_targeted_db_path: null
+    entropy_threshold: 0.50
     assay_type: "RT-RAA"
     reaction_temperature: 39.0
     primer_size:
@@ -72,9 +195,27 @@ primerlab:
       enabled: true
       max_iupac_variants: 16
 
-# In-Silico PCR & Validation (Module 10)
+# [M09] BLAST Specificity Verification
+blast:
+  mode: "remote"                  # "remote" (NCBI cloud) atau "local"
+  database: "nt"
+  max_target_seqs: 100
+  evalue: 1000
+  word_size: 7
+  dust: "no"
+  perc_identity: 70.0
+  offtarget:
+    human_taxid: 9606
+    veto_on_human_match: true
+    min_mismatches_human_3prime: 2
+
+# [M10] In-Silico PCR & Verification
 insilico_pcr:
   enabled: true
-  assay_chemistry: "raa" # raa | pcr
+  assay_chemistry: "raa"          # raa | pcr
   max_mismatches: 3
   search_target: "N"
+  min_amplicon_len: 120
+  max_amplicon_len: 350
+  temporal_binning: "year"
+  regional_binning: "country"
