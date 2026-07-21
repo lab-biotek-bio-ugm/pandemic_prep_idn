@@ -5,6 +5,7 @@ import argparse
 import subprocess
 import tempfile
 import csv
+import shutil
 from pathlib import Path
 from datetime import datetime
 from typing import Optional
@@ -1067,17 +1068,20 @@ def _generate_igv_session(session_path: Path, gff_path, bed_path: Path,
     """
     gff_rel = Path(gff_path).name if gff_path else "final_candidates.gff3"
 
-    # ── Resolve reference genome path ──────────────────────────────────────────
+    # ── Self-contain resources in outdir for 100% portable downloads ─────────────
+    # Copy reference FASTA into outdir so opening igv_session.xml never breaks when downloading only results/
     genome_val = reference_id if reference_id else "NC_002016.1"
     if ref_fasta_path and os.path.exists(ref_fasta_path):
         try:
-            rel_ref = os.path.relpath(ref_fasta_path, start=outdir).replace("\\", "/")
-            genome_val = rel_ref
-        except Exception:
-            pass
+            local_ref_fasta = outdir / "reference.fasta"
+            shutil.copy2(ref_fasta_path, local_ref_fasta)
+            genome_val = "reference.fasta"
+        except Exception as e:
+            print(f"Warning: Failed to copy reference FASTA to outdir: {e}")
 
-    # ── Resolve annotation GFF (gene/CDS track) ───────────────────────────────
+    # Resolve and copy annotation GFF (gene/CDS track)
     resolved_annotation_gff = None
+    local_ref_gff_name = None
     if annotation_gff_path and os.path.exists(annotation_gff_path):
         resolved_annotation_gff = Path(annotation_gff_path)
     elif ref_fasta_path:
@@ -1091,12 +1095,20 @@ def _generate_igv_session(session_path: Path, gff_path, bed_path: Path,
         except Exception:
             pass
 
-    # ── Resolve consensus FASTA (from M07 output or M05 aligned FASTA) ────────
+    if resolved_annotation_gff and resolved_annotation_gff.exists():
+        try:
+            local_ref_gff = outdir / "reference_annotation.gff"
+            shutil.copy2(resolved_annotation_gff, local_ref_gff)
+            local_ref_gff_name = "reference_annotation.gff"
+        except Exception as e:
+            print(f"Warning: Failed to copy reference annotation GFF: {e}")
+
+    # Resolve and copy consensus FASTA (from M07 output or M05 aligned FASTA)
+    local_consensus_name = None
     resolved_consensus_fasta = None
     if consensus_fasta_path and os.path.exists(consensus_fasta_path):
         resolved_consensus_fasta = Path(consensus_fasta_path)
     else:
-        # Search in common relative paths
         for candidate_path in [
             outdir / "../m07/consensus_sequence.fasta",
             outdir / "../m07/consensus.fasta",
@@ -1107,7 +1119,15 @@ def _generate_igv_session(session_path: Path, gff_path, bed_path: Path,
                 resolved_consensus_fasta = candidate_path.resolve()
                 break
 
-    # ── Build resource list (all files that need to be declared) ──────────────
+    if resolved_consensus_fasta and resolved_consensus_fasta.exists():
+        try:
+            local_consensus_fasta = outdir / "consensus.fasta"
+            shutil.copy2(resolved_consensus_fasta, local_consensus_fasta)
+            local_consensus_name = "consensus.fasta"
+        except Exception as e:
+            print(f"Warning: Failed to copy consensus FASTA: {e}")
+
+    # ── Build resource list (all files declared as pure local filenames) ───────
     resources = [f'<Resource path="{gff_rel}"/>']  # primer candidates GFF always declared
 
     sticky_tracks = [
@@ -1115,21 +1135,18 @@ def _generate_igv_session(session_path: Path, gff_path, bed_path: Path,
     ]
 
     # Gene annotations / CDS
-    if resolved_annotation_gff and resolved_annotation_gff.exists():
-        rel_ref_gff = os.path.relpath(resolved_annotation_gff, start=outdir).replace("\\", "/")
-        if rel_ref_gff != gff_rel:  # guard: don't duplicate primer candidates GFF
-            resources.append(f'<Resource path="{rel_ref_gff}"/>')
-            sticky_tracks.append(
-                f'<Track id="{rel_ref_gff}" name="②  Gene Annotations / CDS" renderer="GENE" '
-                f'visible="true" displayMode="EXPANDED" color="0,100,180" height="60">\n        </Track>'
-            )
+    if local_ref_gff_name:
+        resources.append(f'<Resource path="{local_ref_gff_name}"/>')
+        sticky_tracks.append(
+            f'<Track id="{local_ref_gff_name}" name="②  Gene Annotations / CDS" renderer="GENE" '
+            f'visible="true" displayMode="EXPANDED" color="0,100,180" height="60">\n        </Track>'
+        )
 
     # Consensus sequence FASTA
-    if resolved_consensus_fasta and resolved_consensus_fasta.exists():
-        rel_cons = os.path.relpath(resolved_consensus_fasta, start=outdir).replace("\\", "/")
-        resources.append(f'<Resource path="{rel_cons}"/>')
+    if local_consensus_name:
+        resources.append(f'<Resource path="{local_consensus_name}"/>')
         sticky_tracks.append(
-            f'<Track id="{rel_cons}" name="③  Consensus Sequence (MSA)" renderer="SEQUENCE" '
+            f'<Track id="{local_consensus_name}" name="③  Consensus Sequence (MSA)" renderer="SEQUENCE" '
             f'visible="true" displayMode="COLLAPSED" height="30">\n        </Track>'
         )
 
