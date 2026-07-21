@@ -391,7 +391,7 @@ window.Quarto = {
   <li><a href="#key-biophysical-observations" id="toc-key-biophysical-observations" class="nav-link" data-scroll-target="#key-biophysical-observations">Key Biophysical Observations:</a></li>
   </ul></li>
   <li><a href="#oligo-cross-dimer-interactions-rank-1-assay" id="toc-oligo-cross-dimer-interactions-rank-1-assay" class="nav-link" data-scroll-target="#oligo-cross-dimer-interactions-rank-1-assay">3. Oligo Cross-Dimer Interactions (Rank 1 Assay)</a></li>
-  <li><a href="#interactive-10x10-compatibility-dashboard" id="toc-interactive-10x10-compatibility-dashboard" class="nav-link" data-scroll-target="#interactive-10x10-compatibility-dashboard">4. Interactive 10x10 Compatibility Dashboard</a></li>
+  <li><a href="#pairwise-10x10-compatibility-score-matrix" id="toc-pairwise-10x10-compatibility-score-matrix" class="nav-link" data-scroll-target="#pairwise-10x10-compatibility-score-matrix">4. Pairwise 10x10 Compatibility Score Matrix</a></li>
   </ul>
 </nav>
     </div>
@@ -595,13 +595,274 @@ window.Quarto = {
 </table>
 <hr>
 </section>
-<section id="interactive-10x10-compatibility-dashboard" class="level2">
-<h2 class="anchored" data-anchor-id="interactive-10x10-compatibility-dashboard">4. Interactive 10x10 Compatibility Dashboard</h2>
-<p>Click the button below to launch the interactive HTML matrix dashboard, visualising the <span class="math inline">\(10 \times 10\)</span> candidate score matrix:</p>
-<div style="margin: 20px 0;">
-  <a class="btn btn-primary" href="results/multiplex-indo-only/multiplex_matrix.html" target="_blank" style="display: inline-block; padding: 10px 20px; font-weight: 600; border-radius: 6px; text-decoration: none; background-color: #3b82f6; color: #ffffff;">
-    📊 Open Interactive 10x10 Multiplex Dashboard
-  </a>
+<section id="pairwise-10x10-compatibility-score-matrix" class="level2">
+<h2 class="anchored" data-anchor-id="pairwise-10x10-compatibility-score-matrix">4. Pairwise 10x10 Compatibility Score Matrix</h2>
+<p>Below is the complete <span class="math inline">\(10 \times 10\)</span> candidate matrix showing compatibility scores (%) and worst-case cross-dimer binding energies (<span class="math inline">\(\Delta G\)</span>) for all combinations of Top 10 Influenza A MP vs Top 10 Influenza B MP candidates:</p>
+<div style="overflow-x: auto; margin: 25px 0;">
+  
+<table class="table table-bordered table-hover caption-top">
+<colgroup>
+<col style="width: 9%">
+<col style="width: 9%">
+<col style="width: 9%">
+<col style="width: 9%">
+<col style="width: 9%">
+<col style="width: 9%">
+<col style="width: 9%">
+<col style="width: 9%">
+<col style="width: 9%">
+<col style="width: 9%">
+<col style="width: 9%">
+</colgroup>
+<thead class="table-dark">
+<tr class="header">
+<th data-quarto-table-cell-role="th" style="vertical-align: middle">Flu A \ Flu B</th>
+<th data-quarto-table-cell-role="th">Rank 1</th>
+<th data-quarto-table-cell-role="th">Rank 2</th>
+<th data-quarto-table-cell-role="th">Rank 3</th>
+<th data-quarto-table-cell-role="th">Rank 4</th>
+<th data-quarto-table-cell-role="th">Rank 5</th>
+<th data-quarto-table-cell-role="th">Rank 6</th>
+<th data-quarto-table-cell-role="th">Rank 7</th>
+<th data-quarto-table-cell-role="th">Rank 8</th>
+<th data-quarto-table-cell-role="th">Rank 9</th>
+<th data-quarto-table-cell-role="th">Rank 10</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<th class="table-dark" data-quarto-table-cell-role="th" style="vertical-align: middle">Rank 1</th>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">59.7%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">55.5%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">61.6%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">63.3%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">59.9%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">60.3%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">60.2%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+</tr>
+<tr class="even">
+<th class="table-dark" data-quarto-table-cell-role="th" style="vertical-align: middle">Rank 2</th>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">59.7%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">55.5%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">61.6%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">63.3%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">59.9%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">60.3%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">60.2%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+</tr>
+<tr class="odd">
+<th class="table-dark" data-quarto-table-cell-role="th" style="vertical-align: middle">Rank 3</th>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">59.3%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">55.5%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">59.3%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">59.3%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">59.3%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">59.3%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">59.3%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+</tr>
+<tr class="even">
+<th class="table-dark" data-quarto-table-cell-role="th" style="vertical-align: middle">Rank 4</th>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">68.5%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">64.3%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fef3c7; color: #92400e; font-weight: 600; padding: 8px 4px">70.4%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fef3c7; color: #92400e; font-weight: 600; padding: 8px 4px">72.1%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">68.7%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">69.1%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">69.1%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+</tr>
+<tr class="odd">
+<th class="table-dark" data-quarto-table-cell-role="th" style="vertical-align: middle">Rank 5</th>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+</tr>
+<tr class="even">
+<th class="table-dark" data-quarto-table-cell-role="th" style="vertical-align: middle">Rank 6</th>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">68.5%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">64.3%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fef3c7; color: #92400e; font-weight: 600; padding: 8px 4px">70.4%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fef3c7; color: #92400e; font-weight: 600; padding: 8px 4px">72.1%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">68.7%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">69.1%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">69.1%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+</tr>
+<tr class="odd">
+<th class="table-dark" data-quarto-table-cell-role="th" style="vertical-align: middle">Rank 7</th>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">70.3%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">66.1%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fef3c7; color: #92400e; font-weight: 600; padding: 8px 4px">73.2%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #d1fae5; color: #065f46; font-weight: 600; padding: 8px 4px">73.9%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fef3c7; color: #92400e; font-weight: 600; padding: 8px 4px">70.5%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fef3c7; color: #92400e; font-weight: 600; padding: 8px 4px">70.9%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fef3c7; color: #92400e; font-weight: 600; padding: 8px 4px">70.9%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+</tr>
+<tr class="even">
+<th class="table-dark" data-quarto-table-cell-role="th" style="vertical-align: middle">Rank 8</th>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">67.5%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">63.3%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">69.4%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fef3c7; color: #92400e; font-weight: 600; padding: 8px 4px">71.1%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">67.7%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">68.1%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">68.1%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+</tr>
+<tr class="odd">
+<th class="table-dark" data-quarto-table-cell-role="th" style="vertical-align: middle">Rank 9</th>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">67.5%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">63.3%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">69.4%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fef3c7; color: #92400e; font-weight: 600; padding: 8px 4px">71.1%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">67.7%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">68.1%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">68.1%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+</tr>
+<tr class="even">
+<th class="table-dark" data-quarto-table-cell-role="th" style="vertical-align: middle">Rank 10</th>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">67.5%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">63.3%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">69.4%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fef3c7; color: #92400e; font-weight: 600; padding: 8px 4px">71.1%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">67.7%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">68.1%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">68.1%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
+<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
+<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
+</tr>
+</tbody>
+</table>
+
 </div>
 
 

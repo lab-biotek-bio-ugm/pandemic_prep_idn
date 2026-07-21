@@ -786,11 +786,11 @@
     ]
   },
   {
-    "objectID": "results_multiplex.html#interactive-10x10-compatibility-dashboard",
-    "href": "results_multiplex.html#interactive-10x10-compatibility-dashboard",
+    "objectID": "results_multiplex.html#pairwise-10x10-compatibility-score-matrix",
+    "href": "results_multiplex.html#pairwise-10x10-compatibility-score-matrix",
     "title": "Results: Dual-Target Multiplex Compatibility",
-    "section": "4. Interactive 10x10 Compatibility Dashboard",
-    "text": "4. Interactive 10x10 Compatibility Dashboard\nClick the button below to launch the interactive HTML matrix dashboard, visualising the \\(10 \\times 10\\) candidate score matrix:\n\n  \n    📊 Open Interactive 10x10 Multiplex Dashboard",
+    "section": "4. Pairwise 10x10 Compatibility Score Matrix",
+    "text": "4. Pairwise 10x10 Compatibility Score Matrix\nBelow is the complete \\(10 \\times 10\\) candidate matrix showing compatibility scores (%) and worst-case cross-dimer binding energies (\\(\\Delta G\\)) for all combinations of Top 10 Influenza A MP vs Top 10 Influenza B MP candidates:\n\n  \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nFlu A \\ Flu B\nRank 1\nRank 2\nRank 3\nRank 4\nRank 5\nRank 6\nRank 7\nRank 8\nRank 9\nRank 10\n\n\n\n\nRank 1\n0%\n0 kcal\n59.7%\n-8.7 kcal\n0%\n0 kcal\n55.5%\n-8.7 kcal\n61.6%\n-8.7 kcal\n63.3%\n-8.7 kcal\n59.9%\n-8.7 kcal\n60.3%\n-8.7 kcal\n60.2%\n-8.7 kcal\n0%\n0 kcal\n\n\nRank 2\n0%\n0 kcal\n59.7%\n-8.7 kcal\n0%\n0 kcal\n55.5%\n-8.7 kcal\n61.6%\n-8.7 kcal\n63.3%\n-8.7 kcal\n59.9%\n-8.7 kcal\n60.3%\n-8.7 kcal\n60.2%\n-8.7 kcal\n0%\n0 kcal\n\n\nRank 3\n0%\n0 kcal\n59.3%\n-8.7 kcal\n0%\n0 kcal\n55.5%\n-8.7 kcal\n59.3%\n-8.7 kcal\n59.3%\n-8.7 kcal\n59.3%\n-8.7 kcal\n59.3%\n-8.7 kcal\n59.3%\n-8.7 kcal\n0%\n0 kcal\n\n\nRank 4\n0%\n0 kcal\n68.5%\n-7.13 kcal\n0%\n0 kcal\n64.3%\n-7.13 kcal\n70.4%\n-7.13 kcal\n72.1%\n-7.13 kcal\n68.7%\n-7.13 kcal\n69.1%\n-7.13 kcal\n69.1%\n-7.13 kcal\n0%\n0 kcal\n\n\nRank 5\n0%\n0 kcal\n0%\n0 kcal\n0%\n0 kcal\n0%\n0 kcal\n0%\n0 kcal\n0%\n0 kcal\n0%\n0 kcal\n0%\n0 kcal\n0%\n0 kcal\n0%\n0 kcal\n\n\nRank 6\n0%\n0 kcal\n68.5%\n-7.13 kcal\n0%\n0 kcal\n64.3%\n-7.13 kcal\n70.4%\n-7.13 kcal\n72.1%\n-7.13 kcal\n68.7%\n-7.13 kcal\n69.1%\n-7.13 kcal\n69.1%\n-7.13 kcal\n0%\n0 kcal\n\n\nRank 7\n0%\n0 kcal\n70.3%\n-7.13 kcal\n0%\n0 kcal\n66.1%\n-7.13 kcal\n73.2%\n-7.13 kcal\n73.9%\n-7.13 kcal\n70.5%\n-7.13 kcal\n70.9%\n-7.13 kcal\n70.9%\n-7.13 kcal\n0%\n0 kcal\n\n\nRank 8\n0%\n0 kcal\n67.5%\n-7.13 kcal\n0%\n0 kcal\n63.3%\n-7.13 kcal\n69.4%\n-7.13 kcal\n71.1%\n-7.13 kcal\n67.7%\n-7.13 kcal\n68.1%\n-7.13 kcal\n68.1%\n-7.13 kcal\n0%\n0 kcal\n\n\nRank 9\n0%\n0 kcal\n67.5%\n-7.13 kcal\n0%\n0 kcal\n63.3%\n-7.13 kcal\n69.4%\n-7.13 kcal\n71.1%\n-7.13 kcal\n67.7%\n-7.13 kcal\n68.1%\n-7.13 kcal\n68.1%\n-7.13 kcal\n0%\n0 kcal\n\n\nRank 10\n0%\n0 kcal\n67.5%\n-7.13 kcal\n0%\n0 kcal\n63.3%\n-7.13 kcal\n69.4%\n-7.13 kcal\n71.1%\n-7.13 kcal\n67.7%\n-7.13 kcal\n68.1%\n-7.13 kcal\n68.1%\n-7.13 kcal\n0%\n0 kcal",
     "crumbs": [
       "<img src='assets/images/faculty_biology_ugm.png' style='height: 38px; width: auto; padding: 2px 0;' />",
       "Results & Biological Insights",
