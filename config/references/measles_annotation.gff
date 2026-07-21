@@ -1,0 +1,16 @@
+##gff-version 3
+NC_001498.1	NCBI	region	1	15894	.	+	.	ID=region-1;Name=Measles_genome
+NC_001498.1	NCBI	gene	56	1744	.	+	.	ID=gene-N;gene=N
+NC_001498.1	NCBI	CDS	108	1685	.	+	0	ID=cds-N;Parent=gene-N;gene=N;product=nucleocapsid protein
+NC_001498.1	NCBI	gene	1748	3402	.	+	.	ID=gene-P/V/C;gene=P/V/C
+NC_001498.1	NCBI	CDS	1807	3330	.	+	0	ID=cds-P/V/C;Parent=gene-P/V/C;gene=P/V/C;product=phosphoprotein
+NC_001498.1	NCBI	CDS	1807	2705	.	+	0	ID=cds-P/V/C;Parent=gene-P/V/C;gene=P/V/C;product=V protein
+NC_001498.1	NCBI	CDS	1829	2389	.	+	0	ID=cds-P/V/C;Parent=gene-P/V/C;gene=P/V/C;product=C protein
+NC_001498.1	NCBI	gene	3406	4872	.	+	.	ID=gene-M;gene=M
+NC_001498.1	NCBI	CDS	3438	4445	.	+	0	ID=cds-M;Parent=gene-M;gene=M;product=matrix protein
+NC_001498.1	NCBI	gene	4876	7247	.	+	.	ID=gene-F;gene=F
+NC_001498.1	NCBI	CDS	5458	7110	.	+	0	ID=cds-F;Parent=gene-F;gene=F;product=fusion protein
+NC_001498.1	NCBI	gene	7251	9208	.	+	.	ID=gene-H;gene=H
+NC_001498.1	NCBI	CDS	7271	9124	.	+	0	ID=cds-H;Parent=gene-H;gene=H;product=hemagglutinin protein
+NC_001498.1	NCBI	gene	9212	15854	.	+	.	ID=gene-L;gene=L
+NC_001498.1	NCBI	CDS	9234	15785	.	+	0	ID=cds-L;Parent=gene-L;gene=L;product=large polymerase protein

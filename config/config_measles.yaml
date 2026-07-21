@@ -1,0 +1,80 @@
+# ==============================================================================
+# PANDEMIC PREPAREDNESS PIPELINE CONFIGURATION: MEASLES VIRUS (NCBI DATASET)
+# ==============================================================================
+
+build_name: "measles-indo-only"
+
+# Database source selection
+database: "local"
+
+# Local input settings (NCBI Measles dataset)
+local_input:
+  sequences: "dataset/NCBI/Measles/sequences_clean.fasta"
+  metadata: "dataset/NCBI/Measles/metadata_clean.tsv"
+  format: "tsv"
+
+# Pathogen taxonomy
+pathogen:
+  name: "Measles virus"
+  genome_type: "ssRNA(-)"
+
+# Reference genome and annotation files
+references:
+  genome: "config/references/measles_reference.fasta"
+  annotation: "config/references/measles_annotation.gff"
+
+# Subsampling & Filtering Configuration
+subsampling:
+  enabled: true
+  query: "country == 'Indonesia'"
+  max_sequences: 5000
+  group_by: "country"
+  min_length: 400
+  max_n_percentage: 0.10
+
+# Alignments (MAFFT)
+alignment:
+  method: "mafft"
+  args: "--auto"
+
+# Molecular clock temporal scaling (IQ-TREE2 & TreeTime)
+tree:
+  iqtree_args: "-m GTR+F+I+G4 -fast"
+  clock_rate: 0.0006   # Measles substitution rate (~6e-4 subs/site/year)
+  clock_std_dev: 0.0002
+
+# Evolutionary Selection Analysis (HyPhy)
+hyphy:
+  methods: ["FUBAR"]
+  target_genes: ["N"]  # Nucleoprotein gene
+  alpha_level: 0.05
+
+# Conservation & Bridge Scoring (Module 07)
+conservation:
+  window_size: 30
+  min_conserved_pct: 95.0
+  entropy_threshold: 0.20
+
+# PrimerLab RAA Isothermal Design Parameters (Module 08)
+primerlab:
+  repo_path: "git+https://github.com/CORE-Lab-Research/primerlab-genomic.git@main"
+  template: "config/primerlab_template.yaml"
+  design:
+    num_candidates: 1000
+    assay_type: "RT-RAA"
+    reaction_temperature: 39.0
+    primer_size:
+      min: 30
+      opt: 32
+      max: 35
+    product_size_range: [[150, 300]]
+    degenerate:
+      enabled: true
+      max_iupac_variants: 16
+
+# In-Silico PCR & Validation (Module 10)
+insilico_pcr:
+  enabled: true
+  assay_chemistry: "raa" # raa | pcr
+  max_mismatches: 3
+  search_target: "N"
