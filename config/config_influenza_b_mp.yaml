@@ -37,13 +37,13 @@ qc:
   dedup: true # Hapus sekuens duplikat identik
 
 subsampling:
-  # Pengaturan Dasar (digunakan jika focal dimatikan)
-  group_by: "subtype  year month"
-  sequences_per_group: 100
+  # Pengaturan Dasar (Indonesia Only)
+  group_by: "subtype year month"
+  sequences_per_group: 50
   max_sequences: null
   min_length: 1000
   seed: 42
-  query: "country == 'Indonesia'" # Contoh: "country == 'Indonesia' and year >= 2010"
+  query: "country == 'Indonesia'"
 
   # Targeted Background Subsampling (Focal vs Contextual)
   focal:
@@ -54,6 +54,7 @@ subsampling:
     group_by: "subtype year month"
 
   contextual:
+    enabled: false
     query: "country != 'Indonesia'"
     max_sequences: null
     sequences_per_group: 3

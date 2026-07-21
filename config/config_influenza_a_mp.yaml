@@ -10,7 +10,7 @@ global_params:
   iupac_threshold: 0.15           # Minor allele frequency to trigger IUPAC encoding (0.15 = 15%)
 
 # --- PIPELINE CONFIGURATION ---
-build_name: "influenza-a-mp-sea"
+build_name: "influenza-a-mp-indo-only"
 database: "local"
 
 references:
@@ -38,15 +38,14 @@ qc:
   dedup: true                     # Hapus sekuens duplikat identik
 
 subsampling:
-  # Pengaturan Dasar (digunakan jika focal dimatikan)
+  # Pengaturan Dasar (Indonesia Only)
   group_by: "subtype country year month"
-  sequences_per_group: 10
+  sequences_per_group: 50
   max_sequences: null
   min_length: 800
   seed: 42
-  query: "country in ['Indonesia', 'Singapore', 'Malaysia', 'Thailand', 'Vietnam', 'Philippines', 'Myanmar', 'Cambodia', 'Laos', 'Brunei']"
+  query: "country == 'Indonesia'"
 
-  
   # Targeted Background Subsampling (Focal vs Contextual)
   focal:
     enabled: false
@@ -56,6 +55,7 @@ subsampling:
     group_by: "subtype year month"
     
   contextual:
+    enabled: false
     query: "country != 'Indonesia'"
     max_sequences: null
     sequences_per_group: 3

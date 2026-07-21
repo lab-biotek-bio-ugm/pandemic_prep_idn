@@ -35,23 +35,24 @@ qc:
   dedup: true                     # Hapus sekuens duplikat identik
 
 subsampling:
+  # Pengaturan Dasar (Indonesia Only)
   group_by: "genotype country year month"
-  sequences_per_group: 10
-  max_sequences: 5000
+  sequences_per_group: 50
+  max_sequences: null
   min_length: 400
   seed: 42
   query: "country == 'Indonesia'"
 
   # Targeted Background Subsampling (Focal vs Contextual)
   focal:
-    enabled: true
+    enabled: false
     query: "country == 'Indonesia'"
     max_sequences: null
     sequences_per_group: 50
     group_by: "genotype year month"
     
   contextual:
-    enabled: true
+    enabled: false
     query: "country != 'Indonesia'"
     max_sequences: null
     sequences_per_group: 3
