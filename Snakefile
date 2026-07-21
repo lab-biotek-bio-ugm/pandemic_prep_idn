@@ -80,6 +80,7 @@ include: "rules/m07_bridge.smk"
 include: "rules/m08_primerlab.smk"
 include: "rules/m09_blast.smk"
 include: "rules/m10_insilico_pcr.smk"
+include: "rules/m11_multiplex.smk"
 include: "rules/build_db.smk"    # Custom local BLAST database builder (conditional on config)
 
 # DEFERRED DEVELOPMENT ITEMS — Tracked here to avoid loss across audits.
