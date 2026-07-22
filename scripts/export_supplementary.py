@@ -232,7 +232,7 @@ def create_executive_summary(results_root: Path, outdir: Path):
 
                                 order_rows.append({
                                     "Recommendation Category": cat,
-                                    "Assay Set": combo.get("pair_id"),
+                                    "Assay Set": combo.get("triplex_id") or combo.get("pair_id"),
                                     "Target Virus": t_name,
                                     "Oligo Role": role_lbl,
                                     "Degenerate Sequence (5' -> 3')": seq,
@@ -270,7 +270,8 @@ def create_executive_summary(results_root: Path, outdir: Path):
         with open(triplex_files[0], "r") as f:
             t_data = json.load(f)
             for rec in t_data:
-                r = {"Triplex Combo ID": rec.get("pair_id"), "Compatibility Score (%)": rec.get("score"), "Status (39°C)": rec.get("status_raa_39c"), "RAA ΔG 39°C": rec.get("min_dg_raa_39c"), "qPCR ΔG 55°C": rec.get("min_dg_qpcr_55c"), "Max ΔTm (°C)": rec.get("delta_tm")}
+                # Use triplex_id as fallback
+                r = {"Triplex Combo ID": rec.get("triplex_id") or rec.get("pair_id"), "Compatibility Score (%)": rec.get("score"), "Status (39°C)": rec.get("status_raa_39c") or rec.get("status_39c"), "RAA ΔG 39°C": rec.get("min_dg_raa_39c") or rec.get("min_dg_39c"), "qPCR ΔG 55°C": rec.get("min_dg_qpcr_55c") or rec.get("min_dg_55c"), "Max ΔTm (°C)": rec.get("delta_tm")}
                 for pair_k, pair_v in rec.get("cross_dimers_39c", {}).items(): r[f"ΔG 39C: {pair_k}"] = pair_v
                 tri_rows.append(r)
 
