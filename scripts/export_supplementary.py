@@ -334,8 +334,46 @@ def export_s1_candidates(results_root: Path, outdir: Path, only_deg: bool):
                 for prefix in ["fwd", "rev", "probe"]:
                     deg_col = f"{prefix}_degenerate_seq"
                     normal_col = f"{prefix}_seq"
+                    tm_col = f"{prefix}_tm"
+                    gc_col = f"{prefix}_gc"
+                    
                     if deg_col in df.columns and normal_col in df.columns:
                         df[deg_col] = df[deg_col].fillna("").replace("", None).combine_first(df[normal_col])
+                    
+                    # If Tm is missing or contains sentinel -1000000, calculate dynamically
+                    if tm_col in df.columns:
+                        # Convert to string to safely check for sentinel values
+                        df[tm_col] = df[tm_col].astype(str)
+                        for idx, row in df.iterrows():
+                            val = row[tm_col]
+                            if "-1000000" in val or val.strip() == "-" or val.strip() == "":
+                                seq = str(row.get(deg_col) or row.get(normal_col) or "")
+                                if seq:
+                                    # Wallace Formula: Tm = 2*(A+T) + 4*(G+C)
+                                    a = seq.count("A") + seq.count("T") + seq.count("W")
+                                    g = seq.count("G") + seq.count("C") + seq.count("S")
+                                    # Handle IUPAC degeneracies roughly: W/S/etc.
+                                    for char in seq:
+                                        if char in "RYMKBHDV": # approximate
+                                            a += 0.5
+                                            g += 0.5
+                                    tm_val = 2 * a + 4 * g
+                                    # Format as range or string
+                                    df.at[idx, tm_col] = f"{tm_val:.2f} °C"
+
+                    # If GC% is missing or 0%, calculate dynamically
+                    if gc_col in df.columns:
+                        df[gc_col] = df[gc_col].astype(str)
+                        for idx, row in df.iterrows():
+                            val = row[gc_col]
+                            if "0.00" in val or val.strip() == "0" or val.strip() == "-" or val.strip() == "":
+                                seq = str(row.get(deg_col) or row.get(normal_col) or "")
+                                if seq:
+                                    gc_count = sum(1 for c in seq if c in "GCS")
+                                    # approximate degeneracies
+                                    gc_count += sum(0.5 for c in seq if c in "RYMKBHDV")
+                                    gc_pct = (gc_count / len(seq)) * 100
+                                    df.at[idx, gc_col] = f"{gc_pct:.2f} %"
                 
                 cols = [c for c in CANDIDATE_COLUMNS if c in df.columns]
                 df = df[cols].rename(columns=CANDIDATE_COLUMNS)
