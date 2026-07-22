@@ -80,7 +80,7 @@ CANDIDATE_COLUMNS = {
 }
 
 MULTIPLEX_COLUMNS = {
-    "pair_id": "Candidate Pair", "rank_a": "Rank Target A", "rank_b": "Rank Target B",
+    "pair_id": "Candidate Pair", "triplex_id": "Triplex Combo ID", "rank_a": "Rank Target A", "rank_b": "Rank Target B",
     "score": "Compatibility Score (%)", "status_raa_39c": "Status (RAA 39°C)",
     "min_dg_raa_39c": "Worst RAA ΔG 39°C (kcal/mol)", "min_dg_qpcr_55c": "Worst qPCR ΔG 55°C (kcal/mol)",
     "delta_tm": "ΔTm Fwd Primers (°C)", "dye_a": "Fluorophore Target A", "dye_b": "Fluorophore Target B", "dye_status": "Dye Separation"
@@ -383,7 +383,27 @@ def export_s3_multiplex(results_root: Path, outdir: Path):
         if not data: continue
         rows = []
         for rec in data:
-            row = {MULTIPLEX_COLUMNS.get(k, k): v for k, v in rec.items() if k in MULTIPLEX_COLUMNS}
+            row = {}
+            # Fallback values for triplex format keys
+            status_val = rec.get("status_raa_39c") or rec.get("status_39c")
+            min_dg_39 = rec.get("min_dg_raa_39c") or rec.get("min_dg_39c")
+            min_dg_55 = rec.get("min_dg_qpcr_55c") or rec.get("min_dg_55c")
+            
+            raw_row = {
+                "pair_id": rec.get("pair_id"),
+                "triplex_id": rec.get("triplex_id"),
+                "rank_a": rec.get("rank_a"),
+                "rank_b": rec.get("rank_b"),
+                "score": rec.get("score"),
+                "status_raa_39c": status_val,
+                "min_dg_raa_39c": min_dg_39,
+                "min_dg_qpcr_55c": min_dg_55,
+                "delta_tm": rec.get("delta_tm"),
+                "dye_a": rec.get("dye_a"),
+                "dye_b": rec.get("dye_b"),
+                "dye_status": rec.get("dye_status")
+            }
+            row = {MULTIPLEX_COLUMNS[k]: v for k, v in raw_row.items() if k in MULTIPLEX_COLUMNS and v is not None}
             for pk, pv in rec.get("cross_dimers_39c", {}).items(): row[f"ΔG 39C: {pk}"] = pv
             rows.append(row)
         df = pd.DataFrame(rows)
