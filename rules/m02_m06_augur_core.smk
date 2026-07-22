@@ -209,18 +209,10 @@ rule augur_translate:
         f"logs/{{BUILD}}/m06_augur_translate.log"
     shell:
         """
-        # If annotation is a GFF file, we provide the genome FASTA as the vcf-reference
-        # so augur translate can extract nucleotide sequences for the GFF features.
-        if [[ "{input.annotation}" == *.gff || "{input.annotation}" == *.gff3 ]]; then
-            REF_ARGS="--reference-sequence {input.annotation} --vcf-reference {input.genome}"
-        else
-            REF_ARGS="--reference-sequence {input.annotation}"
-        fi
-
         augur translate \
             --tree {input.tree} \
             --ancestral-sequences {input.node_data} \
-            $REF_ARGS \
+            --reference-sequence {input.annotation} \
             {params.genes_flag} \
             --validation-mode warn \
             --output-node-data {output.node_data} 2> {log}
