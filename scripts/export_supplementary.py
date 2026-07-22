@@ -508,6 +508,7 @@ def main():
     parser.add_argument("--results-dir", default="results", help="Results directory")
     parser.add_argument("--outdir", default="supplementary", help="Output directory")
     parser.add_argument("--only-degenerate", action="store_true", help="Only export degenerate candidates")
+    parser.add_argument("configs", nargs="*", help="Config YAML files to detect active targets")
     args = parser.parse_args()
 
     results_root = Path(args.results_dir).resolve()
@@ -515,19 +516,67 @@ def main():
     outdir.mkdir(parents=True, exist_ok=True)
     (outdir / "csv").mkdir(exist_ok=True)
 
+    # Detect which target keywords are active from YAML config parameters
+    active_targets = []
+    for cfg in args.configs:
+        cfg_name = Path(cfg).stem.lower()
+        if "influenza_a" in cfg_name or "influenza-a" in cfg_name or "flu_a" in cfg_name or "flu-a" in cfg_name:
+            active_targets.append("influenza-a")
+        elif "influenza_b" in cfg_name or "influenza-b" in cfg_name or "flu_b" in cfg_name or "flu-b" in cfg_name:
+            active_targets.append("influenza-b")
+        elif "measles" in cfg_name:
+            active_targets.append("measles")
+            
+    if not active_targets:
+        active_targets = ["influenza-a", "influenza-b", "measles"]
+
     print(f"\n================================================================================")
     print(f"📊 EXPORTING COMPLETE PACKAGE (EXECUTIVE SUMMARY + S1 - S5 WORKBOOKS)")
+    print(f"🎯 Active targets matching: {active_targets}")
     print(f"================================================================================")
-    
+
+    # Subclass Path to dynamically filter results_root.iterdir() and results_root.glob()
+    class FilteredPath(type(Path())):
+        def iterdir(self):
+            raw = super().iterdir()
+            filtered = []
+            for b in raw:
+                # Keep target builds matching active targets
+                if not b.is_dir():
+                    continue
+                # Handle multiplex folder differently (it contains multi-target combination info)
+                if b.name.startswith("multiplex"):
+                    # Only include multiplex directories that contain at least one excluded target
+                    # If measles is not active, skip multiplex folders containing measles
+                    if "measles" not in active_targets and "measles" in b.name.lower():
+                        continue
+                    filtered.append(b)
+                elif any(t in b.name.lower() for t in active_targets):
+                    filtered.append(b)
+            return filtered
+            
+        def glob(self, pattern):
+            raw = super().glob(pattern)
+            filtered = []
+            for p in raw:
+                # Filter path list matching active targets
+                p_str = str(p).lower()
+                if "measles" not in active_targets and "measles" in p_str:
+                    continue
+                filtered.append(p)
+            return filtered
+
+    results_root_filtered = FilteredPath(results_root)
+
     # 1. Main Executive Summary Workbook
-    create_executive_summary(results_root, outdir)
+    create_executive_summary(results_root_filtered, outdir)
 
     # 2. Detailed Supporting Workbooks
-    export_s1_candidates(results_root, outdir, args.only_degenerate)
-    export_s2_blast(results_root, outdir, args.only_degenerate)
-    export_s3_multiplex(results_root, outdir)
-    export_s4_qc(results_root, outdir)
-    export_s5_conservation(results_root, outdir)
+    export_s1_candidates(results_root_filtered, outdir, args.only_degenerate)
+    export_s2_blast(results_root_filtered, outdir, args.only_degenerate)
+    export_s3_multiplex(results_root_filtered, outdir)
+    export_s4_qc(results_root_filtered, outdir)
+    export_s5_conservation(results_root_filtered, outdir)
 
     print(f"================================================================================")
     print(f"✅ COMPLETE EXPORT SUCCESSFUL! All workbooks generated in: {outdir}")
