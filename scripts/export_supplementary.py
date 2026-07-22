@@ -366,7 +366,7 @@ def export_s3_multiplex(results_root: Path, outdir: Path):
             for pk, pv in rec.get("cross_dimers_39c", {}).items(): row[f"ΔG 39C: {pk}"] = pv
             rows.append(row)
         df = pd.DataFrame(rows)
-        s_name = f"{'Triplex' if 'triplex' in jf.name else 'Pairwise'}_{m_dir.name.replace('multiplex-', '')}"
+        s_name = f"{'Triplex' if 'triplex' in jf.name else 'Pair'}_{m_dir.name.replace('multiplex-', '').replace('influenza-', '').replace('all-partial', 'All').replace('indo-only', 'Indo')}"
         ws = wb.create_sheet(title=safe_sheet_name(s_name))
         write_df_to_ws(ws, df, f"Multiplex — {m_dir.name}", "Status (RAA 39°C)")
         df.to_csv(str(csv_dir / f"S3_{s_name}.csv"), index=False)
