@@ -197,28 +197,34 @@ rule augur_translate:
     input:
         tree=f"results/{BUILD}/m04/tree.nwk",
         node_data=f"results/{BUILD}/m06/nt_muts.json",
-        reference=config["references"]["annotation"]
+        annotation=config["references"]["annotation"],
+        genome=config["references"]["genome"]
     output:
         node_data=f"results/{BUILD}/m06/aa_muts.json"
     params:
-        # Genes are derived dynamically from the GFF annotation — zero hardcoding.
-        # Flu-A MP  -> "M1 M2" | Flu-B MP -> "BM1 BM2" | SARS-CoV-2 -> "ORF1a ORF1b S E M N ..."
-        # If GFF has no CDS features, genes_flag is empty string and --genes is omitted entirely.
         genes_flag=("--genes " + " ".join(_CDS_GENES)) if _CDS_GENES else ""
     conda:
         "../envs/nextstrain.yaml"
     log:
         f"logs/{BUILD}/m06_augur_translate.log"
-    shell:
-        """
-        augur translate \
-            --tree {input.tree} \
-            --ancestral-sequences {input.node_data} \
-            --reference-sequence {input.reference} \
-            {params.genes_flag} \
-            --validation-mode warn \
-            --output-node-data {output.node_data} 2> {log}
-        """
+    run:
+        ann_path = str(input.annotation)
+        if ann_path.endswith(".gff") or ann_path.endswith(".gff3"):
+            ref_args = f"--reference-sequence {input.genome} --gff {input.annotation}"
+        else:
+            ref_args = f"--reference-sequence {input.annotation}"
+
+        shell(
+            f"""
+            augur translate \
+                --tree {input.tree} \
+                --ancestral-sequences {input.node_data} \
+                {ref_args} \
+                {params.genes_flag} \
+                --validation-mode warn \
+                --output-node-data {output.node_data} 2> {log[0]}
+            """
+        )
 
 rule augur_export:
     input:
