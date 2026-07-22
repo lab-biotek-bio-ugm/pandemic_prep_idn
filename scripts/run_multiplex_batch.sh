@@ -98,6 +98,43 @@ for (( i=0; i<NUM_BUILDS; i++ )); do
   done
 done
 
+# Step 3: Run Triplex Compatibility if 3 target builds are present
+if [ "$NUM_BUILDS" -eq 3 ]; then
+  BUILD_A="${BUILD_NAMES[0]}"
+  BUILD_B="${BUILD_NAMES[1]}"
+  BUILD_C="${BUILD_NAMES[2]}"
+
+  CAND_A=$(find "results/$BUILD_A" -name "final_candidates.json" | head -n 1)
+  CAND_B=$(find "results/$BUILD_B" -name "final_candidates.json" | head -n 1)
+  CAND_C=$(find "results/$BUILD_C" -name "final_candidates.json" | head -n 1)
+
+  if [ -n "$CAND_A" ] && [ -n "$CAND_B" ] && [ -n "$CAND_C" ]; then
+    OUT_DIR="results/multiplex-triplex-all-3"
+    echo -e "\n================================================================================"
+    echo "🧬 RUNNING TRIPLEX COMPATIBILITY SCREENING (ALL 3 VIRUSES)"
+    echo "================================================================================"
+    echo "  Input A: $CAND_A"
+    echo "  Input B: $CAND_B"
+    echo "  Input C: $CAND_C"
+    echo "  Output:  $OUT_DIR"
+
+    python scripts/m11_triplex_checker.py --file-a "$CAND_A" --file-b "$CAND_B" --file-c "$CAND_C" --outdir "$OUT_DIR" --num-candidates 10
+  fi
+fi
+
+# Step 4: Automatically export supplementary data
 echo -e "\n================================================================================"
-echo "✅ BATCHING RUN AND MULTIPLEX COMPATIBILITY COMPLETED!"
+echo "📊 CONSOLIDATING SUPPLEMENTARY EXCEL REPORTS"
+echo "================================================================================"
+python3 scripts/export_supplementary.py --results-dir results --outdir supplementary --only-degenerate
+
+# Mirror to Windows host Downloads results folder if available (WSL fallback)
+if [ -d "/mnt/c/Users/engki/Downloads/results" ]; then
+  echo "[Orchestrator] Mirroring supplementary folder to Windows host..."
+  mkdir -p "/mnt/c/Users/engki/Downloads/results/supplementary"
+  cp -r supplementary/* "/mnt/c/Users/engki/Downloads/results/supplementary/"
+fi
+
+echo -e "\n================================================================================"
+echo "✅ MULTI-TARGET BATCHING & MULTIPLEX SCREENING COMPLETED SUCCESSFULLY!"
 echo "================================================================================"
