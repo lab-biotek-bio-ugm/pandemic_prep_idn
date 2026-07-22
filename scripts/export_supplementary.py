@@ -133,6 +133,16 @@ def style_table(ws: Worksheet, start_row: int, ncols: int, status_col_idx: int =
             cell.border = BORDER_THIN
             if fill:
                 cell.fill = fill
+            
+            # Clean up extreme sentinel values and format numbers nicely
+            v = str(cell.value or "")
+            if "-1000000" in v:
+                cell.value = "-"
+            elif v == "0" or v == "0.0" or v == "0.0%":
+                # Check column header to see if it is thermodynamic delta G
+                hdr = str(ws.cell(row=start_row, column=col).value or "").lower()
+                if "dg" in hdr or "dimer" in hdr or "hairpin" in hdr or "tm" in hdr:
+                    cell.value = "-"
 
 def write_df_to_ws(ws: Worksheet, df: pd.DataFrame, title: str, status_col: str = None):
     ws.append([f"🔬 {title}"])
@@ -320,6 +330,13 @@ def export_s1_candidates(results_root: Path, outdir: Path, only_deg: bool):
                 with open(jf, "r") as f: data = json.load(f)
                 if not data: continue
                 df = pd.DataFrame(data)
+                # Fallback empty degenerate sequences to standard sequences
+                for prefix in ["fwd", "rev", "probe"]:
+                    deg_col = f"{prefix}_degenerate_seq"
+                    normal_col = f"{prefix}_seq"
+                    if deg_col in df.columns and normal_col in df.columns:
+                        df[deg_col] = df[deg_col].fillna("").replace("", None).combine_first(df[normal_col])
+                
                 cols = [c for c in CANDIDATE_COLUMNS if c in df.columns]
                 df = df[cols].rename(columns=CANDIDATE_COLUMNS)
                 sheet_name = f"{build_label(b.name)}_{r_dir.name}_{'Deg' if m=='degenerate' else 'NonDeg'}"
