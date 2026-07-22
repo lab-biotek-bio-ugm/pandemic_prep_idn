@@ -195,46 +195,46 @@ rule augur_ancestral:
 
 rule augur_translate:
     input:
-        tree=f"results/{BUILD}/m04/tree.nwk",
-        node_data=f"results/{BUILD}/m06/nt_muts.json",
+        tree=f"results/{{BUILD}}/m04/tree.nwk",
+        node_data=f"results/{{BUILD}}/m06/nt_muts.json",
         annotation=config["references"]["annotation"],
         genome=config["references"]["genome"]
     output:
-        node_data=f"results/{BUILD}/m06/aa_muts.json"
+        node_data=f"results/{{BUILD}}/m06/aa_muts.json"
     params:
         genes_flag=("--genes " + " ".join(_CDS_GENES)) if _CDS_GENES else ""
     conda:
         "../envs/nextstrain.yaml"
     log:
-        f"logs/{BUILD}/m06_augur_translate.log"
-    run:
-        ann_path = str(input.annotation)
-        if ann_path.endswith(".gff") or ann_path.endswith(".gff3"):
-            ref_args = f"--reference-sequence {input.genome} --gff {input.annotation}"
-        else:
-            ref_args = f"--reference-sequence {input.annotation}"
+        f"logs/{{BUILD}}/m06_augur_translate.log"
+    shell:
+        """
+        # If annotation is a GFF file, we provide the genome FASTA as the vcf-reference
+        # so augur translate can extract nucleotide sequences for the GFF features.
+        if [[ "{input.annotation}" == *.gff || "{input.annotation}" == *.gff3 ]]; then
+            REF_ARGS="--reference-sequence {input.annotation} --vcf-reference {input.genome}"
+        else
+            REF_ARGS="--reference-sequence {input.annotation}"
+        fi
 
-        shell(
-            f"""
-            augur translate \
-                --tree {input.tree} \
-                --ancestral-sequences {input.node_data} \
-                {ref_args} \
-                {params.genes_flag} \
-                --validation-mode warn \
-                --output-node-data {output.node_data} 2> {log[0]}
-            """
-        )
+        augur translate \
+            --tree {input.tree} \
+            --ancestral-sequences {input.node_data} \
+            $REF_ARGS \
+            {params.genes_flag} \
+            --validation-mode warn \
+            --output-node-data {output.node_data} 2> {log}
+        """
 
 rule augur_export:
     input:
-        tree=f"results/{BUILD}/m04/tree.nwk",
-        metadata=f"results/{BUILD}/m01/metadata_enriched.tsv",
-        branch_lengths=f"results/{BUILD}/m04/branch_lengths.json",
-        nt_muts=f"results/{BUILD}/m06/nt_muts.json",
-        aa_muts=f"results/{BUILD}/m06/aa_muts.json"
+        tree=f"results/{{BUILD}}/m04/tree.nwk",
+        metadata=f"results/{{BUILD}}/m01/metadata_enriched.tsv",
+        branch_lengths=f"results/{{BUILD}}/m04/branch_lengths.json",
+        nt_muts=f"results/{{BUILD}}/m06/nt_muts.json",
+        aa_muts=f"results/{{BUILD}}/m06/aa_muts.json"
     output:
-        auspice_json=f"results/{BUILD}/nextstrain/auspice_dataset.json"
+        auspice_json=f"results/{{BUILD}}/nextstrain/auspice_dataset.json"
     params:
         build_name=BUILD,
         color_by=(
@@ -245,7 +245,7 @@ rule augur_export:
     conda:
         "../envs/nextstrain.yaml"
     log:
-        f"logs/{BUILD}/m06_augur_export.log"
+        f"logs/{{BUILD}}/m06_augur_export.log"
     shell:
         """
         mkdir -p results/{BUILD}/nextstrain
