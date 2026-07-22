@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Module 11: Dual-Target Multiplex Compatibility – Pandemic Preparedness Report</title>
+<title>Module 11: Multiplex Compatibility – Pandemic Preparedness Report</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -189,7 +189,7 @@ window.Quarto = {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Module 11: Dual-Target Multiplex Compatibility</li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Technical Architecture</li><li class="breadcrumb-item"><a href="./m10.html">Multi-Metric In-Silico</a></li><li class="breadcrumb-item"><a href="./m11.html">Module 11: Multiplex Compatibility</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -238,13 +238,13 @@ window.Quarto = {
   </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
  <span class="menu-text">Technical Architecture</span></a>
-          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false" aria-label="Toggle section">
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 ">  
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
             <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false">
@@ -340,17 +340,23 @@ window.Quarto = {
   </li>
           <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="false">
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
  <span class="menu-text">Multi-Metric In-Silico</span></a>
-          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="false" aria-label="Toggle section">
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth2 ">  
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth2 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="./m10.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Module 10: In-silico Verification</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m11.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Module 11: Multiplex Compatibility</span></a>
   </div>
 </li>
       </ul>
@@ -432,9 +438,9 @@ window.Quarto = {
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
-<header id="title-block-header" class="quarto-title-block default">
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Technical Architecture</li><li class="breadcrumb-item"><a href="./m10.html">Multi-Metric In-Silico</a></li><li class="breadcrumb-item"><a href="./m11.html">Module 11: Multiplex Compatibility</a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title">Module 11: Dual-Target Multiplex Compatibility</h1>
+<h1 class="title">Module 11: Multiplex Compatibility</h1>
 </div>
 
 
@@ -451,19 +457,24 @@ window.Quarto = {
 </header>
 
 
-<p>Module 11 (<code>scripts/m11_multiplex_checker.py</code> &amp; <code>rules/m11_multiplex.smk</code>) is the final verification stage of the pipeline. It evaluates the physical and thermodynamic feasibility of mixing candidate diagnostic assays for two distinct pathogens (e.g.&nbsp;<strong>Influenza A MP</strong> + <strong>Influenza B MP</strong>) into a single multiplex reaction vessel (Dual RT-RAA or qPCR).</p>
+<p>Module 11 (<code>scripts/m11_multiplex_checker.py</code>, <code>scripts/m11_triplex_checker.py</code>, and <code>rules/m11_multiplex.smk</code>) is the final verification stage of the pipeline. It evaluates the physical and thermodynamic feasibility of mixing candidate diagnostic assays for multiple distinct pathogens (e.g.&nbsp;<strong>Influenza A MP</strong> + <strong>Influenza B MP</strong> + <strong>Measles</strong>) into a single multiplex reaction vessel (Dual or Triplex RT-RAA/qPCR).</p>
 <hr>
 <section id="core-screening-capabilities" class="level2">
 <h2 class="anchored" data-anchor-id="core-screening-capabilities">🔬 Core Screening Capabilities</h2>
 <ol type="1">
-<li><strong>Pairwise 6-Oligo Cross-Dimer Thermodynamics (<span class="math inline">\(\Delta G\)</span>)</strong>: Evaluates all 15 pairwise inter-assay combinations (<span class="math inline">\(\text{Fwd}_A, \text{Rev}_A, \text{Probe}_A \times \text{Fwd}_B, \text{Rev}_B, \text{Probe}_B\)</span>). Uses IUPAC base expansion to test worst-case secondary structure binding energies across all degenerate variants.</li>
+<li><strong>Pairwise &amp; Triplex Cross-Dimer Thermodynamics (<span class="math inline">\(\Delta G\)</span>)</strong>: Evaluates all inter-assay combinations (up to 9 oligos in a triplex mixture: 6 primers + 3 probes). Uses IUPAC base expansion to test worst-case secondary structure binding energies across all degenerate variants.</li>
 <li><strong>Dual Temperature Regimes</strong>:
 <ul>
-<li><strong><span class="math inline">\(39.0^\circ\text{C}\)</span> (RT-RAA Isothermal)</strong>: Reaction temperature for recombinase polymerase/recombinase amplification.</li>
+<li><strong><span class="math inline">\(39.0^\circ\text{C}\)</span> (RT-RAA Isothermal)</strong>: Reaction temperature for isothermal recombinase-mediated amplification.</li>
 <li><strong><span class="math inline">\(55.0^\circ\text{C}\)</span> (qPCR Benchmark)</strong>: Thermal cycling annealing benchmark.</li>
 </ul></li>
-<li><strong>Kinetic Melting Temperature Alignment (<span class="math inline">\(\Delta T_m\)</span>)</strong>: Verifies that the <span class="math inline">\(T_m\)</span> delta across all 4 primers is <span class="math inline">\(\le 3.5^\circ\text{C}\)</span> to maintain balanced amplification rates.</li>
-<li><strong>Spectral Dye Separation</strong>: Verifies probe channel independence (e.g.&nbsp;<code>5'-FAM / 3'-BHQ1</code> vs <code>5'-HEX / 3'-BHQ1</code>).</li>
+<li><strong>Kinetic Melting Temperature Alignment (<span class="math inline">\(\Delta T_m\)</span>)</strong>: Verifies that the <span class="math inline">\(T_m\)</span> delta across all primers in the reaction is <span class="math inline">\(\le 4.0^\circ\text{C}\)</span> to maintain balanced amplification rates.</li>
+<li><strong>Spectral Dye Separation</strong>: Verifies probe channel independence:
+<ul>
+<li>Target A: <code>5'-FAM / 3'-BHQ1</code> (emission ~520 nm)</li>
+<li>Target B: <code>5'-HEX / 3'-BHQ1</code> (emission ~556 nm)</li>
+<li>Target C: <code>5'-Cy5 / 3'-BHQ2</code> (emission ~670 nm)</li>
+</ul></li>
 </ol>
 <hr>
 </section>

@@ -740,30 +740,54 @@
   {
     "objectID": "m11.html",
     "href": "m11.html",
-    "title": "Module 11: Dual-Target Multiplex Compatibility",
+    "title": "Module 11: Multiplex Compatibility",
     "section": "",
-    "text": "Module 11 (scripts/m11_multiplex_checker.py & rules/m11_multiplex.smk) is the final verification stage of the pipeline. It evaluates the physical and thermodynamic feasibility of mixing candidate diagnostic assays for two distinct pathogens (e.g. Influenza A MP + Influenza B MP) into a single multiplex reaction vessel (Dual RT-RAA or qPCR)."
+    "text": "Module 11 (scripts/m11_multiplex_checker.py, scripts/m11_triplex_checker.py, and rules/m11_multiplex.smk) is the final verification stage of the pipeline. It evaluates the physical and thermodynamic feasibility of mixing candidate diagnostic assays for multiple distinct pathogens (e.g. Influenza A MP + Influenza B MP + Measles) into a single multiplex reaction vessel (Dual or Triplex RT-RAA/qPCR).",
+    "crumbs": [
+      "<img src='assets/images/faculty_biology_ugm.png' style='height: 38px; width: auto; padding: 2px 0;' />",
+      "Technical Architecture",
+      "Multi-Metric In-Silico",
+      "Module 11: Multiplex Compatibility"
+    ]
   },
   {
     "objectID": "m11.html#core-screening-capabilities",
     "href": "m11.html#core-screening-capabilities",
-    "title": "Module 11: Dual-Target Multiplex Compatibility",
+    "title": "Module 11: Multiplex Compatibility",
     "section": "🔬 Core Screening Capabilities",
-    "text": "🔬 Core Screening Capabilities\n\nPairwise 6-Oligo Cross-Dimer Thermodynamics (\\(\\Delta G\\)): Evaluates all 15 pairwise inter-assay combinations (\\(\\text{Fwd}_A, \\text{Rev}_A, \\text{Probe}_A \\times \\text{Fwd}_B, \\text{Rev}_B, \\text{Probe}_B\\)). Uses IUPAC base expansion to test worst-case secondary structure binding energies across all degenerate variants.\nDual Temperature Regimes:\n\n\\(39.0^\\circ\\text{C}\\) (RT-RAA Isothermal): Reaction temperature for recombinase polymerase/recombinase amplification.\n\\(55.0^\\circ\\text{C}\\) (qPCR Benchmark): Thermal cycling annealing benchmark.\n\nKinetic Melting Temperature Alignment (\\(\\Delta T_m\\)): Verifies that the \\(T_m\\) delta across all 4 primers is \\(\\le 3.5^\\circ\\text{C}\\) to maintain balanced amplification rates.\nSpectral Dye Separation: Verifies probe channel independence (e.g. 5'-FAM / 3'-BHQ1 vs 5'-HEX / 3'-BHQ1)."
+    "text": "🔬 Core Screening Capabilities\n\nPairwise & Triplex Cross-Dimer Thermodynamics (\\(\\Delta G\\)): Evaluates all inter-assay combinations (up to 9 oligos in a triplex mixture: 6 primers + 3 probes). Uses IUPAC base expansion to test worst-case secondary structure binding energies across all degenerate variants.\nDual Temperature Regimes:\n\n\\(39.0^\\circ\\text{C}\\) (RT-RAA Isothermal): Reaction temperature for isothermal recombinase-mediated amplification.\n\\(55.0^\\circ\\text{C}\\) (qPCR Benchmark): Thermal cycling annealing benchmark.\n\nKinetic Melting Temperature Alignment (\\(\\Delta T_m\\)): Verifies that the \\(T_m\\) delta across all primers in the reaction is \\(\\le 4.0^\\circ\\text{C}\\) to maintain balanced amplification rates.\nSpectral Dye Separation: Verifies probe channel independence:\n\nTarget A: 5'-FAM / 3'-BHQ1 (emission ~520 nm)\nTarget B: 5'-HEX / 3'-BHQ1 (emission ~556 nm)\nTarget C: 5'-Cy5 / 3'-BHQ2 (emission ~670 nm)",
+    "crumbs": [
+      "<img src='assets/images/faculty_biology_ugm.png' style='height: 38px; width: auto; padding: 2px 0;' />",
+      "Technical Architecture",
+      "Multi-Metric In-Silico",
+      "Module 11: Multiplex Compatibility"
+    ]
   },
   {
     "objectID": "m11.html#multi-target-batch-orchestrator",
     "href": "m11.html#multi-target-batch-orchestrator",
-    "title": "Module 11: Dual-Target Multiplex Compatibility",
+    "title": "Module 11: Multiplex Compatibility",
     "section": "🛠️ Multi-Target Batch Orchestrator",
-    "text": "🛠️ Multi-Target Batch Orchestrator\nTo run batching across multiple target virus configs and trigger Module 11 automatically, use the master batch script:\npython scripts/run_multiplex_batch.py \\\n  --configs config/config_influenza_a_mp.yaml config/config_influenza_b_mp.yaml \\\n  --cores 64 \\\n  --snakemake-args \"--use-conda --rerun-incomplete\"\n\nPassing Snakemake Flags\nYou can pass any standard Snakemake flag (such as --unlock, --use-conda, --rerun-incomplete, or --rerun-triggers mtime) directly through --snakemake-args:\n# Example: Unlocking directory if previous run was interrupted\npython scripts/run_multiplex_batch.py \\\n  --configs config/config_influenza_a_mp.yaml config/config_influenza_b_mp.yaml \\\n  --cores 64 \\\n  --snakemake-args \"--unlock\""
+    "text": "🛠️ Multi-Target Batch Orchestrator\nTo run batching across multiple target virus configs and trigger Module 11 automatically, use the master batch script:\npython scripts/run_multiplex_batch.py \\\n  --configs config/config_influenza_a_mp.yaml config/config_influenza_b_mp.yaml \\\n  --cores 64 \\\n  --snakemake-args \"--use-conda --rerun-incomplete\"\n\nPassing Snakemake Flags\nYou can pass any standard Snakemake flag (such as --unlock, --use-conda, --rerun-incomplete, or --rerun-triggers mtime) directly through --snakemake-args:\n# Example: Unlocking directory if previous run was interrupted\npython scripts/run_multiplex_batch.py \\\n  --configs config/config_influenza_a_mp.yaml config/config_influenza_b_mp.yaml \\\n  --cores 64 \\\n  --snakemake-args \"--unlock\"",
+    "crumbs": [
+      "<img src='assets/images/faculty_biology_ugm.png' style='height: 38px; width: auto; padding: 2px 0;' />",
+      "Technical Architecture",
+      "Multi-Metric In-Silico",
+      "Module 11: Multiplex Compatibility"
+    ]
   },
   {
     "objectID": "m11.html#module-outputs",
     "href": "m11.html#module-outputs",
-    "title": "Module 11: Dual-Target Multiplex Compatibility",
+    "title": "Module 11: Multiplex Compatibility",
     "section": "📊 Module Outputs",
-    "text": "📊 Module Outputs\nModule 11 generates three primary assets in results/multiplex-&lt;build_a&gt;_x_&lt;build_b&gt;/:\n\nmultiplex_candidates.json: Structured dataset containing scores, full oligo sequence synthesis specs, \\(T_m\\), GC%, positions, and 9-pair cross-dimer \\(\\Delta G\\) breakdown.\nmultiplex_report.md: Human-readable synthesis table and top recommended pairs.\nmultiplex_matrix.html: Interactive HTML compatibility matrix."
+    "text": "📊 Module Outputs\nModule 11 generates three primary assets in results/multiplex-&lt;build_a&gt;_x_&lt;build_b&gt;/:\n\nmultiplex_candidates.json: Structured dataset containing scores, full oligo sequence synthesis specs, \\(T_m\\), GC%, positions, and 9-pair cross-dimer \\(\\Delta G\\) breakdown.\nmultiplex_report.md: Human-readable synthesis table and top recommended pairs.\nmultiplex_matrix.html: Interactive HTML compatibility matrix.",
+    "crumbs": [
+      "<img src='assets/images/faculty_biology_ugm.png' style='height: 38px; width: auto; padding: 2px 0;' />",
+      "Technical Architecture",
+      "Multi-Metric In-Silico",
+      "Module 11: Multiplex Compatibility"
+    ]
   },
   {
     "objectID": "m07_engine.html",
@@ -859,6 +883,18 @@
     "title": "Results: Dual-Target Multiplex Compatibility",
     "section": "4. Pairwise 10x10 Compatibility Score Matrix",
     "text": "4. Pairwise 10x10 Compatibility Score Matrix\nBelow is the complete \\(10 \\times 10\\) candidate matrix showing compatibility scores (%) and worst-case cross-dimer binding energies (\\(\\Delta G\\)) for all combinations of Top 10 Influenza A MP vs Top 10 Influenza B MP candidates:\n\n  \n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nFlu A \\ Flu B\nRank 1\nRank 2\nRank 3\nRank 4\nRank 5\nRank 6\nRank 7\nRank 8\nRank 9\nRank 10\n\n\n\n\nRank 1\n0%\n0 kcal\n59.7%\n-8.7 kcal\n0%\n0 kcal\n55.5%\n-8.7 kcal\n61.6%\n-8.7 kcal\n63.3%\n-8.7 kcal\n59.9%\n-8.7 kcal\n60.3%\n-8.7 kcal\n60.2%\n-8.7 kcal\n0%\n0 kcal\n\n\nRank 2\n0%\n0 kcal\n59.7%\n-8.7 kcal\n0%\n0 kcal\n55.5%\n-8.7 kcal\n61.6%\n-8.7 kcal\n63.3%\n-8.7 kcal\n59.9%\n-8.7 kcal\n60.3%\n-8.7 kcal\n60.2%\n-8.7 kcal\n0%\n0 kcal\n\n\nRank 3\n0%\n0 kcal\n59.3%\n-8.7 kcal\n0%\n0 kcal\n55.5%\n-8.7 kcal\n59.3%\n-8.7 kcal\n59.3%\n-8.7 kcal\n59.3%\n-8.7 kcal\n59.3%\n-8.7 kcal\n59.3%\n-8.7 kcal\n0%\n0 kcal\n\n\nRank 4\n0%\n0 kcal\n68.5%\n-7.13 kcal\n0%\n0 kcal\n64.3%\n-7.13 kcal\n70.4%\n-7.13 kcal\n72.1%\n-7.13 kcal\n68.7%\n-7.13 kcal\n69.1%\n-7.13 kcal\n69.1%\n-7.13 kcal\n0%\n0 kcal\n\n\nRank 5\n0%\n0 kcal\n0%\n0 kcal\n0%\n0 kcal\n0%\n0 kcal\n0%\n0 kcal\n0%\n0 kcal\n0%\n0 kcal\n0%\n0 kcal\n0%\n0 kcal\n0%\n0 kcal\n\n\nRank 6\n0%\n0 kcal\n68.5%\n-7.13 kcal\n0%\n0 kcal\n64.3%\n-7.13 kcal\n70.4%\n-7.13 kcal\n72.1%\n-7.13 kcal\n68.7%\n-7.13 kcal\n69.1%\n-7.13 kcal\n69.1%\n-7.13 kcal\n0%\n0 kcal\n\n\nRank 7\n0%\n0 kcal\n70.3%\n-7.13 kcal\n0%\n0 kcal\n66.1%\n-7.13 kcal\n73.2%\n-7.13 kcal\n73.9%\n-7.13 kcal\n70.5%\n-7.13 kcal\n70.9%\n-7.13 kcal\n70.9%\n-7.13 kcal\n0%\n0 kcal\n\n\nRank 8\n0%\n0 kcal\n67.5%\n-7.13 kcal\n0%\n0 kcal\n63.3%\n-7.13 kcal\n69.4%\n-7.13 kcal\n71.1%\n-7.13 kcal\n67.7%\n-7.13 kcal\n68.1%\n-7.13 kcal\n68.1%\n-7.13 kcal\n0%\n0 kcal\n\n\nRank 9\n0%\n0 kcal\n67.5%\n-7.13 kcal\n0%\n0 kcal\n63.3%\n-7.13 kcal\n69.4%\n-7.13 kcal\n71.1%\n-7.13 kcal\n67.7%\n-7.13 kcal\n68.1%\n-7.13 kcal\n68.1%\n-7.13 kcal\n0%\n0 kcal\n\n\nRank 10\n0%\n0 kcal\n67.5%\n-7.13 kcal\n0%\n0 kcal\n63.3%\n-7.13 kcal\n69.4%\n-7.13 kcal\n71.1%\n-7.13 kcal\n67.7%\n-7.13 kcal\n68.1%\n-7.13 kcal\n68.1%\n-7.13 kcal\n0%\n0 kcal",
+    "crumbs": [
+      "<img src='assets/images/faculty_biology_ugm.png' style='height: 38px; width: auto; padding: 2px 0;' />",
+      "Results & Biological Insights",
+      "Multiplex Compatibility"
+    ]
+  },
+  {
+    "objectID": "results_multiplex.html#triplex-multiplex-compatibility-results-3-virus-assay",
+    "href": "results_multiplex.html#triplex-multiplex-compatibility-results-3-virus-assay",
+    "title": "Results: Dual-Target Multiplex Compatibility",
+    "section": "5. Triplex Multiplex Compatibility Results (3-Virus Assay)",
+    "text": "5. Triplex Multiplex Compatibility Results (3-Virus Assay)\nTo enable single-reaction surveillance of all three targets (Influenza A, Influenza B, and Measles), the top candidates from each virus cohort were evaluated across a 9-oligo mixture (6 primers + 3 probes).\n\nTop 5 Recommended Triplex Combinations\n\n\n\n\n\n\n\n\n\n\n\nRank\nTriplex Candidate Set\nCompatibility Score\nWorst RAA ΔG (39°C)\nMax ΔTm (°C)\nStatus (39°C)\n\n\n\n\n1\nFluA_R9_FluB_R14_Measles_R1\n66.7%\n-6.90 kcal/mol\n1.88°C\nPASS\n\n\n2\nFluA_R9_FluB_R14_Measles_R2\n66.7%\n-6.90 kcal/mol\n1.88°C\nPASS\n\n\n3\nFluA_R9_FluB_R14_Measles_R3\n66.7%\n-6.90 kcal/mol\n1.88°C\nPASS\n\n\n4\nFluA_R9_FluB_R14_Measles_R5\n66.7%\n-6.90 kcal/mol\n1.88°C\nPASS\n\n\n5\nFluA_R9_FluB_R14_Measles_R6\n66.7%\n-6.90 kcal/mol\n1.88°C\nPASS\n\n\n\n\n\nRank 1 Triplex Specifications (FluA_R9_FluB_R14_Measles_R1)\n\n🟩 Target A: Influenza A MP (FAM Channel)\n\n\n\n\n\n\n\n\n\n\nOligo Name\nType\nSequence (5’ -&gt; 3’)\nTm (°C)\nModification / Label\n\n\n\n\nFluA_Fwd\nFwd Primer\nCTGACTAARGGRATTTTRGGRTTTGTATT\n60.1°C\nUnlabeled\n\n\nFluA_Rev\nRev Primer\nGCAGTTAAACTATATARGAARCTGAARAGR\n59.4°C\nUnlabeled\n\n\nFluA_Probe\nExo-Probe\nACCGTGCCCAGTGAGCGRGGACTGCAGCGTAGACGCTTTRTCCARAATGCC\n82.1°C\n5'-FAM / 3'-BHQ1 / Internal-THF\n\n\n\n\n\n🟨 Target B: Influenza B MP (HEX Channel)\n\n\n\n\n\n\n\n\n\n\nOligo Name\nType\nSequence (5’ -&gt; 3’)\nTm (°C)\nModification / Label\n\n\n\n\nFluB_Fwd\nFwd Primer\nTTCAGCTCTTGTGAAGAAATAYCTATAAT\n58.2°C\nUnlabeled\n\n\nFluB_Rev\nRev Primer\nAAGAGACAATAAACAGAGAGGTATCAATTTT\n59.9°C\nUnlabeled\n\n\nFluB_Probe\nExo-Probe\nTYTTATCAGCTCTCCATTTCATGGCTTGGACAATAGGRCATTTRAATC\n71.3°C\n5'-HEX / 3'-BHQ1 / Internal-THF\n\n\n\n\n\n🟦 Target C: Measles Virus (Cy5 Channel)\n\n\n\n\n\n\n\n\n\n\nOligo Name\nType\nSequence (5’ -&gt; 3’)\nTm (°C)\nModification / Label\n\n\n\n\nMeasles_Fwd\nFwd Primer\nGATATAGAGACCTTACCTAACAAAGATACTAT\n58.4°C\nUnlabeled\n\n\nMeasles_Rev\nRev Primer\nGAGATCTGTCATAACTAAATAAGATTCAGTAG\n58.4°C\nUnlabeled\n\n\nMeasles_Probe\nExo-Probe\nAGCTAGAGGAATTGGCAGCCATCTTATCGATGGCTCTGCTCCTTGGCA\n77.9°C\n5'-Cy5 / 3'-BHQ2 / Internal-THF",
     "crumbs": [
       "<img src='assets/images/faculty_biology_ugm.png' style='height: 38px; width: auto; padding: 2px 0;' />",
       "Results & Biological Insights",

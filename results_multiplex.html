@@ -318,6 +318,12 @@ window.Quarto = {
  <span class="menu-text">Module 10: In-silico Verification</span></a>
   </div>
 </li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m11.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 11: Multiplex Compatibility</span></a>
+  </div>
+</li>
       </ul>
   </li>
       </ul>
@@ -397,6 +403,11 @@ window.Quarto = {
   </ul></li>
   <li><a href="#oligo-cross-dimer-interactions-rank-1-assay" id="toc-oligo-cross-dimer-interactions-rank-1-assay" class="nav-link" data-scroll-target="#oligo-cross-dimer-interactions-rank-1-assay">4. Oligo Cross-Dimer Interactions (Rank 1 Assay)</a></li>
   <li><a href="#pairwise-10x10-compatibility-score-matrix" id="toc-pairwise-10x10-compatibility-score-matrix" class="nav-link" data-scroll-target="#pairwise-10x10-compatibility-score-matrix">4. Pairwise 10x10 Compatibility Score Matrix</a></li>
+  <li><a href="#triplex-multiplex-compatibility-results-3-virus-assay" id="toc-triplex-multiplex-compatibility-results-3-virus-assay" class="nav-link" data-scroll-target="#triplex-multiplex-compatibility-results-3-virus-assay">5. Triplex Multiplex Compatibility Results (3-Virus Assay)</a>
+  <ul class="collapse">
+  <li><a href="#top-5-recommended-triplex-combinations" id="toc-top-5-recommended-triplex-combinations" class="nav-link" data-scroll-target="#top-5-recommended-triplex-combinations">Top 5 Recommended Triplex Combinations</a></li>
+  <li><a href="#rank-1-triplex-specifications-flua_r9_flub_r14_measles_r1" id="toc-rank-1-triplex-specifications-flua_r9_flub_r14_measles_r1" class="nav-link" data-scroll-target="#rank-1-triplex-specifications-flua_r9_flub_r14_measles_r1">Rank 1 Triplex Specifications (<code>FluA_R9_FluB_R14_Measles_R1</code>)</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -982,8 +993,213 @@ window.Quarto = {
 </table>
 
 </div>
+<hr>
+</section>
+<section id="triplex-multiplex-compatibility-results-3-virus-assay" class="level2">
+<h2 class="anchored" data-anchor-id="triplex-multiplex-compatibility-results-3-virus-assay">5. Triplex Multiplex Compatibility Results (3-Virus Assay)</h2>
+<p>To enable single-reaction surveillance of all three targets (<strong>Influenza A</strong>, <strong>Influenza B</strong>, and <strong>Measles</strong>), the top candidates from each virus cohort were evaluated across a <strong>9-oligo mixture</strong> (6 primers + 3 probes).</p>
+<section id="top-5-recommended-triplex-combinations" class="level3">
+<h3 class="anchored" data-anchor-id="top-5-recommended-triplex-combinations">Top 5 Recommended Triplex Combinations</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Rank</th>
+<th>Triplex Candidate Set</th>
+<th>Compatibility Score</th>
+<th>Worst RAA ΔG (39°C)</th>
+<th>Max ΔTm (°C)</th>
+<th>Status (39°C)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>1</strong></td>
+<td><strong><code>FluA_R9_FluB_R14_Measles_R1</code></strong></td>
+<td><strong>66.7%</strong></td>
+<td><strong>-6.90 kcal/mol</strong></td>
+<td><strong>1.88°C</strong></td>
+<td><span style="color: #10b981; font-weight: bold;">PASS</span></td>
+</tr>
+<tr class="even">
+<td><strong>2</strong></td>
+<td><strong><code>FluA_R9_FluB_R14_Measles_R2</code></strong></td>
+<td><strong>66.7%</strong></td>
+<td><strong>-6.90 kcal/mol</strong></td>
+<td><strong>1.88°C</strong></td>
+<td><span style="color: #10b981; font-weight: bold;">PASS</span></td>
+</tr>
+<tr class="odd">
+<td><strong>3</strong></td>
+<td><strong><code>FluA_R9_FluB_R14_Measles_R3</code></strong></td>
+<td><strong>66.7%</strong></td>
+<td><strong>-6.90 kcal/mol</strong></td>
+<td><strong>1.88°C</strong></td>
+<td><span style="color: #10b981; font-weight: bold;">PASS</span></td>
+</tr>
+<tr class="even">
+<td><strong>4</strong></td>
+<td><strong><code>FluA_R9_FluB_R14_Measles_R5</code></strong></td>
+<td><strong>66.7%</strong></td>
+<td><strong>-6.90 kcal/mol</strong></td>
+<td><strong>1.88°C</strong></td>
+<td><span style="color: #10b981; font-weight: bold;">PASS</span></td>
+</tr>
+<tr class="odd">
+<td><strong>5</strong></td>
+<td><strong><code>FluA_R9_FluB_R14_Measles_R6</code></strong></td>
+<td><strong>66.7%</strong></td>
+<td><strong>-6.90 kcal/mol</strong></td>
+<td><strong>1.88°C</strong></td>
+<td><span style="color: #10b981; font-weight: bold;">PASS</span></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="rank-1-triplex-specifications-flua_r9_flub_r14_measles_r1" class="level3">
+<h3 class="anchored" data-anchor-id="rank-1-triplex-specifications-flua_r9_flub_r14_measles_r1">Rank 1 Triplex Specifications (<code>FluA_R9_FluB_R14_Measles_R1</code>)</h3>
+<section id="target-a-influenza-a-mp-fam-channel-1" class="level4">
+<h4 class="anchored" data-anchor-id="target-a-influenza-a-mp-fam-channel-1">🟩 Target A: Influenza A MP (FAM Channel)</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Oligo Name</th>
+<th>Type</th>
+<th>Sequence (5’ -&gt; 3’)</th>
+<th>Tm (°C)</th>
+<th>Modification / Label</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>FluA_Fwd</strong></td>
+<td>Fwd Primer</td>
+<td><code>CTGACTAARGGRATTTTRGGRTTTGTATT</code></td>
+<td>60.1°C</td>
+<td>Unlabeled</td>
+</tr>
+<tr class="even">
+<td><strong>FluA_Rev</strong></td>
+<td>Rev Primer</td>
+<td><code>GCAGTTAAACTATATARGAARCTGAARAGR</code></td>
+<td>59.4°C</td>
+<td>Unlabeled</td>
+</tr>
+<tr class="odd">
+<td><strong>FluA_Probe</strong></td>
+<td>Exo-Probe</td>
+<td><code>ACCGTGCCCAGTGAGCGRGGACTGCAGCGTAGACGCTTTRTCCARAATGCC</code></td>
+<td>82.1°C</td>
+<td><code>5'-FAM</code> / <code>3'-BHQ1</code> / <code>Internal-THF</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="target-b-influenza-b-mp-hex-channel-1" class="level4">
+<h4 class="anchored" data-anchor-id="target-b-influenza-b-mp-hex-channel-1">🟨 Target B: Influenza B MP (HEX Channel)</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Oligo Name</th>
+<th>Type</th>
+<th>Sequence (5’ -&gt; 3’)</th>
+<th>Tm (°C)</th>
+<th>Modification / Label</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>FluB_Fwd</strong></td>
+<td>Fwd Primer</td>
+<td><code>TTCAGCTCTTGTGAAGAAATAYCTATAAT</code></td>
+<td>58.2°C</td>
+<td>Unlabeled</td>
+</tr>
+<tr class="even">
+<td><strong>FluB_Rev</strong></td>
+<td>Rev Primer</td>
+<td><code>AAGAGACAATAAACAGAGAGGTATCAATTTT</code></td>
+<td>59.9°C</td>
+<td>Unlabeled</td>
+</tr>
+<tr class="odd">
+<td><strong>FluB_Probe</strong></td>
+<td>Exo-Probe</td>
+<td><code>TYTTATCAGCTCTCCATTTCATGGCTTGGACAATAGGRCATTTRAATC</code></td>
+<td>71.3°C</td>
+<td><code>5'-HEX</code> / <code>3'-BHQ1</code> / <code>Internal-THF</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="target-c-measles-virus-cy5-channel" class="level4">
+<h4 class="anchored" data-anchor-id="target-c-measles-virus-cy5-channel">🟦 Target C: Measles Virus (Cy5 Channel)</h4>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Oligo Name</th>
+<th>Type</th>
+<th>Sequence (5’ -&gt; 3’)</th>
+<th>Tm (°C)</th>
+<th>Modification / Label</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Measles_Fwd</strong></td>
+<td>Fwd Primer</td>
+<td><code>GATATAGAGACCTTACCTAACAAAGATACTAT</code></td>
+<td>58.4°C</td>
+<td>Unlabeled</td>
+</tr>
+<tr class="even">
+<td><strong>Measles_Rev</strong></td>
+<td>Rev Primer</td>
+<td><code>GAGATCTGTCATAACTAAATAAGATTCAGTAG</code></td>
+<td>58.4°C</td>
+<td>Unlabeled</td>
+</tr>
+<tr class="odd">
+<td><strong>Measles_Probe</strong></td>
+<td>Exo-Probe</td>
+<td><code>AGCTAGAGGAATTGGCAGCCATCTTATCGATGGCTCTGCTCCTTGGCA</code></td>
+<td>77.9°C</td>
+<td><code>5'-Cy5</code> / <code>3'-BHQ2</code> / <code>Internal-THF</code></td>
+</tr>
+</tbody>
+</table>
 
 
+</section>
+</section>
 </section>
 
 </main> <!-- /main -->
