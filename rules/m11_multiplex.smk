@@ -65,3 +65,32 @@ rule m11_triplex_compatibility:
             --num-candidates {params.num_candidates} \
             --max-variants {params.max_variants} > {log} 2>&1
         """
+
+# ------------------------------------------------------------------------------
+# EXPORT: Consolidate all pipeline outputs for supervisor review
+# ------------------------------------------------------------------------------
+rule m11_export_supplementary:
+    input:
+        # Requires multiplexing results to be generated first
+        # (This is a pseudo-trigger; it discovers all contents of results/)
+        trigger = "results/multiplex-triplex-{build_a}_{build_b}_{build_c}/triplex_candidates.json"
+    output:
+        xlsx_candidates = "supplementary/S1_Primer_Candidates.xlsx",
+        xlsx_specificity = "supplementary/S2_BLAST_Specificity.xlsx",
+        xlsx_multiplex  = "supplementary/S3_Multiplex_Compatibility.xlsx",
+        xlsx_qc         = "supplementary/S4_QC_Summary.xlsx",
+        xlsx_conserved  = "supplementary/S5_Conservation_Scoring.xlsx",
+        readme          = "supplementary/README.md"
+    params:
+        results_dir     = "results",
+        outdir          = "supplementary",
+        only_degenerate = "--only-degenerate" if config.get("primerlab", {}).get("design", {}).get("degenerate", {}).get("enabled", True) else ""
+    log:
+        "logs/m11_export_supplementary.log"
+    shell:
+        """
+        python scripts/export_supplementary.py \
+            --results-dir {params.results_dir} \
+            --outdir {params.outdir} \
+            {params.only_degenerate} > {log} 2>&1
+        """
