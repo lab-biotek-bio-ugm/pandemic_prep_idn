@@ -146,31 +146,45 @@ def run_triplex_screening(file_a, file_b, file_c, out_dir, num_candidates=10):
                 
                 # Check cross-dimers for all three pairs (A-B, A-C, B-C)
                 cross_dimers_39c = {}
+                cross_dimers_55c = {}
                 min_dg_39c = 0.0
+                min_dg_55c = 0.0
                 
                 # Pair A-B
                 for name_a, seq_a in oligos_a:
                     for name_b, seq_b in oligos_b:
-                        dg, _ = evaluate_pair_heterodimer(seq_a, seq_b, temp_c=39.0)
-                        cross_dimers_39c[f"{name_a}_vs_{name_b}"] = round(dg, 2)
-                        if dg < min_dg_39c:
-                            min_dg_39c = dg
+                        dg_39, _ = evaluate_pair_heterodimer(seq_a, seq_b, temp_c=39.0)
+                        dg_55, _ = evaluate_pair_heterodimer(seq_a, seq_b, temp_c=55.0)
+                        cross_dimers_39c[f"{name_a}_vs_{name_b}"] = round(dg_39, 2)
+                        cross_dimers_55c[f"{name_a}_vs_{name_b}"] = round(dg_55, 2)
+                        if dg_39 < min_dg_39c:
+                            min_dg_39c = dg_39
+                        if dg_55 < min_dg_55c:
+                            min_dg_55c = dg_55
                 
                 # Pair A-C
                 for name_a, seq_a in oligos_a:
                     for name_c, seq_c in oligos_c:
-                        dg, _ = evaluate_pair_heterodimer(seq_a, seq_c, temp_c=39.0)
-                        cross_dimers_39c[f"{name_a}_vs_{name_c}"] = round(dg, 2)
-                        if dg < min_dg_39c:
-                            min_dg_39c = dg
+                        dg_39, _ = evaluate_pair_heterodimer(seq_a, seq_c, temp_c=39.0)
+                        dg_55, _ = evaluate_pair_heterodimer(seq_a, seq_c, temp_c=55.0)
+                        cross_dimers_39c[f"{name_a}_vs_{name_c}"] = round(dg_39, 2)
+                        cross_dimers_55c[f"{name_a}_vs_{name_c}"] = round(dg_55, 2)
+                        if dg_39 < min_dg_39c:
+                            min_dg_39c = dg_39
+                        if dg_55 < min_dg_55c:
+                            min_dg_55c = dg_55
                             
                 # Pair B-C
                 for name_b, seq_b in oligos_b:
                     for name_c, seq_c in oligos_c:
-                        dg, _ = evaluate_pair_heterodimer(seq_b, seq_c, temp_c=39.0)
-                        cross_dimers_39c[f"{name_b}_vs_{name_c}"] = round(dg, 2)
-                        if dg < min_dg_39c:
-                            min_dg_39c = dg
+                        dg_39, _ = evaluate_pair_heterodimer(seq_b, seq_c, temp_c=39.0)
+                        dg_55, _ = evaluate_pair_heterodimer(seq_b, seq_c, temp_c=55.0)
+                        cross_dimers_39c[f"{name_b}_vs_{name_c}"] = round(dg_39, 2)
+                        cross_dimers_55c[f"{name_b}_vs_{name_c}"] = round(dg_55, 2)
+                        if dg_39 < min_dg_39c:
+                            min_dg_39c = dg_39
+                        if dg_55 < min_dg_55c:
+                            min_dg_55c = dg_55
                             
                 status_39c = "PASS" if (min_dg_39c >= -9.0 and delta_tm <= 4.0) else "WARNING"
                 if min_dg_39c < -12.0:
@@ -188,6 +202,7 @@ def run_triplex_screening(file_a, file_b, file_c, out_dir, num_candidates=10):
                     "score": score,
                     "status_39c": status_39c,
                     "min_dg_39c": round(min_dg_39c, 2),
+                    "min_dg_55c": round(min_dg_55c, 2),
                     "delta_tm": round(delta_tm, 2),
                     "oligos_synthesis": {
                         "flu_a": {
@@ -206,7 +221,8 @@ def run_triplex_screening(file_a, file_b, file_c, out_dir, num_candidates=10):
                             "probe_label": "5'-Cy5 / 3'-BHQ2 / Internal-THF"
                         }
                     },
-                    "cross_dimers_39c": cross_dimers_39c
+                    "cross_dimers_39c": cross_dimers_39c,
+                    "cross_dimers_55c": cross_dimers_55c
                 })
                 
     results.sort(key=lambda x: x["score"], reverse=True)
@@ -222,12 +238,12 @@ def run_triplex_screening(file_a, file_b, file_c, out_dir, num_candidates=10):
     with open(md_path, "w") as f:
         f.write("# Triplex Multiplex Assay Compatibility & Synthesis Report\n")
         f.write("## Targets: Influenza A (FAM) + Influenza B (HEX) + Measles (Cy5)\n\n")
-        f.write(f"Screened **{len(results)} triplex combinations** ({len(cands_a)} x {len(cands_b)} x {len(cands_c)}) at RAA operating temperature ($39.0^\\circ\\text{{C}}$).\n\n")
+        f.write(f"Screened **{len(results)} triplex combinations** ({len(cands_a)} x {len(cands_b)} x {len(cands_c)}) at RAA operating temperature ($39.0^\\circ\\text{{C}}$) and qPCR benchmark ($55.0^\\circ\\text{{C}}$).\n\n")
         f.write("### Top 5 Recommended Triplex Combinations\n\n")
-        f.write("| Rank | Triplex Candidate Set | Compatibility Score | Worst RAA ΔG (39°C) | Max ΔTm (°C) | Status (39°C) |\n")
-        f.write("|---|---|---|---|---|---|\n")
+        f.write("| Rank | Triplex Candidate Set | Compatibility Score | Worst RAA ΔG (39°C) | Worst qPCR ΔG (55°C) | Max ΔTm (°C) | Status (39°C) |\n")
+        f.write("|---|---|---|---|---|---|---|\n")
         for idx, r in enumerate(results[:5], 1):
-            f.write(f"| {idx} | **{r['triplex_id']}** | **{r['score']}%** | {r['min_dg_39c']} kcal/mol | {r['delta_tm']}°C | `{r['status_39c']}` |\n")
+            f.write(f"| {idx} | **{r['triplex_id']}** | **{r['score']}%** | {r['min_dg_39c']} kcal/mol | {r['min_dg_55c']} kcal/mol | {r['delta_tm']}°C | `{r['status_39c']}` |\n")
             
         # Detailed specs of Rank 1
         r1 = results[0]
@@ -259,11 +275,12 @@ def run_triplex_screening(file_a, file_b, file_c, out_dir, num_candidates=10):
         
         # Cross dimer detail
         f.write("### Worst Cross-Dimer Interactions (< -5.0 kcal/mol)\n\n")
-        f.write("| Oligo Pair | Cross-Dimer ΔG (39°C) |\n")
-        f.write("|---|---|\n")
+        f.write("| Oligo Pair | Cross-Dimer ΔG (39°C) | Cross-Dimer ΔG (55°C) |\n")
+        f.write("|---|---|---|\n")
         for pair_name, dg in r1['cross_dimers_39c'].items():
             if dg < -5.0:
-                f.write(f"| {pair_name} | {dg} kcal/mol |\n")
+                dg_55 = r1['cross_dimers_55c'].get(pair_name, "-")
+                f.write(f"| {pair_name} | {dg} kcal/mol | {dg_55} kcal/mol |\n")
                 
     print(f"[Triplex] Saved Markdown report to: {md_path}")
 
