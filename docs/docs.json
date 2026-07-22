@@ -48,7 +48,8 @@
               "pipeline-architecture/m07-bridge-builder",
               "pipeline-architecture/m08-primer-design",
               "pipeline-architecture/m09-blast-specificity",
-              "pipeline-architecture/m10-insilico-validation"
+              "pipeline-architecture/m10-insilico-validation",
+              "pipeline-architecture/m11-multiplex-compatibility"
             ]
           },
           {
