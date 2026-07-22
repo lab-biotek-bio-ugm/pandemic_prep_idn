@@ -80,22 +80,86 @@ CANDIDATE_COLUMNS = {
 }
 
 MULTIPLEX_COLUMNS = {
-    "pair_id": "Candidate Pair", "triplex_id": "Triplex Combo ID", "rank_a": "Rank Target A", "rank_b": "Rank Target B",
+    "pair_id": "Candidate Pair", "triplex_id": "Combo ID", "rank_a": "Rank Target A", "rank_b": "Rank Target B",
     "score": "Compatibility Score (%)", "status_raa_39c": "Status (RAA 39°C)",
     "min_dg_raa_39c": "Worst RAA ΔG 39°C (kcal/mol)", "min_dg_qpcr_55c": "Worst qPCR ΔG 55°C (kcal/mol)",
     "delta_tm": "ΔTm Fwd Primers (°C)", "dye_a": "Fluorophore Target A", "dye_b": "Fluorophore Target B", "dye_status": "Dye Separation"
 }
+
+# ---------------------------------------------------------------------------
+# Dynamic target helpers — no hardcoded virus names below this line
+# ---------------------------------------------------------------------------
+
+# Dye palette cycled over however many targets exist
+DYE_PALETTE = ["FAM", "HEX", "Cy5", "Cy3", "ROX", "Texas Red", "Atto 647N"]
+
+# Canonical name lookup: oligo JSON key → display name
+_TARGET_DISPLAY = {
+    "flu_a": "Influenza A",
+    "flu_b": "Influenza B",
+    "influenza_a": "Influenza A",
+    "influenza_b": "Influenza B",
+    "measles": "Measles",
+    "rsv_a": "RSV A",
+    "rsv_b": "RSV B",
+    "sars_cov_2": "SARS-CoV-2",
+    "dengue": "Dengue",
+}
+
+# Map from JSON oligo key to the canonical ACTIVE_TARGETS string
+_TARGET_CANONICAL = {
+    "flu_a": "influenza-a",
+    "flu_b": "influenza-b",
+    "influenza_a": "influenza-a",
+    "influenza_b": "influenza-b",
+    "measles": "measles",
+    "rsv_a": "rsv-a",
+    "rsv_b": "rsv-b",
+    "sars_cov_2": "sars-cov-2",
+    "dengue": "dengue",
+}
+
+def nplex_label(n: int) -> str:
+    """Duplex / Triplex / Quadruplex / N-Plex — never hardcoded."""
+    return {1: "Singleplex", 2: "Duplex", 3: "Triplex", 4: "Quadruplex"}.get(n, f"{n}-Plex")
+
+def target_key_to_name(key: str) -> str:
+    """Convert an oligo JSON key (e.g. 'flu_a') to a human-readable virus name."""
+    k = key.lower()
+    if k in _TARGET_DISPLAY:
+        return _TARGET_DISPLAY[k]
+    # Generic fallback: uppercase short tokens, capitalize others
+    return " ".join(p.upper() if len(p) <= 2 else p.capitalize() for p in k.split("_"))
+
+def is_target_active(oligo_key: str, active_targets: list) -> bool:
+    """Return True if this oligo JSON key (e.g. 'flu_a') maps to an active target."""
+    k = oligo_key.lower()
+    canonical = _TARGET_CANONICAL.get(k, k.replace("_", "-"))
+    return any(canonical == a or canonical in a or a in canonical for a in active_targets)
 
 def safe_sheet_name(name: str, maxlen: int = 31) -> str:
     name = re.sub(r"[\/\\?\*:\[\]]", "_", name)
     return name[:maxlen]
 
 def build_label(dir_name: str) -> str:
+    """Convert a results directory name to a compact label. Generic — no hardcoded virus list."""
     s = dir_name.lower()
-    s = s.replace("influenza-a", "FluA").replace("influenza-b", "FluB").replace("measles", "Measles")
-    s = s.replace("-mp-", "_MP_").replace("-np-", "_NP_")
-    s = s.replace("indo-only", "Indonesia").replace("indonesia-only", "Indonesia")
-    s = s.replace("sea-only", "SEAsia").replace("all-partial", "AllPartial")
+    # Known virus shorthands (extend freely)
+    for old, new in [
+        ("influenza-a", "FluA"), ("influenza_a", "FluA"),
+        ("influenza-b", "FluB"), ("influenza_b", "FluB"),
+        ("measles", "Measles"),
+        ("rsv-a", "RSVA"), ("rsv-b", "RSVB"),
+        ("sars-cov-2", "SARS2"), ("sars_cov_2", "SARS2"),
+        ("dengue", "Dengue"),
+        ("-mp-", "_MP_"), ("_mp_", "_MP_"),
+        ("-np-", "_NP_"), ("_np_", "_NP_"),
+        ("-ha-", "_HA_"), ("-na-", "_NA_"),
+        ("indo-only", "Indonesia"), ("indonesia-only", "Indonesia"),
+        ("sea-only", "SEAsia"), ("all-partial", "AllPartial"),
+        ("global", "Global"),
+    ]:
+        s = s.replace(old, new)
     s = s.replace("-", "_")
     return s
 
@@ -214,57 +278,77 @@ def create_executive_summary(results_root: Path, outdir: Path):
     style_table(ws0, 4, len(df_ov.columns))
     auto_width(ws0)
 
-    # Sheet 01: Oligo Orders (Rank 1 Best + 3 Alts)
+    # Sheet 01: Oligo Orders — fully dynamic (works for any N-plex)
     ws1 = wb.create_sheet(title="01_Synthesis_Oligo_Orders")
-    triplex_files = []
-    # Dynamic glob filter for triplex files
-    for p in results_root.glob("**/triplex_candidates.json"):
-        p_str = str(p).lower()
-        if "measles" not in ACTIVE_TARGETS and "measles" in p_str:
-            continue
-        triplex_files.append(p)
-        
+
+    # Find the best available N-plex candidates file (triplex preferred, then multiplex)
+    combo_files = sorted(results_root.glob("**/triplex_candidates.json"))
+    if not combo_files:
+        combo_files = [p for p in sorted(results_root.glob("**/multiplex_candidates.json"))
+                       if "triplex" not in p.parent.name.lower()]
+    # Keep only files that belong to at least one active target
+    combo_files = [p for p in combo_files
+                   if any(t in str(p).lower() for t in ACTIVE_TARGETS)]
+
     order_rows = []
-    if triplex_files and triplex_files[0].exists():
-        with open(triplex_files[0], "r") as f:
+    n_targets = 0
+    plex_lbl = "Multiplex"
+
+    if combo_files:
+        with open(combo_files[0], "r") as f:
             t_data = json.load(f)[:4]
-            for rank_idx, combo in enumerate(t_data, 1):
-                cat = "BEST RECOMMENDED (RANK 1)" if rank_idx == 1 else f"ALTERNATIVE RANK {rank_idx}"
-                oligos = combo.get("oligos_synthesis", {})
-                for t_key, (t_name, default_dye) in [("flu_a", ("Influenza A MP", "FAM")), ("flu_b", ("Influenza B MP", "HEX")), ("measles", ("Measles Virus", "Cy5"))]:
-                    if t_key not in ACTIVE_TARGETS:
+
+        # Determine N-plex label from actual number of targets in first combo
+        if t_data:
+            n_targets = len(t_data[0].get("oligos_synthesis", {}))
+            plex_lbl = nplex_label(n_targets)
+
+        for rank_idx, combo in enumerate(t_data, 1):
+            cat = "BEST RECOMMENDED (RANK 1)" if rank_idx == 1 else f"ALTERNATIVE RANK {rank_idx}"
+            oligos = combo.get("oligos_synthesis", {})
+            combo_id = combo.get("triplex_id") or combo.get("pair_id") or combo.get("combo_id")
+            score = combo.get("score")
+
+            # Iterate ALL target keys present in JSON — no hardcoded list
+            for t_idx, t_key in enumerate(sorted(oligos.keys())):
+                # Skip targets that are excluded via --exclude-targets
+                if not is_target_active(t_key, ACTIVE_TARGETS):
+                    continue
+                t_name = target_key_to_name(t_key)
+                default_dye = DYE_PALETTE[t_idx % len(DYE_PALETTE)]
+
+                for role_key, role_lbl in [("fwd", "Forward Primer"), ("rev", "Reverse Primer"), ("probe", "Exonuclease Probe")]:
+                    if role_key not in oligos[t_key]:
                         continue
-                    if t_key in oligos:
-                        for role_key, role_lbl in [("fwd", "Forward Primer"), ("rev", "Reverse Primer"), ("probe", "Exonuclease Probe")]:
-                            if role_key in oligos[t_key]:
-                                o = oligos[t_key][role_key]
-                                if isinstance(o, dict):
-                                    seq = o.get("deg_seq") or o.get("seq", "")
-                                    length = o.get("len", len(seq))
-                                    tm = o.get("tm", "-")
-                                    gc = o.get("gc", "-")
-                                    label = o.get("label", "Unlabeled" if role_key != "probe" else f"5'-{default_dye} / 3'-BHQ / Internal-THF")
-                                else:
-                                    seq = str(o)
-                                    length = len(seq)
-                                    tm = "-"
-                                    gc = "-"
-                                    label = "Unlabeled" if role_key != "probe" else f"5'-{default_dye} / 3'-BHQ / Internal-THF"
+                    o = oligos[t_key][role_key]
+                    if isinstance(o, dict):
+                        seq    = o.get("deg_seq") or o.get("seq", "")
+                        length = o.get("len", len(seq))
+                        tm     = o.get("tm", "-")
+                        gc     = o.get("gc", "-")
+                        label  = o.get("label", "Unlabeled" if role_key != "probe" else f"5'-{default_dye} / 3'-BHQ / Internal-THF")
+                    else:
+                        seq    = str(o)
+                        length = len(seq)
+                        tm     = "-"
+                        gc     = "-"
+                        label  = "Unlabeled" if role_key != "probe" else f"5'-{default_dye} / 3'-BHQ / Internal-THF"
 
-                                order_rows.append({
-                                    "Recommendation Category": cat,
-                                    "Assay Set": combo.get("triplex_id") or combo.get("pair_id"),
-                                    "Target Virus": t_name,
-                                    "Oligo Role": role_lbl,
-                                    "Degenerate Sequence (5' -> 3')": seq,
-                                    "Length (nt)": length,
-                                    "Tm (°C)": tm,
-                                    "GC (%)": gc,
-                                    "Fluorophore / Label": label,
-                                    "Triplex Compatibility Score": f"{combo.get('score')}%"
-                                })
+                    order_rows.append({
+                        "Recommendation Category": cat,
+                        "Assay Set": combo_id,
+                        "Target Virus": t_name,
+                        "Oligo Role": role_lbl,
+                        "Degenerate Sequence (5' -> 3')": seq,
+                        "Length (nt)": length,
+                        "Tm (°C)": tm,
+                        "GC (%)": gc,
+                        "Fluorophore / Label": label,
+                        f"{plex_lbl} Compatibility Score": f"{score}%",
+                    })
 
-    df_ord = pd.DataFrame(order_rows) if order_rows else pd.DataFrame([{"Status": "Run Triplex Module to populate"}])
+    empty_msg = "Run Multiplex Module to populate" if not combo_files else "No oligos found in candidates"
+    df_ord = pd.DataFrame(order_rows) if order_rows else pd.DataFrame([{"Status": empty_msg}])
     write_df_to_ws(ws1, df_ord, "Synthesis Oligo Ordering Specs (Rank 1 Best + 3 Alternatives)")
     df_ord.to_csv(str(csv_dir / "01_Synthesis_Oligo_Orders.csv"), index=False)
 
@@ -284,20 +368,29 @@ def create_executive_summary(results_root: Path, outdir: Path):
     df_pair = pd.DataFrame(pair_rows) if pair_rows else pd.DataFrame([{"Status": "No pairwise runs found"}])
     write_df_to_ws(ws2, df_pair, "Pairwise Multiplex Screening Results", "Status (39°C)")
 
-    # Sheet 03: Triplex
-    ws3 = wb.create_sheet(title="03_Multiplex_Triplex")
-    tri_rows = []
-    if triplex_files and triplex_files[0].exists():
-        with open(triplex_files[0], "r") as f:
-            t_data = json.load(f)
-            for rec in t_data:
-                # Use triplex_id as fallback
-                r = {"Triplex Combo ID": rec.get("triplex_id") or rec.get("pair_id"), "Compatibility Score (%)": rec.get("score"), "Status (39°C)": rec.get("status_raa_39c") or rec.get("status_39c"), "RAA ΔG 39°C": rec.get("min_dg_raa_39c") or rec.get("min_dg_39c"), "qPCR ΔG 55°C": rec.get("min_dg_qpcr_55c") or rec.get("min_dg_55c"), "Max ΔTm (°C)": rec.get("delta_tm")}
-                for pair_k, pair_v in rec.get("cross_dimers_39c", {}).items(): r[f"ΔG 39C: {pair_k}"] = pair_v
-                tri_rows.append(r)
+    # Sheet 03: N-Plex Compatibility — label derived from actual target count
+    n_label_str = f"{n_targets}-Target" if n_targets else "Multi-Target"
+    ws3_title = safe_sheet_name(f"03_{plex_lbl}_Compat")
+    ws3 = wb.create_sheet(title=ws3_title)
+    combo_rows = []
+    if combo_files:
+        with open(combo_files[0], "r") as f:
+            t_data3 = json.load(f)
+        for rec in t_data3:
+            r = {
+                "Combo ID": rec.get("triplex_id") or rec.get("pair_id") or rec.get("combo_id"),
+                "Compatibility Score (%)": rec.get("score"),
+                "Status (39°C)": rec.get("status_raa_39c") or rec.get("status_39c"),
+                "RAA ΔG 39°C": rec.get("min_dg_raa_39c") or rec.get("min_dg_39c"),
+                "qPCR ΔG 55°C": rec.get("min_dg_qpcr_55c") or rec.get("min_dg_55c"),
+                "Max ΔTm (°C)": rec.get("delta_tm"),
+            }
+            for pair_k, pair_v in rec.get("cross_dimers_39c", {}).items():
+                r[f"ΔG 39C: {pair_k}"] = pair_v
+            combo_rows.append(r)
 
-    df_tri = pd.DataFrame(tri_rows) if tri_rows else pd.DataFrame([{"Status": "No triplex runs found"}])
-    write_df_to_ws(ws3, df_tri, "Triplex Multiplex Screening Results (3-Target)", "Status (39°C)")
+    df_combo = pd.DataFrame(combo_rows) if combo_rows else pd.DataFrame([{"Status": f"No {plex_lbl.lower()} runs found"}])
+    write_df_to_ws(ws3, df_combo, f"{plex_lbl} Multiplex Screening Results ({n_label_str})", "Status (39°C)")
 
     # Sheet 04: BLAST
     ws4 = wb.create_sheet(title="04_BLAST_OffTarget_Summary")
@@ -467,7 +560,7 @@ def export_s3_multiplex(results_root: Path, outdir: Path):
             for pk, pv in rec.get("cross_dimers_39c", {}).items(): row[f"ΔG 39C: {pk}"] = pv
             rows.append(row)
         df = pd.DataFrame(rows)
-        s_name = f"{'Triplex' if 'triplex' in jf.name else 'Pair'}_{m_dir.name.replace('multiplex-', '').replace('influenza-', '').replace('all-partial', 'All').replace('indo-only', 'Indo')}"
+        s_name = f"{'Triplex' if 'triplex' in jf.name else 'Pair'}_{build_label(m_dir.name.replace('multiplex-', ''))}"
         ws = wb.create_sheet(title=safe_sheet_name(s_name))
         write_df_to_ws(ws, df, f"Multiplex — {m_dir.name}", "Status (RAA 39°C)")
         df.to_csv(str(csv_dir / f"S3_{s_name}.csv"), index=False)
@@ -534,7 +627,14 @@ def main():
     parser.add_argument("--results-dir", default="results", help="Results directory")
     parser.add_argument("--outdir", default="supplementary", help="Output directory")
     parser.add_argument("--only-degenerate", action="store_true", help="Only export degenerate candidates")
-    parser.add_argument("configs", nargs="*", help="Config YAML files to detect active targets")
+    parser.add_argument(
+        "--exclude-targets", nargs="*", default=[], metavar="TARGET",
+        help="Exclude specific virus targets from ALL sheets (e.g. --exclude-targets measles rsv-a)"
+    )
+    parser.add_argument(
+        "configs", nargs="*",
+        help="Optional config YAML files to restrict output to only matching targets"
+    )
     args = parser.parse_args()
 
     results_root = Path(args.results_dir).resolve()
@@ -542,26 +642,56 @@ def main():
     outdir.mkdir(parents=True, exist_ok=True)
     (outdir / "csv").mkdir(exist_ok=True)
 
-    # Detect which target keywords are active from YAML config parameters
-    active_targets = []
-    for cfg in args.configs:
-        cfg_name = Path(cfg).stem.lower()
-        if "influenza_a" in cfg_name or "influenza-a" in cfg_name or "flu_a" in cfg_name or "flu-a" in cfg_name:
-            active_targets.append("influenza-a")
-        elif "influenza_b" in cfg_name or "influenza-b" in cfg_name or "flu_b" in cfg_name or "flu-b" in cfg_name:
-            active_targets.append("influenza-b")
-        elif "measles" in cfg_name:
-            active_targets.append("measles")
-            
+    # ---------------------------------------------------------------------------
+    # Auto-detect active targets from build directories in results/
+    # No hardcoded virus names — works for any N-plex combination
+    # ---------------------------------------------------------------------------
+    _KNOWN_VIRUSES = [
+        "influenza-a", "influenza-b", "measles",
+        "rsv-a", "rsv-b", "sars-cov-2", "dengue",
+    ]
+    found: set = set()
+    if results_root.exists():
+        for d in results_root.iterdir():
+            if not d.is_dir() or d.name.startswith("multiplex"):
+                continue
+            d_lower = d.name.lower()
+            for known in _KNOWN_VIRUSES:
+                if known in d_lower:
+                    found.add(known)
+                    break
+            else:
+                # Unknown virus — use the first 1-2 dash-separated segments as the key
+                parts = d.name.lower().split("-")
+                found.add("-".join(parts[:2]) if len(parts) >= 2 else parts[0])
+
+    # If configs explicitly given, restrict to only matching targets
+    if args.configs:
+        cfg_hits: set = set()
+        for cfg in args.configs:
+            cfg_lower = Path(cfg).stem.lower()
+            for t in found:
+                if t.replace("-", "_") in cfg_lower or t in cfg_lower:
+                    cfg_hits.add(t)
+        if cfg_hits:
+            found = cfg_hits
+
+    # Apply --exclude-targets
+    excluded = {e.lower().strip() for e in (args.exclude_targets or [])}
+    active_targets = sorted(found - excluded)
+
     if not active_targets:
-        active_targets = ["influenza-a", "influenza-b", "measles"]
+        # Safety fallback: include all known viruses if nothing detected
+        active_targets = sorted(t for t in _KNOWN_VIRUSES if t not in excluded)
 
     print(f"\n================================================================================")
     print(f"📊 EXPORTING COMPLETE PACKAGE (EXECUTIVE SUMMARY + S1 - S5 WORKBOOKS)")
-    print(f"🎯 Active targets matching: {active_targets}")
+    print(f"🎯 Active targets (auto-detected): {active_targets}")
+    if excluded:
+        print(f"🚫 Excluded targets:              {sorted(excluded)}")
     print(f"================================================================================")
 
-    # Set globally active targets for functions to read
+    # Set globally for all exporter functions to read
     global ACTIVE_TARGETS
     ACTIVE_TARGETS = active_targets
 
