@@ -181,6 +181,8 @@ def create_executive_summary(results_root: Path, outdir: Path):
     overview_data = []
     builds = sorted([d for d in results_root.iterdir() if d.is_dir() and not d.name.startswith("multiplex")])
     for b in builds:
+        if not any(t in b.name.lower() for t in ACTIVE_TARGETS):
+            continue
         qc_file = b / "m02" / "qc_report.json"
         input_n, output_n, ret_pct = "-", "-", "-"
         if qc_file.exists():
@@ -198,9 +200,6 @@ def create_executive_summary(results_root: Path, outdir: Path):
                 if c_data:
                     top_cand = f"Rank 1 Score: {c_data[0].get('final_score')}"
 
-        if "measles" in b.name.lower():
-            continue
-
         overview_data.append({
             "Target Cohort": build_label(b.name),
             "Input Sequences": input_n,
@@ -217,7 +216,14 @@ def create_executive_summary(results_root: Path, outdir: Path):
 
     # Sheet 01: Oligo Orders (Rank 1 Best + 3 Alts)
     ws1 = wb.create_sheet(title="01_Synthesis_Oligo_Orders")
-    triplex_files = list(results_root.glob("**/triplex_candidates.json"))
+    triplex_files = []
+    # Dynamic glob filter for triplex files
+    for p in results_root.glob("**/triplex_candidates.json"):
+        p_str = str(p).lower()
+        if "measles" not in ACTIVE_TARGETS and "measles" in p_str:
+            continue
+        triplex_files.append(p)
+        
     order_rows = []
     if triplex_files and triplex_files[0].exists():
         with open(triplex_files[0], "r") as f:
@@ -226,7 +232,7 @@ def create_executive_summary(results_root: Path, outdir: Path):
                 cat = "BEST RECOMMENDED (RANK 1)" if rank_idx == 1 else f"ALTERNATIVE RANK {rank_idx}"
                 oligos = combo.get("oligos_synthesis", {})
                 for t_key, (t_name, default_dye) in [("flu_a", ("Influenza A MP", "FAM")), ("flu_b", ("Influenza B MP", "HEX")), ("measles", ("Measles Virus", "Cy5"))]:
-                    if t_key == "measles":
+                    if t_key not in ACTIVE_TARGETS:
                         continue
                     if t_key in oligos:
                         for role_key, role_lbl in [("fwd", "Forward Primer"), ("rev", "Reverse Primer"), ("probe", "Exonuclease Probe")]:
@@ -555,48 +561,19 @@ def main():
     print(f"🎯 Active targets matching: {active_targets}")
     print(f"================================================================================")
 
-    # Subclass Path to dynamically filter results_root.iterdir() and results_root.glob()
-    class FilteredPath(type(Path())):
-        def iterdir(self):
-            raw = super().iterdir()
-            filtered = []
-            for b in raw:
-                # Keep target builds matching active targets
-                if not b.is_dir():
-                    continue
-                # Handle multiplex folder differently (it contains multi-target combination info)
-                if b.name.startswith("multiplex"):
-                    # Only include multiplex directories that contain at least one excluded target
-                    # If measles is not active, skip multiplex folders containing measles
-                    if "measles" not in active_targets and "measles" in b.name.lower():
-                        continue
-                    filtered.append(b)
-                elif any(t in b.name.lower() for t in active_targets):
-                    filtered.append(b)
-            return filtered
-            
-        def glob(self, pattern):
-            raw = super().glob(pattern)
-            filtered = []
-            for p in raw:
-                # Filter path list matching active targets
-                p_str = str(p).lower()
-                if "measles" not in active_targets and "measles" in p_str:
-                    continue
-                filtered.append(p)
-            return filtered
-
-    results_root_filtered = FilteredPath(results_root)
+    # Set globally active targets for functions to read
+    global ACTIVE_TARGETS
+    ACTIVE_TARGETS = active_targets
 
     # 1. Main Executive Summary Workbook
-    create_executive_summary(results_root_filtered, outdir)
+    create_executive_summary(results_root, outdir)
 
     # 2. Detailed Supporting Workbooks
-    export_s1_candidates(results_root_filtered, outdir, args.only_degenerate)
-    export_s2_blast(results_root_filtered, outdir, args.only_degenerate)
-    export_s3_multiplex(results_root_filtered, outdir)
-    export_s4_qc(results_root_filtered, outdir)
-    export_s5_conservation(results_root_filtered, outdir)
+    export_s1_candidates(results_root, outdir, args.only_degenerate)
+    export_s2_blast(results_root, outdir, args.only_degenerate)
+    export_s3_multiplex(results_root, outdir)
+    export_s4_qc(results_root, outdir)
+    export_s5_conservation(results_root, outdir)
 
     print(f"================================================================================")
     print(f"✅ COMPLETE EXPORT SUCCESSFUL! All workbooks generated in: {outdir}")
