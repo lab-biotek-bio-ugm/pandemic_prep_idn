@@ -209,17 +209,29 @@ def create_executive_summary(results_root: Path, outdir: Path):
                         for role_key, role_lbl in [("fwd", "Forward Primer"), ("rev", "Reverse Primer"), ("probe", "Exonuclease Probe")]:
                             if role_key in oligos[t_key]:
                                 o = oligos[t_key][role_key]
-                                seq = o.get("deg_seq") or o.get("seq", "")
+                                if isinstance(o, dict):
+                                    seq = o.get("deg_seq") or o.get("seq", "")
+                                    length = o.get("len", len(seq))
+                                    tm = o.get("tm", "-")
+                                    gc = o.get("gc", "-")
+                                    label = o.get("label", "Unlabeled" if role_key != "probe" else f"5'-{default_dye} / 3'-BHQ / Internal-THF")
+                                else:
+                                    seq = str(o)
+                                    length = len(seq)
+                                    tm = "-"
+                                    gc = "-"
+                                    label = "Unlabeled" if role_key != "probe" else f"5'-{default_dye} / 3'-BHQ / Internal-THF"
+
                                 order_rows.append({
                                     "Recommendation Category": cat,
                                     "Assay Set": combo.get("pair_id"),
                                     "Target Virus": t_name,
                                     "Oligo Role": role_lbl,
                                     "Degenerate Sequence (5' -> 3')": seq,
-                                    "Length (nt)": o.get("len", len(seq)),
-                                    "Tm (°C)": o.get("tm", "-"),
-                                    "GC (%)": o.get("gc", "-"),
-                                    "Fluorophore / Label": o.get("label", "Unlabeled" if role_key != "probe" else f"5'-{default_dye} / 3'-BHQ / Internal-THF"),
+                                    "Length (nt)": length,
+                                    "Tm (°C)": tm,
+                                    "GC (%)": gc,
+                                    "Fluorophore / Label": label,
                                     "Triplex Compatibility Score": f"{combo.get('score')}%"
                                 })
 
