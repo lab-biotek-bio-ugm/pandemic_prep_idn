@@ -198,6 +198,9 @@ def create_executive_summary(results_root: Path, outdir: Path):
                 if c_data:
                     top_cand = f"Rank 1 Score: {c_data[0].get('final_score')}"
 
+        if "measles" in b.name.lower():
+            continue
+
         overview_data.append({
             "Target Cohort": build_label(b.name),
             "Input Sequences": input_n,
