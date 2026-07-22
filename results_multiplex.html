@@ -1002,12 +1002,13 @@ window.Quarto = {
 <h3 class="anchored" data-anchor-id="top-5-recommended-triplex-combinations">Top 5 Recommended Triplex Combinations</h3>
 <table class="caption-top table">
 <colgroup>
-<col style="width: 16%">
-<col style="width: 16%">
-<col style="width: 16%">
-<col style="width: 16%">
-<col style="width: 16%">
-<col style="width: 16%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -1015,6 +1016,7 @@ window.Quarto = {
 <th>Triplex Candidate Set</th>
 <th>Compatibility Score</th>
 <th>Worst RAA ΔG (39°C)</th>
+<th>Worst qPCR ΔG (55°C)</th>
 <th>Max ΔTm (°C)</th>
 <th>Status (39°C)</th>
 </tr>
@@ -1025,6 +1027,7 @@ window.Quarto = {
 <td><strong><code>FluA_R9_FluB_R14_Measles_R1</code></strong></td>
 <td><strong>66.7%</strong></td>
 <td><strong>-6.90 kcal/mol</strong></td>
+<td><strong>-4.98 kcal/mol</strong></td>
 <td><strong>1.88°C</strong></td>
 <td><span style="color: #10b981; font-weight: bold;">PASS</span></td>
 </tr>
@@ -1033,6 +1036,7 @@ window.Quarto = {
 <td><strong><code>FluA_R9_FluB_R14_Measles_R2</code></strong></td>
 <td><strong>66.7%</strong></td>
 <td><strong>-6.90 kcal/mol</strong></td>
+<td><strong>-4.98 kcal/mol</strong></td>
 <td><strong>1.88°C</strong></td>
 <td><span style="color: #10b981; font-weight: bold;">PASS</span></td>
 </tr>
@@ -1041,6 +1045,7 @@ window.Quarto = {
 <td><strong><code>FluA_R9_FluB_R14_Measles_R3</code></strong></td>
 <td><strong>66.7%</strong></td>
 <td><strong>-6.90 kcal/mol</strong></td>
+<td><strong>-4.98 kcal/mol</strong></td>
 <td><strong>1.88°C</strong></td>
 <td><span style="color: #10b981; font-weight: bold;">PASS</span></td>
 </tr>
@@ -1049,6 +1054,7 @@ window.Quarto = {
 <td><strong><code>FluA_R9_FluB_R14_Measles_R5</code></strong></td>
 <td><strong>66.7%</strong></td>
 <td><strong>-6.90 kcal/mol</strong></td>
+<td><strong>-4.98 kcal/mol</strong></td>
 <td><strong>1.88°C</strong></td>
 <td><span style="color: #10b981; font-weight: bold;">PASS</span></td>
 </tr>
@@ -1057,11 +1063,15 @@ window.Quarto = {
 <td><strong><code>FluA_R9_FluB_R14_Measles_R6</code></strong></td>
 <td><strong>66.7%</strong></td>
 <td><strong>-6.90 kcal/mol</strong></td>
+<td><strong>-4.98 kcal/mol</strong></td>
 <td><strong>1.88°C</strong></td>
 <td><span style="color: #10b981; font-weight: bold;">PASS</span></td>
 </tr>
 </tbody>
 </table>
+<blockquote class="blockquote">
+<p>[!NOTE] <strong>Interpreting the Two Temperature Columns</strong>: Both thresholds use the same VETO criterion of <span class="math inline">\(\Delta G \le -12.0\)</span> kcal/mol, but RAA operates at 39°C where dimers are more thermodynamically stable. The qPCR column at 55°C confirms that the same combinations remain safe even at higher thermal cycling temperatures, validating cross-platform compatibility.</p>
+</blockquote>
 </section>
 <section id="rank-1-triplex-specifications-flua_r9_flub_r14_measles_r1" class="level3">
 <h3 class="anchored" data-anchor-id="rank-1-triplex-specifications-flua_r9_flub_r14_measles_r1">Rank 1 Triplex Specifications (<code>FluA_R9_FluB_R14_Measles_R1</code>)</h3>
