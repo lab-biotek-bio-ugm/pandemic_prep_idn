@@ -53,7 +53,7 @@ def main():
                 str(args.outdir), args.alternatives, args.target,
                 bridge_report_path=args.bridge_report,
                 ref_fasta_path=args.ref_fasta,
-                gff_path=args.gff,
+                ref_annotation_gff_path=args.gff,
             )
         except Exception as e:
             import traceback
@@ -207,6 +207,7 @@ def main():
                 str(outdir), args.alternatives, args.target,
                 bridge_report_path=args.bridge_report,
                 ref_fasta_path=args.ref_fasta,
+                ref_annotation_gff_path=args.gff,
             )
         except Exception as e:
             import traceback
@@ -278,7 +279,7 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
                     target_id: Optional[str] = None,
                     bridge_report_path: Optional[str] = None,
                     ref_fasta_path: Optional[str] = None,
-                    gff_path: Optional[str] = None):
+                    ref_annotation_gff_path: Optional[str] = None):
     """
     Scans output directory, loads JSON results for all candidates,
     and generates master CSV and Markdown reports for comparison.
@@ -799,13 +800,14 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
     # Generate forbidden regions tracks
     entropy_gff_path = outdir / "high_entropy.gff3"
     meme_gff_path = outdir / "meme_selection.gff3"
+    fubar_gff_path = outdir / "fubar_selection.gff3"
     gard_gff_path = outdir / "recombination_breakpoints.gff3"
     try:
         _generate_individual_forbidden_tracks(
-            entropy_gff_path, meme_gff_path, gard_gff_path,
+            entropy_gff_path, meme_gff_path, fubar_gff_path, gard_gff_path,
             target, bridge_report_path
         )
-        print("Individual forbidden tracks (Entropy, MEME, GARD) generated.")
+        print("Individual forbidden tracks (Entropy, MEME, FUBAR, GARD) generated.")
     except Exception as e:
         print(f"Warning: Failed to generate forbidden tracks: {e}")
 
@@ -815,7 +817,7 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
         _generate_igv_session(
             igv_session_path, gff_path, bed_path, target, outdir,
             ref_fasta_path=ref_fasta_path,
-            annotation_gff_path=gff_path,
+            annotation_gff_path=ref_annotation_gff_path,
         )
         print(f"IGV session file generated: {igv_session_path}")
     except Exception as e:
@@ -920,17 +922,20 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
         print(f"Warning: Failed to generate premium report: {e}")
 
 
-def _generate_individual_forbidden_tracks(entropy_path: Path, meme_path: Path, gard_path: Path,
-                                         target: str, bridge_report_path: Optional[str]):
-    """Generate separate GFF3 tracks for each forbidden category for clean visual grouping in IGV."""
+def _generate_individual_forbidden_tracks(
+    entropy_path: Path, meme_path: Path, fubar_path: Path, gard_path: Path,
+    target: str, bridge_report_path: str
+):
+    """Generate individual GFF3 files for Shannon entropy, MEME, FUBAR, and GARD from manifest."""
     if not bridge_report_path or not os.path.exists(bridge_report_path):
-        return False
-
+        return
+        
     gard_breakpoints = _load_gard_breakpoints(bridge_report_path)
     manifest_path = Path(bridge_report_path).parent / "primer_targets_manifest.yaml"
     
     high_entropy_blocks = []
     meme_blocks = []
+    fubar_blocks = []
     
     if manifest_path.exists():
         try:
@@ -939,6 +944,8 @@ def _generate_individual_forbidden_tracks(entropy_path: Path, meme_path: Path, g
                 manifest = yaml.safe_load(f)
             
             for region in manifest.get("candidate_regions", []):
+                reg_start = region.get("start", 0)
+                
                 # 1. Entropy
                 entropy_scores = region.get("positional_scores", {}).get("entropy", [])
                 if entropy_scores:
@@ -950,7 +957,7 @@ def _generate_individual_forbidden_tracks(entropy_path: Path, meme_path: Path, g
                         if val >= 0.2:
                             if not in_block:
                                 in_block = True
-                                start_pos = pos
+                                start_pos = reg_start + pos
                                 max_ent = val
                             else:
                                 max_ent = max(max_ent, val)
@@ -958,14 +965,14 @@ def _generate_individual_forbidden_tracks(entropy_path: Path, meme_path: Path, g
                             if in_block:
                                 high_entropy_blocks.append({
                                     "start": start_pos,
-                                    "end": pos - 1,
+                                    "end": reg_start + pos - 1,
                                     "max_entropy": round(max_ent, 4)
                                 })
                                 in_block = False
                     if in_block:
                         high_entropy_blocks.append({
                             "start": start_pos,
-                            "end": len(entropy_scores) - 1,
+                            "end": reg_start + len(entropy_scores) - 1,
                             "max_entropy": round(max_ent, 4)
                         })
 
@@ -980,7 +987,7 @@ def _generate_individual_forbidden_tracks(entropy_path: Path, meme_path: Path, g
                         if val < 0.05:
                             if not in_block:
                                 in_block = True
-                                start_pos = pos
+                                start_pos = reg_start + pos
                                 min_pval = val
                             else:
                                 min_pval = min(min_pval, val)
@@ -988,15 +995,45 @@ def _generate_individual_forbidden_tracks(entropy_path: Path, meme_path: Path, g
                             if in_block:
                                 meme_blocks.append({
                                     "start": start_pos,
-                                    "end": pos - 1,
+                                    "end": reg_start + pos - 1,
                                     "min_pvalue": round(min_pval, 6)
                                 })
                                 in_block = False
                     if in_block:
                         meme_blocks.append({
                             "start": start_pos,
-                            "end": len(meme_scores) - 1,
+                            "end": reg_start + len(meme_scores) - 1,
                             "min_pvalue": round(min_pval, 6)
+                        })
+
+                # 3. FUBAR Purifying Selection
+                fubar_scores = region.get("positional_scores", {}).get("fubar_prob", [])
+                if fubar_scores:
+                    in_block = False
+                    start_pos = 0
+                    max_fub = 0.0
+                    for pos, score in enumerate(fubar_scores):
+                        val = float(score) if score is not None else 0.5
+                        if val >= 0.90:
+                            if not in_block:
+                                in_block = True
+                                start_pos = reg_start + pos
+                                max_fub = val
+                            else:
+                                max_fub = max(max_fub, val)
+                        else:
+                            if in_block:
+                                fubar_blocks.append({
+                                    "start": start_pos,
+                                    "end": reg_start + pos - 1,
+                                    "max_fubar": round(max_fub, 4)
+                                })
+                                in_block = False
+                    if in_block:
+                        fubar_blocks.append({
+                            "start": start_pos,
+                            "end": reg_start + len(fubar_scores) - 1,
+                            "max_fubar": round(max_fub, 4)
                         })
         except Exception as e:
             print(f"Warning: Failed to parse manifest for individual tracks: {e}")
@@ -1028,6 +1065,20 @@ def _generate_individual_forbidden_tracks(entropy_path: Path, meme_path: Path, g
                     f.write(f"{target}\tPrimerLab\tselection_site\t{start+1}\t{end+1}\t.\t+\t.\tID=meme_site_{idx};Name=MEME_Selection_(p={min_pval});Note=Episodic diversifying selection (p-value < 0.05)\n")
         except Exception as e:
             print(f"Warning: Failed to write {meme_path}: {e}")
+
+    # Write FUBAR Selection GFF3
+    if fubar_blocks:
+        try:
+            with open(fubar_path, "w", encoding="utf-8") as f:
+                f.write("##gff-version 3\n")
+                f.write(f"##sequence-region {target} 1 15000\n")
+                for idx, block in enumerate(fubar_blocks):
+                    start = block["start"]
+                    end = block["end"]
+                    max_fub = block["max_fubar"]
+                    f.write(f"{target}\tPrimerLab\tpurifying_site\t{start+1}\t{end+1}\t.\t+\t.\tID=fubar_site_{idx};Name=FUBAR_Purifying_(prob={max_fub});Note=Pervasive purifying selection (prob >= 0.90)\n")
+        except Exception as e:
+            print(f"Warning: Failed to write {fubar_path}: {e}")
 
     # Write GARD Breakpoints GFF3
     if gard_breakpoints:
@@ -1170,12 +1221,22 @@ def _generate_igv_session(session_path: Path, gff_path, bed_path: Path,
             '<RenderOptions color="128,0,128"/></Track>'
         )
 
+    # FUBAR purifying selection track
+    fubar_gff = outdir / "fubar_selection.gff3"
+    if fubar_gff.exists():
+        resources.append('<Resource path="fubar_selection.gff3"/>')
+        sticky_tracks.append(
+            '<Track id="fubar_selection.gff3" name="⑥  Seleksi Purifikasi Pervasif (FUBAR prob ≥ 0.90)" '
+            'renderer="BASIC_FEATURE" visible="true" displayMode="EXPANDED" color="0,150,255" height="50">'
+            '<RenderOptions color="0,150,255"/></Track>'
+        )
+
     # GARD recombination breakpoints track
     gard_gff = outdir / "recombination_breakpoints.gff3"
     if gard_gff.exists():
         resources.append('<Resource path="recombination_breakpoints.gff3"/>')
         sticky_tracks.append(
-            '<Track id="recombination_breakpoints.gff3" name="⑥  Breakpoint Rekombinasi (GARD)" '
+            '<Track id="recombination_breakpoints.gff3" name="⑦  Breakpoint Rekombinasi (GARD)" '
             'renderer="BASIC_FEATURE" visible="true" displayMode="EXPANDED" color="200,0,0" height="40">'
             '<RenderOptions color="200,0,0"/></Track>'
         )
@@ -1185,7 +1246,7 @@ def _generate_igv_session(session_path: Path, gff_path, bed_path: Path,
     if m07_bed.exists():
         resources.append('<Resource path="../m07/conserved_regions.bed"/>')
         sticky_tracks.append(
-            '<Track id="../m07/conserved_regions.bed" name="⑦  Conserved Regions (M07 BED)" '
+            '<Track id="../m07/conserved_regions.bed" name="⑧  Conserved Regions (M07 BED)" '
             'renderer="BASIC_FEATURE" visible="true" displayMode="EXPANDED" color="0,150,100" height="40">'
             '</Track>'
         )
@@ -1218,7 +1279,7 @@ def _generate_igv_session(session_path: Path, gff_path, bed_path: Path,
       ═══════════════════════════════════════════════════════════
     -->
     <Panel name="FeaturePanel" height="250">
-        <Track id="{gff_rel}" name="⑧  Primer Candidates (F=forward / R=reverse / P=probe)" renderer="GENE" visible="true" displayMode="EXPANDED" color="0,160,80">
+        <Track id="{gff_rel}" name="⑨  Primer Candidates (F=forward / R=reverse / P=probe)" renderer="GENE" visible="true" displayMode="EXPANDED" color="0,160,80">
             <RenderOptions colorByAttribute="type"/>
         </Track>
     </Panel>
@@ -1231,4 +1292,3 @@ def _generate_igv_session(session_path: Path, gff_path, bed_path: Path,
 
 if __name__ == "__main__":
     main()
-
