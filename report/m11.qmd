@@ -1,22 +1,25 @@
 ---
-title: "Module 11: Dual-Target Multiplex Compatibility"
+title: "Module 11: Multiplex Compatibility"
 ---
 
-Module 11 (`scripts/m11_multiplex_checker.py` & `rules/m11_multiplex.smk`) is the final verification stage of the pipeline. It evaluates the physical and thermodynamic feasibility of mixing candidate diagnostic assays for two distinct pathogens (e.g. **Influenza A MP** + **Influenza B MP**) into a single multiplex reaction vessel (Dual RT-RAA or qPCR).
+Module 11 (`scripts/m11_multiplex_checker.py`, `scripts/m11_triplex_checker.py`, and `rules/m11_multiplex.smk`) is the final verification stage of the pipeline. It evaluates the physical and thermodynamic feasibility of mixing candidate diagnostic assays for multiple distinct pathogens (e.g. **Influenza A MP** + **Influenza B MP** + **Measles**) into a single multiplex reaction vessel (Dual or Triplex RT-RAA/qPCR).
 
 ---
 
 ## 🔬 Core Screening Capabilities
 
-1.  **Pairwise 6-Oligo Cross-Dimer Thermodynamics ($\Delta G$)**:
-    Evaluates all 15 pairwise inter-assay combinations ($\text{Fwd}_A, \text{Rev}_A, \text{Probe}_A \times \text{Fwd}_B, \text{Rev}_B, \text{Probe}_B$). Uses IUPAC base expansion to test worst-case secondary structure binding energies across all degenerate variants.
+1.  **Pairwise & Triplex Cross-Dimer Thermodynamics ($\Delta G$)**:
+    Evaluates all inter-assay combinations (up to 9 oligos in a triplex mixture: 6 primers + 3 probes). Uses IUPAC base expansion to test worst-case secondary structure binding energies across all degenerate variants.
 2.  **Dual Temperature Regimes**:
-    *   **$39.0^\circ\text{C}$ (RT-RAA Isothermal)**: Reaction temperature for recombinase polymerase/recombinase amplification.
+    *   **$39.0^\circ\text{C}$ (RT-RAA Isothermal)**: Reaction temperature for isothermal recombinase-mediated amplification.
     *   **$55.0^\circ\text{C}$ (qPCR Benchmark)**: Thermal cycling annealing benchmark.
 3.  **Kinetic Melting Temperature Alignment ($\Delta T_m$)**:
-    Verifies that the $T_m$ delta across all 4 primers is $\le 3.5^\circ\text{C}$ to maintain balanced amplification rates.
+    Verifies that the $T_m$ delta across all primers in the reaction is $\le 4.0^\circ\text{C}$ to maintain balanced amplification rates.
 4.  **Spectral Dye Separation**:
-    Verifies probe channel independence (e.g. `5'-FAM / 3'-BHQ1` vs `5'-HEX / 3'-BHQ1`).
+    Verifies probe channel independence:
+    *   Target A: `5'-FAM / 3'-BHQ1` (emission ~520 nm)
+    *   Target B: `5'-HEX / 3'-BHQ1` (emission ~556 nm)
+    *   Target C: `5'-Cy5 / 3'-BHQ2` (emission ~670 nm)
 
 ---
 

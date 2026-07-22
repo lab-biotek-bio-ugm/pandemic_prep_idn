@@ -233,3 +233,43 @@ Below is the complete $10 \times 10$ candidate matrix showing compatibility scor
   </table>
 </div>
 ```
+
+---
+
+## 5. Triplex Multiplex Compatibility Results (3-Virus Assay)
+
+To enable single-reaction surveillance of all three targets (**Influenza A**, **Influenza B**, and **Measles**), the top candidates from each virus cohort were evaluated across a **9-oligo mixture** (6 primers + 3 probes).
+
+### Top 5 Recommended Triplex Combinations
+
+| Rank | Triplex Candidate Set | Compatibility Score | Worst RAA ΔG (39°C) | Max ΔTm (°C) | Status (39°C) |
+|---|---|---|---|---|---|
+| **1** | **`FluA_R9_FluB_R14_Measles_R1`** | **66.7%** | **-6.90 kcal/mol** | **1.88°C** | <span style="color: #10b981; font-weight: bold;">PASS</span> |
+| **2** | **`FluA_R9_FluB_R14_Measles_R2`** | **66.7%** | **-6.90 kcal/mol** | **1.88°C** | <span style="color: #10b981; font-weight: bold;">PASS</span> |
+| **3** | **`FluA_R9_FluB_R14_Measles_R3`** | **66.7%** | **-6.90 kcal/mol** | **1.88°C** | <span style="color: #10b981; font-weight: bold;">PASS</span> |
+| **4** | **`FluA_R9_FluB_R14_Measles_R5`** | **66.7%** | **-6.90 kcal/mol** | **1.88°C** | <span style="color: #10b981; font-weight: bold;">PASS</span> |
+| **5** | **`FluA_R9_FluB_R14_Measles_R6`** | **66.7%** | **-6.90 kcal/mol** | **1.88°C** | <span style="color: #10b981; font-weight: bold;">PASS</span> |
+
+### Rank 1 Triplex Specifications (`FluA_R9_FluB_R14_Measles_R1`)
+
+#### 🟩 Target A: Influenza A MP (FAM Channel)
+| Oligo Name | Type | Sequence (5' -> 3') | Tm (°C) | Modification / Label |
+|---|---|---|---|---|
+| **FluA_Fwd** | Fwd Primer | `CTGACTAARGGRATTTTRGGRTTTGTATT` | 60.1°C | Unlabeled |
+| **FluA_Rev** | Rev Primer | `GCAGTTAAACTATATARGAARCTGAARAGR` | 59.4°C | Unlabeled |
+| **FluA_Probe** | Exo-Probe | `ACCGTGCCCAGTGAGCGRGGACTGCAGCGTAGACGCTTTRTCCARAATGCC` | 82.1°C | `5'-FAM` / `3'-BHQ1` / `Internal-THF` |
+
+#### 🟨 Target B: Influenza B MP (HEX Channel)
+| Oligo Name | Type | Sequence (5' -> 3') | Tm (°C) | Modification / Label |
+|---|---|---|---|---|
+| **FluB_Fwd** | Fwd Primer | `TTCAGCTCTTGTGAAGAAATAYCTATAAT` | 58.2°C | Unlabeled |
+| **FluB_Rev** | Rev Primer | `AAGAGACAATAAACAGAGAGGTATCAATTTT` | 59.9°C | Unlabeled |
+| **FluB_Probe** | Exo-Probe | `TYTTATCAGCTCTCCATTTCATGGCTTGGACAATAGGRCATTTRAATC` | 71.3°C | `5'-HEX` / `3'-BHQ1` / `Internal-THF` |
+
+#### 🟦 Target C: Measles Virus (Cy5 Channel)
+| Oligo Name | Type | Sequence (5' -> 3') | Tm (°C) | Modification / Label |
+|---|---|---|---|---|
+| **Measles_Fwd** | Fwd Primer | `GATATAGAGACCTTACCTAACAAAGATACTAT` | 58.4°C | Unlabeled |
+| **Measles_Rev** | Rev Primer | `GAGATCTGTCATAACTAAATAAGATTCAGTAG` | 58.4°C | Unlabeled |
+| **Measles_Probe** | Exo-Probe | `AGCTAGAGGAATTGGCAGCCATCTTATCGATGGCTCTGCTCCTTGGCA` | 77.9°C | `5'-Cy5` / `3'-BHQ2` / `Internal-THF` |
+

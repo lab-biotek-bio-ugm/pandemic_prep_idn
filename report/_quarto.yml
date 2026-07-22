@@ -75,6 +75,8 @@ website:
             contents:
               - href: m10.qmd
                 text: "Module 10: In-silico Verification"
+              - href: m11.qmd
+                text: "Module 11: Multiplex Compatibility"
       - section: "Results & Biological Insights"
         contents:
           - href: results_phylodynamics.qmd
