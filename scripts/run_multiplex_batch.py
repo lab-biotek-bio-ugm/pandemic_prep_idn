@@ -86,6 +86,38 @@ def main():
             m11_cmd = f"python scripts/m11_multiplex_checker.py --file-a {cand_a} --file-b {cand_b} --outdir {out_dir} --num-candidates {args.num_candidates}"
             run_cmd(m11_cmd)
 
+    # Step 3: Execute Module 11 Triplex Compatibility for 3 targets if present
+    if len(build_names) == 3:
+        print("\n" + "=" * 80)
+        print("🧬 DETECTED 3 TARGETS — RUNNING TRIPLEX COMPATIBILITY SCREENING (ALL 3 VIRUSES)")
+        print("=" * 80)
+        
+        cfg_a, build_a = build_names[0]
+        cfg_b, build_b = build_names[1]
+        cfg_c, build_c = build_names[2]
+        
+        def find_candidates(build):
+            cand = f"results/{build}/m09/degenerate/segment-MP_region_1/final_candidates.json"
+            if not os.path.exists(cand):
+                for root, dirs, files in os.walk(f"results/{build}"):
+                    if "final_candidates.json" in files:
+                        return os.path.join(root, "final_candidates.json")
+            return cand
+
+        cand_a = find_candidates(build_a)
+        cand_b = find_candidates(build_b)
+        cand_c = find_candidates(build_c)
+        
+        out_dir = "results/multiplex-triplex-all-3"
+        print(f"\n[Triplex Combo] {build_a} + {build_b} + {build_c}")
+        print(f"  Input A: {cand_a}")
+        print(f"  Input B: {cand_b}")
+        print(f"  Input C: {cand_c}")
+        print(f"  Output: {out_dir}")
+        
+        triplex_cmd = f"python scripts/m11_triplex_checker.py --file-a {cand_a} --file-b {cand_b} --file-c {cand_c} --outdir {out_dir} --num-candidates {args.num_candidates}"
+        run_cmd(triplex_cmd)
+
     print("\n" + "=" * 80)
     print("✅ MULTI-TARGET BATCHING & MULTIPLEX SCREENING COMPLETED SUCCESSFULLY!")
     print("=" * 80)
