@@ -67,6 +67,9 @@ BORDER_THIN  = Border(
 
 EXPORT_DATE = datetime.now().strftime("%Y-%m-%d %H:%M")
 
+# Module-level default — overwritten by main() after auto-detection
+ACTIVE_TARGETS: list = []
+
 CANDIDATE_COLUMNS = {
     "rank": "Rank", "status": "Status", "final_score": "Final Score", "tier": "Tier",
     "amplicon_start": "Amplicon Start (bp)", "amplicon_end": "Amplicon End (bp)", "amplicon_length": "Amplicon Length (bp)",
@@ -425,6 +428,7 @@ def export_s1_candidates(results_root: Path, outdir: Path, only_deg: bool):
     count = 0
     for b in sorted(results_root.iterdir()):
         if not b.is_dir() or b.name.startswith("multiplex"): continue
+        if not any(t in b.name.lower() for t in ACTIVE_TARGETS): continue  # respect active target filter
         for m in modes:
             m_dir = b / "m09" / m
             if not m_dir.exists(): continue
@@ -504,6 +508,7 @@ def export_s2_blast(results_root: Path, outdir: Path, only_deg: bool):
     count = 0
     for b in sorted(results_root.iterdir()):
         if not b.is_dir() or b.name.startswith("multiplex"): continue
+        if not any(t in b.name.lower() for t in ACTIVE_TARGETS): continue  # respect active target filter
         for m in modes:
             m_dir = b / "m09" / m
             if not m_dir.exists(): continue
@@ -579,6 +584,7 @@ def export_s4_qc(results_root: Path, outdir: Path):
     rows = []
     for b in sorted(results_root.iterdir()):
         if not b.is_dir() or b.name.startswith("multiplex"): continue
+        if not any(t in b.name.lower() for t in ACTIVE_TARGETS): continue  # respect active target filter
         qf = b / "m02" / "qc_report.json"
         if not qf.exists(): continue
         with open(qf, "r") as f: qc = json.load(f)
@@ -602,6 +608,7 @@ def export_s5_conservation(results_root: Path, outdir: Path):
     count = 0
     for b in sorted(results_root.iterdir()):
         if not b.is_dir() or b.name.startswith("multiplex"): continue
+        if not any(t in b.name.lower() for t in ACTIVE_TARGETS): continue  # respect active target filter
         cf = b / "m07" / "candidate_targets_summary.csv"
         if not cf.exists(): continue
         df = pd.read_csv(cf)
