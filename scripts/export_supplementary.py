@@ -320,7 +320,7 @@ def create_executive_summary(results_root: Path, outdir: Path):
 
 def export_s1_candidates(results_root: Path, outdir: Path, only_deg: bool):
     wb = openpyxl.Workbook()
-    wb.remove(wb.active)
+    # Keep active sheet for now, rename or remove later if we add custom sheets
     csv_dir = outdir / "csv"
     modes = ["degenerate"] if only_deg else ["degenerate", "non_degenerate"]
     count = 0
@@ -387,12 +387,19 @@ def export_s1_candidates(results_root: Path, outdir: Path, only_deg: bool):
                 write_df_to_ws(ws, df, f"Candidates — {b.name} / {r_dir.name}", "Status")
                 df.to_csv(str(csv_dir / f"S1_{sheet_name}.csv"), index=False)
                 count += 1
+                
+    if count > 0:
+        # Remove the default empty sheet created by Workbook()
+        wb.remove(wb.active)
+    else:
+        # Keep default sheet but label it
+        wb.active.title = "No_Candidates_Filtered"
+        wb.active.append(["No candidate target builds matched the active filter targets."])
     wb.save(str(outdir / "S1_Primer_Candidates.xlsx"))
     print(f"  ✓ Created S1_Primer_Candidates.xlsx ({count} sheets)")
 
 def export_s2_blast(results_root: Path, outdir: Path, only_deg: bool):
     wb = openpyxl.Workbook()
-    wb.remove(wb.active)
     csv_dir = outdir / "csv"
     modes = ["degenerate"] if only_deg else ["degenerate", "non_degenerate"]
     count = 0
@@ -410,12 +417,16 @@ def export_s2_blast(results_root: Path, outdir: Path, only_deg: bool):
                 write_df_to_ws(ws, df, f"BLAST Specificity — {b.name} / {r_dir.name}")
                 df.to_csv(str(csv_dir / f"S2_{sheet_name}.csv"), index=False)
                 count += 1
+    if count > 0:
+        wb.remove(wb.active)
+    else:
+        wb.active.title = "No_Data"
+        wb.active.append(["No BLAST specificity data matching the active filter targets."])
     wb.save(str(outdir / "S2_BLAST_Specificity.xlsx"))
     print(f"  ✓ Created S2_BLAST_Specificity.xlsx ({count} sheets)")
 
 def export_s3_multiplex(results_root: Path, outdir: Path):
     wb = openpyxl.Workbook()
-    wb.remove(wb.active)
     csv_dir = outdir / "csv"
     count = 0
     for m_dir in sorted(results_root.glob("multiplex*")):
@@ -455,12 +466,16 @@ def export_s3_multiplex(results_root: Path, outdir: Path):
         write_df_to_ws(ws, df, f"Multiplex — {m_dir.name}", "Status (RAA 39°C)")
         df.to_csv(str(csv_dir / f"S3_{s_name}.csv"), index=False)
         count += 1
+    if count > 0:
+        wb.remove(wb.active)
+    else:
+        wb.active.title = "No_Data"
+        wb.active.append(["No multiplex data matching the active filter targets."])
     wb.save(str(outdir / "S3_Multiplex_Compatibility.xlsx"))
     print(f"  ✓ Created S3_Multiplex_Compatibility.xlsx ({count} sheets)")
 
 def export_s4_qc(results_root: Path, outdir: Path):
     wb = openpyxl.Workbook()
-    wb.remove(wb.active)
     csv_dir = outdir / "csv"
     rows = []
     for b in sorted(results_root.iterdir()):
@@ -478,12 +493,12 @@ def export_s4_qc(results_root: Path, outdir: Path):
     ws = wb.create_sheet(title="QC_All_Builds")
     write_df_to_ws(ws, df, "QC & Sequence Filtering Summary — All Builds")
     df.to_csv(str(csv_dir / "S4_QC_All_Builds.csv"), index=False)
+    wb.remove(wb.active)
     wb.save(str(outdir / "S4_QC_Summary.xlsx"))
     print(f"  ✓ Created S4_QC_Summary.xlsx")
 
 def export_s5_conservation(results_root: Path, outdir: Path):
     wb = openpyxl.Workbook()
-    wb.remove(wb.active)
     csv_dir = outdir / "csv"
     count = 0
     for b in sorted(results_root.iterdir()):
@@ -496,6 +511,11 @@ def export_s5_conservation(results_root: Path, outdir: Path):
         write_df_to_ws(ws, df, f"Conservation & Scoring — {b.name}")
         df.to_csv(str(csv_dir / f"S5_{s_name}.csv"), index=False)
         count += 1
+    if count > 0:
+        wb.remove(wb.active)
+    else:
+        wb.active.title = "No_Data"
+        wb.active.append(["No conservation scoring data matching the active filter targets."])
     wb.save(str(outdir / "S5_Conservation_Scoring.xlsx"))
     print(f"  ✓ Created S5_Conservation_Scoring.xlsx ({count} sheets)")
 
