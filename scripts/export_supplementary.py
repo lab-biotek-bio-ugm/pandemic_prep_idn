@@ -1,24 +1,23 @@
 #!/usr/bin/env python3
 """
-Supplementary Data & Synthesis Order Exporter (v4.0 Final)
-==========================================================
-Collects all pipeline output files scattered across results/ and consolidates
-them into an Executive Summary Workbook (Executive_Summary_Diagnostic_Assays.xlsx)
-and supporting S1-S5 workbooks.
+Supplementary Data & Executive Summary Exporter (Complete Package v5.0)
+========================================================================
+Generates BOTH:
+  1. Executive Summary Workbook: Executive_Summary_Diagnostic_Assays.xlsx
+     - 00_Executive_Overview
+     - 01_Synthesis_Oligo_Orders (Rank 1 Best + 3 Alternatives for Triplex & Single Target)
+     - 02_Multiplex_Pairwise
+     - 03_Multiplex_Triplex (Dynamic 27 cross-dimers)
+     - 04_BLAST_OffTarget_Summary
 
-Files Generated:
-  1. Executive_Summary_Diagnostic_Assays.xlsx
-     - 00_Executive_Overview : High-level summary of builds, sequence counts, and top recommendations.
-     - 01_Synthesis_Oligo_Orders : Ready-to-vendor ordering specs for Rank 1 Best & Top 3 Alternatives (Triplex & Single).
-     - 02_Multiplex_Pairwise : 2-target screening tables with cross-dimers.
-     - 03_Multiplex_Triplex : 3-target screening tables with 27 cross-dimer pairs & dye channels.
-     - 04_BLAST_OffTarget_Summary : Human & Virus off-target details for top candidates.
+  2. Detailed Supporting Workbooks (S1 - S5):
+     - S1_Primer_Candidates.xlsx (All candidate sheets)
+     - S2_BLAST_Specificity.xlsx (All BLAST sheets)
+     - S3_Multiplex_Compatibility.xlsx (All multiplex sheets)
+     - S4_QC_Summary.xlsx (QC overview)
+     - S5_Conservation_Scoring.xlsx (Entropy & Conservation grades)
 
-  2. Supporting Workbooks (S1_Primer_Candidates, S2_BLAST_Specificity, S3_Multiplex_Compatibility, S4_QC_Summary, S5_Conservation_Scoring)
   3. CSV Backups in supplementary/csv/
-
-Usage:
-  python3 scripts/export_supplementary.py --results-dir results --outdir supplementary --only-degenerate
 """
 
 import argparse
@@ -68,6 +67,25 @@ BORDER_THIN  = Border(
 
 EXPORT_DATE = datetime.now().strftime("%Y-%m-%d %H:%M")
 
+CANDIDATE_COLUMNS = {
+    "rank": "Rank", "status": "Status", "final_score": "Final Score", "tier": "Tier",
+    "amplicon_start": "Amplicon Start (bp)", "amplicon_end": "Amplicon End (bp)", "amplicon_length": "Amplicon Length (bp)",
+    "fwd_degenerate_seq": "Forward Primer (IUPAC)", "rev_degenerate_seq": "Reverse Primer (IUPAC)", "probe_degenerate_seq": "Probe (IUPAC)",
+    "fwd_tm": "Fwd Tm (°C)", "rev_tm": "Rev Tm (°C)", "probe_tm": "Probe Tm (°C)",
+    "fwd_gc": "Fwd GC (%)", "rev_gc": "Rev GC (%)", "probe_gc": "Probe GC (%)",
+    "hairpin_dg": "Hairpin ΔG (kcal/mol)", "cross_dimer_dg": "Cross-Dimer ΔG (kcal/mol)", "dimer_dg": "Self-Dimer ΔG (kcal/mol)",
+    "tm_delta": "ΔTm Fwd-Rev (°C)", "human_score": "Human Specificity Score", "human_grade": "Human Specificity Grade",
+    "human_status": "Human Specificity Status", "virus_score": "Virus Specificity Score", "virus_grade": "Virus Specificity Grade",
+    "virus_status": "Virus Specificity Status", "gard_near": "Near GARD Breakpoint?"
+}
+
+MULTIPLEX_COLUMNS = {
+    "pair_id": "Candidate Pair", "rank_a": "Rank Target A", "rank_b": "Rank Target B",
+    "score": "Compatibility Score (%)", "status_raa_39c": "Status (RAA 39°C)",
+    "min_dg_raa_39c": "Worst RAA ΔG 39°C (kcal/mol)", "min_dg_qpcr_55c": "Worst qPCR ΔG 55°C (kcal/mol)",
+    "delta_tm": "ΔTm Fwd Primers (°C)", "dye_a": "Fluorophore Target A", "dye_b": "Fluorophore Target B", "dye_status": "Dye Separation"
+}
+
 def safe_sheet_name(name: str, maxlen: int = 31) -> str:
     name = re.sub(r"[\/\\?\*:\[\]]", "_", name)
     return name[:maxlen]
@@ -91,7 +109,6 @@ def auto_width(ws: Worksheet, min_w: int = 10, max_w: int = 50):
         ws.column_dimensions[col_letter].width = max(min_w, min(max_w, max_len + 3))
 
 def style_table(ws: Worksheet, start_row: int, ncols: int, status_col_idx: int = None):
-    # Style Header
     for col in range(1, ncols + 1):
         cell = ws.cell(row=start_row, column=col)
         cell.fill = FILL_HEADER
@@ -99,7 +116,6 @@ def style_table(ws: Worksheet, start_row: int, ncols: int, status_col_idx: int =
         cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
         cell.border = BORDER_THIN
 
-    # Style Data
     for r in range(start_row + 1, ws.max_row + 1):
         fill = None
         if status_col_idx:
@@ -142,11 +158,8 @@ def create_executive_summary(results_root: Path, outdir: Path):
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
     csv_dir = outdir / "csv"
-    csv_dir.mkdir(parents=True, exist_ok=True)
 
-    # -----------------------------------------------------------------------
-    # Sheet 00: Executive Overview
-    # -----------------------------------------------------------------------
+    # Sheet 00: Overview
     ws0 = wb.create_sheet(title="00_Executive_Overview")
     ws0.append(["🔬 PANDEMIC PREPAREDNESS — EXECUTIVE DIAGNOSTIC OVERVIEW"])
     ws0.append([f"Integrated Report | Generated: {EXPORT_DATE}"])
@@ -155,7 +168,6 @@ def create_executive_summary(results_root: Path, outdir: Path):
     ws0.cell(1, 1).font = Font(bold=True, size=14, color="1E3A5F")
     ws0.cell(2, 1).font = Font(italic=True, size=9, color="555555")
 
-    # Overview Table: Pipeline Summary
     overview_data = []
     builds = sorted([d for d in results_root.iterdir() if d.is_dir() and not d.name.startswith("multiplex")])
     for b in builds:
@@ -185,22 +197,18 @@ def create_executive_summary(results_root: Path, outdir: Path):
         })
 
     df_ov = pd.DataFrame(overview_data)
-    ws0.append(["Summary of Target Cohorts & Data Quality"])
-    ws0.append([])
     for r in dataframe_to_rows(df_ov, index=False, header=True):
         ws0.append(r)
-    style_table(ws0, 6, len(df_ov.columns))
+    style_table(ws0, 4, len(df_ov.columns))
     auto_width(ws0)
 
-    # -----------------------------------------------------------------------
-    # Sheet 01: Synthesis Oligo Orders (Rank 1 Best + 3 Alternatives)
-    # -----------------------------------------------------------------------
+    # Sheet 01: Oligo Orders (Rank 1 Best + 3 Alts)
     ws1 = wb.create_sheet(title="01_Synthesis_Oligo_Orders")
     triplex_files = list(results_root.glob("**/triplex_candidates.json"))
     order_rows = []
     if triplex_files and triplex_files[0].exists():
         with open(triplex_files[0], "r") as f:
-            t_data = json.load(f)[:4] # Rank 1 + 3 alts
+            t_data = json.load(f)[:4]
             for rank_idx, combo in enumerate(t_data, 1):
                 cat = "BEST RECOMMENDED (RANK 1)" if rank_idx == 1 else f"ALTERNATIVE RANK {rank_idx}"
                 oligos = combo.get("oligos_synthesis", {})
@@ -239,63 +247,37 @@ def create_executive_summary(results_root: Path, outdir: Path):
     write_df_to_ws(ws1, df_ord, "Synthesis Oligo Ordering Specs (Rank 1 Best + 3 Alternatives)")
     df_ord.to_csv(str(csv_dir / "01_Synthesis_Oligo_Orders.csv"), index=False)
 
-    # -----------------------------------------------------------------------
-    # Sheet 02: Multiplex Pairwise (2-Target)
-    # -----------------------------------------------------------------------
+    # Sheet 02: Pairwise
     ws2 = wb.create_sheet(title="02_Multiplex_Pairwise")
     pair_files = list(results_root.glob("**/multiplex_candidates.json"))
     pair_rows = []
     for pf in pair_files:
-        if "triplex" in pf.parent.name:
-            continue
+        if "triplex" in pf.parent.name: continue
         with open(pf, "r") as f:
             p_data = json.load(f)
             for rec in p_data:
-                r = {
-                    "Pair ID": rec.get("pair_id"),
-                    "Compatibility Score (%)": rec.get("score"),
-                    "Status (39°C)": rec.get("status_raa_39c"),
-                    "RAA ΔG 39°C (kcal/mol)": rec.get("min_dg_raa_39c"),
-                    "qPCR ΔG 55°C (kcal/mol)": rec.get("min_dg_qpcr_55c"),
-                    "ΔTm Fwd (°C)": rec.get("delta_tm"),
-                }
-                for pair_k, pair_v in rec.get("cross_dimers_39c", {}).items():
-                    r[f"ΔG 39C: {pair_k}"] = pair_v
+                r = {"Pair ID": rec.get("pair_id"), "Compatibility Score (%)": rec.get("score"), "Status (39°C)": rec.get("status_raa_39c"), "RAA ΔG 39°C": rec.get("min_dg_raa_39c"), "qPCR ΔG 55°C": rec.get("min_dg_qpcr_55c"), "ΔTm Fwd (°C)": rec.get("delta_tm")}
+                for pair_k, pair_v in rec.get("cross_dimers_39c", {}).items(): r[f"ΔG 39C: {pair_k}"] = pair_v
                 pair_rows.append(r)
 
     df_pair = pd.DataFrame(pair_rows) if pair_rows else pd.DataFrame([{"Status": "No pairwise runs found"}])
-    write_df_to_ws(ws2, df_pair, "Pairwise Multiplex Screening Results (2-Target)", "Status (39°C)")
-    df_pair.to_csv(str(csv_dir / "02_Multiplex_Pairwise.csv"), index=False)
+    write_df_to_ws(ws2, df_pair, "Pairwise Multiplex Screening Results", "Status (39°C)")
 
-    # -----------------------------------------------------------------------
-    # Sheet 03: Multiplex Triplex (3-Target)
-    # -----------------------------------------------------------------------
+    # Sheet 03: Triplex
     ws3 = wb.create_sheet(title="03_Multiplex_Triplex")
     tri_rows = []
     if triplex_files and triplex_files[0].exists():
         with open(triplex_files[0], "r") as f:
             t_data = json.load(f)
             for rec in t_data:
-                r = {
-                    "Triplex Combo ID": rec.get("pair_id"),
-                    "Compatibility Score (%)": rec.get("score"),
-                    "Status (39°C)": rec.get("status_raa_39c"),
-                    "RAA ΔG 39°C (kcal/mol)": rec.get("min_dg_raa_39c"),
-                    "qPCR ΔG 55°C (kcal/mol)": rec.get("min_dg_qpcr_55c"),
-                    "Max ΔTm (°C)": rec.get("delta_tm"),
-                }
-                # Dynamically capture all 27 inter-assay cross dimer pairs!
-                for pair_k, pair_v in rec.get("cross_dimers_39c", {}).items():
-                    r[f"ΔG 39C: {pair_k}"] = pair_v
+                r = {"Triplex Combo ID": rec.get("pair_id"), "Compatibility Score (%)": rec.get("score"), "Status (39°C)": rec.get("status_raa_39c"), "RAA ΔG 39°C": rec.get("min_dg_raa_39c"), "qPCR ΔG 55°C": rec.get("min_dg_qpcr_55c"), "Max ΔTm (°C)": rec.get("delta_tm")}
+                for pair_k, pair_v in rec.get("cross_dimers_39c", {}).items(): r[f"ΔG 39C: {pair_k}"] = pair_v
                 tri_rows.append(r)
 
     df_tri = pd.DataFrame(tri_rows) if tri_rows else pd.DataFrame([{"Status": "No triplex runs found"}])
-    write_df_to_ws(ws3, df_tri, "Triplex Multiplex Screening Results (3-Target: FluA + FluB + Measles)", "Status (39°C)")
-    df_tri.to_csv(str(csv_dir / "03_Multiplex_Triplex.csv"), index=False)
+    write_df_to_ws(ws3, df_tri, "Triplex Multiplex Screening Results (3-Target)", "Status (39°C)")
 
-    # -----------------------------------------------------------------------
-    # Sheet 04: BLAST OffTarget Summary
-    # -----------------------------------------------------------------------
+    # Sheet 04: BLAST
     ws4 = wb.create_sheet(title="04_BLAST_OffTarget_Summary")
     blast_files = list(results_root.glob("**/blast_specificity_summary.csv"))
     blast_dfs = []
@@ -304,23 +286,141 @@ def create_executive_summary(results_root: Path, outdir: Path):
             b_df = pd.read_csv(bf)
             b_df.insert(0, "Build Cohort", bf.parent.parent.parent.parent.name)
             blast_dfs.append(b_df)
-        except Exception:
-            pass
+        except Exception: pass
 
-    df_blast = pd.concat(blast_dfs, ignore_index=True) if blast_dfs else pd.DataFrame([{"Status": "No BLAST summary files found"}])
+    df_blast = pd.concat(blast_dfs, ignore_index=True) if blast_dfs else pd.DataFrame([{"Status": "No BLAST files"}])
     write_df_to_ws(ws4, df_blast, "BLAST Specificity & Off-Target Risk Summary", "specificity_grade")
-    df_blast.to_csv(str(csv_dir / "04_BLAST_OffTarget_Summary.csv"), index=False)
 
     exec_out = outdir / "Executive_Summary_Diagnostic_Assays.xlsx"
     wb.save(str(exec_out))
-    print(f"  ✓ Created Main Workbook: {exec_out}")
+    print(f"  ✓ Created Main Executive Workbook: {exec_out}")
+
+# ---------------------------------------------------------------------------
+# Supporting Detailed Exporters (S1 - S5)
+# ---------------------------------------------------------------------------
+
+def export_s1_candidates(results_root: Path, outdir: Path, only_deg: bool):
+    wb = openpyxl.Workbook()
+    wb.remove(wb.active)
+    csv_dir = outdir / "csv"
+    modes = ["degenerate"] if only_deg else ["degenerate", "non_degenerate"]
+    count = 0
+    for b in sorted(results_root.iterdir()):
+        if not b.is_dir() or b.name.startswith("multiplex"): continue
+        for m in modes:
+            m_dir = b / "m09" / m
+            if not m_dir.exists(): continue
+            for r_dir in sorted(m_dir.iterdir()):
+                jf = r_dir / "final_candidates.json"
+                if not jf.exists(): continue
+                with open(jf, "r") as f: data = json.load(f)
+                if not data: continue
+                df = pd.DataFrame(data)
+                cols = [c for c in CANDIDATE_COLUMNS if c in df.columns]
+                df = df[cols].rename(columns=CANDIDATE_COLUMNS)
+                sheet_name = f"{build_label(b.name)}_{r_dir.name}_{'Deg' if m=='degenerate' else 'NonDeg'}"
+                ws = wb.create_sheet(title=safe_sheet_name(sheet_name))
+                write_df_to_ws(ws, df, f"Candidates — {b.name} / {r_dir.name}", "Status")
+                df.to_csv(str(csv_dir / f"S1_{sheet_name}.csv"), index=False)
+                count += 1
+    wb.save(str(outdir / "S1_Primer_Candidates.xlsx"))
+    print(f"  ✓ Created S1_Primer_Candidates.xlsx ({count} sheets)")
+
+def export_s2_blast(results_root: Path, outdir: Path, only_deg: bool):
+    wb = openpyxl.Workbook()
+    wb.remove(wb.active)
+    csv_dir = outdir / "csv"
+    modes = ["degenerate"] if only_deg else ["degenerate", "non_degenerate"]
+    count = 0
+    for b in sorted(results_root.iterdir()):
+        if not b.is_dir() or b.name.startswith("multiplex"): continue
+        for m in modes:
+            m_dir = b / "m09" / m
+            if not m_dir.exists(): continue
+            for r_dir in sorted(m_dir.iterdir()):
+                cf = r_dir / "blast_specificity_summary.csv"
+                if not cf.exists(): continue
+                df = pd.read_csv(cf)
+                sheet_name = f"{build_label(b.name)}_{r_dir.name}_{'Deg' if m=='degenerate' else 'NonDeg'}"
+                ws = wb.create_sheet(title=safe_sheet_name(sheet_name))
+                write_df_to_ws(ws, df, f"BLAST Specificity — {b.name} / {r_dir.name}")
+                df.to_csv(str(csv_dir / f"S2_{sheet_name}.csv"), index=False)
+                count += 1
+    wb.save(str(outdir / "S2_BLAST_Specificity.xlsx"))
+    print(f"  ✓ Created S2_BLAST_Specificity.xlsx ({count} sheets)")
+
+def export_s3_multiplex(results_root: Path, outdir: Path):
+    wb = openpyxl.Workbook()
+    wb.remove(wb.active)
+    csv_dir = outdir / "csv"
+    count = 0
+    for m_dir in sorted(results_root.glob("multiplex*")):
+        if not m_dir.is_dir(): continue
+        jf = m_dir / "triplex_candidates.json" if (m_dir / "triplex_candidates.json").exists() else m_dir / "multiplex_candidates.json"
+        if not jf.exists(): continue
+        with open(jf, "r") as f: data = json.load(f)
+        if not data: continue
+        rows = []
+        for rec in data:
+            row = {MULTIPLEX_COLUMNS.get(k, k): v for k, v in rec.items() if k in MULTIPLEX_COLUMNS}
+            for pk, pv in rec.get("cross_dimers_39c", {}).items(): row[f"ΔG 39C: {pk}"] = pv
+            rows.append(row)
+        df = pd.DataFrame(rows)
+        s_name = f"{'Triplex' if 'triplex' in jf.name else 'Pairwise'}_{m_dir.name.replace('multiplex-', '')}"
+        ws = wb.create_sheet(title=safe_sheet_name(s_name))
+        write_df_to_ws(ws, df, f"Multiplex — {m_dir.name}", "Status (RAA 39°C)")
+        df.to_csv(str(csv_dir / f"S3_{s_name}.csv"), index=False)
+        count += 1
+    wb.save(str(outdir / "S3_Multiplex_Compatibility.xlsx"))
+    print(f"  ✓ Created S3_Multiplex_Compatibility.xlsx ({count} sheets)")
+
+def export_s4_qc(results_root: Path, outdir: Path):
+    wb = openpyxl.Workbook()
+    wb.remove(wb.active)
+    csv_dir = outdir / "csv"
+    rows = []
+    for b in sorted(results_root.iterdir()):
+        if not b.is_dir() or b.name.startswith("multiplex"): continue
+        qf = b / "m02" / "qc_report.json"
+        if not qf.exists(): continue
+        with open(qf, "r") as f: qc = json.load(f)
+        row = {"Build": b.name, "Input Sequences": qc.get("input_count"), "QC Passed": qc.get("output_count"), "Retention Rate (%)": qc.get("retention_pct")}
+        for k in ["subtype_filtering", "filters"]:
+            v = qc.get(k)
+            if isinstance(v, dict): row[k.title()] = "; ".join(f"{sub_k}: {sub_v}" for sub_k, sub_v in v.items())
+            elif v is not None: row[k.title()] = str(v)
+        rows.append(row)
+    df = pd.DataFrame(rows) if rows else pd.DataFrame([{"Status": "No QC Data"}])
+    ws = wb.create_sheet(title="QC_All_Builds")
+    write_df_to_ws(ws, df, "QC & Sequence Filtering Summary — All Builds")
+    df.to_csv(str(csv_dir / "S4_QC_All_Builds.csv"), index=False)
+    wb.save(str(outdir / "S4_QC_Summary.xlsx"))
+    print(f"  ✓ Created S4_QC_Summary.xlsx")
+
+def export_s5_conservation(results_root: Path, outdir: Path):
+    wb = openpyxl.Workbook()
+    wb.remove(wb.active)
+    csv_dir = outdir / "csv"
+    count = 0
+    for b in sorted(results_root.iterdir()):
+        if not b.is_dir() or b.name.startswith("multiplex"): continue
+        cf = b / "m07" / "candidate_targets_summary.csv"
+        if not cf.exists(): continue
+        df = pd.read_csv(cf)
+        s_name = f"Conservation_{build_label(b.name)}"
+        ws = wb.create_sheet(title=safe_sheet_name(s_name))
+        write_df_to_ws(ws, df, f"Conservation & Scoring — {b.name}")
+        df.to_csv(str(csv_dir / f"S5_{s_name}.csv"), index=False)
+        count += 1
+    wb.save(str(outdir / "S5_Conservation_Scoring.xlsx"))
+    print(f"  ✓ Created S5_Conservation_Scoring.xlsx ({count} sheets)")
 
 # ---------------------------------------------------------------------------
 # Main Routine
 # ---------------------------------------------------------------------------
 
 def main():
-    parser = argparse.ArgumentParser(description="Full Executive & Supplementary Exporter")
+    parser = argparse.ArgumentParser(description="Full Executive & Detailed Supplementary Exporter")
     parser.add_argument("--results-dir", default="results", help="Results directory")
     parser.add_argument("--outdir", default="supplementary", help="Output directory")
     parser.add_argument("--only-degenerate", action="store_true", help="Only export degenerate candidates")
@@ -329,15 +429,24 @@ def main():
     results_root = Path(args.results_dir).resolve()
     outdir = Path(args.outdir).resolve()
     outdir.mkdir(parents=True, exist_ok=True)
+    (outdir / "csv").mkdir(exist_ok=True)
 
     print(f"\n================================================================================")
-    print(f"📊 EXPORTING EXECUTIVE SUMMARY & SUPPLEMENTARY REPORTS")
+    print(f"📊 EXPORTING COMPLETE PACKAGE (EXECUTIVE SUMMARY + S1 - S5 WORKBOOKS)")
     print(f"================================================================================")
     
+    # 1. Main Executive Summary Workbook
     create_executive_summary(results_root, outdir)
-    
+
+    # 2. Detailed Supporting Workbooks
+    export_s1_candidates(results_root, outdir, args.only_degenerate)
+    export_s2_blast(results_root, outdir, args.only_degenerate)
+    export_s3_multiplex(results_root, outdir)
+    export_s4_qc(results_root, outdir)
+    export_s5_conservation(results_root, outdir)
+
     print(f"================================================================================")
-    print(f"✅ EXPORT COMPLETED! Output directory: {outdir}")
+    print(f"✅ COMPLETE EXPORT SUCCESSFUL! All workbooks generated in: {outdir}")
     print(f"================================================================================")
 
 if __name__ == "__main__":
