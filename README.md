@@ -8,23 +8,19 @@
 
 An enterprise-grade, **Snakemake-orchestrated bioinformatics pipeline** designed for the rapid identification, validation, and thermodynamic design of diagnostic assays (PCR and RAA/RPA) resilient to mutational escape. 
 
-This pipeline specifically targets **Acute Respiratory Infection (ARI) pathogens** (e.g., Influenza A, SARS-CoV-2) by coupling physical sequence conservation (Shannon Entropy) with phylogenetic phylodynamic mapping and selection pressure models.
+This pipeline specifically targets **Acute Respiratory Infection (ARI) pathogens** (e.g., Influenza A, SARS-CoV-2) by coupling physical sequence conservation (Shannon Entropy) with phylogenetic phylodynamic mapping and selection pressure models. **M11: Multiplex Compatibility**: Pairwise and Triplex (three-way) thermodynamic cross-dimerization ($\Delta G$) screening across all oligo interactions, spectral dye channel separation (FAM vs. HEX vs. Cy5), and kinetic $T_m$ alignment.
 
 ---
 
-## 🏛️ Strategic Collaboration
+## 🏛️ Collaborative Partners
 
-This research and development initiative is led and funded by:
-*   **National Research and Innovation Agency (BRIN)**, through the **Biomedical Research Center (PR Biomedis)**.
-*   **Universitas Gadjah Mada (UGM)**, Faculty of Biology.
-*   **Universitas Indonesia (UI)**.
-*   **International Partners**: University of Bern (Switzerland) and Tokyo University of Agriculture and Technology (Japan).
+Led and funded by UGM Faculty of Biology, BRIN Biomedical Research Center, and UI.
 
 ---
 
 ## ⚙️ Architecture & Data Flow
 
-The workflow automatically streams raw surveillance data (NCBI/GISAID) and applies a 10-module bioinformatic cascade:
+The workflow automatically streams raw surveillance data (NCBI/GISAID) and applies a 11-module bioinformatic cascade:
 
 ```mermaid
 flowchart LR
@@ -56,9 +52,9 @@ flowchart LR
 3.  **M05–M06: Selection Pressure & Ancestral States**: HyPhy (FUBAR/MEME/GARD) codon selection models coupled with ancestral node reconstruction.
 4.  **M07: Bridge Builder Scoring**: Proprietary scoring engine weighting Shannon entropy ($H$) against evolutionary purifying selection signals to locate stable diagnostic "bridges".
 5.  **M08: Isothermal Primer Design**: PrimerLab engine wrapper applying thermodynamic constraints (Primer3 + ViennaRNA secondary structure minimization).
-6.  **M09: Specificity Filtering**: In-depth BLAST verification (local/remote databases) generating BED/GFF3 visualization tracks.
+6.  **M09: Specificity Filtering**: In-depth BLAST verification (local/remote databases) generating GFF3/BED visual files and portable IGV sessions.
 7.  **M10: In-Silico Validation**: Emulation of PCR/RAA amplification (seqkit amplicon) against massive surveillance cohorts, exporting interactive temporal dashboards.
-8.  **M11: Multiplex Compatibility**: Dual-target heterodimerization ($\Delta G$) screening across all 6 oligo interactions, dye channel separation (FAM vs. HEX), and kinetic $T_m$ alignment.
+8.  **M11: Multiplex Compatibility**: Dual-target and Triplex (three-way) heterodimerization ($\Delta G$) screening across all oligo interactions, dye channel separation (FAM vs. HEX vs. Cy5), and kinetic $T_m$ alignment.
 
 ---
 
@@ -80,7 +76,10 @@ conda activate pandemic-prep
 
 ### 2. Configure Your Run
 Target parameters, sequence counts, and database choices are configured in `config/config.yaml`.
-Multi-target presets are available (e.g., `config/config_influenza_a_mp.yaml` and `config/config_influenza_b_mp.yaml`).
+Multi-target presets are available:
+*   `config/config_influenza_a_mp.yaml` (Dye: FAM)
+*   `config/config_influenza_b_mp.yaml` (Dye: HEX)
+*   `config/config_measles_all_partial.yaml` (Dye: Cy5)
 
 ### 3. Execute Single-Target Pipeline
 Run a dry-run to verify rule dependencies:
@@ -92,15 +91,22 @@ Execute with 16 cores:
 snakemake --use-conda --cores 16 --configfile config/config_influenza_a_mp.yaml
 ```
 
-### 4. Multi-Target Batching & Multiplex Screening
-To batch-execute multiple target configs sequentially and automatically run Module 11 Multiplex Compatibility screening, use the master bash orchestrator script:
+### 4. Multi-Target Batching & Multiplex/Triplex Screening
+To batch-execute multiple target configs sequentially and automatically run Module 11 Multiplex Compatibility screening, use the master orchestrator script:
 
+#### Pairwise Multiplex Screening:
 ```bash
 # Batch run across Influenza A and Influenza B configs with 64 cores
 bash scripts/run_multiplex_batch.sh config/config_influenza_a_mp.yaml config/config_influenza_b_mp.yaml --use-conda -c 64
+```
 
-# Handle directory lock or rerun incomplete jobs
-bash scripts/run_multiplex_batch.sh config/config_influenza_a_mp.yaml config/config_influenza_b_mp.yaml --use-conda -c 64 --unlock
+#### Triplex Multiplex Screening (All 3 Targets):
+If three target configurations are provided, the orchestrator automatically runs a three-way thermodynamic and kinetic compatibility check using `scripts/m11_triplex_checker.py`:
+```bash
+python scripts/run_multiplex_batch.py \
+  --configs config/config_influenza_a_mp.yaml config/config_influenza_b_mp.yaml config/config_measles_all_partial.yaml \
+  --cores 64 \
+  --skip-snakemake
 ```
 
 ---
@@ -114,7 +120,8 @@ Key diagnostic assets are written directly to `results/{BUILD}/`:
 *   **BLAST Tracks**: `results/{BUILD}/m09/final_candidates.gff3` / `.bed`
 *   **IGV Workspace**: `results/{BUILD}/m09/igv_session.xml` (one-click visualization setup)
 *   **Validation Dashboard**: `results/{BUILD}/m10/validation_report.html`
-*   **Multiplex Results**: `results/multiplex-<targetA>_x_<targetB>/multiplex_report.md` & `multiplex_matrix.html`
+*   **Pairwise Multiplex Results**: `results/multiplex-<targetA>_x_<targetB>/multiplex_report.md`
+*   **Triplex Multiplex Results**: `results/multiplex-triplex-all-3/triplex_report.md` & `triplex_candidates.json` `multiplex_matrix.html`
 
 ---
 
