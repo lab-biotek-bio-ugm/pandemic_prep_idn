@@ -37,8 +37,18 @@ def calculate_gc(seq):
     gc = sum(1 for b in seq if b in ['G', 'C', 'S'])
     return round((gc / len(seq)) * 100.0, 1)
 
+_heterodimer_cache = {}
+_raw_p3_cache = {}
+
 def evaluate_pair_heterodimer(seq1, seq2, temp_c):
     """Calculate minimum delta G (kcal/mol) between seq1 and seq2."""
+    key = (seq1, seq2, temp_c)
+    if key in _heterodimer_cache:
+        return _heterodimer_cache[key]
+    key_rev = (seq2, seq1, temp_c)
+    if key_rev in _heterodimer_cache:
+        return _heterodimer_cache[key_rev]
+
     variants1 = expand_iupac(seq1)
     variants2 = expand_iupac(seq2)
     
@@ -47,9 +57,17 @@ def evaluate_pair_heterodimer(seq1, seq2, temp_c):
     
     for v1 in variants1:
         for v2 in variants2:
-            res = primer3.calc_heterodimer(v1, v2, temp_c=temp_c)
-            dg_kcal = res.dg / 1000.0
-            if res.structure_found:
+            p3_key = (v1, v2, temp_c)
+            if p3_key in _raw_p3_cache:
+                dg_kcal, sf = _raw_p3_cache[p3_key]
+            else:
+                res = primer3.calc_heterodimer(v1, v2, temp_c=temp_c)
+                dg_kcal = res.dg / 1000.0
+                sf = res.structure_found
+                _raw_p3_cache[p3_key] = (dg_kcal, sf)
+                _raw_p3_cache[(v2, v1, temp_c)] = (dg_kcal, sf)
+
+            if sf:
                 struct_found = True
                 if dg_kcal < min_dg:
                     min_dg = dg_kcal
@@ -59,6 +77,8 @@ def evaluate_pair_heterodimer(seq1, seq2, temp_c):
                     
     if min_dg == 99.0:
         min_dg = 0.0
+    
+    _heterodimer_cache[key] = (min_dg, struct_found)
     return min_dg, struct_found
 
 def calculate_tm(seq):
