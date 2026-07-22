@@ -289,9 +289,9 @@ def generate_html_report(non_deg_data: list, deg_data: list, output_path: Path, 
 <body>
     <div class="container">
         <header>
-            <h1>Universal Influenza A Diagnostics Comparison Report</h1>
+            <h1>Universal {f"Influenza B" if "influenza-b" in build_name.lower() else f"Measles" if "measles" in build_name.lower() else "Influenza A"} Diagnostics Comparison Report</h1>
             <div class="meta">
-                Build: <b>{build_name}</b> | Status: <b>Dual-Track Completed</b> | Target segment: <b>Matrix Protein (MP)</b>
+                Build: <b>{build_name}</b> | Status: <b>Dual-Track Completed</b> | Target segment: <b>Matrix Protein (MP) / Target Gene</b>
             </div>
         </header>
 
