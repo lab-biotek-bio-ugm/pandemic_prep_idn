@@ -284,12 +284,15 @@ def create_executive_summary(results_root: Path, outdir: Path):
     blast_dfs = []
     for bf in blast_files:
         try:
-            b_df = pd.read_csv(bf)
+            # Read columns as object/str to keep original text like "58.94 - 64.98 °C" intact
+            b_df = pd.read_csv(bf, dtype=object)
             b_df.insert(0, "Build Cohort", bf.parent.parent.parent.parent.name)
             blast_dfs.append(b_df)
         except Exception: pass
 
     df_blast = pd.concat(blast_dfs, ignore_index=True) if blast_dfs else pd.DataFrame([{"Status": "No BLAST files"}])
+    # Clean up any remaining NaN
+    df_blast = df_blast.fillna("-")
     write_df_to_ws(ws4, df_blast, "BLAST Specificity & Off-Target Risk Summary", "specificity_grade")
 
     exec_out = outdir / "Executive_Summary_Diagnostic_Assays.xlsx"
