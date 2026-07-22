@@ -954,13 +954,14 @@ def _generate_individual_forbidden_tracks(
                     max_ent = 0.0
                     for pos, score in enumerate(entropy_scores):
                         val = float(score) if score is not None else 0.0
-                        if val >= 0.2:
+                        val_norm = val / 2.0  # Normalisasi ke range [0.0, 1.0] (DNA max entropy = 2.0)
+                        if val_norm >= 0.15:  # Menggunakan normalized threshold (15% variabilitas)
                             if not in_block:
                                 in_block = True
                                 start_pos = reg_start + pos
-                                max_ent = val
+                                max_ent = val_norm
                             else:
-                                max_ent = max(max_ent, val)
+                                max_ent = max(max_ent, val_norm)
                         else:
                             if in_block:
                                 high_entropy_blocks.append({
