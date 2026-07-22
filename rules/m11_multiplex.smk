@@ -93,4 +93,11 @@ rule m11_export_supplementary:
             --results-dir {params.results_dir} \
             --outdir {params.outdir} \
             {params.only_degenerate} > {log} 2>&1
+            
+        # Mirror to Windows host Downloads results folder for easy access
+        if [ -d "/mnt/c/Users/engki/Downloads/results" ]; then
+            echo "[Snakemake] Mirroring supplementary folder to Windows host..." >> {log}
+            mkdir -p "/mnt/c/Users/engki/Downloads/results/supplementary"
+            cp -r {params.outdir}/* "/mnt/c/Users/engki/Downloads/results/supplementary/" >> {log} 2>&1
+        fi
         """
