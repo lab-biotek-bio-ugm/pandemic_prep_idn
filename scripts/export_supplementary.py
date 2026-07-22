@@ -226,6 +226,8 @@ def create_executive_summary(results_root: Path, outdir: Path):
                 cat = "BEST RECOMMENDED (RANK 1)" if rank_idx == 1 else f"ALTERNATIVE RANK {rank_idx}"
                 oligos = combo.get("oligos_synthesis", {})
                 for t_key, (t_name, default_dye) in [("flu_a", ("Influenza A MP", "FAM")), ("flu_b", ("Influenza B MP", "HEX")), ("measles", ("Measles Virus", "Cy5"))]:
+                    if t_key == "measles":
+                        continue
                     if t_key in oligos:
                         for role_key, role_lbl in [("fwd", "Forward Primer"), ("rev", "Reverse Primer"), ("probe", "Exonuclease Probe")]:
                             if role_key in oligos[t_key]:
