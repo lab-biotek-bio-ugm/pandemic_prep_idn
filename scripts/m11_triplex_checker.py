@@ -4,88 +4,30 @@ Module 11: Triplex Multiplex Assay Compatibility Screening Engine
 Evaluates three-way cross-dimer thermodynamics, spectral dye separation,
 and Tm alignment for triplex assays (Influenza A + Influenza B + Measles).
 Outputs full sequence synthesis specs and cross-dimer details.
+
+IUPAC expansion, Tm calculation, and heterodimerisation logic are provided by
+the shared `scripts/tools/iupac_utils.py` module.
 """
 
 import os
 import sys
 import json
 import argparse
-import itertools
-import primer3
+from pathlib import Path
 
-# IUPAC Degenerate Base Table
-IUPAC_MAP = {
-    'A': ['A'], 'C': ['C'], 'G': ['G'], 'T': ['T'],
-    'R': ['A', 'G'], 'Y': ['C', 'T'], 'S': ['G', 'C'], 'W': ['A', 'T'],
-    'K': ['G', 'T'], 'M': ['A', 'C'], 'B': ['C', 'G', 'T'],
-    'D': ['A', 'G', 'T'], 'H': ['A', 'C', 'T'], 'V': ['A', 'C', 'G'],
-    'N': ['A', 'C', 'G', 'T']
-}
+# Allow importing shared utilities from scripts/tools/
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from tools.iupac_utils import (
+    expand_iupac,
+    calculate_gc,
+    calculate_tm,
+    evaluate_pair_heterodimer,
+)
 
-def expand_iupac(seq):
-    """Expand degenerate sequence into canonical combinations (capped at 16)."""
-    seq = seq.upper()
-    options = [IUPAC_MAP.get(base, [base]) for base in seq]
-    combinations = [''.join(p) for p in itertools.product(*options)]
-    if len(combinations) > 16:
-        combinations = combinations[:16]
-    return combinations
+# MAX_VARIANTS is set from CLI --max-variants (default 16, matching config.yaml).
+_MAX_VARIANTS = 16
 
-def calculate_gc(seq):
-    """Calculate GC content percentage."""
-    seq = seq.upper()
-    gc = sum(1 for b in seq if b in ['G', 'C', 'S'])
-    return round((gc / len(seq)) * 100.0, 1)
 
-_heterodimer_cache = {}
-_raw_p3_cache = {}
-
-def evaluate_pair_heterodimer(seq1, seq2, temp_c):
-    """Calculate minimum delta G (kcal/mol) between seq1 and seq2."""
-    key = (seq1, seq2, temp_c)
-    if key in _heterodimer_cache:
-        return _heterodimer_cache[key]
-    key_rev = (seq2, seq1, temp_c)
-    if key_rev in _heterodimer_cache:
-        return _heterodimer_cache[key_rev]
-
-    variants1 = expand_iupac(seq1)
-    variants2 = expand_iupac(seq2)
-    
-    min_dg = 99.0
-    struct_found = False
-    
-    for v1 in variants1:
-        for v2 in variants2:
-            p3_key = (v1, v2, temp_c)
-            if p3_key in _raw_p3_cache:
-                dg_kcal, sf = _raw_p3_cache[p3_key]
-            else:
-                res = primer3.calc_heterodimer(v1, v2, temp_c=temp_c)
-                dg_kcal = res.dg / 1000.0
-                sf = res.structure_found
-                _raw_p3_cache[p3_key] = (dg_kcal, sf)
-                _raw_p3_cache[(v2, v1, temp_c)] = (dg_kcal, sf)
-
-            if sf:
-                struct_found = True
-                if dg_kcal < min_dg:
-                    min_dg = dg_kcal
-            else:
-                if 0.0 < min_dg:
-                    min_dg = 0.0
-                    
-    if min_dg == 99.0:
-        min_dg = 0.0
-    
-    _heterodimer_cache[key] = (min_dg, struct_found)
-    return min_dg, struct_found
-
-def calculate_tm(seq):
-    """Calculate Tm using Primer3."""
-    variants = expand_iupac(seq)
-    tms = [primer3.calc_tm(v) for v in variants]
-    return sum(tms) / len(tms)
 
 def run_triplex_screening(file_a, file_b, file_c, out_dir, num_candidates=10):
     os.makedirs(out_dir, exist_ok=True)
@@ -285,14 +227,26 @@ def run_triplex_screening(file_a, file_b, file_c, out_dir, num_candidates=10):
     print(f"[Triplex] Saved Markdown report to: {md_path}")
 
 def main():
-    parser = argparse.ArgumentParser(description="Triplex Compatibility Checker")
-    parser.add_argument("--file-a", required=True)
-    parser.add_argument("--file-b", required=True)
-    parser.add_argument("--file-c", required=True)
-    parser.add_argument("--outdir", required=True)
-    parser.add_argument("--num-candidates", type=int, default=10)
+    parser = argparse.ArgumentParser(
+        description="Triplex Multiplex Compatibility Checker (Influenza A + Influenza B + Measles)"
+    )
+    parser.add_argument("--file-a", required=True, help="Path to Target A final_candidates.json (Influenza A)")
+    parser.add_argument("--file-b", required=True, help="Path to Target B final_candidates.json (Influenza B)")
+    parser.add_argument("--file-c", required=True, help="Path to Target C final_candidates.json (Measles)")
+    parser.add_argument("--outdir", required=True, help="Output directory")
+    parser.add_argument("--num-candidates", type=int, default=10, help="Number of top candidates to screen per target")
+    parser.add_argument(
+        "--max-variants",
+        type=int,
+        default=16,
+        help="IUPAC expansion cap per oligo (default: 16, matches config.yaml degenerate.max_iupac_variants)",
+    )
     args = parser.parse_args()
-    
+
+    # Propagate --max-variants into the shared utility module
+    import tools.iupac_utils as _iu
+    _iu.DEFAULT_MAX_VARIANTS = args.max_variants
+
     run_triplex_screening(args.file_a, args.file_b, args.file_c, args.outdir, args.num_candidates)
 
 if __name__ == "__main__":

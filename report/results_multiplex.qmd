@@ -242,13 +242,17 @@ To enable single-reaction surveillance of all three targets (**Influenza A**, **
 
 ### Top 5 Recommended Triplex Combinations
 
-| Rank | Triplex Candidate Set | Compatibility Score | Worst RAA ΔG (39°C) | Max ΔTm (°C) | Status (39°C) |
-|---|---|---|---|---|---|
-| **1** | **`FluA_R9_FluB_R14_Measles_R1`** | **66.7%** | **-6.90 kcal/mol** | **1.88°C** | <span style="color: #10b981; font-weight: bold;">PASS</span> |
-| **2** | **`FluA_R9_FluB_R14_Measles_R2`** | **66.7%** | **-6.90 kcal/mol** | **1.88°C** | <span style="color: #10b981; font-weight: bold;">PASS</span> |
-| **3** | **`FluA_R9_FluB_R14_Measles_R3`** | **66.7%** | **-6.90 kcal/mol** | **1.88°C** | <span style="color: #10b981; font-weight: bold;">PASS</span> |
-| **4** | **`FluA_R9_FluB_R14_Measles_R5`** | **66.7%** | **-6.90 kcal/mol** | **1.88°C** | <span style="color: #10b981; font-weight: bold;">PASS</span> |
-| **5** | **`FluA_R9_FluB_R14_Measles_R6`** | **66.7%** | **-6.90 kcal/mol** | **1.88°C** | <span style="color: #10b981; font-weight: bold;">PASS</span> |
+| Rank | Triplex Candidate Set | Compatibility Score | Worst RAA ΔG (39°C) | Worst qPCR ΔG (55°C) | Max ΔTm (°C) | Status (39°C) |
+|---|---|---|---|---|---|---|
+| **1** | **`FluA_R9_FluB_R14_Measles_R1`** | **66.7%** | **-6.90 kcal/mol** | **-4.98 kcal/mol** | **1.88°C** | <span style="color: #10b981; font-weight: bold;">PASS</span> |
+| **2** | **`FluA_R9_FluB_R14_Measles_R2`** | **66.7%** | **-6.90 kcal/mol** | **-4.98 kcal/mol** | **1.88°C** | <span style="color: #10b981; font-weight: bold;">PASS</span> |
+| **3** | **`FluA_R9_FluB_R14_Measles_R3`** | **66.7%** | **-6.90 kcal/mol** | **-4.98 kcal/mol** | **1.88°C** | <span style="color: #10b981; font-weight: bold;">PASS</span> |
+| **4** | **`FluA_R9_FluB_R14_Measles_R5`** | **66.7%** | **-6.90 kcal/mol** | **-4.98 kcal/mol** | **1.88°C** | <span style="color: #10b981; font-weight: bold;">PASS</span> |
+| **5** | **`FluA_R9_FluB_R14_Measles_R6`** | **66.7%** | **-6.90 kcal/mol** | **-4.98 kcal/mol** | **1.88°C** | <span style="color: #10b981; font-weight: bold;">PASS</span> |
+
+> [!NOTE]
+> **Interpreting the Two Temperature Columns**:
+> Both thresholds use the same VETO criterion of $\Delta G \le -12.0$ kcal/mol, but RAA operates at 39°C where dimers are more thermodynamically stable. The qPCR column at 55°C confirms that the same combinations remain safe even at higher thermal cycling temperatures, validating cross-platform compatibility.
 
 ### Rank 1 Triplex Specifications (`FluA_R9_FluB_R14_Measles_R1`)
 
