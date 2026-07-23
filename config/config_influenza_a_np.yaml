@@ -78,7 +78,15 @@ hyphy:
                       # HyPhy scales poorly beyond ~8-12 threads for short alignments.
                       # Keeping threads low allows Snakemake to run more jobs in parallel
                       # when processing multiple genes or when integrated with other pipelines.
-  p_value_threshold: 0.1
+  p_value_threshold: 0.1   # MEME episodic-selection significance, consumed by M07 when
+                           # counting "danger sites" in a candidate region.
+                           # JUSTIFIKASI: hyphy.org merekomendasikan p <= 0.1 untuk MEME
+                           # (sengaja lebih longgar dari 0.05 konvensional, karena MEME
+                           # bersifat konservatif pada alignment kecil). FUBAR memakai
+                           # posterior probability, bukan p-value — ambangnya >= 0.9,
+                           # lihat bridge.tiers.*.min_purifying_prob.
+                           # CATATAN: sampai revisi ini nilai ini TIDAK PERNAH DIBACA;
+                           # M07 memakai 0.05 yang di-hardcode.
   methods:
     - "FUBAR"
     - "MEME"
@@ -166,7 +174,9 @@ snp_finder:
   gard_buffer_bp: 50             # Recombination breakpoint penalty buffer
   min_fixation_freq: 0.90        # Minimum frequency for an allele to be fixed
   min_coverage: 0.80             # Minimum data density ignoring N/Gaps
-  p_value_threshold: 0.01        # Statistics significance threshold
+  # p_value_threshold DIHAPUS: tidak pernah dibaca kode manapun, dan nilainya (0.01)
+  # bertentangan dengan hyphy.p_value_threshold (0.1) yang kini benar-benar dipakai.
+  # Ambang signifikansi seleksi hanya didefinisikan di blok `hyphy`.
   group_by: "subtype"            # Metadata column for classification
 
 # [M08] PrimerLab Integration

@@ -78,7 +78,15 @@ hyphy:
                       # HyPhy scales poorly beyond ~8-12 threads for short alignments.
                       # Keeping threads low allows Snakemake to run more jobs in parallel
                       # when processing multiple genes or when integrated with other pipelines.
-  p_value_threshold: 0.1
+  p_value_threshold: 0.1   # MEME episodic-selection significance, consumed by M07 when
+                           # counting "danger sites" in a candidate region.
+                           # JUSTIFIKASI: hyphy.org merekomendasikan p <= 0.1 untuk MEME
+                           # (sengaja lebih longgar dari 0.05 konvensional, karena MEME
+                           # bersifat konservatif pada alignment kecil). FUBAR memakai
+                           # posterior probability, bukan p-value — ambangnya >= 0.9,
+                           # lihat bridge.tiers.*.min_purifying_prob.
+                           # CATATAN: sampai revisi ini nilai ini TIDAK PERNAH DIBACA;
+                           # M07 memakai 0.05 yang di-hardcode.
   # Below this sequence count a FUBAR/MEME failure is accepted as a genuine
   # "small cohort" and soft-fails to an empty (labelled) result. At or above it,
   # a HyPhy failure is treated as a REAL error (bad tree, tip/alignment mismatch,
@@ -111,9 +119,17 @@ bridge:
   min_region_length: 150
   overlap_threshold: 0.75
   buffer_bp: 50
-  entropy_threshold: 0.023    # Relaxed compared to MP; HA is highly dynamic
-                              # Rescaled x1.161 for the 5-symbol {A,T,G,C,-} entropy
-                              # alphabet (log2(5)); was 0.020 on the old 4-symbol scale.
+  entropy_threshold: 0.020    # Mean RAW Shannon entropy (bits) of a window, below which
+                              # it is treated as conserved. 0.020 bits ~ MAF <= 0.19%
+                              # for a biallelic column, i.e. near-invariant.
+                              #
+                              # NOT rescaled for the 5-symbol {A,T,G,C,-} alphabet. An
+                              # earlier revision multiplied this by log2(5)/log2(4) = 1.161,
+                              # which was wrong: the threshold is compared against raw bits
+                              # (scan_conservation), while MAX_ENTROPY_BITS only normalises
+                              # the DISPLAY score. A gap-free column has identical raw
+                              # entropy under both alphabets, so the rescale simply loosened
+                              # the criterion by 16% (MAF 0.19% -> 0.23%).
   gard_buffer_bp: 50
   include_utr: true
   # Restrict manifest to these gene labels only (null = export all regions).
@@ -150,7 +166,10 @@ bridge:
         veto_below: 25
         veto_above: 70
       conserved_block:
-        entropy_threshold: 0.116   # Rescaled x1.161 for the 5-symbol entropy alphabet (was 0.10)
+        entropy_threshold: 0.10    # RAW Shannon entropy (bits) below which a position counts
+                                   # towards a contiguous conserved block, and above which it is
+                                   # listed as a mismatch position. 0.10 bits ~ MAF <= 1.30%.
+                                   # Not rescaled -- see bridge.entropy_threshold for why.
         ideal_min_len: 35
         penalty_min_len: 20
         penalty_multiplier: 0.8
@@ -176,7 +195,9 @@ snp_finder:
   gard_buffer_bp: 50             # Recombination breakpoint penalty buffer
   min_fixation_freq: 0.90        # Minimum frequency for an allele to be fixed
   min_coverage: 0.80             # Minimum data density ignoring N/Gaps
-  p_value_threshold: 0.01        # Statistics significance threshold
+  # p_value_threshold DIHAPUS: tidak pernah dibaca kode manapun, dan nilainya (0.01)
+  # bertentangan dengan hyphy.p_value_threshold (0.1) yang kini benar-benar dipakai.
+  # Ambang signifikansi seleksi hanya didefinisikan di blok `hyphy`.
   group_by: "subtype"            # Metadata column for classification
 
 # [M08] PrimerLab Integration
@@ -203,10 +224,15 @@ primerlab:
     blast_local_db_path: null     # Path absolut ke database BLAST lokal di server jika menggunakan mode "local"
     blast_targeted_check: false   # true: hitung coverage primer terpilih terhadap database sekuens target
     blast_targeted_db_path: null  # Path ke file FASTA atau database sekuens target (misal: semua strain Influenza A)
-    entropy_threshold: 0.58       # Exclude positions with Shannon entropy >= 0.58 from primer binding sites
-                                  # Rescaled x1.161 for the 5-symbol alphabet (was 0.50 ~ 30% MAF)
-                                  # 0.50 ~ 30% MAF: strict enough to exclude hypervariable UTRs (~0.8-1.8)
-                                  # but lenient enough to keep M1 coding region available for primer design
+    entropy_threshold: 0.50       # Exclude positions with RAW Shannon entropy >= 0.50 bits from
+                                  # primer binding sites. 0.50 bits ~ MAF <= 11.0% for a
+                                  # biallelic column: strict enough to exclude hypervariable
+                                  # UTRs (~0.8-1.8 bits) but lenient enough to keep the M1
+                                  # coding region available for primer design.
+                                  #
+                                  # Two corrections: the previous annotation "0.50 ~ 30% MAF"
+                                  # was wrong by ~3x (30% MAF is 0.88 bits), and the x1.161
+                                  # rescale to 0.58 was unjustified -- see bridge.entropy_threshold.
     min_exclusion_block_length: 10 # Minimum consecutive excluded positions to form a block.
                                    # Prevents hundreds of tiny 1-2bp wobble-position blocks from blocking
                                    # all primer placement. Only large continuous variable stretches (UTRs, etc)

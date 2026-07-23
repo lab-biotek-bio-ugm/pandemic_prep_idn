@@ -58,6 +58,13 @@ IUPAC_THRESHOLD = 0.15
 # conservation score C = 1 - H / MAX_ENTROPY_BITS in [0, 1].
 MAX_ENTROPY_BITS = math.log2(5)  # ~= 2.3219
 
+# Significance threshold for MEME episodic-selection sites. HyPhy recommends
+# p <= 0.1 rather than the conventional 0.05, because MEME is a conservative test
+# on small alignments (hyphy.org selection tutorial). Overridable via
+# config hyphy.p_value_threshold; FUBAR uses a posterior probability instead
+# (>= 0.9, see bridge.tiers.*.min_purifying_prob).
+MEME_PVALUE_THRESHOLD = 0.1
+
 # Full IUPAC ambiguity lookup: frozenset of observed bases -> IUPAC code.
 # Only 2-base and 3-base combos are listed; 4-base = N.
 _IUPAC_MAP: dict = {
@@ -549,7 +556,8 @@ GRADE_TEXT = {
 }
 
 def score_regions(regions, profile, ref_seq, codon_data, gard_breakpoints, genes, utrs,
-                  scoring_config, tiers_config, gard_buffer_bp):
+                  scoring_config, tiers_config, gard_buffer_bp,
+                  meme_pvalue_threshold=MEME_PVALUE_THRESHOLD):
     """Score each conserved region using Core x Multipliers."""
     
     # Core Weights
@@ -588,7 +596,10 @@ def score_regions(regions, profile, ref_seq, codon_data, gard_breakpoints, genes
                 meme_pvals.append(gene_codon_data[pos]["meme_pvalue"])
 
         avg_fubar = sum(fubar_probs) / len(fubar_probs) if fubar_probs else 0.0
-        meme_danger_sites = sum(1 for p in meme_pvals if p < 0.05)
+        # HyPhy recommends p <= 0.1 for MEME, deliberately looser than the usual
+        # 0.05 because MEME is conservative on small alignments. This was hardcoded
+        # to 0.05 while config carried an unread hyphy.p_value_threshold.
+        meme_danger_sites = sum(1 for p in meme_pvals if p < meme_pvalue_threshold)
 
         # Check GARD
         near_recomb = False
@@ -966,7 +977,8 @@ def write_csv(regions, path):
 def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir, 
                   window_size, entropy_threshold, overlap_threshold, gard_buffer_bp, 
                   scoring_config, tiers_config, ref_id, ref_seq, outdir, build_name, buffer_bp, args_reference,
-                  strategy="windowed", design_regions=None, prefix=""):
+                  strategy="windowed", design_regions=None, prefix="",
+                  meme_pvalue_threshold=MEME_PVALUE_THRESHOLD):
     print(f"\n[M07] ============================================")
     print(f"[M07]  Track: {track_name}")
     print(f"[M07] ============================================")
@@ -1052,7 +1064,8 @@ def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir,
 
     print(f"\n[M07] [{track_name}] Step 4: Biomechanical Analysis & Core × Multipliers Scoring")
     scored = score_regions(regions, profile, ref_seq, codon_data, gard_bps, genes, utrs,
-                           scoring_config, tiers_config, gard_buffer_bp)
+                           scoring_config, tiers_config, gard_buffer_bp,
+                           meme_pvalue_threshold=meme_pvalue_threshold)
 
     print(f"\n[M07] [{track_name}] Step 5: Non-Maximum Suppression (NMS)")
     final_scored = apply_nms(scored, overlap_threshold=overlap_threshold)
@@ -1155,6 +1168,11 @@ def main():
         
     tiers_config = bridge.get("tiers", {})
     target_genes = config.get("hyphy", {}).get("target_genes", [])
+    # hyphy.p_value_threshold existed in every config but was read by nothing;
+    # M07 counted MEME danger sites against a hardcoded 0.05 instead. Wire it, and
+    # keep HyPhy's own recommendation (0.1) as the fallback.
+    meme_p = config.get("hyphy", {}).get("p_value_threshold", MEME_PVALUE_THRESHOLD)
+    print(f"[M07] MEME episodic-selection threshold: p < {meme_p}")
     design_regions = bridge.get("design_regions", None)   # e.g. ["segment-MP"] or null
     if design_regions:
         print(f"[M07] design_regions filter active: {design_regions}")
@@ -1219,7 +1237,8 @@ def main():
     execute_track("Universal", all_records, genes, utrs, target_genes, hyphy_dir,
                   window_size, entropy_threshold, overlap_threshold, gard_buffer_bp,
                   scoring_config, tiers_config, ref_id, ref_seq, outdir, args.build_name, buffer_bp, args.reference,
-                  strategy=args.strategy, design_regions=design_regions)
+                  strategy=args.strategy, design_regions=design_regions,
+                  meme_pvalue_threshold=meme_p)
 
     # Route B: Subtype-Specific Tracks
     if args.metadata and Path(args.metadata).exists():
@@ -1248,7 +1267,8 @@ def main():
                 execute_track(subtype, recs, genes, utrs, target_genes, hyphy_dir,
                               window_size, entropy_threshold, overlap_threshold, gard_buffer_bp,
                               scoring_config, tiers_config, ref_id, ref_seq, outdir, args.build_name, buffer_bp, args.reference,
-                              strategy=args.strategy, design_regions=design_regions)
+                              strategy=args.strategy, design_regions=design_regions,
+                              meme_pvalue_threshold=meme_p)
             else:
                 print(f"[M07] Skipping subtype {subtype} (only {len(recs)} sequences, needs >={args.min_subtype_count})")
 

@@ -96,14 +96,30 @@ def test_entropy_normalisers_agree_across_modules():
     assert "math.log2(5)" in sweep_src, "sensitivity sweep still lacks entropy normalisation"
 
 
-def test_config_entropy_thresholds_rescaled():
-    """Raw-bits thresholds in config must be rescaled to the 5-symbol alphabet,
-    otherwise a 2% gap column silently breaks conserved blocks."""
+def test_entropy_thresholds_are_not_rescaled_by_the_normaliser():
+    """The M07 entropy thresholds are compared against RAW bits, while
+    MAX_ENTROPY_BITS only normalises the display score. A gap-free column has
+    identical raw entropy under the 4- and 5-symbol alphabets, so multiplying the
+    thresholds by log2(5)/log2(4) — as an earlier revision did — did not "rescale"
+    anything, it just loosened every criterion by 16%."""
+    import math
     import yaml
     cfg = yaml.safe_load(open("config/config.yaml"))
     block = cfg["bridge"]["scoring"]["multipliers"]["conserved_block"]["entropy_threshold"]
-    assert block == pytest.approx(0.116, abs=1e-3)
-    assert cfg["bridge"]["entropy_threshold"] == pytest.approx(0.023, abs=1e-3)
+    assert cfg["bridge"]["entropy_threshold"] == pytest.approx(0.020, abs=1e-4)
+    assert block == pytest.approx(0.10, abs=1e-4)
+    assert cfg["primerlab"]["design"]["entropy_threshold"] == pytest.approx(0.50, abs=1e-4)
+
+    # Pin the premise: a column with no gaps is unaffected by the alphabet change,
+    # so no threshold applied to raw bits should have moved.
+    def h(maf):
+        return -((1 - maf) * math.log2(1 - maf) + maf * math.log2(maf))
+    assert h(0.10) == pytest.approx(0.4690, abs=1e-3)
+
+    # The comparison really is against raw bits, not a normalised value.
+    src = open("scripts/m07_bridge_builder.py").read()
+    assert "if mean_e < entropy_threshold:" in src
+    assert "mean_e / MAX_ENTROPY_BITS" in src  # normaliser used only for the score
 
 
 # --- M11 threshold unification ------------------------------------------------
@@ -332,3 +348,42 @@ def test_raa_3prime_window_matches_the_published_anchor_region():
     assert cfg["insilico_pcr"]["raa_3prime_bp"] == 4
     raw = open("config/config.yaml").read()
     assert "jmoldx.2022.08.005" in raw, "the threshold is not traceable to its source"
+
+
+# --- M05/M07: selection-significance thresholds -------------------------------
+
+def test_meme_threshold_is_read_from_config_not_hardcoded():
+    """Every config carried hyphy.p_value_threshold and nothing read it; M07
+    counted MEME danger sites against a literal 0.05. A user tuning the config
+    value got no effect at all."""
+    src = open("scripts/m07_bridge_builder.py").read()
+    assert 'config.get("hyphy", {}).get("p_value_threshold"' in src
+    assert "meme_pvals if p < meme_pvalue_threshold" in src
+    assert "meme_pvals if p < 0.05" not in src, "the hardcoded literal is still there"
+
+
+def test_meme_threshold_follows_the_hyphy_recommendation():
+    """HyPhy recommends p <= 0.1 for MEME rather than the conventional 0.05,
+    because MEME is conservative on small alignments. FUBAR is a posterior
+    probability, not a p-value, and keeps its own >= 0.9 convention."""
+    import yaml
+    m07 = load_module("scripts/m07_bridge_builder.py", "m07_bridge_builder")
+    assert m07.MEME_PVALUE_THRESHOLD == 0.1
+    for name in ("config.yaml", "config_influenza_a_mp.yaml", "config_measles.yaml"):
+        cfg = yaml.safe_load(open(f"config/{name}"))
+        assert cfg["hyphy"]["p_value_threshold"] == 0.1, name
+        # FUBAR keeps a posterior-probability criterion, not a p-value.
+        tiers = cfg.get("bridge", {}).get("tiers", {})
+        if tiers.get("strict"):
+            assert tiers["strict"].get("min_purifying_prob", 0.9) >= 0.9, name
+
+
+def test_dead_bridge_p_value_threshold_removed():
+    """bridge.p_value_threshold (0.01) was read by nothing and contradicted the
+    hyphy value (0.1). Two unused numbers disagreeing about the same concept is
+    worse than one, because either looks authoritative to a reader."""
+    import glob
+    import yaml
+    for path in glob.glob("config/config*.yaml"):
+        cfg = yaml.safe_load(open(path))
+        assert "p_value_threshold" not in cfg.get("bridge", {}), path

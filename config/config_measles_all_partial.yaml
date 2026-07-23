@@ -74,7 +74,15 @@ timetree:
 # [M05] Evolutionary Selection Pressure (HyPhy)
 hyphy:
   threads: 8
-  p_value_threshold: 0.1
+  p_value_threshold: 0.1   # MEME episodic-selection significance, consumed by M07 when
+                           # counting "danger sites" in a candidate region.
+                           # JUSTIFIKASI: hyphy.org merekomendasikan p <= 0.1 untuk MEME
+                           # (sengaja lebih longgar dari 0.05 konvensional, karena MEME
+                           # bersifat konservatif pada alignment kecil). FUBAR memakai
+                           # posterior probability, bukan p-value — ambangnya >= 0.9,
+                           # lihat bridge.tiers.*.min_purifying_prob.
+                           # CATATAN: sampai revisi ini nilai ini TIDAK PERNAH DIBACA;
+                           # M07 memakai 0.05 yang di-hardcode.
   methods:
     - "FUBAR"
     - "MEME"
@@ -161,7 +169,9 @@ snp_finder:
   gard_buffer_bp: 50
   min_fixation_freq: 0.90
   min_coverage: 0.80
-  p_value_threshold: 0.01
+  # p_value_threshold DIHAPUS: tidak pernah dibaca kode manapun, dan nilainya (0.01)
+  # bertentangan dengan hyphy.p_value_threshold (0.1) yang kini benar-benar dipakai.
+  # Ambang signifikansi seleksi hanya didefinisikan di blok `hyphy`.
   group_by: "genotype"
 
 # [M08] PrimerLab Integration (Isothermal RAA Design - Cy5 Dye)

@@ -40,6 +40,17 @@ A full audit of the pipeline's scripts and algorithms, followed by validation of
 - **Reports described every probe as `5'-FAM / 3'-BHQ1 / Internal-THF`** — a hydrolysis-probe layout. An RAA exo probe carries both dyes on *internal* dT residues flanking the abasic site, with a blocking group at the 3' terminus. An oligo house given the old string would have synthesised the wrong molecule. Specifications now use PrimerLab's labelled sequence verbatim as the order string, state the abasic-site position, and refuse to look orderable when that labelling is absent.
 - M09 now forwards `probe_labeled_seq`, `probe_type`, `probe_thf_index`, `probe_label_mismatches` and `probe_compliant` into `final_candidates.json`, so M11 can render them.
 
+### Corrected — M07 entropy thresholds (regression introduced in this same audit)
+
+- **Reverted the ×1.161 "rescale" of all three entropy thresholds** (0.023/0.116/0.58 → 0.020/0.10/0.50). When the entropy alphabet was widened from `{A,T,G,C}` to `{A,T,G,C,-}`, the thresholds were multiplied by $\log_2(5)/\log_2(4)$. That was wrong: the thresholds are compared against **raw entropy in bits**, while `MAX_ENTROPY_BITS` normalises only the display score, and a column containing no gaps has **identical** raw entropy under both alphabets. The multiplication rescaled nothing and simply loosened every criterion by 16% — the exclusion threshold moved from MAF 11.0% to 13.8%. Widening the alphabet was correct and stands; only the thresholds should not have moved.
+- **Corrected the annotation `0.50 ~ 30% MAF`**, which was off by ~3×. 0.50 bits corresponds to MAF ≈ 11.0%; 30% MAF is 0.88 bits. All three thresholds are now documented with their computed MAF equivalents.
+
+### Fixed — M05/M07 selection significance was unreachable configuration
+
+- **`hyphy.p_value_threshold` was present in every config file and read by nothing.** M07 counted MEME episodic-selection "danger sites" against a hardcoded `p < 0.05`, so tuning the config value had no effect whatsoever. It is now wired through `score_regions()`, with HyPhy's own recommendation (**p ≤ 0.1**, deliberately looser than 0.05 because MEME is conservative on small alignments) as both the config value and the fallback.
+- **Removed the dead `bridge.p_value_threshold: 0.01`**, which was also read by nothing and contradicted the hyphy value. Two unused numbers disagreeing about the same concept is worse than one, since either looks authoritative.
+- FUBAR's criterion was checked and left alone: it reports a **posterior probability**, not a p-value, and the tier thresholds already use the conventional ≥ 0.9.
+
 ### Added — PrimerLab data flow
 
 - `Primer.to_dict()` now exports `thf_index`, `probe_type`, `probe_label_mismatches` and `probe_compliant`. The abasic-site position was computed and then discarded before serialisation, so no downstream module could locate the cleavage site.
