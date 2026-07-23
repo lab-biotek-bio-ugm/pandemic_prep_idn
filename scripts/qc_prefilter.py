@@ -34,6 +34,19 @@ def calculate_n_pct(record):
     return (n_count / len(seq_str)) * 100.0
 
 
+def _date_key(record_id: str, id_to_date: dict) -> str:
+    """Sort key for choosing which duplicate to keep: earliest real date first.
+
+    Missing/unknown dates map to a value that sorts after any real ISO date, so a
+    record with a known collection date always beats an undated duplicate.
+    """
+    lookup = record_id.split("|")[0].strip()
+    value = (id_to_date.get(lookup) or "").strip()
+    if not value or value.upper().startswith("X"):
+        return "9999-99-99"
+    return value
+
+
 def seq_hash(record):
     """Generate MD5 hash of the uppercase sequence for deduplication."""
     return hashlib.md5(str(record.seq).upper().encode()).hexdigest()
@@ -59,6 +72,7 @@ def main():
     # --- Phase 1: Read Metadata (Optional but recommended for subtype filtering) ---
     blacklist_ids = set()
     subtype_stats = {}
+    id_to_date = {}
     
     if args.metadata:
         print(f"[QC] Loading metadata for subtype filtering: {args.metadata}")
@@ -67,6 +81,7 @@ def main():
         # 1. Count subtypes
         counts = {}
         id_to_subtype = {}
+        id_to_date = {}
         
         # Determine delimiter
         delim = "\t" if str(args.metadata).endswith(".tsv") else ","
@@ -94,6 +109,7 @@ def main():
 
                 id_col = find_col(["strain", "Segment_Id", "Isolate_Id", "Accession", "gisaid_epi_isl"])
                 subtype_col = find_col(["subtype", "Subtype", "Subtype_Full", "serotype"])
+                date_col = find_col(["date", "Collection_Date", "collection_date", "Collection Date"])
 
                 if not id_col:
                     print("WARNING: Could not find ID column (tried strain/Segment_Id/Isolate_Id/Accession). "
@@ -111,11 +127,11 @@ def main():
                     if id_col:
                         # GISAID IDs often look like "EPI123456|NAME"
                         raw_id = row.get(id_col, "")
-                        if "|" in raw_id:
-                            sid = raw_id.split("|")[0].strip()
+                        sid = raw_id.split("|")[0].strip() if "|" in raw_id else raw_id.strip()
+                        if sid:
                             id_to_subtype[sid] = st
-                        elif raw_id:
-                            id_to_subtype[raw_id.strip()] = st
+                            if date_col:
+                                id_to_date[sid] = (row.get(date_col) or "").strip()
             
             # 2. Identify blacklisted subtypes
             removed_subtypes = []
@@ -182,10 +198,16 @@ def main():
                 print(f"[QC]   Removed (invalid chars {bad_chars}): {rid}")
             continue
 
-        # D. Deduplication
+        # D. Deduplication — keep the EARLIEST collection date.
+        # Previously whichever record SeqIO happened to parse first won, so the
+        # retained duplicate depended on raw FASTA ordering, contradicting the
+        # documented behaviour ("the record with the earliest collection date is
+        # retained"). Unknown/'' dates sort last so a dated record always wins.
         h = seq_hash(record)
         if h in seen_hashes:
             duplicates_removed += 1
+            if _date_key(record.id, id_to_date) < _date_key(seen_hashes[h].id, id_to_date):
+                seen_hashes[h] = record
         else:
             seen_hashes[h] = record
 

@@ -31,6 +31,7 @@ rule m05_hyphy_subsample:
         strategy=_SUB_CFG.get("strategy", "balanced"),
         seed=_SUB_CFG.get("seed", 42),
         min_subtype_count=config.get("global_params", {}).get("min_subtype_count", 30),
+        ref_id=config["references"].get("reference_id", ""),
         subtype_flag="" if _SUB_GRP.get("subtype", True) else "--no-group-by-subtype",
         clade_flag="" if _SUB_GRP.get("clade", True) else "--no-group-by-clade",
         country_flag="" if _SUB_GRP.get("country", True) else "--no-group-by-country",
@@ -52,6 +53,7 @@ rule m05_hyphy_subsample:
                 --strategy {params.strategy} \
                 --seed {params.seed} \
                 --min-subtype-count {params.min_subtype_count} \
+                --reference-id "{params.ref_id}" \
                 {params.subtype_flag} \
                 {params.clade_flag} \
                 {params.country_flag} \

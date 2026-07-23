@@ -199,6 +199,10 @@ def main():
                         help="Random seed for reproducibility (default: 42)")
     parser.add_argument("--min-subtype-count", type=int, default=0,
                         help="Minimum total sequences for a subtype to be included in HyPhy analysis (default: 0)")
+    parser.add_argument("--reference-id", default=None,
+                        help="Reference sequence ID to ALWAYS retain. extract_genes.py needs it "
+                             "to map GFF coordinates; without pinning it can be dropped by "
+                             "subsampling, failing the run intermittently.")
     args = parser.parse_args()
 
     print(f"[SUBSAMPLE] Loading alignment: {args.alignment}")
@@ -256,8 +260,23 @@ def main():
                 alignment_ids, metadata, args.max_sequences, args.seed, group_config
             )
 
-    # Write subsampled FASTA
+    # The reference genome MUST survive subsampling: extract_genes.py builds its
+    # GFF coordinate map (col_map) from it and exits with
+    # "ERROR: Reference '...' not found in MSA" otherwise. The reference has no
+    # metadata row, so it lands in '_ungrouped' and can be trimmed away by quota
+    # or dropped entirely by the random fallback — an intermittent, seed-dependent
+    # pipeline failure. Pin it explicitly.
     id_set = set(selected_ids)
+    if args.reference_id:
+        ref_present = any(r.id == args.reference_id for r in records)
+        if not ref_present:
+            print(f"[SUBSAMPLE] WARNING: reference '{args.reference_id}' is not in the "
+                  f"input MSA; downstream gene extraction will fail.", file=sys.stderr)
+        elif args.reference_id not in id_set:
+            id_set.add(args.reference_id)
+            print(f"[SUBSAMPLE] Pinned reference '{args.reference_id}' into the subsample "
+                  f"(required by extract_genes.py for GFF coordinate mapping).")
+
     out_records = [r for r in records if r.id in id_set]
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)
     SeqIO.write(out_records, args.output, "fasta")
