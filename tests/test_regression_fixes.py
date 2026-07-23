@@ -563,7 +563,16 @@ def test_m10_thread_helper_survives_a_dry_run_without_cores():
     to be defined" the moment the DAG reached m10, even though a dry run needs no
     cores at all. Same for `--unlock`, which the docstring explicitly named.
     """
-    src = open("rules/m10_insilico_pcr.smk").read()
-    assert "workflow.cores is not None" not in src, "the broken guard is back"
-    assert "try:" in src.split("def get_m10_threads")[1].split("rule ")[0], \
+    # Isolate the function body structurally. Splitting the file on prose is
+    # fragile: the previous version of this test cut the text at the word "rule"
+    # inside the docstring it was meant to be checking.
+    lines = open("rules/m10_insilico_pcr.smk").read().splitlines()
+    start = next(i for i, l in enumerate(lines)
+                 if l.startswith("def get_m10_threads"))
+    end = next((i for i, l in enumerate(lines[start + 1:], start + 1)
+                if l and not l[0].isspace()), len(lines))
+    body = "\n".join(lines[start + 1:end])
+
+    assert "workflow.cores is not None" not in body, "the broken guard is back"
+    assert "try:" in body and "except" in body, \
         "get_m10_threads must guard the access with try/except, not a None check"
