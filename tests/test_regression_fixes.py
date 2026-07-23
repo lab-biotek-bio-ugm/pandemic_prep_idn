@@ -104,3 +104,18 @@ def test_config_entropy_thresholds_rescaled():
     block = cfg["bridge"]["scoring"]["multipliers"]["conserved_block"]["entropy_threshold"]
     assert block == pytest.approx(0.116, abs=1e-3)
     assert cfg["bridge"]["entropy_threshold"] == pytest.approx(0.023, abs=1e-3)
+
+
+# --- M11 threshold unification ------------------------------------------------
+
+def test_multiplex_thresholds_are_shared_not_duplicated():
+    """Pairwise and triplex must apply the SAME ΔTm / cross-dimer limits. They
+    previously held separate literals and had already drifted (3.5 vs 4.0°C), so
+    an identical pair was PASS in one report and WARNING in the other."""
+    assert iupac.MAX_DELTA_TM_C == 4.0
+    pair_src = open("scripts/m11_multiplex_checker.py").read()
+    tri_src = open("scripts/m11_triplex_checker.py").read()
+    for src, name in ((pair_src, "pairwise"), (tri_src, "triplex")):
+        assert "MAX_DELTA_TM_C" in src, f"{name} does not use the shared ΔTm threshold"
+        assert "delta_tm <= 3.5" not in src, f"{name} still hardcodes 3.5"
+        assert "delta_tm <= 4.0" not in src, f"{name} still hardcodes 4.0"

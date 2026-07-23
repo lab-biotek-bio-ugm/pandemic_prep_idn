@@ -251,6 +251,22 @@ def clear_caches() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Multiplex Compatibility Thresholds
+# ---------------------------------------------------------------------------
+# Single source of truth for pairwise AND triplex screening. These lived as
+# separate literals in each checker and had already drifted: the pairwise ΔTm
+# limit was 3.5 while the triplex and the documentation used 4.0, so an
+# identical pair was PASS in one report and WARNING in the other.
+#
+# ΔTm tolerance is a soft criterion for the 39°C RAA mode (isothermal strand
+# invasion is enzyme-driven, not annealing-driven); it matters more for the 55°C
+# qPCR benchmark. 4.0°C matches docs/pipeline-architecture/m11-multiplex-compatibility.md.
+MAX_DELTA_TM_C = 4.0
+MIN_CROSS_DIMER_DG = -9.0    # warn below this
+VETO_CROSS_DIMER_DG = -12.0  # hard veto below this
+
+
+# ---------------------------------------------------------------------------
 # Spectral Dye Channel Separation
 # ---------------------------------------------------------------------------
 # Maps common qPCR fluorophores to their detection channel. Two targets read on

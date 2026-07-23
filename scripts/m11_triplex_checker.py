@@ -23,6 +23,9 @@ from tools.iupac_utils import (
     calculate_tm,
     evaluate_pair_heterodimer,
     check_dye_separation,
+    MAX_DELTA_TM_C,
+    MIN_CROSS_DIMER_DG,
+    VETO_CROSS_DIMER_DG,
 )
 
 # MAX_VARIANTS is set from CLI --max-variants (default 16, matching config.yaml).
@@ -146,8 +149,9 @@ def run_triplex_screening(file_a, file_b, file_c, out_dir, num_candidates=10,
                         if dg_55 < min_dg_55c:
                             min_dg_55c = dg_55
                             
-                status_39c = "PASS" if (min_dg_39c >= -9.0 and delta_tm <= 4.0) else "WARNING"
-                if min_dg_39c < -12.0:
+                status_39c = ("PASS" if (min_dg_39c >= MIN_CROSS_DIMER_DG and delta_tm <= MAX_DELTA_TM_C)
+                              else "WARNING")
+                if min_dg_39c < VETO_CROSS_DIMER_DG:
                     status_39c = "VETO"
                 # A dye-channel collision makes the three targets optically
                 # inseparable regardless of thermodynamic quality.

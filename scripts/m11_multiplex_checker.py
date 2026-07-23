@@ -23,6 +23,9 @@ from tools.iupac_utils import (
     calculate_tm,
     evaluate_pair_heterodimer,
     check_dye_separation,
+    MAX_DELTA_TM_C,
+    MIN_CROSS_DIMER_DG,
+    VETO_CROSS_DIMER_DG,
 )
 
 # MAX_VARIANTS is set from CLI --max-variants (default 16, matching config.yaml).
@@ -107,8 +110,9 @@ def run_multiplex_screening(file_a, file_b, out_dir, num_candidates=10,
                         if dg < min_dg_qpcr:
                             min_dg_qpcr = dg
                             
-            status_raa = "PASS" if (min_dg_raa >= -9.0 and delta_tm <= 3.5) else "WARNING"
-            if min_dg_raa < -12.0:
+            status_raa = ("PASS" if (min_dg_raa >= MIN_CROSS_DIMER_DG and delta_tm <= MAX_DELTA_TM_C)
+                          else "WARNING")
+            if min_dg_raa < VETO_CROSS_DIMER_DG:
                 status_raa = "VETO (High Dimer Risk)"
             # A dye-channel collision means the two targets are optically
             # inseparable — no thermodynamic quality can rescue the pair.
