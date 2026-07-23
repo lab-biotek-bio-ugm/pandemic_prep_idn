@@ -29,11 +29,25 @@ def main(tree_path, alignment_path, output_path, log_path):
             for tip_name in tips_to_prune:
                 tree.prune(tip_name)
 
-            remaining = len(tree.get_terminals())
+            remaining_tips = {tip.name for tip in tree.get_terminals()}
+            remaining = len(remaining_tips)
             logf.write(f"Pruned tree has {remaining} tips.\n")
 
             if remaining < 3:
                 logf.write("ERROR: Pruned tree has fewer than 3 tips. HyPhy requires at least 3.\n")
+                sys.exit(1)
+
+            # Fail loudly on tree<->alignment desync. Pruning only removes tips that
+            # are in the tree but not the alignment; if any alignment sequence has NO
+            # matching tree tip, HyPhy would silently run on a mismatched taxon set and
+            # produce misleading dN/dS. The tip set MUST be a subset of alignment IDs.
+            aln_only = alignment_ids - remaining_tips
+            if aln_only:
+                preview = ", ".join(sorted(aln_only)[:10])
+                logf.write(
+                    f"ERROR: {len(aln_only)} alignment sequence(s) have no matching tree tip "
+                    f"(tree<->alignment desync). Examples: {preview}\n"
+                )
                 sys.exit(1)
 
             # Write pruned tree
