@@ -527,3 +527,29 @@ def test_snakemake_defaults_match_the_config_values():
                 "raa_probe_max_mm"):
         assert f'.get("{key}", {cfg[key]})' in smk, \
             f"rule fallback for {key} disagrees with config ({cfg[key]})"
+
+
+def test_all_configs_agree_on_the_raa_thresholds():
+    """Per-target configs are what the multiplex batch actually runs. A fix applied
+    only to config.yaml reaches none of them — raa_3prime_bp stayed at the
+    unsourced 8 in all four influenza configs after being corrected to 4, and
+    raa_probe_max_mm existed in exactly one file."""
+    import glob
+    import yaml
+    expected = {"raa_3prime_bp": 4, "raa_max_3prime_mm": 1,
+                "raa_max_internal_mm": 4, "raa_probe_max_mm": 5}
+    for path in glob.glob("config/config*.yaml"):
+        block = yaml.safe_load(open(path)).get("insilico_pcr")
+        if block is None:
+            continue
+        for key, val in expected.items():
+            assert block.get(key) == val, f"{path}: {key} is {block.get(key)}, expected {val}"
+
+
+def test_all_configs_carry_the_durability_multiplier():
+    import glob
+    import yaml
+    for path in glob.glob("config/config*.yaml"):
+        scoring = yaml.safe_load(open(path)).get("bridge", {}).get("scoring", {})
+        assert "core" not in scoring, f"{path} still defines core weights"
+        assert "durability" in scoring.get("multipliers", {}), f"{path} lacks durability"

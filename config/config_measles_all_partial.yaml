@@ -252,3 +252,18 @@ insilico_pcr:
   max_amplicon_len: 350
   temporal_binning: "year"
   regional_binning: "country"
+  # RAA isothermal amplification binding parameters
+  raa_3prime_bp: 4            # Jumlah bp ujung 3' yang dianggap kritis (recombinase extension).
+                              # JUSTIFIKASI: Higgins et al. 2022, J Mol Diagn 24(11):1207-1216
+                              # (doi:10.1016/j.jmoldx.2022.08.005) mendefinisikan "anchor region"
+                              # RPA sebagai pre-ante-penultimate s/d terminal 3' = 4 nt terakhir,
+                              # dan menemukan mismatch tunggal DI LUAR posisi terminal tidak
+                              # berdampak signifikan pada time-to-positivity. Nilai 8 sebelumnya
+                              # tidak punya sumber dan membebankan posisi 5-8 ke kuota ketat,
+                              # sehingga coverage dilaporkan terlalu rendah.
+  raa_max_3prime_mm: 1        # Maks mismatch yang ditoleransi di region 3' kritis
+  raa_max_internal_mm: 4      # Maks mismatch yang ditoleransi di region internal (5')
+  raa_probe_max_mm: 5         # Maks TOTAL mismatch probe-target. Probe TIDAK dinilai dengan
+                              # kinetika 3' seperti primer: ujungnya diblok (C3-spacer) sehingga
+                              # tidak bisa diperpanjang polimerase. TwistAmp manual 2.7:
+                              # performa RPA tak terpengaruh 5-9 mismatch pada primer & probe.
