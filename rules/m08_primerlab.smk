@@ -173,7 +173,14 @@ rule m08_degenerate_rescue:
         maf_threshold=config["primerlab"].get("design", {}).get("degenerate", {}).get("maf_threshold", 0.10),
         max_multiplier=config["primerlab"].get("design", {}).get("degenerate", {}).get("max_multiplier", 16),
         thermo_mode=config["primerlab"].get("design", {}).get("degenerate", {}).get("thermo_eval_mode", "worst_case"),
-        vienna_temp=config["primerlab"].get("design", {}).get("degenerate", {}).get("vienna_temp", 37.0)
+        vienna_temp=config["primerlab"].get("design", {}).get("degenerate", {}).get("vienna_temp", 37.0),
+        # QC gate thresholds — defaults match the PrimerLab engine templates so the
+        # degenerate track can never be more permissive than the non-degenerate one.
+        hairpin_dg_min=config["primerlab"].get("design", {}).get("qc", {}).get("hairpin_dg_min", -2.0),
+        homodimer_dg_min=config["primerlab"].get("design", {}).get("qc", {}).get("homodimer_dg_min", -5.0),
+        heterodimer_dg_min=config["primerlab"].get("design", {}).get("qc", {}).get("heterodimer_dg_min", -6.0),
+        tm_diff_max=config["primerlab"].get("design", {}).get("qc", {}).get("tm_diff_max", 3.0),
+        strict_qc="--strict-qc" if config["primerlab"].get("design", {}).get("qc", {}).get("strict", False) else ""
     conda:
         "../envs/primerlab.yaml"
     shell:
@@ -187,6 +194,11 @@ rule m08_degenerate_rescue:
             --maf-threshold {params.maf_threshold} \
             --max-multiplier {params.max_multiplier} \
             --thermo-mode {params.thermo_mode} \
+            --hairpin-dg-min {params.hairpin_dg_min} \
+            --homodimer-dg-min {params.homodimer_dg_min} \
+            --heterodimer-dg-min {params.heterodimer_dg_min} \
+            --tm-diff-max {params.tm_diff_max} \
+            {params.strict_qc} \
             --vienna-temp {params.vienna_temp} > "{log}" 2>&1
         
         touch {output.marker}

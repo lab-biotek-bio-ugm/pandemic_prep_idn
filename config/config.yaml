@@ -111,7 +111,9 @@ bridge:
   min_region_length: 150
   overlap_threshold: 0.75
   buffer_bp: 50
-  entropy_threshold: 0.020    # Relaxed compared to MP; HA is highly dynamic
+  entropy_threshold: 0.023    # Relaxed compared to MP; HA is highly dynamic
+                              # Rescaled x1.161 for the 5-symbol {A,T,G,C,-} entropy
+                              # alphabet (log2(5)); was 0.020 on the old 4-symbol scale.
   gard_buffer_bp: 50
   include_utr: true
   # Restrict manifest to these gene labels only (null = export all regions).
@@ -148,7 +150,7 @@ bridge:
         veto_below: 25
         veto_above: 70
       conserved_block:
-        entropy_threshold: 0.10
+        entropy_threshold: 0.116   # Rescaled x1.161 for the 5-symbol entropy alphabet (was 0.10)
         ideal_min_len: 35
         penalty_min_len: 20
         penalty_multiplier: 0.8
@@ -201,7 +203,8 @@ primerlab:
     blast_local_db_path: null     # Path absolut ke database BLAST lokal di server jika menggunakan mode "local"
     blast_targeted_check: false   # true: hitung coverage primer terpilih terhadap database sekuens target
     blast_targeted_db_path: null  # Path ke file FASTA atau database sekuens target (misal: semua strain Influenza A)
-    entropy_threshold: 0.50       # Exclude positions with Shannon entropy >= 0.50 from primer binding sites
+    entropy_threshold: 0.58       # Exclude positions with Shannon entropy >= 0.58 from primer binding sites
+                                  # Rescaled x1.161 for the 5-symbol alphabet (was 0.50 ~ 30% MAF)
                                   # 0.50 ~ 30% MAF: strict enough to exclude hypervariable UTRs (~0.8-1.8)
                                   # but lenient enough to keep M1 coding region available for primer design
     min_exclusion_block_length: 10 # Minimum consecutive excluded positions to form a block.

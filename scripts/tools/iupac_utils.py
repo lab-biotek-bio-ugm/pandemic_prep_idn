@@ -264,10 +264,19 @@ def check_dye_separation(*dyes: str) -> Tuple[str, bool]:
     same detection channel (a collision — targets become indistinguishable) or if a
     dye is not in DYE_CHANNELS (cannot be verified — reported, never silently passed).
     """
-    names = [d for d in dyes if d]
+    if not dyes:
+        return ("UNKNOWN (no dyes supplied; cannot verify spectral separation)", False)
+
     channels = []
     unknown = []
-    for d in names:
+    for d in dyes:
+        # An empty/None dye is MISSING information, not an absent target. Dropping
+        # it would let check_dye_separation("FAM", "") report a clean separation
+        # for a target whose channel nobody ever specified.
+        if not d or not str(d).strip():
+            unknown.append("<empty>")
+            channels.append(("<empty>", None))
+            continue
         ch = DYE_CHANNELS.get(_normalize_dye(d))
         if ch is None:
             unknown.append(d)

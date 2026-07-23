@@ -128,15 +128,20 @@ rule m05_hyphy_fubar:
             --output {output.json} 2>&1 | tee {log}; then
             echo "[FUBAR] Successfully finished FUBAR analysis."
         else
-            # Only a GENUINELY small cohort may soft-fail. A failure on an
-            # adequately-sized alignment is a REAL error (bad tree, tip/alignment
-            # mismatch, OOM, bad args) and must NOT be masked as "no selection".
+            # Two conditions may legitimately soft-fail: a genuinely small cohort,
+            # and an alignment with no usable variation (HyPhy exits non-zero on
+            # invariant/near-identical data regardless of sequence count). Anything
+            # else is a REAL error (bad tree, tip/alignment mismatch, OOM, bad args)
+            # and must NOT be masked as "no selection".
             NSEQ=$(grep -c '^>' {input.alignment} || echo 0)
-            if [ "$NSEQ" -lt "{params.min_seq}" ]; then
+            if grep -qiE 'not enough|too few|insufficient|invariant|no variation|at least [0-9]+ sequences' {log}; then
+                echo "[FUBAR] HyPhy reported insufficient data/variation (n=$NSEQ): writing labelled fallback JSON." | tee -a {log}
+                python3 -c "import json; json.dump({{'MLE': {{'content': {{'0': []}}, 'headers': []}}, 'analysis': {{'info': 'fallback_insufficient_variation', 'n_seq': $NSEQ}}}}, open('{output.json}', 'w'))"
+            elif [ "$NSEQ" -lt "{params.min_seq}" ]; then
                 echo "[FUBAR] Genuinely small cohort (n=$NSEQ < {params.min_seq}): writing labelled fallback JSON." | tee -a {log}
                 python3 -c "import json; json.dump({{'MLE': {{'content': {{'0': []}}, 'headers': []}}, 'analysis': {{'info': 'fallback_small_cohort', 'n_seq': $NSEQ}}}}, open('{output.json}', 'w'))"
             else
-                echo "[FUBAR][FATAL] HyPhy FUBAR FAILED on an adequately-sized alignment (n=$NSEQ >= {params.min_seq}). This is a real error, not a small-cohort case. Aborting so a broken analysis is not read as 'no selection'." | tee -a {log}
+                echo "[FUBAR][FATAL] HyPhy FUBAR FAILED on an adequately-sized alignment (n=$NSEQ >= {params.min_seq}) with no recognised benign cause. Treating as a real error rather than 'no selection'. See {log}." | tee -a {log}
                 exit 1
             fi
         fi
@@ -169,13 +174,17 @@ rule m05_hyphy_meme:
             --output {output.json} 2>&1 | tee {log}; then
             echo "[MEME] Successfully finished MEME analysis."
         else
-            # See FUBAR rule: distinguish a genuine small cohort from a real error.
+            # See FUBAR rule: soft-fail only for a small cohort or genuinely
+            # insufficient variation; anything else is a real error.
             NSEQ=$(grep -c '^>' {input.alignment} || echo 0)
-            if [ "$NSEQ" -lt "{params.min_seq}" ]; then
+            if grep -qiE 'not enough|too few|insufficient|invariant|no variation|at least [0-9]+ sequences' {log}; then
+                echo "[MEME] HyPhy reported insufficient data/variation (n=$NSEQ): writing labelled fallback JSON." | tee -a {log}
+                python3 -c "import json; json.dump({{'MLE': {{'content': {{'0': []}}, 'headers': []}}, 'analysis': {{'info': 'fallback_insufficient_variation', 'n_seq': $NSEQ}}}}, open('{output.json}', 'w'))"
+            elif [ "$NSEQ" -lt "{params.min_seq}" ]; then
                 echo "[MEME] Genuinely small cohort (n=$NSEQ < {params.min_seq}): writing labelled fallback JSON." | tee -a {log}
                 python3 -c "import json; json.dump({{'MLE': {{'content': {{'0': []}}, 'headers': []}}, 'analysis': {{'info': 'fallback_small_cohort', 'n_seq': $NSEQ}}}}, open('{output.json}', 'w'))"
             else
-                echo "[MEME][FATAL] HyPhy MEME FAILED on an adequately-sized alignment (n=$NSEQ >= {params.min_seq}). This is a real error, not a small-cohort case. Aborting." | tee -a {log}
+                echo "[MEME][FATAL] HyPhy MEME FAILED on an adequately-sized alignment (n=$NSEQ >= {params.min_seq}) with no recognised benign cause. Treating as a real error. See {log}." | tee -a {log}
                 exit 1
             fi
         fi

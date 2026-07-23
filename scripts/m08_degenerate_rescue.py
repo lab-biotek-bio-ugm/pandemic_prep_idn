@@ -18,6 +18,18 @@ import primer3
 # so an evaluation error can never be mistaken for a structure-free (safe) primer.
 _THERMO_FAIL_DG = -99.0
 
+
+def _fmt_dg(value):
+    """Render a ΔG for humans. The fail-closed sentinel must never be shown as a
+    real measurement — a bench scientist reading "-99.00 kcal/mol" would think the
+    oligo has catastrophic secondary structure rather than that primer3 errored."""
+    try:
+        if float(value) <= _THERMO_FAIL_DG:
+            return "NA (thermodynamic evaluation failed)"
+    except (TypeError, ValueError):
+        return "NA"
+    return f"{value:.2f} kcal/mol"
+
 # IUPAC degeneracy nucleotide mapping
 IUPAC_DICT = {
     'R': ['A', 'G'], 'Y': ['C', 'T'], 'S': ['G', 'C'], 'W': ['A', 'T'],
@@ -170,7 +182,12 @@ def evaluate_thermodynamics(possible_seqs: list, thermo_mode: str = "worst_case"
     }
 
 def calculate_cross_heterodimer_worst(seqs1: list, seqs2: list) -> float:
-    """Calculates the worst-case (most negative) heterodimer dG between two pools."""
+    """Calculates the worst-case (most negative) heterodimer dG between two pools.
+
+    A primer3 failure returns the fail-closed sentinel rather than leaving the
+    result at 0.0 ("no cross-dimer"), which would let an unevaluable oligo pair
+    pass the cross-dimer gate.
+    """
     worst_dg = 0.0
     for seq1 in seqs1:
         for seq2 in seqs2:
@@ -178,8 +195,10 @@ def calculate_cross_heterodimer_worst(seqs1: list, seqs2: list) -> float:
                 hd = primer3.calc_heterodimer(seq1, seq2).dg / 1000.0
                 if hd < worst_dg:
                     worst_dg = hd
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"[Rescue][WARN] primer3 cross-heterodimer failed for "
+                      f"'{seq1}'/'{seq2}': {e} — flagging QC as failed.")
+                worst_dg = _THERMO_FAIL_DG
     return worst_dg
 
 def rescue_primer(primer_dict: dict, iupac_seq: str, consensus_seq: str, max_multiplier: int, thermo_mode: str) -> dict:
@@ -229,8 +248,8 @@ def rescue_primer(primer_dict: dict, iupac_seq: str, consensus_seq: str, max_mul
     updated["possible_sequences"] = possible_seqs if multiplier > 1 else []
     updated["tm"] = thermo["tm_str"]
     updated["gc"] = thermo["gc_str"]
-    updated["hairpin_dg"] = f"{thermo['worst_hairpin_dg']:.2f} kcal/mol"
-    updated["homodimer_dg"] = f"{thermo['worst_homodimer_dg']:.2f} kcal/mol"
+    updated["hairpin_dg"] = _fmt_dg(thermo['worst_hairpin_dg'])
+    updated["homodimer_dg"] = _fmt_dg(thermo['worst_homodimer_dg'])
     
     # Keep numerical values for calculations
     updated["_tm_min"] = thermo["tm_min"]
@@ -256,9 +275,16 @@ def main():
     parser.add_argument("--max-multiplier", type=int, default=16, help="Maximum allowed degeneracy combinations")
     parser.add_argument("--thermo-mode", default="worst_case", choices=["worst_case", "average", "best_case"], help="Thermodynamic evaluation mode")
     parser.add_argument("--vienna-temp", type=float, default=37.0, help="Temperature for thermodynamic calculations")
-    # QC thresholds (kcal/mol) — defaults match docs/pipeline-architecture/m08-primer-design.md.
-    # A candidate is flagged when ΔG is MORE negative (more stable structure) than the threshold.
-    parser.add_argument("--hairpin-dg-min", type=float, default=-3.0, help="Min acceptable hairpin ΔG (kcal/mol)")
+    # QC thresholds (kcal/mol). A candidate is flagged when ΔG is MORE negative
+    # (more stable structure) than the threshold, so a HIGHER value is STRICTER.
+    #
+    # hairpin defaults to -2.0 to match the PrimerLab engine templates
+    # (config/primerlab_template*.yaml: hairpin_dg_min: -2.0), NOT the -3.0 quoted in
+    # docs/pipeline-architecture/m08-primer-design.md. -3.0 would be LOOSER than the
+    # engine, letting the degenerate track accept a hairpin the non-degenerate track
+    # rejects — the exact fail-open this gate exists to prevent. Homodimer/heterodimer
+    # follow the docs, which are stricter than the previous hardcoded values.
+    parser.add_argument("--hairpin-dg-min", type=float, default=-2.0, help="Min acceptable hairpin ΔG (kcal/mol)")
     parser.add_argument("--homodimer-dg-min", type=float, default=-5.0, help="Min acceptable homodimer ΔG (kcal/mol)")
     parser.add_argument("--heterodimer-dg-min", type=float, default=-6.0, help="Min acceptable heterodimer/cross-dimer ΔG (kcal/mol)")
     parser.add_argument("--tm-diff-max", type=float, default=3.0, help="Max acceptable forward/reverse Tm difference (°C)")
@@ -330,13 +356,13 @@ def main():
             worst_prb_rev_dg = calculate_cross_heterodimer_worst(prb_seqs, rev_seqs)
 
         # Update heterodimer fields
-        fwd_res["heterodimer_dg"] = f"{worst_fwd_rev_dg:.2f} kcal/mol"
+        fwd_res["heterodimer_dg"] = _fmt_dg(worst_fwd_rev_dg)
         fwd_res["_heterodimer_dg"] = worst_fwd_rev_dg
-        rev_res["heterodimer_dg"] = f"{worst_fwd_rev_dg:.2f} kcal/mol"
+        rev_res["heterodimer_dg"] = _fmt_dg(worst_fwd_rev_dg)
         rev_res["_heterodimer_dg"] = worst_fwd_rev_dg
 
         if prb_res:
-            prb_res["heterodimer_dg"] = f"{min(worst_prb_fwd_dg, worst_prb_rev_dg):.2f} kcal/mol"
+            prb_res["heterodimer_dg"] = _fmt_dg(min(worst_prb_fwd_dg, worst_prb_rev_dg))
             prb_res["_heterodimer_dg"] = min(worst_prb_fwd_dg, worst_prb_rev_dg)
 
         # Update candidate QC block

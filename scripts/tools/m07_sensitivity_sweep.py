@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import math
 import argparse
 import sys
 import os
@@ -67,7 +68,11 @@ def main():
         iteration_top_regions = []
         for reg in regions:
             # Prepare scores
-            cons_score = 1.0 - reg['mean_entropy']
+            # Normalise by the 5-symbol alphabet maximum (log2(5)), matching
+            # MAX_ENTROPY_BITS in m07_bridge_builder.py. Without this, regions whose
+            # mean entropy exceeds 1.0 (reachable now that gaps count) produce a
+            # NEGATIVE conservation score and an uninterpretable composite.
+            cons_score = max(0.0, 1.0 - reg['mean_entropy'] / math.log2(5))
             fubar_score = reg['avg_fubar_purifying_prob']
             meme_score = 1.0 - reg['meme_danger_pct']
             recomb_penalty = 1.0 if reg['flags'].get('near_recombination', False) else 0.0

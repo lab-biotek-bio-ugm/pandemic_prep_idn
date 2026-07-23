@@ -1013,7 +1013,9 @@ def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir,
 
         if not regions:
             print(f"[M07] [{track_name}] WARNING: Relaxing threshold significantly to find candidates (survival mode)")
-            regions = scan_conservation(profile, window_size, 0.45)
+            # 0.45 was calibrated on the old 4-symbol entropy scale; rescale by
+            # log2(5)/log2(4) so the survival fallback keeps the same strictness.
+            regions = scan_conservation(profile, window_size, 0.45 * (MAX_ENTROPY_BITS / 2.0))
 
         if not regions:
              print(f"[M07] [{track_name}] No conserved regions found even after max relaxation. Skipping.")

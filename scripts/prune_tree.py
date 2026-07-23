@@ -8,6 +8,11 @@ from Bio import Phylo, SeqIO
 import sys
 import io
 
+# Fraction of tree tips that may legitimately lack an alignment sequence.
+# Normal `augur refine --timetree` filtering removes only a small share; anything
+# beyond this points at a systematic ID-format mismatch, not real filtering.
+MAX_PRUNED_FRACTION = 0.5
+
 def main(tree_path, alignment_path, output_path, log_path):
     with open(log_path, "w") as logf:
         try:
@@ -37,16 +42,34 @@ def main(tree_path, alignment_path, output_path, log_path):
                 logf.write("ERROR: Pruned tree has fewer than 3 tips. HyPhy requires at least 3.\n")
                 sys.exit(1)
 
-            # Fail loudly on tree<->alignment desync. Pruning only removes tips that
-            # are in the tree but not the alignment; if any alignment sequence has NO
-            # matching tree tip, HyPhy would silently run on a mismatched taxon set and
-            # produce misleading dN/dS. The tip set MUST be a subset of alignment IDs.
+            # Guard against tree<->alignment desync, WITHOUT breaking legitimate runs.
+            #
+            # The tree comes from `augur refine --timetree`, which deliberately drops
+            # tips it cannot date and clock outliers. So alignment sequences with no
+            # matching tree tip are EXPECTED and must not be fatal — they are only
+            # reported. HyPhy takes the pruned tree plus the alignment; extra
+            # sequences in the alignment are tolerated.
+            #
+            # The real failure mode is a systematic ID-format mismatch (e.g. Newick
+            # escaping of strain names containing '/'), where almost nothing matches.
+            # That shows up as a huge pruned fraction, which we DO fail on.
             aln_only = alignment_ids - remaining_tips
             if aln_only:
                 preview = ", ".join(sorted(aln_only)[:10])
                 logf.write(
-                    f"ERROR: {len(aln_only)} alignment sequence(s) have no matching tree tip "
-                    f"(tree<->alignment desync). Examples: {preview}\n"
+                    f"NOTE: {len(aln_only)} alignment sequence(s) have no tree tip "
+                    f"(expected — augur refine drops undated/clock-outlier tips). "
+                    f"Examples: {preview}\n"
+                )
+
+            pruned_frac = len(tips_to_prune) / len(all_tips) if all_tips else 0.0
+            if pruned_frac > MAX_PRUNED_FRACTION:
+                logf.write(
+                    f"ERROR: {pruned_frac:.1%} of tree tips ({len(tips_to_prune)}/{len(all_tips)}) "
+                    f"had no matching alignment sequence, exceeding the "
+                    f"{MAX_PRUNED_FRACTION:.0%} limit. This indicates a systematic "
+                    f"tree<->alignment ID mismatch rather than normal filtering — "
+                    f"HyPhy would run on a wrong taxon set. Aborting.\n"
                 )
                 sys.exit(1)
 

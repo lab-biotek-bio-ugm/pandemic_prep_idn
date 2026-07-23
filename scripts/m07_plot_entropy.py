@@ -25,6 +25,7 @@ Outputs:
 import argparse
 import csv
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -39,16 +40,19 @@ except ImportError:
     sys.exit(1)
 
 # ---------------------------------------------------------------------------
-# H_MAX: Maximum Shannon entropy for 4-base alphabet (2 bits).
+# H_MAX: Maximum Shannon entropy for the 5-symbol alphabet {A,T,G,C,-} (log2(5)).
+# Must match MAX_ENTROPY_BITS in m07_bridge_builder.py: entropy now includes gaps,
+# so raw values reach ~2.322 and a hardcoded 2.0 would push deletion hotspots
+# off the top of the plot — exactly the columns this view exists to expose.
 # Used to normalise raw entropy to [0, 1]:  H_norm = H / H_MAX
 # ---------------------------------------------------------------------------
-H_MAX = 2.0
+H_MAX = math.log2(5)
 
 
 def load_entropy_profile(tsv_path: str) -> list:
     """Load entropy_profile.tsv into a list of dicts.
 
-    Adds a normalised 'entropy_norm' key: entropy_norm = entropy / 2.0
+    Adds a normalised 'entropy_norm' key: entropy_norm = entropy / H_MAX
     so downstream code always works with the dimensionless [0, 1] scale.
     """
     profile = []

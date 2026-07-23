@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import math
 import argparse
 import subprocess
 import tempfile
@@ -199,7 +200,12 @@ def main():
     if failed_count > 0:
         print(f"\n[WARNING] {failed_count}/{attempted_count} candidate BLAST verification(s) FAILED "
               f"(non-zero exit or error){db_label_str}.")
-    if attempted_count > 0 and failed_count == attempted_count:
+    # Abort ONLY when this run produced no usable verification at all. If some
+    # candidates were skipped because they already have results, a single failing
+    # candidate must not exit non-zero: under `set -euo pipefail` that would stop
+    # the second DB run and the --compile-only step, permanently blocking M09-M11
+    # instead of letting compile_summary record that candidate as FAIL.
+    if attempted_count > 0 and failed_count == attempted_count and skipped_count == 0:
         print("[FATAL] Every attempted BLAST verification failed (e.g. missing 'primerlab' binary, "
               "unreachable/corrupt database). Aborting so downstream modules do not treat unverified "
               "primers as specific.")
@@ -1008,7 +1014,9 @@ def _generate_individual_forbidden_tracks(
                     max_ent = 0.0
                     for pos, score in enumerate(entropy_scores):
                         val = float(score) if score is not None else 0.0
-                        val_norm = val / 2.0  # Normalisasi ke range [0.0, 1.0] (DNA max entropy = 2.0)
+                        # Max entropy is log2(5) for the 5-symbol {A,T,G,C,-} alphabet
+                        # used by M07; dividing by 2.0 would exceed 1.0 for gappy columns.
+                        val_norm = val / math.log2(5)
                         if val_norm >= 0.15:  # Menggunakan normalized threshold (15% variabilitas)
                             if not in_block:
                                 in_block = True

@@ -77,18 +77,43 @@ _KNOWN_VIRUSES = [
 ]
 
 
-def is_multiplex_active(name: str) -> bool:
+def _viruses_in(text: str) -> list:
+    t = (text or "").lower()
+    return [v for v in _KNOWN_VIRUSES if v in t]
+
+
+def is_multiplex_active(name: str, result_path=None) -> bool:
     """True if a multiplex/triplex output should be exported under the active filter.
 
     A multiplex is excluded when it references any KNOWN virus that is not in
     ACTIVE_TARGETS (e.g. a triplex containing Measles when only Influenza A/B are
-    active). If none of its constituent viruses can be identified, it is kept so we
-    never silently drop legitimate output.
+    active).
+
+    The directory name alone is NOT sufficient: the batch orchestrator writes every
+    triplex to the literal path `results/multiplex-triplex-all-3`, which contains no
+    virus token at all. Falling back to "keep it" on an uninformative name is exactly
+    how Measles rows kept reaching the Influenza-only workbooks. So when the name
+    identifies nothing, we inspect the result file's own combination IDs.
     """
-    n = name.lower()
-    present_known = [v for v in _KNOWN_VIRUSES if v in n]
+    present_known = _viruses_in(name)
+
+    if not present_known and result_path is not None:
+        try:
+            with open(result_path, "r") as f:
+                data = json.load(f)
+            probe = " ".join(
+                str(rec.get("triplex_id") or rec.get("pair_id") or rec.get("combo_id") or "")
+                for rec in (data[:50] if isinstance(data, list) else [])
+            )
+            present_known = _viruses_in(probe)
+        except Exception as e:
+            print(f"  ⚠ Could not inspect {result_path} for target filtering: {e}")
+
     if not present_known:
+        # Genuinely unidentifiable: keep, but say so rather than filtering silently.
+        print(f"  ⚠ '{name}': constituent viruses not identifiable — kept without target filtering.")
         return True
+
     # ACTIVE_TARGETS may hold canonical virus tokens ("influenza-a") or full build
     # names ("influenza-a-mp-indo-only"), so match in both directions.
     def _active(v: str) -> bool:
@@ -318,7 +343,7 @@ def create_executive_summary(results_root: Path, outdir: Path):
     # Keep only multiplex files whose constituent viruses are ALL active. Using
     # "any active target present" here was the leak that let a Flu+Measles triplex
     # through on the Influenza token alone, printing Measles rows into the orders sheet.
-    combo_files = [p for p in combo_files if is_multiplex_active(p.parent.name)]
+    combo_files = [p for p in combo_files if is_multiplex_active(p.parent.name, p)]
 
     order_rows = []
     n_targets = 0
@@ -388,7 +413,7 @@ def create_executive_summary(results_root: Path, outdir: Path):
     pair_rows = []
     for pf in pair_files:
         if "triplex" in pf.parent.name: continue
-        if not is_multiplex_active(pf.parent.name): continue  # respect active target filter
+        if not is_multiplex_active(pf.parent.name, pf): continue  # respect active target filter
         with open(pf, "r") as f:
             p_data = json.load(f)
             for rec in p_data:
@@ -565,9 +590,11 @@ def export_s3_multiplex(results_root: Path, outdir: Path):
     count = 0
     for m_dir in sorted(results_root.glob("multiplex*")):
         if not m_dir.is_dir(): continue
-        if not is_multiplex_active(m_dir.name): continue  # respect active target filter (no leak of excluded viruses)
         jf = m_dir / "triplex_candidates.json" if (m_dir / "triplex_candidates.json").exists() else m_dir / "multiplex_candidates.json"
         if not jf.exists(): continue
+        # Pass the result file so an uninformative directory name (e.g. the
+        # orchestrator's literal "multiplex-triplex-all-3") still gets filtered.
+        if not is_multiplex_active(m_dir.name, jf): continue
         with open(jf, "r") as f: data = json.load(f)
         if not data: continue
         rows = []
