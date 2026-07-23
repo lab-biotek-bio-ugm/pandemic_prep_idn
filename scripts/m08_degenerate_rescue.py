@@ -14,6 +14,11 @@ import itertools
 from pathlib import Path
 import primer3
 
+# Shared with m08_payload_generator so the Primer3 design template and the
+# rescue back-mapping can never resolve to different sequences.
+sys.path.insert(0, str(Path(__file__).resolve().parent / "tools"))
+from design_template import resolve_design_template
+
 # Worst-case ΔG sentinel used when a primer3 thermodynamic call fails: fail-closed
 # so an evaluation error can never be mistaken for a structure-free (safe) primer.
 _THERMO_FAIL_DG = -99.0
@@ -216,15 +221,37 @@ def rescue_primer(primer_dict: dict, iupac_seq: str, consensus_seq: str, max_mul
     iupac_slice = iupac_seq[start:end]
     consensus_slice = consensus_seq[start:end]
 
-    # Detect orientation of original primer relative to the reference genome slice
-    # If original_seq is closer to the reverse complement of consensus_slice, it's reverse-oriented.
-    rc_consensus = reverse_complement(consensus_slice)
-    min_len = min(len(original_seq), len(consensus_slice))
-    
-    direct_matches = sum(1 for c1, c2 in zip(original_seq[:min_len], consensus_slice[:min_len]) if c1 == c2)
-    rc_matches = sum(1 for c1, c2 in zip(original_seq[:min_len], rc_consensus[:min_len]) if c1 == c2)
-    
-    is_reverse = rc_matches > direct_matches
+    # Determine orientation relative to the reference slice. Prefer an EXPLICIT
+    # strand/orientation field from PrimerLab; the match-counting heuristic below
+    # is only a fallback, and it can misclassify short primers or slices near a
+    # region boundary — silently reverse-complementing (or failing to) the rescued
+    # sequence.
+    explicit = (primer_dict.get("strand") or primer_dict.get("orientation")
+                or primer_dict.get("direction"))
+    if isinstance(explicit, str) and explicit.strip():
+        e = explicit.strip().lower()
+        if e in ("-", "minus", "reverse", "rev", "r"):
+            is_reverse = True
+        elif e in ("+", "plus", "forward", "fwd", "f"):
+            is_reverse = False
+        else:
+            explicit = None
+    else:
+        explicit = None
+
+    if explicit is None:
+        rc_consensus = reverse_complement(consensus_slice)
+        min_len = min(len(original_seq), len(consensus_slice))
+
+        direct_matches = sum(1 for c1, c2 in zip(original_seq[:min_len], consensus_slice[:min_len]) if c1 == c2)
+        rc_matches = sum(1 for c1, c2 in zip(original_seq[:min_len], rc_consensus[:min_len]) if c1 == c2)
+
+        is_reverse = rc_matches > direct_matches
+        # An ambiguous call means the back-mapped sequence may be the wrong strand.
+        if min_len and abs(rc_matches - direct_matches) <= max(1, min_len // 10):
+            print(f"[Rescue][WARN] Ambiguous orientation for '{original_seq}' "
+                  f"(direct={direct_matches}, rc={rc_matches} of {min_len}); "
+                  f"assuming {'reverse' if is_reverse else 'forward'}.")
 
     # Resolve excess degeneracy if any
     rescued_seq = resolve_excess_degeneracy(iupac_slice, consensus_slice, max_multiplier)
@@ -297,13 +324,8 @@ def main():
     with open(args.manifest, 'r') as f:
         manifest = yaml.safe_load(f)
 
-    # Build sequence mapping by region_id
-    regions_map = {}
-    for region in manifest.get("candidate_regions", []):
-        regions_map[region["region_id"]] = {
-            "iupac_seq": region["sequences"]["iupac_consensus_sequence"],
-            "consensus_seq": region["sequences"]["consensus_sequence"]
-        }
+    candidate_regions = manifest.get("candidate_regions", [])
+    regions_map = {r["region_id"]: r for r in candidate_regions}
 
     # Discover region_id from paths or manifest
     # For subdirectories, the region_id is part of the output folder or we read it from summary
@@ -321,8 +343,15 @@ def main():
         print(f"[Rescue] ERROR: Region {region_id} not found in manifest candidate regions.")
         sys.exit(1)
 
-    iupac_seq = regions_map[region_id]["iupac_seq"]
-    consensus_seq = regions_map[region_id]["consensus_seq"]
+    # Resolve the SAME template Primer3 was given. Under the full-segment strategy
+    # the payload generator substitutes the longest region's consensus for every
+    # region, so Primer3's start/end are relative to that sequence — slicing this
+    # region's own consensus here would back-map onto the wrong bases.
+    consensus_seq, iupac_seq, template_id = resolve_design_template(candidate_regions, region_id)
+    if template_id != region_id:
+        print(f"[Rescue] Full-segment strategy: back-mapping against template region "
+              f"'{template_id}' ({len(consensus_seq)} bp), not '{region_id}' — matching "
+              f"the sequence Primer3 designed on.")
 
     # 2. Read Alternatives
     print(f"[Rescue] Reading alternatives from {args.alternatives}...")
@@ -489,7 +518,10 @@ def main():
                 p["probe"]["sequence"] if p.get("probe") else "N/A", 
                 p["probe"]["tm"] if p.get("probe") else "N/A",
                 p["probe"]["degeneracy_multiplier"] if p.get("probe") else 0,
-                q["hairpin_dg"], q["homodimer_dg"], q["cross_dimer_dg"], q["tm_diff"]
+                # _fmt_dg keeps the fail-closed sentinel out of the CSV, which is
+                # read by M09 and lands in the Excel supplementary workbooks.
+                _fmt_dg(q["hairpin_dg"]), _fmt_dg(q["homodimer_dg"]),
+                _fmt_dg(q["cross_dimer_dg"]), q["tm_diff"]
             ])
 
     print("[Rescue] Degenerate rescue completed successfully.")
