@@ -96,9 +96,13 @@ def count_iupac_variants(seq: str) -> int:
 
 
 def calculate_gc(seq: str) -> float:
-    """Calculate GC content percentage from an IUPAC sequence.
+    """Calculate expected GC content percentage from an IUPAC sequence.
 
-    S (G/C) counts as a G/C base.
+    Every degenerate code contributes the FRACTION of its possible bases that are
+    G or C, which is the expected GC content over the primer pool it represents.
+    Counting only G/C/S (the previous behaviour) systematically under-estimates a
+    degenerate oligo: B (C/G/T) is 2/3 GC and M (A/C) is 1/2 GC, but both scored 0.
+    That can push a borderline design across a GC cutoff without anyone noticing.
 
     Parameters
     ----------
@@ -108,11 +112,19 @@ def calculate_gc(seq: str) -> float:
     Returns
     -------
     float
-        GC percentage (0.0 – 100.0), rounded to 1 decimal place.
+        Expected GC percentage (0.0 – 100.0), rounded to 1 decimal place.
+        Gaps and unknown characters are excluded from the denominator.
     """
-    seq = seq.upper()
-    gc = sum(1 for b in seq if b in ('G', 'C', 'S'))
-    return round((gc / len(seq)) * 100.0, 1) if seq else 0.0
+    seq = (seq or "").upper()
+    gc = 0.0
+    counted = 0
+    for base in seq:
+        bases = IUPAC_MAP.get(base)
+        if not bases:
+            continue  # gaps / unknown symbols are not part of the oligo
+        counted += 1
+        gc += sum(1 for b in bases if b in ("G", "C")) / len(bases)
+    return round((gc / counted) * 100.0, 1) if counted else 0.0
 
 
 def calculate_tm(seq: str, max_variants: int = DEFAULT_MAX_VARIANTS) -> float:

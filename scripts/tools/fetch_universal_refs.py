@@ -1,10 +1,15 @@
-import sys
 import argparse
+import os
+import sys
 from pathlib import Path
 from Bio import Entrez, SeqIO
 
-Entrez.email = "lab.biotek@ugm.ac.id"
-Entrez.tool = "PandemicPrep_UGM"
+# Shared reference validation / checksum helpers (single implementation).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from fetch_flu_references import validate_record, write_checksum
+
+Entrez.email = os.environ.get("ENTREZ_EMAIL", "lab.biotek@ugm.ac.id")
+Entrez.tool = os.environ.get("ENTREZ_TOOL", "PandemicPrep_UGM")
 
 TARGETS = {
     "MP": "NC_002016.1",
@@ -17,15 +22,25 @@ def fetch_and_curate(segment, accession, outdir):
         with Entrez.efetch(db="nucleotide", id=accession, rettype="gb", retmode="text") as handle:
             record = SeqIO.read(handle, "genbank")
     except Exception as e:
-        print(f"[{segment}] FAILED to fetch {accession}: {e}")
-        return
+        raise SystemExit(f"[{segment}] FAILED to fetch {accession}: {e}")
+
+    # Segment labels (MP/NP) are not subtype strings, so only the accession and
+    # non-empty checks apply here.
+    problems = validate_record(record, None, accession)
+    if problems:
+        raise SystemExit(
+            f"[{segment}] Reference validation FAILED for {accession}:\n  - "
+            + "\n  - ".join(problems)
+            + "\nRefusing to write a possibly-wrong reference genome."
+        )
 
     # 1. Tulis FASTA
     fasta_path = outdir / f"flu_a_{segment.lower()}_reference.fasta"
     with open(fasta_path, "w") as f:
         f.write(f">{record.id} Influenza A {segment} Reference\n")
         f.write(f"{str(record.seq)}\n")
-    print(f"[{segment}] Saved FASTA -> {fasta_path.name}")
+    print(f"[{segment}] Saved FASTA -> {fasta_path.name} ({len(record.seq)} bp)")
+    write_checksum(fasta_path, segment, accession)
 
     # 2. Kurasi GFF3 Manual dan Indah
     gff_path = outdir / f"flu_a_{segment.lower()}_annotation.gff"
