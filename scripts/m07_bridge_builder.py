@@ -53,6 +53,11 @@ from Bio import SeqIO
 # Global parameters will be overridden by args
 IUPAC_THRESHOLD = 0.15
 
+# Maximum Shannon entropy for the documented 5-symbol alphabet {A,T,G,C,-}
+# (see docs/concepts/shannon-entropy.md). Used to normalise entropy to a
+# conservation score C = 1 - H / MAX_ENTROPY_BITS in [0, 1].
+MAX_ENTROPY_BITS = math.log2(5)  # ~= 2.3219
+
 # Full IUPAC ambiguity lookup: frozenset of observed bases -> IUPAC code.
 # Only 2-base and 3-base combos are listed; 4-base = N.
 _IUPAC_MAP: dict = {
@@ -121,8 +126,12 @@ def build_entropy_profile(records):
         consensus_base — majority-vote base (plain A/T/G/C or '-')
         iupac_base     — IUPAC-encoded base if minor allele >= IUPAC_THRESHOLD,
                          else same as consensus_base
-        entropy        — Shannon entropy in bits (0 = fully conserved, 2 = max)
-        freq_A, freq_T, freq_G, freq_C — per-base frequencies (gap-excluded)
+        entropy        — Shannon entropy in bits over the 5-symbol alphabet
+                         {A,T,G,C,-} (0 = fully conserved, log2(5) ~= 2.322 = max);
+                         gaps and other non-ACGT symbols count toward variability
+                         so deletions correctly drive conservation down.
+        freq_A, freq_T, freq_G, freq_C — per-base frequencies (gap-excluded,
+                         used for consensus / IUPAC degenerate-base decisions)
     """
     if not records:
         return [], 0, 0
@@ -136,14 +145,18 @@ def build_entropy_profile(records):
     for i in range(aln_length):
         column = [str(rec.seq[i]).upper() for rec in records]
         bases  = [b for b in column if b in "ACGT"]
-        n      = len(bases)
+        n      = len(bases)                       # ACGT-only count
+        gap_like = n_sequences - n                # gaps + N + other ambiguity
 
         if n == 0:
+            # No usable base in ANY sequence (all gap/N): undesignable column.
+            # Assign maximum entropy -> conservation score 0 so the region is
+            # disqualified rather than mislabelled as a perfectly conserved gap.
             profile.append({
                 "position": i,
                 "consensus_base": "-",
                 "iupac_base": "-",
-                "entropy": 1.0,
+                "entropy": MAX_ENTROPY_BITS,
                 **_empty_freq,
             })
             continue
@@ -151,11 +164,21 @@ def build_entropy_profile(records):
         counter = Counter(bases)
         consensus = counter.most_common(1)[0][0]
 
+        # ACGT-only frequencies drive consensus / IUPAC degeneracy and the
+        # reported freq_* columns (documented as gap-excluded).
         freq = {b: c / n for b, c in counter.items()}
         iupac = _to_iupac_base(freq)
 
+        # Entropy uses the documented gap-inclusive 5-symbol alphabet: the
+        # denominator is ALL sequences and every non-ACGT symbol (gap, N,
+        # ambiguity) is folded into a single "gap" state, since like a deletion
+        # it cannot be relied on for primer hybridisation.
         entropy = 0.0
-        for p in freq.values():
+        ent_counts = list(counter.values())
+        if gap_like > 0:
+            ent_counts.append(gap_like)
+        for c in ent_counts:
+            p = c / n_sequences
             if p > 0:
                 entropy -= p * math.log2(p)
 
@@ -204,7 +227,7 @@ def scan_conservation(profile, window_size, entropy_threshold):
                 "start": i,
                 "end": i + window_size,
                 "mean_entropy": mean_e,
-                "conservation_pct": round((1 - mean_e / 2.0) * 100, 2),
+                "conservation_pct": round((1 - mean_e / MAX_ENTROPY_BITS) * 100, 2),
                 "length": window_size
             })
             
@@ -586,8 +609,10 @@ def score_regions(regions, profile, ref_seq, codon_data, gard_breakpoints, genes
         mismatches = get_mismatch_positions(profile, start, end, threshold=block_t_hr)
 
         # 3. Core Score Calculation
-        # Normalized conservation: DNA entropy max is 2.0 -> Range [0.0, 1.0]
-        cons_norm = 1.0 - (region["mean_entropy"] / 2.0)
+        # Normalized conservation over the 5-symbol alphabet {A,T,G,C,-}:
+        # max entropy = log2(5); clamp guards against float drift / all-gap columns.
+        cons_norm = 1.0 - (region["mean_entropy"] / MAX_ENTROPY_BITS)
+        cons_norm = max(0.0, min(1.0, cons_norm))
         
         if has_hyphy:
             core = (w_cons * cons_norm) + (w_fub * avg_fubar)
@@ -963,7 +988,7 @@ def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir,
                     "start": s,
                     "end": e,
                     "mean_entropy": mean_ent,
-                    "conservation_pct": round((1 - mean_ent / 2.0) * 100, 2),
+                    "conservation_pct": round((1 - mean_ent / MAX_ENTROPY_BITS) * 100, 2),
                     "length": e - s,
                     "gene": feat["gene"],
                 })
@@ -976,7 +1001,7 @@ def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir,
                 "start": 0,
                 "end": aln_len,
                 "mean_entropy": mean_ent,
-                "conservation_pct": round((1 - mean_ent / 2.0) * 100, 2),
+                "conservation_pct": round((1 - mean_ent / MAX_ENTROPY_BITS) * 100, 2),
                 "length": aln_len,
                 "gene": "Whole_Segment",
             }]
