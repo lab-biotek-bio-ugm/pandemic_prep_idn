@@ -138,7 +138,11 @@ def main():
     parser.add_argument("--configs", nargs="+", required=True, help="List of target config files (e.g., config_influenza_a_mp.yaml config_influenza_b_mp.yaml)")
     parser.add_argument("--cores", type=int, default=64, help="Number of CPU cores for Snakemake execution")
     parser.add_argument("--skip-snakemake", action="store_true", help="Skip Snakemake runs if result folders already exist")
-    parser.add_argument("--snakemake-args", type=str, default="--use-conda --rerun-incomplete", help="Additional flags to pass directly to Snakemake (e.g., '--use-conda --unlock --rerun-incomplete')")
+    parser.add_argument(
+        "--snakemake-args", type=str, default="--use-conda --rerun-incomplete",
+        help="Additional flags passed straight to Snakemake. MUST use the '=' form, "
+             "because the value starts with a dash and argparse would otherwise read "
+             "it as another option: --snakemake-args='--use-conda --rerun-incomplete'")
     parser.add_argument("--num-candidates", type=int, default=10, help="Number of top candidates per target to screen for multiplexing")
     parser.add_argument("--outdir", default="supplementary", help="Output directory for the supplementary workbooks")
     parser.add_argument("--skip-export", action="store_true", help="Skip the supplementary export step")

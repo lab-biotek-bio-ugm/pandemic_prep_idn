@@ -92,3 +92,65 @@ def test_export_filter_accepts_build_names_as_active_targets():
         "multiplex-influenza-a-mp-indo-only_x_influenza-b-mp-indo-only") is True
     assert es.is_multiplex_active(
         "multiplex-triplex-influenza-a_influenza-b_measles") is False
+
+
+# --- The bash wrapper's argv construction -------------------------------------
+
+def _run_wrapper(*args):
+    """Invoke the wrapper with a python3 shim that prints its argv.
+
+    The wrapper is bash, so nothing else in this suite covers it. It shipped
+    broken: `--snakemake-args --use-conda` reached argparse as two argv elements,
+    argparse saw a value starting with '-', treated it as another option and
+    aborted with "expected one argument" — the documented command in the README
+    could not run at all.
+    """
+    import os
+    import subprocess
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as shim:
+        stub = os.path.join(shim, "python3")
+        with open(stub, "w") as f:
+            f.write('#!/usr/bin/env bash\nfor a in "$@"; do echo "$a"; done\n')
+        os.chmod(stub, 0o755)
+        env = dict(os.environ, PATH=f"{shim}{os.pathsep}{os.environ['PATH']}")
+        out = subprocess.run(
+            ["bash", "scripts/run_multiplex_batch.sh", *args],
+            capture_output=True, text=True, env=env, check=True).stdout
+    # Drop the wrapper's own banner lines; argv starts at the script path.
+    lines = out.splitlines()
+    start = next(i for i, l in enumerate(lines)
+                 if l.endswith("run_multiplex_batch.py"))
+    return lines[start:]
+
+
+def test_wrapper_passes_snakemake_flags_as_a_single_argv_element():
+    argv = _run_wrapper("config/config_influenza_a_mp.yaml",
+                        "config/config_influenza_b_mp.yaml",
+                        "--use-conda", "-c", "64")
+    assert "--snakemake-args=--use-conda" in argv, argv
+    # The bare two-element form is exactly what argparse rejects.
+    assert "--snakemake-args" not in argv, argv
+    assert argv[argv.index("--cores") + 1] == "64"
+
+
+def test_wrapper_keeps_multiple_flags_together():
+    argv = _run_wrapper("config/config_influenza_a_mp.yaml",
+                        "config/config_influenza_b_mp.yaml",
+                        "--use-conda", "--rerun-incomplete", "-c", "32")
+    assert "--snakemake-args=--use-conda --rerun-incomplete" in argv, argv
+
+
+def test_wrapper_omits_the_flag_when_none_given():
+    argv = _run_wrapper("config/config_influenza_a_mp.yaml",
+                        "config/config_influenza_b_mp.yaml", "-c", "8")
+    assert not any(a.startswith("--snakemake-args") for a in argv), argv
+
+
+def test_wrapper_forwards_a_third_config_for_triplex():
+    argv = _run_wrapper("config/config_influenza_a_mp.yaml",
+                        "config/config_influenza_b_mp.yaml",
+                        "config/config_measles_all_partial.yaml", "-c", "16")
+    configs = argv[argv.index("--configs") + 1:argv.index("--cores")]
+    assert len(configs) == 3, configs

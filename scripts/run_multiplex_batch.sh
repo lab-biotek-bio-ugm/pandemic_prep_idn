@@ -59,7 +59,10 @@ if [ -n "$CORES" ]; then
 fi
 
 if [ "${#SNAKEMAKE_FLAGS[@]}" -gt 0 ]; then
-  CMD+=(--snakemake-args "${SNAKEMAKE_FLAGS[*]}")
+  # Must be the --opt=value form. Passed as two argv elements, argparse sees a
+  # value that begins with '-' (e.g. "--use-conda"), treats it as another option
+  # and aborts with "expected one argument". The '=' form has no such ambiguity.
+  CMD+=("--snakemake-args=${SNAKEMAKE_FLAGS[*]}")
 fi
 
 echo "================================================================================"
