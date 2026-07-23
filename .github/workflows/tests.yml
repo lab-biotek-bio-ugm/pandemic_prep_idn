@@ -45,7 +45,20 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           # Core scientific deps exercised by the unit tests.
-          pip install pytest numpy pandas biopython pyyaml primer3-py openpyxl
+          pip install pytest numpy pandas biopython pyyaml primer3-py openpyxl pyflakes
+
+      - name: Undefined-name check
+        # compileall (below, in dag-validation) only catches syntax errors. A
+        # NameError inside main() passes every import-based test and then fails on
+        # the cluster; one shipped that way and cost a 15-minute HyPhy run.
+        # 'snakemake' is injected as a global by the script: directive.
+        run: |
+          out=$(python -m pyflakes scripts/*.py scripts/tools/*.py || true)
+          echo "$out"
+          if echo "$out" | grep "undefined name" | grep -v "'snakemake'"; then
+            echo "::error::undefined name in a pipeline script"
+            exit 1
+          fi
 
       - name: Run unit tests
         run: pytest -q

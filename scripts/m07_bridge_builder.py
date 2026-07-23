@@ -1346,7 +1346,7 @@ def main():
     # The invariant is enforced entirely OUTSIDE this script, so verify it here:
     # if a different reference is ever passed, ref_seq[start:end] slices the wrong
     # bases and Python raises nothing — every downstream coordinate is silently wrong.
-    aln_len_check = len(records[0].seq)
+    aln_len_check = len(all_records[0].seq)
     if len(ref_seq) != aln_len_check:
         print(
             f"ERROR: reference length ({len(ref_seq)} bp, {ref_id}) != alignment length "

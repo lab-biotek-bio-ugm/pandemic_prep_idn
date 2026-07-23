@@ -942,7 +942,7 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
     try:
         _generate_individual_forbidden_tracks(
             entropy_gff_path, meme_gff_path, fubar_gff_path, gard_gff_path,
-            target, bridge_report_path
+            target, bridge_report_path, ref_fasta_path=ref_fasta_path
         )
         print("Individual forbidden tracks (Entropy, MEME, FUBAR, GARD) generated.")
     except Exception as e:
@@ -1061,7 +1061,7 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
 
 def _generate_individual_forbidden_tracks(
     entropy_path: Path, meme_path: Path, fubar_path: Path, gard_path: Path,
-    target: str, bridge_report_path: str
+    target: str, bridge_report_path: str, ref_fasta_path: Optional[str] = None
 ):
     """Generate individual GFF3 files for Shannon entropy, MEME, FUBAR, and GARD from manifest."""
     if not bridge_report_path or not os.path.exists(bridge_report_path):
