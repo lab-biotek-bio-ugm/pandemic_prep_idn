@@ -41,12 +41,29 @@ $$\text{Final Window Score} = S_{\text{avg}} \cdot M_{\text{meme}} \cdot M_{\tex
 
 Candidate regions are classified into four tiers based on their average conservation and purifying selection metrics:
 
-| Grade | Tier Name | Conservation ($C$) | Purifying Selection ($P$) | Recommendation |
-|---|---|---|---|---|
-| **A** | **Strict (Platinum)** | $\geq 0.95$ | $\geq 0.90$ | Highly recommended. Extremely stable targets. |
-| **B** | **Moderate (Gold)** | $\geq 0.85$ | $\geq 0.70$ | Safe for routine surveillance assays. |
-| **C** | **Survival (Silver)** | $\geq 0.80$ | Any | Targetable, but may require degenerate bases or validation. |
-| **D** | **Reject** | `&lt;` 0.80 | — | High mutational risk. Do not target. |
+Two **different** classifications are emitted, and they must not be confused:
+
+### `tier_grade` — the A/B/C/D scheme (read this one)
+
+Keyed on the **raw** conservation ($C$) and purifying selection ($P$) metrics, and
+reported alongside the numeric `tier` (1/2/3).
+
+| `tier_grade` | `tier` | Tier Name | Conservation ($C$) | Purifying Selection ($P$) | Recommendation |
+|---|---|---|---|---|---|
+| **A** | 1 | **Strict (Platinum)** | $\geq 0.95$ | $\geq 0.90$ | Highly recommended. Extremely stable targets. |
+| **B** | 2 | **Moderate (Gold)** | $\geq 0.85$ | $\geq 0.70$ | Safe for routine surveillance assays. |
+| **C** | 3 | **Survival (Silver)** | $\geq 0.80$ | Any | Targetable, but may require degenerate bases or validation. |
+| **D** | 3 | **Reject** | $< 0.80$ | — | High mutational risk. Do not target. |
+
+When "Grade A or B are the primary targets for PrimerLab", this is the field meant.
+
+### `grade` — fine-grained ranking on the composite score
+
+A separate S / A+ / A / A− / B+ / B / C / D ladder keyed on the **multiplied**
+`final_score` (after MEME, recombination, GC, block and homopolymer multipliers).
+It is a ranking aid only. Its letters do **not** correspond to the table above —
+`grade: "A"` merely means `final_score >= 0.85`, which says nothing about $C$ or $P$
+individually.
 
 ---
 

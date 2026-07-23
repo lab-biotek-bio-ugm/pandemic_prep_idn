@@ -650,6 +650,15 @@ def score_regions(regions, profile, ref_seq, codon_data, gard_breakpoints, genes
                 tier = 2
 
         # --- Grade Classification ---
+        # NOTE: two distinct classifications are emitted, previously easy to confuse
+        # because the code's letters clashed with the documentation's:
+        #   grade      — fine-grained ranking on the MULTIPLIED final_score (S..D).
+        #                Code-internal; "A" here means final_score >= 0.85, which is
+        #                NOT the docs' Grade A.
+        #   tier_grade — the A/B/C/D scheme documented in
+        #                docs/pipeline-architecture/m07-bridge-builder.md, keyed on
+        #                the RAW conservation (C) and purifying (P) metrics via tier.
+        #                This is the one to read as "Grade A / B are primary targets".
         if final_score >= 0.95: grade = "S"
         elif final_score >= 0.90: grade = "A+"
         elif final_score >= 0.85: grade = "A"
@@ -658,6 +667,17 @@ def score_regions(regions, profile, ref_seq, codon_data, gard_breakpoints, genes
         elif final_score >= 0.70: grade = "B"
         elif final_score >= 0.60: grade = "C"
         else: grade = "D"
+
+        # Documented tier -> grade mapping (Strict=A, Moderate=B, Survival=C, Reject=D).
+        survival_min = tiers_config.get("survival", {}).get("min_conservation", 0.80)
+        if tier == 1:
+            tier_grade = "A"
+        elif tier == 2:
+            tier_grade = "B"
+        elif cons_frac >= survival_min:
+            tier_grade = "C"
+        else:
+            tier_grade = "D"
 
         # Build the three sequence representations for this window:
         #   consensus_sequence       — majority-vote per column (plain ATGC)
@@ -691,6 +711,7 @@ def score_regions(regions, profile, ref_seq, codon_data, gard_breakpoints, genes
             "composite_score": round(final_score, 4),
             "tier": tier,
             "grade": grade,
+            "tier_grade": tier_grade,
             "recommendation": GRADE_TEXT[grade],
             # Three sequence representations
             "consensus_sequence": consensus_seq,
@@ -810,6 +831,7 @@ def write_manifest(regions, build_name, ref_genome, buffer_bp, path, profile, co
             "gene": r["gene"],
             "tier": r["tier"],
             "grade": r["grade"],
+            "tier_grade": r.get("tier_grade", ""),
             "composite_score": r["composite_score"],
             "conserved_zone": {
                 "start": r["start"],
@@ -874,6 +896,7 @@ def write_csv(regions, path):
         "gene",
         "tier",
         "grade",
+        "tier_grade",
         "composite_score",
         "start_0based",
         "end_0based",
@@ -911,6 +934,7 @@ def write_csv(regions, path):
                 "gene": r.get("gene", ""),
                 "tier": r.get("tier", ""),
                 "grade": r.get("grade", ""),
+                "tier_grade": r.get("tier_grade", ""),
                 "composite_score": r.get("composite_score", ""),
                 "start_0based": r.get("start", ""),
                 "end_0based": r.get("end", ""),
@@ -1106,11 +1130,25 @@ def main():
     scoring_config = bridge.get("scoring", {})
     if not scoring_config and "weights" in bridge:
         print("[M07] WARNING: Falling back to v1.0 weights config. Please update to 'scoring' config block.", file=sys.stderr)
-        # Rudimentary fallback mapping
+        # Rudimentary fallback mapping. The composite score S = w_c*C + w_p*P assumes
+        # w_c + w_p == 1.0; the legacy defaults (0.5 / 0.25) sum to 0.75, which
+        # deflates EVERY score by 25% and makes the documented 0.95/0.85 tier
+        # thresholds unreachable even for a perfect region. Renormalise so the
+        # legacy ratio is preserved but the invariant holds.
+        _w_c = bridge["weights"].get("conservation", 0.5)
+        _w_p = bridge["weights"].get("purifying", 0.25)
+        _total = _w_c + _w_p
+        if _total <= 0:
+            print("[M07] ERROR: legacy bridge.weights sum to zero.", file=sys.stderr)
+            sys.exit(1)
+        if abs(_total - 1.0) > 1e-9:
+            print(f"[M07] WARNING: legacy weights sum to {_total:.3f}, not 1.0 — "
+                  f"renormalising to conservation={_w_c/_total:.3f}, "
+                  f"purifying={_w_p/_total:.3f}.", file=sys.stderr)
         scoring_config = {
             "core": {
-                "conservation_weight": bridge["weights"].get("conservation", 0.5),
-                "purifying_weight": bridge["weights"].get("purifying", 0.25)
+                "conservation_weight": _w_c / _total,
+                "purifying_weight": _w_p / _total
             },
             "multipliers": {}
         }
@@ -1140,10 +1178,32 @@ def main():
     ref_seq = str(ref_records[0].seq).upper()
     ref_id = ref_records[0].id
 
+    # COORDINATE INVARIANT: this module treats an alignment column index as a
+    # reference genome index (extract_reference_subsequence, HyPhy codon mapping,
+    # conserved_regions.bed, the manifest that M08/M09/IGV consume as ground truth).
+    # That only holds because M03 runs `augur align --reference-sequence ... --fill-gaps`,
+    # which pins the alignment length to the reference via mafft --keeplength.
+    # The invariant is enforced entirely OUTSIDE this script, so verify it here:
+    # if a different reference is ever passed, ref_seq[start:end] slices the wrong
+    # bases and Python raises nothing — every downstream coordinate is silently wrong.
+    aln_len_check = len(records[0].seq)
+    if len(ref_seq) != aln_len_check:
+        print(
+            f"ERROR: reference length ({len(ref_seq)} bp, {ref_id}) != alignment length "
+            f"({aln_len_check} bp).\n"
+            f"       M07 maps alignment columns directly onto reference coordinates, so "
+            f"these MUST match.\n"
+            f"       Likely cause: the --reference given to M07 is not the one used for "
+            f"`augur align` in M03.\n"
+            f"       Refusing to emit coordinates that would be silently wrong.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     print("[M07] ============================================")
     print("[M07]  Bridge Builder v2.0 — Biomechanical Scoring")
     print("[M07] ============================================")
-    print(f"[M07] Reference : {ref_id} ({len(ref_seq)} bp)")
+    print(f"[M07] Reference : {ref_id} ({len(ref_seq)} bp, matches alignment length)")
     print(f"[M07] Strategy  : {args.strategy}")
     if args.strategy == "windowed":
         print(f"[M07] Window    : {window_size} bp")
