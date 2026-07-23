@@ -67,9 +67,11 @@ rule m11_multiplex_compatibility:
         target_a = lambda wc: _find_m09_candidates(wc.build_a),
         target_b = lambda wc: _find_m09_candidates(wc.build_b)
     output:
+        # NOTE: multiplex_matrix.html was declared here but m11_multiplex_checker.py
+        # never writes an HTML file, so the rule always died with
+        # MissingOutputException. Removed rather than faked.
         json   = "results/multiplex-{build_a}_x_{build_b}/multiplex_candidates.json",
-        report = "results/multiplex-{build_a}_x_{build_b}/multiplex_report.md",
-        html   = "results/multiplex-{build_a}_x_{build_b}/multiplex_matrix.html"
+        report = "results/multiplex-{build_a}_x_{build_b}/multiplex_report.md"
     params:
         outdir         = "results/multiplex-{build_a}_x_{build_b}",
         num_candidates = 10,
