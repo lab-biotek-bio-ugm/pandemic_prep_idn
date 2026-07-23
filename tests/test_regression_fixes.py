@@ -487,3 +487,43 @@ def test_core_weights_removed_from_every_config():
         dur = scoring.get("multipliers", {}).get("durability")
         assert dur is not None, f"{path} has no durability multiplier"
         assert 0.5 < dur["floor"] <= 1.0
+
+
+def test_fubar_columns_are_matched_against_the_real_json_layout(tmp_path):
+    """FUBAR's MLE headers are [short_name, description] pairs and include an
+    `alpha-beta` column sitting between `alpha`/`beta` and `Prob[alpha>beta]`. A
+    naive substring match claims the wrong index, which would silently score every
+    region on the wrong quantity."""
+    import json
+    m07 = _m07()
+    headers = [["alpha", "Mean posterior synonymous substitution rate at a site"],
+               ["beta", "Mean posterior non-synonymous substitution rate at a site"],
+               ["alpha-beta", "Mean posterior beta-alpha"],
+               ["Prob[alpha>beta]", "Posterior probability of negative selection"],
+               ["Prob[alpha<beta]", "Posterior probability of positive selection"],
+               ["BayesFactor[alpha<beta]", "Empirical Bayes Factor"]]
+    rows = [[0.10, 0.05, -0.05, 0.97, 0.01, 0.2],
+            [5.00, 1.00, -4.00, 0.96, 0.02, 0.3]]
+    f = tmp_path / "fubar_M1.json"
+    f.write_text(json.dumps({"MLE": {"headers": headers, "content": {"0": rows}}}))
+
+    got = m07.parse_fubar_json(str(f))
+    assert [g["alpha"] for g in got] == [0.10, 5.00]
+    assert [g["beta"] for g in got] == [0.05, 1.00]
+    assert [g["fubar_purifying_prob"] for g in got] == [0.97, 0.96]
+    # Both codons look equally "under purifying selection"; only the rate separates
+    # them, which is the entire reason the rates are now parsed.
+    rates = [m07.codon_substitution_rate(g["alpha"], g["beta"]) for g in got]
+    assert rates[1] > rates[0] * 20
+
+
+def test_snakemake_defaults_match_the_config_values():
+    """A fallback in the rule that disagrees with config silently applies a
+    different threshold to anyone whose config omits the key."""
+    import yaml
+    cfg = yaml.safe_load(open("config/config.yaml"))["insilico_pcr"]
+    smk = open("rules/m10_insilico_pcr.smk").read()
+    for key in ("raa_3prime_bp", "raa_max_3prime_mm", "raa_max_internal_mm",
+                "raa_probe_max_mm"):
+        assert f'.get("{key}", {cfg[key]})' in smk, \
+            f"rule fallback for {key} disagrees with config ({cfg[key]})"

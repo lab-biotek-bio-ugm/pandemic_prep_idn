@@ -66,7 +66,7 @@ rule m10_insilico_pcr:
         num_candidates=config["insilico_pcr"].get("num_candidates", 10),
         outdir="results/{BUILD}/m10/{mode}",
         m09_dirs=get_m10_m09_dirs,
-        raa_3prime_bp=config["insilico_pcr"].get("raa_3prime_bp", 8),
+        raa_3prime_bp=config["insilico_pcr"].get("raa_3prime_bp", 4),
         raa_max_3prime_mm=config["insilico_pcr"].get("raa_max_3prime_mm", 1),
         raa_max_internal_mm=config["insilico_pcr"].get("raa_max_internal_mm", 4),
         raa_probe_max_mm=config["insilico_pcr"].get("raa_probe_max_mm", 5),
