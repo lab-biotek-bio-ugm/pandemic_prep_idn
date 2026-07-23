@@ -42,7 +42,7 @@ For RAA and RPA isothermal assays, the recombinase enzyme binds to the primer an
     **What this model still does not capture**: the same study found the identity of the mismatched pair to matter as much as its position. A terminal cytosine–cytosine mismatch was the most damaging, followed by guanine–adenine, while adenine–cytosine and thymine–guanine were *"highly tolerated, rarely resulting in amplification failure"*. The pipeline's position-only criterion treats all four alike. Treat borderline candidates accordingly — a rejection driven by a single A–C terminal mismatch is likely over-conservative.
 
 ### 2. Internal Mismatch Tolerance
-- **RAA/RPA**: Up to 4 mismatches are tolerated in the 5' internal region (primer length minus 8 bp) due to the long primer length (30–35 bp) which accommodates higher mismatch loads.
+- **RAA/RPA**: Up to 4 mismatches are tolerated in the internal region (primer length minus `raa_3prime_bp`), reflecting the long primer length (30–35 bp) which accommodates higher mismatch loads. This is conservative relative to the TwistAmp manual §2.7, which reports RPA performance unaffected by 5–9 mismatches across primers and probe.
 - **PCR**: Up to 2 mismatches are tolerated in the 5' half; mismatches in the 3' critical end must be zero.
 
 ### 3. Probe Cleavage — What Is and Is Not Checked
