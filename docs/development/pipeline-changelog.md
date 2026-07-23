@@ -31,6 +31,15 @@ A full audit of the pipeline's scripts and algorithms, followed by validation of
 
 - **A probe was being judged as if it were a primer.** M10 ran the probe through the same `assess_raa_binding()` routine as the primers (`raa_3prime_bp=8`, `raa_max_3prime_mm=1`), applying extension kinetics to an oligo that carries a 3' blocking group precisely so the polymerase *cannot* extend it. Probes are now judged on total mismatch load (`raa_probe_max_mm`, default 5 — the conservative end of the 5–9 range TwistAmp §2.7 describes as tolerated). Only probes with more than one mismatch clustered near the 3' end change verdict, but those were counted as detection failures, so reported RAA coverage was **understated** for exactly the sequences carrying 3'-proximal probe variation.
 
+### Changed — RAA primer 3' criterion
+
+- **`raa_3prime_bp` lowered from 8 to 4**, matching the anchor region defined in [Higgins et al. 2022](https://doi.org/10.1016/j.jmoldx.2022.08.005) (*pre-ante-penultimate to 3'-terminal*), the only study characterising primer–template mismatches specifically in RPA. Lone mismatches outside the terminal position were found not to significantly affect time to positivity. The previous 8 had no source and charged positions 5–8 against the strict 3' quota, understating coverage. The documentation now also records what the position-only model misses: mismatch **identity** matters as much as position (terminal C–C most damaging; A–C and T–G highly tolerated).
+
+### Fixed — probe synthesis specification
+
+- **Reports described every probe as `5'-FAM / 3'-BHQ1 / Internal-THF`** — a hydrolysis-probe layout. An RAA exo probe carries both dyes on *internal* dT residues flanking the abasic site, with a blocking group at the 3' terminus. An oligo house given the old string would have synthesised the wrong molecule. Specifications now use PrimerLab's labelled sequence verbatim as the order string, state the abasic-site position, and refuse to look orderable when that labelling is absent.
+- M09 now forwards `probe_labeled_seq`, `probe_type`, `probe_thf_index`, `probe_label_mismatches` and `probe_compliant` into `final_candidates.json`, so M11 can render them.
+
 ### Added — PrimerLab data flow
 
 - `Primer.to_dict()` now exports `thf_index`, `probe_type`, `probe_label_mismatches` and `probe_compliant`. The abasic-site position was computed and then discarded before serialisation, so no downstream module could locate the cleavage site.

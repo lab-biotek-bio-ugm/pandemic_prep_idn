@@ -348,6 +348,66 @@ def compatibility_score(min_dg: float, delta_tm: float, dye_ok: bool = True) -> 
     return max(0.0, round(score, 1))
 
 
+def probe_synthesis_spec(candidate: dict, dye: str, quencher: str = "BHQ1",
+                         blocker: str = "C3-spacer") -> dict:
+    """Build an orderable specification for an RAA exo/fpg probe.
+
+    Returns {"order_sequence", "modification", "thf_index", "notes"}.
+
+    An RAA probe is NOT laid out like a hydrolysis probe. The fluorophore and
+    quencher sit on INTERNAL dT residues flanking an abasic site, and the 3'
+    terminus carries a blocking group so the polymerase cannot extend it. Reports
+    previously described every probe as "5'-FAM / 3'-BHQ1 / Internal-THF", which is
+    a TaqMan layout — an oligo house given that string would synthesise the wrong
+    molecule.
+
+    When PrimerLab's labelled sequence is present it is used verbatim as the order
+    string, since it already carries the bracket markup a synthesis provider needs.
+    """
+    labeled = candidate.get("probe_labeled_seq")
+    thf_index = candidate.get("probe_thf_index")
+    p_type = candidate.get("probe_type") or "exo"
+    label_mm = candidate.get("probe_label_mismatches") or 0
+    compliant = candidate.get("probe_compliant")
+    plain = (candidate.get("probe_degenerate_seq") or candidate.get("probe_seq") or "")
+
+    abasic = "THF" if p_type == "exo" else "dR-Biotin"
+    notes = []
+
+    if labeled:
+        # Substitute the configured reporter dye into PrimerLab's markup, which is
+        # written with the engine template's default fluorophore.
+        order_seq = labeled
+        for default_dye in ("FAM", "HEX", "Cy5", "ROX"):
+            if f"[{default_dye}-dT]" in order_seq and default_dye != dye:
+                order_seq = order_seq.replace(f"[{default_dye}-dT]", f"[{dye}-dT]")
+                break
+    else:
+        order_seq = plain
+        notes.append("PrimerLab labelling unavailable; sequence shown unlabelled — "
+                     "do not order from this row without the abasic-site position")
+
+    if thf_index is None:
+        notes.append("abasic-site position unknown")
+    if label_mm:
+        notes.append(f"{label_mm} dT label(s) sit on a non-T base — a deliberate "
+                     f"probe-target mismatch sanctioned by TwistAmp manual 3.1.1, "
+                     f"but probe efficiency may be reduced")
+    elif compliant is False:
+        notes.append("probe geometry outside the documented optimum; see M08 warnings")
+
+    modification = (f"Internal [{dye}-dT] / [{abasic}] / [{quencher}-dT] sandwich, "
+                    f"3'-{blocker} (blocked, non-extendable)")
+
+    return {
+        "order_sequence": order_seq,
+        "modification": modification,
+        "thf_index": thf_index,
+        "probe_type": p_type,
+        "notes": "; ".join(notes),
+    }
+
+
 def screening_methodology_note() -> str:
     """Markdown block explaining what the thresholds mean and where they come from.
 

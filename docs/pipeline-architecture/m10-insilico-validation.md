@@ -31,8 +31,15 @@ A simple mismatch count is not sufficient for evaluating assay performance. Our 
 
 ### 1. 3' Anchoring Penalty (Recombinase Extension Region)
 For RAA and RPA isothermal assays, the recombinase enzyme binds to the primer and initiates strand displacement. Mismatches near the 3' end prevent efficient polymerase extension.
-- **Critical Region (`raa_3prime_bp`)**: The last **8 bp** of the 3' end of either primer.
+- **Critical Region (`raa_3prime_bp`)**: The last **4 bp** of the 3' end of either primer.
 - **Tolerance (`raa_max_3prime_mm`)**: Maximum **1 mismatch** allowed in this region. Exceeding this triggers a hard rejection.
+
+!!! note "Why 4 bp, and what this model still misses"
+    [Higgins et al. 2022, *J Mol Diagn* 24:1207–1216](https://doi.org/10.1016/j.jmoldx.2022.08.005) is the only study that characterises primer–template mismatches specifically in RPA. It defines the primer **anchor region** as the *pre-ante-penultimate to 3'-terminal position* — four nucleotides — and reports that lone mismatches **outside** the terminal position do not significantly affect time to positivity. Even a lone terminal mismatch left the probability of reaction success at 0.877.
+
+    The previous value of **8** had no traceable source and charged positions 5–8 against the strict 3' quota instead of the internal one, so coverage was **understated** for sequences carrying variation there.
+
+    **What this model still does not capture**: the same study found the identity of the mismatched pair to matter as much as its position. A terminal cytosine–cytosine mismatch was the most damaging, followed by guanine–adenine, while adenine–cytosine and thymine–guanine were *"highly tolerated, rarely resulting in amplification failure"*. The pipeline's position-only criterion treats all four alike. Treat borderline candidates accordingly — a rejection driven by a single A–C terminal mismatch is likely over-conservative.
 
 ### 2. Internal Mismatch Tolerance
 - **RAA/RPA**: Up to 4 mismatches are tolerated in the 5' internal region (primer length minus 8 bp) due to the long primer length (30–35 bp) which accommodates higher mismatch loads.

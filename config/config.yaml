@@ -294,7 +294,20 @@ insilico_pcr:
                               # Subtypes with fewer sequences are collapsed into
                               # "Other (rare, n<30)" — cannot be generalized statistically.
   # RAA isothermal amplification binding parameters
-  raa_3prime_bp: 8            # Jumlah bp ujung 3' yang dianggap kritis (recombinase extension)
+  raa_3prime_bp: 4            # Jumlah bp ujung 3' yang dianggap kritis (recombinase extension).
+                              # JUSTIFIKASI: Higgins et al. 2022, J Mol Diagn 24(11):1207-1216
+                              # (doi:10.1016/j.jmoldx.2022.08.005) — satu-satunya studi yang
+                              # secara khusus mengkarakterisasi mismatch primer-template pada
+                              # RPA. Mereka mendefinisikan "anchor region" sebagai posisi
+                              # pre-ante-penultimate sampai terminal 3' = 4 nt terakhir, dan
+                              # menemukan mismatch tunggal DI LUAR posisi terminal tidak
+                              # berdampak signifikan pada time-to-positivity. Nilai 8
+                              # sebelumnya tidak punya sumber dan menghitung posisi 5-8 ke
+                              # kuota ketat, sehingga coverage dilaporkan terlalu rendah.
+                              # CATATAN: paper yang sama menemukan identitas basa lebih
+                              # menentukan daripada posisi (C-C terminal paling merusak;
+                              # A-C dan T-G nyaris selalu ditoleransi). Model posisi-saja
+                              # di sini tidak menangkap itu — lihat docs M10.
   raa_max_3prime_mm: 1        # Maks mismatch yang ditoleransi di region 3' kritis
   raa_max_internal_mm: 4      # Maks mismatch yang ditoleransi di region internal (5')
   raa_probe_max_mm: 5         # Maks TOTAL mismatch probe-target (RAA). Probe TIDAK dinilai

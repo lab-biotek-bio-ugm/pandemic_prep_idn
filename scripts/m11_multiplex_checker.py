@@ -27,6 +27,7 @@ from tools.iupac_utils import (
     compatibility_score,
     check_dye_separation,
     screening_methodology_note,
+    probe_synthesis_spec,
     MAX_DELTA_TM_C,
     MIN_CROSS_DIMER_DG,
     VETO_CROSS_DIMER_DG,
@@ -166,12 +167,12 @@ def run_multiplex_screening(file_a, file_b, out_dir, num_candidates=10,
                     "flu_a": {
                         "fwd": {"deg_seq": fwd_a_deg, "ref_seq": fwd_a_ref, "len": len(fwd_a_deg), "tm": round(tm_fwd_a, 1), "gc": calculate_gc(fwd_a_deg), "pos": f"{cand_a.get('fwd_start')}-{cand_a.get('fwd_end')}"},
                         "rev": {"deg_seq": rev_a_deg, "ref_seq": rev_a_ref, "len": len(rev_a_deg), "tm": round(tm_rev_a, 1), "gc": calculate_gc(rev_a_deg), "pos": f"{cand_a.get('rev_start')}-{cand_a.get('rev_end')}"},
-                        "probe": {"deg_seq": prb_a_deg, "ref_seq": prb_a_ref, "len": len(prb_a_deg), "tm": round(tm_prb_a, 1), "gc": calculate_gc(prb_a_deg), "pos": f"{cand_a.get('probe_start')}-{cand_a.get('probe_end')}", "label": f"5'-{dye_a} / 3'-BHQ1 / Internal-THF"}
+                        "probe": {"deg_seq": prb_a_deg, "ref_seq": prb_a_ref, "len": len(prb_a_deg), "tm": round(tm_prb_a, 1), "gc": calculate_gc(prb_a_deg), "pos": f"{cand_a.get('probe_start')}-{cand_a.get('probe_end')}", "spec": probe_synthesis_spec(cand_a, dye_a)}
                     },
                     "flu_b": {
                         "fwd": {"deg_seq": fwd_b_deg, "ref_seq": fwd_b_ref, "len": len(fwd_b_deg), "tm": round(tm_fwd_b, 1), "gc": calculate_gc(fwd_b_deg), "pos": f"{cand_b.get('fwd_start')}-{cand_b.get('fwd_end')}"},
                         "rev": {"deg_seq": rev_b_deg, "ref_seq": rev_b_ref, "len": len(rev_b_deg), "tm": round(tm_rev_b, 1), "gc": calculate_gc(rev_b_deg), "pos": f"{cand_b.get('rev_start')}-{cand_b.get('rev_end')}"},
-                        "probe": {"deg_seq": prb_b_deg, "ref_seq": prb_b_ref, "len": len(prb_b_deg), "tm": round(tm_prb_b, 1), "gc": calculate_gc(prb_b_deg), "pos": f"{cand_b.get('probe_start')}-{cand_b.get('probe_end')}", "label": f"5'-{dye_b} / 3'-BHQ1 / Internal-THF"}
+                        "probe": {"deg_seq": prb_b_deg, "ref_seq": prb_b_ref, "len": len(prb_b_deg), "tm": round(tm_prb_b, 1), "gc": calculate_gc(prb_b_deg), "pos": f"{cand_b.get('probe_start')}-{cand_b.get('probe_end')}", "spec": probe_synthesis_spec(cand_b, dye_b)}
                     }
                 },
                 "cross_dimers_39c": cross_dimers_raa,
@@ -208,14 +209,24 @@ def run_multiplex_screening(file_a, file_b, out_dir, num_candidates=10,
         f.write("|---|---|---|---|---|---|---|\n")
         f.write(f"| FluA_Fwd | Fwd Primer | `{oligos['flu_a']['fwd']['deg_seq']}` | {oligos['flu_a']['fwd']['len']} nt | {oligos['flu_a']['fwd']['tm']}°C | {oligos['flu_a']['fwd']['gc']}% | Unlabeled |\n")
         f.write(f"| FluA_Rev | Rev Primer | `{oligos['flu_a']['rev']['deg_seq']}` | {oligos['flu_a']['rev']['len']} nt | {oligos['flu_a']['rev']['tm']}°C | {oligos['flu_a']['rev']['gc']}% | Unlabeled |\n")
-        f.write(f"| FluA_Probe | Exo-Probe | `{oligos['flu_a']['probe']['deg_seq']}` | {oligos['flu_a']['probe']['len']} nt | {oligos['flu_a']['probe']['tm']}°C | {oligos['flu_a']['probe']['gc']}% | {oligos['flu_a']['probe']['label']} |\n\n")
+        _sp = oligos['flu_a']['probe']['spec']
+        f.write(f"| FluA_Probe | {_sp['probe_type']}-Probe | `{_sp['order_sequence']}` | {oligos['flu_a']['probe']['len']} nt | {oligos['flu_a']['probe']['tm']}°C | {oligos['flu_a']['probe']['gc']}% | {_sp['modification']} |\n\n")
+        if _sp['thf_index'] is not None:
+            f.write(f"Abasic site at position {_sp['thf_index'] + 1} of the FluA probe (1-based).\n\n")
+        if _sp['notes']:
+            f.write(f"!!! note\n    FluA probe: {_sp['notes']}.\n\n")
 
         f.write(f"#### 🟨 Target B: {label_b} ({dye_b} Channel)\n\n")
         f.write("| Oligo Name | Type | Degenerate Sequence (5' -> 3') | Length | Tm (°C) | GC (%) | Modification / Label |\n")
         f.write("|---|---|---|---|---|---|---|\n")
         f.write(f"| FluB_Fwd | Fwd Primer | `{oligos['flu_b']['fwd']['deg_seq']}` | {oligos['flu_b']['fwd']['len']} nt | {oligos['flu_b']['fwd']['tm']}°C | {oligos['flu_b']['fwd']['gc']}% | Unlabeled |\n")
         f.write(f"| FluB_Rev | Rev Primer | `{oligos['flu_b']['rev']['deg_seq']}` | {oligos['flu_b']['rev']['len']} nt | {oligos['flu_b']['rev']['tm']}°C | {oligos['flu_b']['rev']['gc']}% | Unlabeled |\n")
-        f.write(f"| FluB_Probe | Exo-Probe | `{oligos['flu_b']['probe']['deg_seq']}` | {oligos['flu_b']['probe']['len']} nt | {oligos['flu_b']['probe']['tm']}°C | {oligos['flu_b']['probe']['gc']}% | {oligos['flu_b']['probe']['label']} |\n\n")
+        _sp = oligos['flu_b']['probe']['spec']
+        f.write(f"| FluB_Probe | {_sp['probe_type']}-Probe | `{_sp['order_sequence']}` | {oligos['flu_b']['probe']['len']} nt | {oligos['flu_b']['probe']['tm']}°C | {oligos['flu_b']['probe']['gc']}% | {_sp['modification']} |\n\n")
+        if _sp['thf_index'] is not None:
+            f.write(f"Abasic site at position {_sp['thf_index'] + 1} of the FluB probe (1-based).\n\n")
+        if _sp['notes']:
+            f.write(f"!!! note\n    FluB probe: {_sp['notes']}.\n\n")
 
         f.write("### Cross-Dimer Inter-Assay Interactions\n\n")
         f.write("| Oligo Pair | Cross-Dimer ΔG (39°C) | 3' Anchor | 3'-End ΔG (39°C) | Cross-Dimer ΔG (55°C) |\n")

@@ -266,3 +266,69 @@ def test_probe_threshold_is_wired_end_to_end():
     src = open("scripts/m10_insilico_pcr.py").read()
     # No probe path may still call the primer routine.
     assert "assess_raa_binding(\n                            probe_deg" not in src
+
+
+# --- Synthesis specification for RAA probes -----------------------------------
+
+def test_probe_spec_is_not_a_taqman_layout():
+    """Reports described every probe as "5'-FAM / 3'-BHQ1 / Internal-THF" — a
+    hydrolysis-probe layout. An RAA exo probe carries both dyes on INTERNAL dT
+    residues flanking the abasic site, with a blocking group at the 3' end. An
+    oligo house given the old string would have synthesised the wrong molecule."""
+    spec = iupac.probe_synthesis_spec(
+        {"probe_seq": "ACGT", "probe_type": "exo"}, "FAM")
+    assert "Internal [FAM-dT]" in spec["modification"]
+    assert "blocked, non-extendable" in spec["modification"]
+    assert "5'-FAM" not in spec["modification"]
+    for path in ("scripts/m11_multiplex_checker.py", "scripts/m11_triplex_checker.py"):
+        assert "Internal-THF" not in open(path).read(), f"{path} still emits the old label"
+
+
+def test_probe_spec_uses_primerlab_markup_and_swaps_the_dye():
+    labeled = "GAATTTCAGAGG[FAM-dT]C[THF]A[BHQ1-dT]CGATAGATCGCTA[C3-spacer]"
+    spec = iupac.probe_synthesis_spec(
+        {"probe_labeled_seq": labeled, "probe_thf_index": 30,
+         "probe_type": "exo", "probe_compliant": True}, "HEX")
+    assert "[HEX-dT]" in spec["order_sequence"]
+    assert "[FAM-dT]" not in spec["order_sequence"]
+    assert spec["thf_index"] == 30
+    assert spec["notes"] == ""
+
+
+def test_probe_spec_refuses_to_look_orderable_without_labelling():
+    """A bare sequence with no abasic-site position is not an orderable probe;
+    saying so is the difference between a warning and a wasted synthesis order."""
+    spec = iupac.probe_synthesis_spec({"probe_seq": "ACGTACGT"}, "FAM")
+    assert "do not order" in spec["notes"]
+    assert "position unknown" in spec["notes"]
+
+
+def test_probe_spec_reports_deliberate_label_mismatches():
+    spec = iupac.probe_synthesis_spec(
+        {"probe_labeled_seq": "AC[FAM-dT][THF][BHQ1-dT]GT", "probe_thf_index": 30,
+         "probe_label_mismatches": 2, "probe_compliant": False}, "FAM")
+    assert "non-T base" in spec["notes"]
+
+
+def test_probe_labelling_is_forwarded_by_m09():
+    """PrimerLab exports the fields, but M11 only sees what M09 puts in
+    final_candidates.json."""
+    src = open("scripts/m09_blast_verification.py").read()
+    for field in ("probe_labeled_seq", "probe_thf_index", "probe_type",
+                  "probe_label_mismatches", "probe_compliant"):
+        assert f'"{field}":' in src, f"M09 does not forward {field}"
+
+
+# --- Primer 3' anchor region --------------------------------------------------
+
+def test_raa_3prime_window_matches_the_published_anchor_region():
+    """Higgins et al. 2022 (J Mol Diagn 24:1207-1216) define the RPA primer anchor
+    region as pre-ante-penultimate to 3'-terminal — 4 nt — and found lone
+    mismatches outside the terminal position not to significantly affect
+    time-to-positivity. The previous value of 8 had no source and charged
+    positions 5-8 against the strict 3' quota, understating coverage."""
+    import yaml
+    cfg = yaml.safe_load(open("config/config.yaml"))
+    assert cfg["insilico_pcr"]["raa_3prime_bp"] == 4
+    raw = open("config/config.yaml").read()
+    assert "jmoldx.2022.08.005" in raw, "the threshold is not traceable to its source"

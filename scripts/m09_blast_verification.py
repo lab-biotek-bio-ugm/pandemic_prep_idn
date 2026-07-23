@@ -619,6 +619,16 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
         fwd_possible_seqs    = fwd_info.get("possible_sequences", [])
         rev_possible_seqs    = rev_info.get("possible_sequences", [])
         probe_possible_seqs  = probe_info.get("possible_sequences", []) if probe_info else []
+
+        # Probe labelling detail from PrimerLab. Carried through so the synthesis
+        # specification can state the exact abasic-site position an oligo house
+        # needs, and so mismatch reporting can discount the dT labels that were
+        # deliberately placed on a non-T base (see docs M08).
+        probe_labeled_seq    = probe_info.get("labeled_sequence") if probe_info else None
+        probe_type           = probe_info.get("probe_type") if probe_info else None
+        probe_thf_index      = probe_info.get("thf_index") if probe_info else None
+        probe_label_mm       = probe_info.get("probe_label_mismatches", 0) if probe_info else 0
+        probe_compliant      = probe_info.get("probe_compliant") if probe_info else None
         
         fwd_tm = fwd_info.get("tm", "-")
         rev_tm = rev_info.get("tm", "-")
@@ -678,6 +688,11 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
             "fwd_possible_seqs": fwd_possible_seqs,
             "rev_possible_seqs": rev_possible_seqs,
             "probe_possible_seqs": probe_possible_seqs,
+            "probe_labeled_seq": probe_labeled_seq,
+            "probe_type": probe_type,
+            "probe_thf_index": probe_thf_index,
+            "probe_label_mismatches": probe_label_mm,
+            "probe_compliant": probe_compliant,
             "fwd_start": fwd_start_v,
             "fwd_end": fwd_end_v,
             "rev_start": rev_start_v,

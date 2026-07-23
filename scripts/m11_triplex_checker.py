@@ -27,6 +27,7 @@ from tools.iupac_utils import (
     compatibility_score,
     check_dye_separation,
     screening_methodology_note,
+    probe_synthesis_spec,
     MAX_DELTA_TM_C,
     MIN_CROSS_DIMER_DG,
     VETO_CROSS_DIMER_DG,
@@ -202,17 +203,17 @@ def run_triplex_screening(file_a, file_b, file_c, out_dir, num_candidates=10,
                         "flu_a": {
                             "fwd": fwd_a, "rev": rev_a, "probe": prb_a,
                             "fwd_tm": round(tm_fwd_a, 1), "rev_tm": round(tm_rev_a, 1), "probe_tm": round(tm_prb_a, 1),
-                            "probe_label": f"5'-{dye_a} / 3'-BHQ1 / Internal-THF"
+                            "probe_spec": probe_synthesis_spec(cand_a, dye_a, quencher="BHQ1")
                         },
                         "flu_b": {
                             "fwd": fwd_b, "rev": rev_b, "probe": prb_b,
                             "fwd_tm": round(tm_fwd_b, 1), "rev_tm": round(tm_rev_b, 1), "probe_tm": round(tm_prb_b, 1),
-                            "probe_label": f"5'-{dye_b} / 3'-BHQ1 / Internal-THF"
+                            "probe_spec": probe_synthesis_spec(cand_b, dye_b, quencher="BHQ1")
                         },
                         "measles": {
                             "fwd": fwd_c, "rev": rev_c, "probe": prb_c,
                             "fwd_tm": round(tm_fwd_c, 1), "rev_tm": round(tm_rev_c, 1), "probe_tm": round(tm_prb_c, 1),
-                            "probe_label": f"5'-{dye_c} / 3'-BHQ2 / Internal-THF"
+                            "probe_spec": probe_synthesis_spec(cand_c, dye_c, quencher="BHQ2")
                         }
                     },
                     "cross_dimers_39c": cross_dimers_39c,
@@ -251,7 +252,12 @@ def run_triplex_screening(file_a, file_b, file_c, out_dir, num_candidates=10,
         f.write("|---|---|---|---|---|\n")
         f.write(f"| FluA_Fwd | Fwd Primer | `{r1['oligos_synthesis']['flu_a']['fwd']}` | {r1['oligos_synthesis']['flu_a']['fwd_tm']}°C | Unlabeled |\n")
         f.write(f"| FluA_Rev | Rev Primer | `{r1['oligos_synthesis']['flu_a']['rev']}` | {r1['oligos_synthesis']['flu_a']['rev_tm']}°C | Unlabeled |\n")
-        f.write(f"| FluA_Probe | Exo-Probe | `{r1['oligos_synthesis']['flu_a']['probe']}` | {r1['oligos_synthesis']['flu_a']['probe_tm']}°C | {r1['oligos_synthesis']['flu_a']['probe_label']} |\n\n")
+        _sp = r1['oligos_synthesis']['flu_a']['probe_spec']
+        f.write(f"| FluA_Probe | {_sp['probe_type']}-Probe | `{_sp['order_sequence']}` | {r1['oligos_synthesis']['flu_a']['probe_tm']}°C | {_sp['modification']} |\n\n")
+        if _sp['thf_index'] is not None:
+            f.write(f"Abasic site at position {_sp['thf_index'] + 1} of the FluA probe (1-based).\n\n")
+        if _sp['notes']:
+            f.write(f"!!! note\n    FluA probe: {_sp['notes']}.\n\n")
         
         # Target B (Flu B)
         f.write(f"#### 🟨 Target B: {label_b} ({dye_b} Channel)\n")
@@ -259,7 +265,12 @@ def run_triplex_screening(file_a, file_b, file_c, out_dir, num_candidates=10,
         f.write("|---|---|---|---|---|\n")
         f.write(f"| FluB_Fwd | Fwd Primer | `{r1['oligos_synthesis']['flu_b']['fwd']}` | {r1['oligos_synthesis']['flu_b']['fwd_tm']}°C | Unlabeled |\n")
         f.write(f"| FluB_Rev | Rev Primer | `{r1['oligos_synthesis']['flu_b']['rev']}` | {r1['oligos_synthesis']['flu_b']['rev_tm']}°C | Unlabeled |\n")
-        f.write(f"| FluB_Probe | Exo-Probe | `{r1['oligos_synthesis']['flu_b']['probe']}` | {r1['oligos_synthesis']['flu_b']['probe_tm']}°C | {r1['oligos_synthesis']['flu_b']['probe_label']} |\n\n")
+        _sp = r1['oligos_synthesis']['flu_b']['probe_spec']
+        f.write(f"| FluB_Probe | {_sp['probe_type']}-Probe | `{_sp['order_sequence']}` | {r1['oligos_synthesis']['flu_b']['probe_tm']}°C | {_sp['modification']} |\n\n")
+        if _sp['thf_index'] is not None:
+            f.write(f"Abasic site at position {_sp['thf_index'] + 1} of the FluB probe (1-based).\n\n")
+        if _sp['notes']:
+            f.write(f"!!! note\n    FluB probe: {_sp['notes']}.\n\n")
         
         # Target C (Measles)
         f.write(f"#### 🟦 Target C: {label_c} ({dye_c} Channel)\n")
@@ -267,7 +278,12 @@ def run_triplex_screening(file_a, file_b, file_c, out_dir, num_candidates=10,
         f.write("|---|---|---|---|---|\n")
         f.write(f"| Measles_Fwd | Fwd Primer | `{r1['oligos_synthesis']['measles']['fwd']}` | {r1['oligos_synthesis']['measles']['fwd_tm']}°C | Unlabeled |\n")
         f.write(f"| Measles_Rev | Rev Primer | `{r1['oligos_synthesis']['measles']['rev']}` | {r1['oligos_synthesis']['measles']['rev_tm']}°C | Unlabeled |\n")
-        f.write(f"| Measles_Probe | Exo-Probe | `{r1['oligos_synthesis']['measles']['probe']}` | {r1['oligos_synthesis']['measles']['probe_tm']}°C | {r1['oligos_synthesis']['measles']['probe_label']} |\n\n")
+        _sp = r1['oligos_synthesis']['measles']['probe_spec']
+        f.write(f"| Measles_Probe | {_sp['probe_type']}-Probe | `{_sp['order_sequence']}` | {r1['oligos_synthesis']['measles']['probe_tm']}°C | {_sp['modification']} |\n\n")
+        if _sp['thf_index'] is not None:
+            f.write(f"Abasic site at position {_sp['thf_index'] + 1} of the Measles probe (1-based).\n\n")
+        if _sp['notes']:
+            f.write(f"!!! note\n    Measles probe: {_sp['notes']}.\n\n")
         
         # Cross dimer detail. The listing threshold is deliberately more permissive
         # than the PASS threshold so a reader can see what sits just short of it;
