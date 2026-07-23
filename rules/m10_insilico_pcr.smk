@@ -40,8 +40,19 @@ def get_m10_m09_dirs(wildcards):
     ])
 
 def get_m10_threads(wildcards):
-    """Return the number of threads to use. Defaults to 8 if not defined (e.g. during unlock)."""
-    return workflow.cores if (workflow.cores is not None) else 8
+    """Return the number of threads to use. Defaults to 8 if not defined.
+
+    `workflow.cores` RAISES WorkflowError when --cores was not supplied; it does
+    not return None. The previous `is not None` guard therefore triggered the very
+    error it was written to avoid, so a plain `snakemake -n` (or --unlock) aborted
+    with "Workflow requires a total number of cores to be defined" as soon as this
+    rule was reached, even though a dry run needs no cores at all.
+    """
+    try:
+        cores = workflow.cores
+    except Exception:
+        return 8
+    return cores if cores else 8
 
 rule m10_insilico_pcr:
     """

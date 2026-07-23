@@ -553,3 +553,17 @@ def test_all_configs_carry_the_durability_multiplier():
         scoring = yaml.safe_load(open(path)).get("bridge", {}).get("scoring", {})
         assert "core" not in scoring, f"{path} still defines core weights"
         assert "durability" in scoring.get("multipliers", {}), f"{path} lacks durability"
+
+
+def test_m10_thread_helper_survives_a_dry_run_without_cores():
+    """`workflow.cores` RAISES WorkflowError when --cores was not supplied — it
+    does not return None. The old `workflow.cores if workflow.cores is not None
+    else 8` guard therefore triggered the very error it existed to prevent, so a
+    plain `snakemake -n` aborted with "Workflow requires a total number of cores
+    to be defined" the moment the DAG reached m10, even though a dry run needs no
+    cores at all. Same for `--unlock`, which the docstring explicitly named.
+    """
+    src = open("rules/m10_insilico_pcr.smk").read()
+    assert "workflow.cores is not None" not in src, "the broken guard is back"
+    assert "try:" in src.split("def get_m10_threads")[1].split("rule ")[0], \
+        "get_m10_threads must guard the access with try/except, not a None check"
