@@ -22,7 +22,11 @@ concurrency:
 
 jobs:
   build-deploy:
+    # See the note in tests.yml: dormant on the upstream lab repository, which
+    # would otherwise spend the lab's quota AND publish to their cf-pages branch.
+    if: github.repository == 'engkinandatama/pandemic-preparedness'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4

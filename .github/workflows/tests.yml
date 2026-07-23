@@ -17,9 +17,21 @@ on:
       - 'Snakefile'
   workflow_dispatch:
 
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   unit-tests:
+    # Runs only on the fork that owns this CI. The upstream lab repository
+    # (lab-biotek-bio-ugm/pandemic_prep_idn) is private, so any workflow running there
+    # spends the LAB's Actions quota -- including runs triggered by pull requests, which
+    # are billed to the base repository rather than the fork. Keeping the file present
+    # but dormant means the lab decides for itself whether to switch CI on; change or
+    # drop this condition to enable it.
+    if: github.repository == 'engkinandatama/pandemic-preparedness'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,7 +51,9 @@ jobs:
         run: pytest -q
 
   dag-validation:
+    if: github.repository == 'engkinandatama/pandemic-preparedness'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
