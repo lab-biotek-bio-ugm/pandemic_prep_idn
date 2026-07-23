@@ -27,6 +27,32 @@ A successful dry-run returns a job count table with zero warnings or errors. Com
 
 ## 2. Unit Testing Python Scripts
 
+### Automated pytest suite
+
+A `pytest` suite in `tests/` covers the correctness-critical scientific functions
+(entropy scoring, RAA primer binding, dye-channel separation, QC column detection).
+These are regression guards for previously-fixed bugs — run them before every commit:
+
+```bash
+pytest -q
+```
+
+The suite and a Snakemake dry-run also run automatically in CI
+(`.github/workflows/tests.yml`) on every push/PR that touches `scripts/`, `rules/`,
+`tests/`, or the `Snakefile`. The dry-run step fails on rule-definition errors
+(e.g. a wildcard that appears only in `input`), catching DAG breakage without data.
+
+Current coverage:
+
+| Test file | Guards |
+|---|---|
+| `tests/test_m07_entropy.py` | Gap-inclusive Shannon entropy; deletion hotspots score low, not "perfectly conserved" |
+| `tests/test_m10_raa_binding.py` | Reverse-primer 3'-terminus orientation in RAA mismatch tolerance |
+| `tests/test_m11_dye_and_utils.py` | Spectral dye-channel collision detection; export active-target filter |
+| `tests/test_qc_prefilter.py` | M02 subtype-scarcity filter runs on the post-sanitize `strain`/`subtype` schema |
+
+### Running scripts directly
+
 The scripts in `scripts/` perform data sanitisation, filtering, scoring, and output generation. They are designed as standard modular Python files that can be run independently of Snakemake.
 
 ### Setting up a Test Environment

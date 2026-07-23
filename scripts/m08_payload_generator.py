@@ -1,6 +1,12 @@
 import argparse
+import sys
 import yaml
 from pathlib import Path
+
+# Shared with m08_degenerate_rescue: the Primer3 design template and the rescue
+# back-mapping MUST resolve to the same sequence.
+sys.path.insert(0, str(Path(__file__).resolve().parent / "tools"))
+from design_template import detect_full_segment_strategy, template_region
 
 def generate_payload(manifest_path, template_path, out_dir, args=None):
     # 1. Baca manifest M07
@@ -31,11 +37,20 @@ def generate_payload(manifest_path, template_path, out_dir, args=None):
     blast_targeted_check = getattr(args, "blast_targeted_check", None) if args else None
     blast_targeted_db_path = getattr(args, "blast_targeted_db_path", None) if args else None
     mode = getattr(args, "mode", "non_degenerate") if args else "non_degenerate"
-    if mode == "degenerate":
+    # Mode-specific entropy threshold. argparse used to default this to 0.50, so
+    # `getattr(args, "entropy_threshold", 0.80)` ALWAYS found the attribute and the
+    # degenerate branch was dead code — degenerate mode excluded wobble positions
+    # just as aggressively as non-degenerate, defeating its purpose. The CLI default
+    # is now None so an explicit value wins and otherwise the mode default applies.
+    # Values are on the 5-symbol {A,T,G,C,-} entropy scale (see M07).
+    explicit_threshold = getattr(args, "entropy_threshold", None) if args else None
+    if explicit_threshold is not None:
+        entropy_threshold = explicit_threshold
+    elif mode == "degenerate":
         # Loose threshold for degenerate mode so we don't exclude wobble bases
-        entropy_threshold = getattr(args, "entropy_threshold", 0.80) if args else 0.80
+        entropy_threshold = 0.93
     else:
-        entropy_threshold = getattr(args, "entropy_threshold", 0.50) if args else 0.50
+        entropy_threshold = 0.58
     # Minimum consecutive excluded positions to form a block — prevents hundreds of tiny
     # 1-2bp wobble-position blocks from blocking all primer placement in Primer3.
     # Default 10: only continuous variable stretches ≥10bp (like UTRs) are excluded.
@@ -46,17 +61,15 @@ def generate_payload(manifest_path, template_path, out_dir, args=None):
         print("[M08] WARNING: No candidate regions found in manifest.")
         return
 
-    # 3. Analisis strategi manifest
-    lengths = [len(r['sequences']['consensus_sequence']) for r in candidate_regions]
-    max_len = max(lengths)
-    min_len = min(lengths)
-    is_full_segment_strategy = (max_len - min_len > 100) or (max_len > 500)
-    
+    # 3. Analisis strategi manifest — resolved via the shared helper so
+    #    m08_degenerate_rescue back-maps against the SAME template sequence.
+    is_full_segment_strategy = detect_full_segment_strategy(candidate_regions)
+
     if is_full_segment_strategy:
-        # Cari sekuens konsensus terpanjang sebagai representasi full segment
-        full_segment_region = max(candidate_regions, key=lambda r: len(r['sequences']['consensus_sequence']))
+        full_segment_region = template_region(candidate_regions)
         full_segment_seq = full_segment_region['sequences']['consensus_sequence']
-        print(f"[M08] Detected full-segment strategy. Base template sequence length: {len(full_segment_seq)} bp")
+        print(f"[M08] Detected full-segment strategy. Base template sequence: "
+              f"{full_segment_region.get('region_id')} ({len(full_segment_seq)} bp)")
     else:
         full_segment_seq = None
         print(f"[M08] Detected windowed strategy. Slices will be designed independently.")
@@ -235,7 +248,9 @@ if __name__ == "__main__":
     parser.add_argument("--blast-local-db-path", type=str, help="Override local blast database path")
     parser.add_argument("--blast-targeted-check", type=str, help="Override blast targeted check (true/false)")
     parser.add_argument("--blast-targeted-db-path", type=str, help="Override targeted blast database path")
-    parser.add_argument("--entropy-threshold", type=float, default=0.50, help="Entropy threshold for exclusion (Shannon entropy)")
+    parser.add_argument("--entropy-threshold", type=float, default=None,
+                        help="Entropy threshold for exclusion (Shannon entropy, 5-symbol scale). "
+                             "Unset = mode default: 0.58 non-degenerate, 0.93 degenerate.")
     parser.add_argument("--min-exclusion-block-length", type=int, default=10, help="Minimum consecutive excluded positions to form a block (prevents tiny wobble-position blocks from blocking all primers)")
     parser.add_argument("--mode", default="non_degenerate", choices=["non_degenerate", "degenerate"], help="Design mode (degenerate vs non_degenerate)")
     

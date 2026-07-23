@@ -186,6 +186,7 @@ timetree:
 hyphy:
   threads: 8
   p_value_threshold: 0.1
+  min_sequences_for_selection: 10
   methods:
     - "FUBAR"
     - "MEME"
@@ -207,6 +208,7 @@ hyphy:
 |---|---|---|---|
 | `hyphy.threads` | Integer | `32` | CPU threads per HyPhy method. Note: HyPhy scales poorly beyond 8–12 threads for short alignments; more threads allow more parallel jobs. |
 | `hyphy.p_value_threshold` | Float | `0.1` | MEME p-value threshold below which a site is considered under episodic selection. |
+| `hyphy.min_sequences_for_selection` | Integer | `10` | Sequence count below which a FUBAR/MEME failure is accepted as a genuine small cohort and soft-fails to a labelled empty result. At or above it, a HyPhy failure is a **real** error (malformed tree, tree/alignment tip mismatch, OOM) and aborts the run — so a broken analysis is never silently read downstream as "no selection detected". |
 | `hyphy.methods` | List | `["FUBAR"]` | HyPhy methods to run. Options: `FUBAR`, `MEME`, `GARD`. Add `GARD` only for non-segmented viruses. |
 | `hyphy.target_genes` | List | `["ALL"]` | Genes to process. `ALL` uses all CDS genes detected from the GFF3. Specify gene names (e.g., `["M1", "M2"]`) to restrict. |
 | `hyphy.subsample.enabled` | Boolean | `false` | Enable diversity-aware subsampling before HyPhy. Recommended for datasets > 1,000 sequences. |
@@ -401,3 +403,51 @@ insilico_pcr:
 | `insilico_pcr.raa_3prime_bp` | Integer | `8` | Number of 3' terminal bases subject to the strict 3' mismatch rule (recombinase extension region). |
 | `insilico_pcr.raa_max_3prime_mm` | Integer | `1` | Maximum mismatches tolerated in the 3' critical region (`raa_3prime_bp` bases). Exceeding this is a hard rejection for RAA assays. |
 | `insilico_pcr.raa_max_internal_mm` | Integer | `4` | Maximum mismatches tolerated in the 5' internal region (primer length minus `raa_3prime_bp`). |
+
+---
+
+## M11: Multiplex Compatibility & Supplementary Reporting
+
+```yaml
+multiplex:
+  dyes:
+    influenza-a-mp-indo-only: "FAM"
+    influenza-b-mp-indo-only: "HEX"
+    measles-indo-only: "Cy5"
+  labels:
+    influenza-a-mp-indo-only: "Influenza A MP"
+
+active_targets: []
+supplementary_mirror_dir: ""
+```
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| `multiplex.dyes` | Mapping | `{}` | Maps `build_name` to its probe fluorophore. Only needed when invoking the M11 rules **directly via Snakemake**, because the Snakefile loads a single target's config and cannot infer another build's dye. A build absent from this map resolves to `UNRESOLVED`, which the channel check reports as `UNKNOWN` rather than silently asserting spectral separation. |
+| `multiplex.labels` | Mapping | `{}` | Maps `build_name` to a display name used in multiplex report headings. Defaults to the build name. |
+| `active_targets` | List | `[]` | Restricts **all** supplementary sheets to these targets. Accepts canonical virus tokens (`influenza-a`) or full build names (`influenza-a-mp-indo-only`). Empty = auto-detect from `results/`. Prevents builds from earlier runs (e.g. a previous Measles run) leaking into exported workbooks. |
+| `supplementary_mirror_dir` | String | `""` | Optional directory to copy `supplementary/` into after export. Empty disables mirroring. |
+
+<Note>
+When using the batch orchestrator (`scripts/run_multiplex_batch.py`, or the
+`run_multiplex_batch.sh` wrapper), you do **not** need `multiplex.dyes` or
+`active_targets`: the orchestrator reads each target's own config and resolves the
+dye from `primerlab.template` → `parameters.probe.labels.fluorophore`, then passes
+the active targets to the exporter automatically. A target config may override the
+resolved dye with a top-level `dye:` (or `primerlab.dye:`) and set a report name
+with `target_label:`.
+</Note>
+
+### Dye channel reference
+
+Two targets sharing a detection channel cannot be distinguished, so the
+compatibility check vetoes the combination (score `0`).
+
+| Channel | Fluorophores |
+|---|---|
+| green | FAM, SYBR, SYTO9, Alexa488 |
+| yellow | HEX, VIC, JOE, TET, Yakima |
+| orange | Cy3, NED, TAMRA, ATTO550 |
+| red | ROX, Texas Red, CAL Red 610 |
+| far-red | Cy5, Quasar 670, ATTO647N |
+| infrared | Cy5.5, Quasar 705 |

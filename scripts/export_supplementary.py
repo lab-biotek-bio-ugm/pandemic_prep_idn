@@ -70,6 +70,57 @@ EXPORT_DATE = datetime.now().strftime("%Y-%m-%d %H:%M")
 # Module-level default — overwritten by main() after auto-detection
 ACTIVE_TARGETS: list = []
 
+# Canonical virus tokens used to identify a build/multiplex's constituent targets.
+_KNOWN_VIRUSES = [
+    "influenza-a", "influenza-b", "measles",
+    "rsv-a", "rsv-b", "sars-cov-2", "dengue",
+]
+
+
+def _viruses_in(text: str) -> list:
+    t = (text or "").lower()
+    return [v for v in _KNOWN_VIRUSES if v in t]
+
+
+def is_multiplex_active(name: str, result_path=None) -> bool:
+    """True if a multiplex/triplex output should be exported under the active filter.
+
+    A multiplex is excluded when it references any KNOWN virus that is not in
+    ACTIVE_TARGETS (e.g. a triplex containing Measles when only Influenza A/B are
+    active).
+
+    The directory name alone is NOT sufficient: the batch orchestrator writes every
+    triplex to the literal path `results/multiplex-triplex-all-3`, which contains no
+    virus token at all. Falling back to "keep it" on an uninformative name is exactly
+    how Measles rows kept reaching the Influenza-only workbooks. So when the name
+    identifies nothing, we inspect the result file's own combination IDs.
+    """
+    present_known = _viruses_in(name)
+
+    if not present_known and result_path is not None:
+        try:
+            with open(result_path, "r") as f:
+                data = json.load(f)
+            probe = " ".join(
+                str(rec.get("triplex_id") or rec.get("pair_id") or rec.get("combo_id") or "")
+                for rec in (data[:50] if isinstance(data, list) else [])
+            )
+            present_known = _viruses_in(probe)
+        except Exception as e:
+            print(f"  ⚠ Could not inspect {result_path} for target filtering: {e}")
+
+    if not present_known:
+        # Genuinely unidentifiable: keep, but say so rather than filtering silently.
+        print(f"  ⚠ '{name}': constituent viruses not identifiable — kept without target filtering.")
+        return True
+
+    # ACTIVE_TARGETS may hold canonical virus tokens ("influenza-a") or full build
+    # names ("influenza-a-mp-indo-only"), so match in both directions.
+    def _active(v: str) -> bool:
+        return any(v == a or v in a or a in v for a in ACTIVE_TARGETS)
+
+    return all(_active(v) for v in present_known)
+
 CANDIDATE_COLUMNS = {
     "rank": "Rank", "status": "Status", "final_score": "Final Score", "tier": "Tier",
     "amplicon_start": "Amplicon Start (bp)", "amplicon_end": "Amplicon End (bp)", "amplicon_length": "Amplicon Length (bp)",
@@ -289,9 +340,10 @@ def create_executive_summary(results_root: Path, outdir: Path):
     if not combo_files:
         combo_files = [p for p in sorted(results_root.glob("**/multiplex_candidates.json"))
                        if "triplex" not in p.parent.name.lower()]
-    # Keep only files that belong to at least one active target
-    combo_files = [p for p in combo_files
-                   if any(t in str(p).lower() for t in ACTIVE_TARGETS)]
+    # Keep only multiplex files whose constituent viruses are ALL active. Using
+    # "any active target present" here was the leak that let a Flu+Measles triplex
+    # through on the Influenza token alone, printing Measles rows into the orders sheet.
+    combo_files = [p for p in combo_files if is_multiplex_active(p.parent.name, p)]
 
     order_rows = []
     n_targets = 0
@@ -361,6 +413,7 @@ def create_executive_summary(results_root: Path, outdir: Path):
     pair_rows = []
     for pf in pair_files:
         if "triplex" in pf.parent.name: continue
+        if not is_multiplex_active(pf.parent.name, pf): continue  # respect active target filter
         with open(pf, "r") as f:
             p_data = json.load(f)
             for rec in p_data:
@@ -400,10 +453,12 @@ def create_executive_summary(results_root: Path, outdir: Path):
     blast_files = list(results_root.glob("**/blast_specificity_summary.csv"))
     blast_dfs = []
     for bf in blast_files:
+        cohort = bf.parent.parent.parent.parent.name
+        if not any(t in cohort.lower() for t in ACTIVE_TARGETS): continue  # respect active target filter
         try:
             # Read columns as object/str to keep original text like "58.94 - 64.98 °C" intact
             b_df = pd.read_csv(bf, dtype=object)
-            b_df.insert(0, "Build Cohort", bf.parent.parent.parent.parent.name)
+            b_df.insert(0, "Build Cohort", cohort)
             blast_dfs.append(b_df)
         except Exception: pass
 
@@ -537,6 +592,9 @@ def export_s3_multiplex(results_root: Path, outdir: Path):
         if not m_dir.is_dir(): continue
         jf = m_dir / "triplex_candidates.json" if (m_dir / "triplex_candidates.json").exists() else m_dir / "multiplex_candidates.json"
         if not jf.exists(): continue
+        # Pass the result file so an uninformative directory name (e.g. the
+        # orchestrator's literal "multiplex-triplex-all-3") still gets filtered.
+        if not is_multiplex_active(m_dir.name, jf): continue
         with open(jf, "r") as f: data = json.load(f)
         if not data: continue
         rows = []
@@ -639,6 +697,11 @@ def main():
         help="Exclude specific virus targets from ALL sheets (e.g. --exclude-targets measles rsv-a)"
     )
     parser.add_argument(
+        "--active-targets", nargs="*", default=None, metavar="TARGET",
+        help="Explicitly set the active targets (overrides auto-detection). "
+             "Restricts ALL sheets, including S3 multiplex, to only these builds/viruses."
+    )
+    parser.add_argument(
         "configs", nargs="*",
         help="Optional config YAML files to restrict output to only matching targets"
     )
@@ -653,10 +716,6 @@ def main():
     # Auto-detect active targets from build directories in results/
     # No hardcoded virus names — works for any N-plex combination
     # ---------------------------------------------------------------------------
-    _KNOWN_VIRUSES = [
-        "influenza-a", "influenza-b", "measles",
-        "rsv-a", "rsv-b", "sars-cov-2", "dengue",
-    ]
     found: set = set()
     if results_root.exists():
         for d in results_root.iterdir():
@@ -685,7 +744,12 @@ def main():
 
     # Apply --exclude-targets
     excluded = {e.lower().strip() for e in (args.exclude_targets or [])}
-    active_targets = sorted(found - excluded)
+
+    # An explicit --active-targets overrides auto-detection entirely.
+    if args.active_targets:
+        active_targets = sorted({a.lower().strip() for a in args.active_targets} - excluded)
+    else:
+        active_targets = sorted(found - excluded)
 
     if not active_targets:
         # Safety fallback: include all known viruses if nothing detected

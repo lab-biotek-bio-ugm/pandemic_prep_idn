@@ -14,6 +14,27 @@ import itertools
 from pathlib import Path
 import primer3
 
+# Shared with m08_payload_generator so the Primer3 design template and the
+# rescue back-mapping can never resolve to different sequences.
+sys.path.insert(0, str(Path(__file__).resolve().parent / "tools"))
+from design_template import resolve_design_template
+
+# Worst-case ΔG sentinel used when a primer3 thermodynamic call fails: fail-closed
+# so an evaluation error can never be mistaken for a structure-free (safe) primer.
+_THERMO_FAIL_DG = -99.0
+
+
+def _fmt_dg(value):
+    """Render a ΔG for humans. The fail-closed sentinel must never be shown as a
+    real measurement — a bench scientist reading "-99.00 kcal/mol" would think the
+    oligo has catastrophic secondary structure rather than that primer3 errored."""
+    try:
+        if float(value) <= _THERMO_FAIL_DG:
+            return "NA (thermodynamic evaluation failed)"
+    except (TypeError, ValueError):
+        return "NA"
+    return f"{value:.2f} kcal/mol"
+
 # IUPAC degeneracy nucleotide mapping
 IUPAC_DICT = {
     'R': ['A', 'G'], 'Y': ['C', 'T'], 'S': ['G', 'C'], 'W': ['A', 'T'],
@@ -89,6 +110,7 @@ def evaluate_thermodynamics(possible_seqs: list, thermo_mode: str = "worst_case"
     gcs = []
     hairpin_dgs = []
     homodimer_dgs = []
+    thermo_failed = False  # fail-closed: a primer3 error must not read as "no structure"
 
     for seq in possible_seqs:
         # Tm calculation using primer3
@@ -96,26 +118,32 @@ def evaluate_thermodynamics(possible_seqs: list, thermo_mode: str = "worst_case"
             tm = primer3.calc_tm(seq)
             tms.append(tm)
         except Exception:
-            # Fallback Tm
+            # Fallback Tm (Wallace rule) is an accepted approximation, not a safety gate.
             w_a = seq.count('A') + seq.count('T')
             g_c = seq.count('G') + seq.count('C')
             tms.append(2 * w_a + 4 * g_c)
 
         gcs.append(calculate_gc(seq))
 
-        # Hairpin using primer3 (cal to kcal)
+        # Hairpin using primer3 (cal to kcal). On failure we CANNOT assume the primer
+        # is structure-free (that would silently pass a bad primer), so record the
+        # worst-case sentinel and flag the candidate as unverifiable.
         try:
             hp = primer3.calc_hairpin(seq).dg / 1000.0
             hairpin_dgs.append(hp)
-        except Exception:
-            hairpin_dgs.append(0.0)
+        except Exception as e:
+            print(f"[Rescue][WARN] primer3 hairpin failed for '{seq}': {e} — flagging QC as failed.")
+            hairpin_dgs.append(_THERMO_FAIL_DG)
+            thermo_failed = True
 
         # Homodimer using primer3
         try:
             hd = primer3.calc_homodimer(seq).dg / 1000.0
             homodimer_dgs.append(hd)
-        except Exception:
-            homodimer_dgs.append(0.0)
+        except Exception as e:
+            print(f"[Rescue][WARN] primer3 homodimer failed for '{seq}': {e} — flagging QC as failed.")
+            homodimer_dgs.append(_THERMO_FAIL_DG)
+            thermo_failed = True
 
     # Heterodimers between different sequences in the same pool (if any)
     cross_self_dgs = []
@@ -124,8 +152,10 @@ def evaluate_thermodynamics(possible_seqs: list, thermo_mode: str = "worst_case"
             try:
                 ht = primer3.calc_heterodimer(seq1, seq2).dg / 1000.0
                 cross_self_dgs.append(ht)
-            except Exception:
-                cross_self_dgs.append(0.0)
+            except Exception as e:
+                print(f"[Rescue][WARN] primer3 heterodimer failed for '{seq1}'/'{seq2}': {e} — flagging QC as failed.")
+                cross_self_dgs.append(_THERMO_FAIL_DG)
+                thermo_failed = True
 
     # Determine aggregated values
     min_tm = min(tms)
@@ -151,12 +181,18 @@ def evaluate_thermodynamics(possible_seqs: list, thermo_mode: str = "worst_case"
         "gc_avg": avg_gc,
         "worst_hairpin_dg": worst_hairpin,
         "worst_homodimer_dg": worst_homodimer,
+        "thermo_failed": thermo_failed,
         "tm_str": f"{min_tm:.2f} - {max_tm:.2f} °C" if min_tm != max_tm else f"{min_tm:.2f} °C",
         "gc_str": f"{min_gc:.2f} - {max_gc:.2f} %" if min_gc != max_gc else f"{min_gc:.2f} %"
     }
 
 def calculate_cross_heterodimer_worst(seqs1: list, seqs2: list) -> float:
-    """Calculates the worst-case (most negative) heterodimer dG between two pools."""
+    """Calculates the worst-case (most negative) heterodimer dG between two pools.
+
+    A primer3 failure returns the fail-closed sentinel rather than leaving the
+    result at 0.0 ("no cross-dimer"), which would let an unevaluable oligo pair
+    pass the cross-dimer gate.
+    """
     worst_dg = 0.0
     for seq1 in seqs1:
         for seq2 in seqs2:
@@ -164,8 +200,10 @@ def calculate_cross_heterodimer_worst(seqs1: list, seqs2: list) -> float:
                 hd = primer3.calc_heterodimer(seq1, seq2).dg / 1000.0
                 if hd < worst_dg:
                     worst_dg = hd
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"[Rescue][WARN] primer3 cross-heterodimer failed for "
+                      f"'{seq1}'/'{seq2}': {e} — flagging QC as failed.")
+                worst_dg = _THERMO_FAIL_DG
     return worst_dg
 
 def rescue_primer(primer_dict: dict, iupac_seq: str, consensus_seq: str, max_multiplier: int, thermo_mode: str) -> dict:
@@ -183,15 +221,37 @@ def rescue_primer(primer_dict: dict, iupac_seq: str, consensus_seq: str, max_mul
     iupac_slice = iupac_seq[start:end]
     consensus_slice = consensus_seq[start:end]
 
-    # Detect orientation of original primer relative to the reference genome slice
-    # If original_seq is closer to the reverse complement of consensus_slice, it's reverse-oriented.
-    rc_consensus = reverse_complement(consensus_slice)
-    min_len = min(len(original_seq), len(consensus_slice))
-    
-    direct_matches = sum(1 for c1, c2 in zip(original_seq[:min_len], consensus_slice[:min_len]) if c1 == c2)
-    rc_matches = sum(1 for c1, c2 in zip(original_seq[:min_len], rc_consensus[:min_len]) if c1 == c2)
-    
-    is_reverse = rc_matches > direct_matches
+    # Determine orientation relative to the reference slice. Prefer an EXPLICIT
+    # strand/orientation field from PrimerLab; the match-counting heuristic below
+    # is only a fallback, and it can misclassify short primers or slices near a
+    # region boundary — silently reverse-complementing (or failing to) the rescued
+    # sequence.
+    explicit = (primer_dict.get("strand") or primer_dict.get("orientation")
+                or primer_dict.get("direction"))
+    if isinstance(explicit, str) and explicit.strip():
+        e = explicit.strip().lower()
+        if e in ("-", "minus", "reverse", "rev", "r"):
+            is_reverse = True
+        elif e in ("+", "plus", "forward", "fwd", "f"):
+            is_reverse = False
+        else:
+            explicit = None
+    else:
+        explicit = None
+
+    if explicit is None:
+        rc_consensus = reverse_complement(consensus_slice)
+        min_len = min(len(original_seq), len(consensus_slice))
+
+        direct_matches = sum(1 for c1, c2 in zip(original_seq[:min_len], consensus_slice[:min_len]) if c1 == c2)
+        rc_matches = sum(1 for c1, c2 in zip(original_seq[:min_len], rc_consensus[:min_len]) if c1 == c2)
+
+        is_reverse = rc_matches > direct_matches
+        # An ambiguous call means the back-mapped sequence may be the wrong strand.
+        if min_len and abs(rc_matches - direct_matches) <= max(1, min_len // 10):
+            print(f"[Rescue][WARN] Ambiguous orientation for '{original_seq}' "
+                  f"(direct={direct_matches}, rc={rc_matches} of {min_len}); "
+                  f"assuming {'reverse' if is_reverse else 'forward'}.")
 
     # Resolve excess degeneracy if any
     rescued_seq = resolve_excess_degeneracy(iupac_slice, consensus_slice, max_multiplier)
@@ -215,8 +275,8 @@ def rescue_primer(primer_dict: dict, iupac_seq: str, consensus_seq: str, max_mul
     updated["possible_sequences"] = possible_seqs if multiplier > 1 else []
     updated["tm"] = thermo["tm_str"]
     updated["gc"] = thermo["gc_str"]
-    updated["hairpin_dg"] = f"{thermo['worst_hairpin_dg']:.2f} kcal/mol"
-    updated["homodimer_dg"] = f"{thermo['worst_homodimer_dg']:.2f} kcal/mol"
+    updated["hairpin_dg"] = _fmt_dg(thermo['worst_hairpin_dg'])
+    updated["homodimer_dg"] = _fmt_dg(thermo['worst_homodimer_dg'])
     
     # Keep numerical values for calculations
     updated["_tm_min"] = thermo["tm_min"]
@@ -227,6 +287,7 @@ def rescue_primer(primer_dict: dict, iupac_seq: str, consensus_seq: str, max_mul
     updated["_gc_avg"] = thermo["gc_avg"]
     updated["_hairpin_dg"] = thermo["worst_hairpin_dg"]
     updated["_homodimer_dg"] = thermo["worst_homodimer_dg"]
+    updated["_thermo_failed"] = thermo["thermo_failed"]
 
     return updated
 
@@ -241,6 +302,20 @@ def main():
     parser.add_argument("--max-multiplier", type=int, default=16, help="Maximum allowed degeneracy combinations")
     parser.add_argument("--thermo-mode", default="worst_case", choices=["worst_case", "average", "best_case"], help="Thermodynamic evaluation mode")
     parser.add_argument("--vienna-temp", type=float, default=37.0, help="Temperature for thermodynamic calculations")
+    # QC thresholds (kcal/mol). A candidate is flagged when ΔG is MORE negative
+    # (more stable structure) than the threshold, so a HIGHER value is STRICTER.
+    #
+    # hairpin defaults to -2.0 to match the PrimerLab engine templates
+    # (config/primerlab_template*.yaml: hairpin_dg_min: -2.0), NOT the -3.0 quoted in
+    # docs/pipeline-architecture/m08-primer-design.md. -3.0 would be LOOSER than the
+    # engine, letting the degenerate track accept a hairpin the non-degenerate track
+    # rejects — the exact fail-open this gate exists to prevent. Homodimer/heterodimer
+    # follow the docs, which are stricter than the previous hardcoded values.
+    parser.add_argument("--hairpin-dg-min", type=float, default=-2.0, help="Min acceptable hairpin ΔG (kcal/mol)")
+    parser.add_argument("--homodimer-dg-min", type=float, default=-5.0, help="Min acceptable homodimer ΔG (kcal/mol)")
+    parser.add_argument("--heterodimer-dg-min", type=float, default=-6.0, help="Min acceptable heterodimer/cross-dimer ΔG (kcal/mol)")
+    parser.add_argument("--tm-diff-max", type=float, default=3.0, help="Max acceptable forward/reverse Tm difference (°C)")
+    parser.add_argument("--strict-qc", action="store_true", help="Drop QC-failing candidates entirely instead of demoting them below passing ones")
 
     args = parser.parse_args()
 
@@ -249,13 +324,8 @@ def main():
     with open(args.manifest, 'r') as f:
         manifest = yaml.safe_load(f)
 
-    # Build sequence mapping by region_id
-    regions_map = {}
-    for region in manifest.get("candidate_regions", []):
-        regions_map[region["region_id"]] = {
-            "iupac_seq": region["sequences"]["iupac_consensus_sequence"],
-            "consensus_seq": region["sequences"]["consensus_sequence"]
-        }
+    candidate_regions = manifest.get("candidate_regions", [])
+    regions_map = {r["region_id"]: r for r in candidate_regions}
 
     # Discover region_id from paths or manifest
     # For subdirectories, the region_id is part of the output folder or we read it from summary
@@ -273,8 +343,15 @@ def main():
         print(f"[Rescue] ERROR: Region {region_id} not found in manifest candidate regions.")
         sys.exit(1)
 
-    iupac_seq = regions_map[region_id]["iupac_seq"]
-    consensus_seq = regions_map[region_id]["consensus_seq"]
+    # Resolve the SAME template Primer3 was given. Under the full-segment strategy
+    # the payload generator substitutes the longest region's consensus for every
+    # region, so Primer3's start/end are relative to that sequence — slicing this
+    # region's own consensus here would back-map onto the wrong bases.
+    consensus_seq, iupac_seq, template_id = resolve_design_template(candidate_regions, region_id)
+    if template_id != region_id:
+        print(f"[Rescue] Full-segment strategy: back-mapping against template region "
+              f"'{template_id}' ({len(consensus_seq)} bp), not '{region_id}' — matching "
+              f"the sequence Primer3 designed on.")
 
     # 2. Read Alternatives
     print(f"[Rescue] Reading alternatives from {args.alternatives}...")
@@ -308,13 +385,13 @@ def main():
             worst_prb_rev_dg = calculate_cross_heterodimer_worst(prb_seqs, rev_seqs)
 
         # Update heterodimer fields
-        fwd_res["heterodimer_dg"] = f"{worst_fwd_rev_dg:.2f} kcal/mol"
+        fwd_res["heterodimer_dg"] = _fmt_dg(worst_fwd_rev_dg)
         fwd_res["_heterodimer_dg"] = worst_fwd_rev_dg
-        rev_res["heterodimer_dg"] = f"{worst_fwd_rev_dg:.2f} kcal/mol"
+        rev_res["heterodimer_dg"] = _fmt_dg(worst_fwd_rev_dg)
         rev_res["_heterodimer_dg"] = worst_fwd_rev_dg
 
         if prb_res:
-            prb_res["heterodimer_dg"] = f"{min(worst_prb_fwd_dg, worst_prb_rev_dg):.2f} kcal/mol"
+            prb_res["heterodimer_dg"] = _fmt_dg(min(worst_prb_fwd_dg, worst_prb_rev_dg))
             prb_res["_heterodimer_dg"] = min(worst_prb_fwd_dg, worst_prb_rev_dg)
 
         # Update candidate QC block
@@ -332,11 +409,20 @@ def main():
         tm_diff = abs(fwd_res["_tm_avg"] - rev_res["_tm_avg"])
         qc["tm_diff"] = round(tm_diff, 2)
 
-        # Check QC criteria (thermo mode check)
-        qc["hairpin_ok"] = qc["hairpin_dg"] >= -2.0
-        qc["homodimer_ok"] = qc["homodimer_dg"] >= -6.0
-        qc["heterodimer_ok"] = qc["heterodimer_dg"] >= -7.0
-        qc["tm_balance_ok"] = tm_diff <= 3.0
+        # Check QC criteria against the documented thresholds (config-driven).
+        thermo_failed = any(
+            r.get("_thermo_failed", False) for r in (fwd_res, rev_res, prb_res) if r
+        )
+        qc["hairpin_ok"] = (qc["hairpin_dg"] >= args.hairpin_dg_min) and not thermo_failed
+        qc["homodimer_ok"] = (qc["homodimer_dg"] >= args.homodimer_dg_min) and not thermo_failed
+        qc["heterodimer_ok"] = (qc["heterodimer_dg"] >= args.heterodimer_dg_min) and not thermo_failed
+        qc["tm_balance_ok"] = tm_diff <= args.tm_diff_max
+        qc["thermo_failed"] = thermo_failed
+        # Composite gate consumed by ranking / best-primer selection.
+        qc["qc_pass"] = bool(
+            qc["hairpin_ok"] and qc["homodimer_ok"]
+            and qc["heterodimer_ok"] and qc["tm_balance_ok"]
+        )
 
         # Construct new candidate object
         new_candidate = dict(candidate)
@@ -354,12 +440,31 @@ def main():
 
         rescued_alternatives.append(new_candidate)
 
-    # Sort rescued alternatives:
-    # First priority: passes QC checks
-    # Second priority: lower/better final score (we can preserve primerlab's final score or re-sort based on worst-case penalties)
-    # We will preserve the order, but filter out bad ones if strict, or just keep them sorted by final_score.
-    # Let's keep them sorted by final_score.
-    rescued_alternatives.sort(key=lambda x: x.get("final_score", 999.0))
+    # Enforce the QC gate. In strict mode, QC-failing candidates are dropped
+    # entirely; otherwise they are demoted below every QC-passing candidate so
+    # best_primers.json can never be a candidate that failed hairpin/dimer/Tm QC.
+    n_total = len(rescued_alternatives)
+    n_pass = sum(1 for c in rescued_alternatives if c.get("qc", {}).get("qc_pass"))
+    n_fail = n_total - n_pass
+    if n_fail:
+        print(f"[Rescue] QC gate: {n_pass}/{n_total} candidates pass, {n_fail} fail "
+              f"(hairpin<{args.hairpin_dg_min} / homodimer<{args.homodimer_dg_min} / "
+              f"heterodimer<{args.heterodimer_dg_min} kcal/mol, or Tm diff>{args.tm_diff_max}°C, "
+              f"or primer3 evaluation error).")
+
+    if args.strict_qc:
+        kept = [c for c in rescued_alternatives if c.get("qc", {}).get("qc_pass")]
+        if n_fail:
+            print(f"[Rescue] --strict-qc: dropped {n_fail} QC-failing candidate(s).")
+        if not kept and n_total:
+            print("[Rescue][WARN] No candidate passed QC under --strict-qc; "
+                  "best_primers.json will be empty. Review M07 targets / thresholds.")
+        rescued_alternatives = kept
+
+    # Sort: QC-passing candidates first, then by best (lowest) final_score.
+    rescued_alternatives.sort(
+        key=lambda x: (not x.get("qc", {}).get("qc_pass", False), x.get("final_score", 999.0))
+    )
 
     # Re-rank candidates
     for idx, cand in enumerate(rescued_alternatives):
@@ -413,7 +518,10 @@ def main():
                 p["probe"]["sequence"] if p.get("probe") else "N/A", 
                 p["probe"]["tm"] if p.get("probe") else "N/A",
                 p["probe"]["degeneracy_multiplier"] if p.get("probe") else 0,
-                q["hairpin_dg"], q["homodimer_dg"], q["cross_dimer_dg"], q["tm_diff"]
+                # _fmt_dg keeps the fail-closed sentinel out of the CSV, which is
+                # read by M09 and lands in the Excel supplementary workbooks.
+                _fmt_dg(q["hairpin_dg"]), _fmt_dg(q["homodimer_dg"]),
+                _fmt_dg(q["cross_dimer_dg"]), q["tm_diff"]
             ])
 
     print("[Rescue] Degenerate rescue completed successfully.")

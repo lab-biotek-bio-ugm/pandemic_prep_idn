@@ -355,7 +355,16 @@ def main():
         log("  ✓ human_combined_raw.fasta sudah ada, skip download.")
 
     # Filter short contigs/scaffolds from human genome
-    filter_fasta(human_combined_fasta, human_filtered_fasta, min_len=1000)
+    human_seq_count = filter_fasta(human_combined_fasta, human_filtered_fasta, min_len=1000)
+
+    # Fail loudly on an empty DB: querying an empty human_db returns zero hits for
+    # EVERY primer, which would silently certify all candidates as "no human
+    # off-target" — a systematic false pass across the whole run.
+    if human_seq_count < 1:
+        log("  ✗ FATAL: human_db berisi 0 sekuens setelah filter. "
+            "Periksa konfigurasi hosts[]/fasta_url — membatalkan build agar tidak ada false-pass di M09.")
+        sys.exit(1)
+    log(f"  ✓ human_db: {human_seq_count} sekuens siap diindeks.")
 
     # Build BLAST DB
     human_db_prefix = output_dir / "human_db"
@@ -425,7 +434,16 @@ def main():
 
     # Filter & subsample virus sequences
     filter_fasta(virus_combined_fasta, virus_filtered_fasta, min_len=min_len)
-    subsample_fasta(virus_filtered_fasta, virus_subsampled_fasta, max_seqs=max_seqs * len(virus_taxons))
+    virus_seq_count = subsample_fasta(virus_filtered_fasta, virus_subsampled_fasta, max_seqs=max_seqs * len(virus_taxons))
+
+    # Fail loudly on an empty virus DB: a near-neighbour pathogen missing from the
+    # DB means a genuinely cross-reactive primer can never generate a hit and is
+    # wrongly certified specific. Abort rather than write a success marker.
+    if virus_seq_count < 1:
+        log("  ✗ FATAL: virus_db berisi 0 sekuens setelah filter/subsample. "
+            "Periksa virus_taxons[]/taxid dan konektivitas NCBI — membatalkan build.")
+        sys.exit(1)
+    log(f"  ✓ virus_db: {virus_seq_count} sekuens siap diindeks.")
 
     # Build BLAST DB
     virus_db_prefix = output_dir / "virus_db"

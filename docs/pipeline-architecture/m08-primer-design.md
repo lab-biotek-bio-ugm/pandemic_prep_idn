@@ -17,10 +17,44 @@ The module feeds the IUPAC-aware consensus sequences from M07 into Primer3, appl
     *   Primer Length: 30–35 bp (optimal 32 bp)
     *   Optimal Temperature: 37–42 °C (optimal 39 °C)
     *   GC Content: 30%–70%
-    *   Probe Length: 45–53 bp (requires an internal tetrahydrofuran [THF] site, flanked by a fluorophore and quencher)
+    *   Probe Length: 45–53 bp (requires an internal abasic site, flanked by a fluorophore and quencher — see below)
 *   **PCR**:
     *   Primer Length: 18–22 bp
     *   Optimal Temperature: 55–60 °C
+
+---
+
+## RAA Probe Geometry (Abasic Site Placement)
+
+An RAA probe is only useful if the kit's repair enzyme can actually cleave it. PrimerLab places the abasic residue according to the TwistAmp Assay Design Manual, and screens probe candidates for a legal placement **before** ranking them thermodynamically:
+
+| Rule | Value | Why |
+|---|---|---|
+| Bases 5' of the abasic residue | ≥ 30 (working range 30–38) | The cleaved 5' fragment must still function as a primer. |
+| Bases 3' of the abasic residue | ≥ 15 | Below this the exonuclease does not cut efficiently. |
+| Bases between a dT label and the abasic residue | 0, 1 or 2 | Keeps fluorophore–quencher separation ≤ 5, preserving quenching. |
+| Flanking label positions | must be **T** | The fluorophore and quencher reagents exist only as dT couplings. |
+| The base replaced by the abasic residue | any | The manual states there is no sequence requirement here. |
+
+The same geometry applies whether the kit uses Exonuclease III (`exo` probes) or Endonuclease IV (`nfo`/`fpg` probes); the probe type changes how the signal is read, not where the abasic residue goes.
+
+!!! warning "Corrected in this revision"
+    Two defects in the previous placement logic were found by checking it against the manual's worked example and have been fixed:
+
+    1. The abasic residue could land **28–29** bases from the 5' end — a case the manual lists verbatim as a *"Poor probe design"*. There was no upper bound either.
+    2. **The label logic was inverted.** The old code anchored the abasic residue onto the nearest `T` — consuming the one base that could have carried a label — and let both dT labels fall on whatever happened to be adjacent. Every probe could therefore silently carry two unnecessary probe–target mismatches.
+
+### When no ideal site exists
+
+Placement degrades in the order the manual itself prescribes, and every relaxation is reported rather than applied silently:
+
+1. Pair of thymines inside the 30–38 window → compliant, no mismatch.
+2. Pair of thymines beyond 38 → used, with a warning.
+3. Only one usable thymine → one label mismatch. The manual explicitly sanctions this: *"one can simply ignore the mismatch of **one** of the thymines... There may be a reduction in the efficiency of the probe, the extent to which cannot be predicted."*
+4. No usable thymine → two label mismatches, warned.
+5. No legal geometry at all → the probe is **rejected**, not annotated at a clamped position.
+
+Cases 3–5 are exported as `probe_label_mismatches` alongside `thf_index` and `probe_compliant`, so downstream validation counts them as design properties rather than as target variation.
 
 ---
 

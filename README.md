@@ -121,7 +121,7 @@ Key diagnostic assets are written directly to `results/{BUILD}/`:
 *   **IGV Workspace**: `results/{BUILD}/m09/igv_session.xml` (one-click visualization setup)
 *   **Validation Dashboard**: `results/{BUILD}/m10/validation_report.html`
 *   **Pairwise Multiplex Results**: `results/multiplex-<targetA>_x_<targetB>/multiplex_report.md`
-*   **Triplex Multiplex Results**: `results/multiplex-triplex-all-3/triplex_report.md` & `triplex_candidates.json` `multiplex_matrix.html`
+*   **Triplex Multiplex Results**: `results/multiplex-triplex-all-3/triplex_report.md` & `triplex_candidates.json`
 
 ---
 

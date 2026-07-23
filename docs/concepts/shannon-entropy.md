@@ -80,6 +80,32 @@ Many bioinformatics tools exclude gaps from entropy calculations or treat them a
 
 ---
 
+## The Configured Thresholds, in Interpretable Terms
+
+Two different scales are in play, and confusing them causes silent errors:
+
+- The **conservation score** $C = 1 - H / \log_2(5)$ is normalised to $[0, 1]$ and is what the tier grades and reports display.
+- The **configured thresholds** are compared against **raw entropy in bits**, not against $C$.
+
+Converted to the maximum minor-allele frequency a biallelic column can carry and still pass:
+
+| Config key | Raw bits | Max MAF | Purpose |
+|---|---|---|---|
+| `bridge.entropy_threshold` | 0.020 | ≤ 0.19% | Mean window entropy below which a window counts as conserved |
+| `bridge.scoring.multipliers.conserved_block.entropy_threshold` | 0.10 | ≤ 1.30% | Position counts toward a contiguous conserved block |
+| `primerlab.design.entropy_threshold` | 0.50 | ≤ 11.0% | Position excluded from primer binding sites |
+
+!!! warning "Corrected: these thresholds must not be rescaled with the alphabet"
+    An earlier revision multiplied all three by $\log_2(5)/\log_2(4) = 1.161$ when the entropy alphabet was widened from 4 symbols to 5, giving 0.023 / 0.116 / 0.58. **That was wrong and has been reverted.**
+
+    The normaliser $\log_2(5)$ affects only the *display* score $C$. The thresholds are compared against raw $H$, and **a column containing no gaps has identical raw entropy under both alphabets** — the gap frequency is zero, so it contributes nothing to the sum. Multiplying the thresholds therefore rescaled nothing; it simply loosened every criterion by 16% (the exclusion threshold went from MAF 11.0% to 13.8%).
+
+    Widening the alphabet was still correct — it is what makes a deletion raise entropy, as described above. Only the thresholds should have stayed put.
+
+    A second annotation error was corrected at the same time: the exclusion threshold was documented as *"0.50 ~ 30% MAF"*. It is ~11%; 30% MAF corresponds to 0.88 bits.
+
+---
+
 ## Shannon Entropy vs. Minor Allele Frequency (MAF)
 
 While Minor Allele Frequency (MAF) measures the frequency of the second-most common allele, Shannon entropy provides a more robust signal for multiple-base variation:

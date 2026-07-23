@@ -30,3 +30,14 @@ report/site_libs/
 report/*.html
 report/**/*.html
 *.html
+
+# Generated pipeline outputs (produced by scripts/export_supplementary.py)
+supplementary/
+temp_supplementary/
+
+# Test / tooling caches
+.pytest_cache/
+
+# Ad-hoc analysis / debugging scripts (kept locally, not part of the pipeline)
+scratch/
+scratch_entropy_analysis.py

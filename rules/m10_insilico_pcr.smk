@@ -66,9 +66,10 @@ rule m10_insilico_pcr:
         num_candidates=config["insilico_pcr"].get("num_candidates", 10),
         outdir="results/{BUILD}/m10/{mode}",
         m09_dirs=get_m10_m09_dirs,
-        raa_3prime_bp=config["insilico_pcr"].get("raa_3prime_bp", 8),
+        raa_3prime_bp=config["insilico_pcr"].get("raa_3prime_bp", 4),
         raa_max_3prime_mm=config["insilico_pcr"].get("raa_max_3prime_mm", 1),
         raa_max_internal_mm=config["insilico_pcr"].get("raa_max_internal_mm", 4),
+        raa_probe_max_mm=config["insilico_pcr"].get("raa_probe_max_mm", 5),
         min_subtype_seqs=config["insilico_pcr"].get("min_subtype_seqs", 30)
     threads:
         get_m10_threads
@@ -90,6 +91,7 @@ rule m10_insilico_pcr:
             --raa-3prime-bp {params.raa_3prime_bp} \
             --raa-max-3prime-mm {params.raa_max_3prime_mm} \
             --raa-max-internal-mm {params.raa_max_internal_mm} \
+            --raa-probe-max-mm {params.raa_probe_max_mm} \
             --min-subtype-seqs {params.min_subtype_seqs} \
             --threads {threads} > "{log}" 2>&1
         """

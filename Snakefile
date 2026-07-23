@@ -9,6 +9,13 @@ configfile: "config/config.yaml"
 BUILD = config["build_name"]
 
 def get_target_genes(config):
+    """Genes driving all M05/M07 wildcard targets.
+
+    Must use the SAME attribute-key precedence as scripts/extract_genes.py
+    (gene= -> Name= -> locus_tag=). Matching only `gene=` here meant an annotation
+    that names features via Name= or locus_tag= produced an EMPTY target list, so
+    M05 silently analysed nothing even though extract_genes.py would have handled it.
+    """
     genes = config["hyphy"].get("target_genes", ["ALL"])
     if "ALL" in genes:
         genes = []
@@ -18,12 +25,22 @@ def get_target_genes(config):
                 if line.startswith("#"): continue
                 parts = line.strip().split("\t")
                 if len(parts) >= 9 and parts[2] in ("gene", "CDS"):
-                    for attr in parts[8].split(";"):
-                        attr = attr.strip()
-                        if attr.startswith("gene="):
-                            name = attr.split("=")[1].strip('"')
-                            if name not in genes:
-                                genes.append(name)
+                    name = None
+                    for key in ("gene=", "Name=", "locus_tag="):
+                        for attr in parts[8].split(";"):
+                            attr = attr.strip()
+                            if attr.startswith(key):
+                                name = attr.split("=", 1)[1].strip('"\n\r')
+                                break
+                        if name:
+                            break
+                    if name and name not in genes:
+                        genes.append(name)
+        if not genes:
+            raise ValueError(
+                f"No gene/CDS names found in {gff_path} using gene=/Name=/locus_tag=. "
+                f"M05 and M07 would have no targets. Check the annotation's attribute column."
+            )
     return genes
 
 TARGET_GENES = get_target_genes(config)

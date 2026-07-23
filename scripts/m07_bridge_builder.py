@@ -36,6 +36,7 @@ import csv
 import json
 import logging
 import math
+import statistics
 import sys
 from collections import Counter
 from datetime import datetime, timezone
@@ -52,6 +53,18 @@ from Bio import SeqIO
 # for universal diagnostic assays.  Lower = more positions flagged = safer.
 # Global parameters will be overridden by args
 IUPAC_THRESHOLD = 0.15
+
+# Maximum Shannon entropy for the documented 5-symbol alphabet {A,T,G,C,-}
+# (see docs/concepts/shannon-entropy.md). Used to normalise entropy to a
+# conservation score C = 1 - H / MAX_ENTROPY_BITS in [0, 1].
+MAX_ENTROPY_BITS = math.log2(5)  # ~= 2.3219
+
+# Significance threshold for MEME episodic-selection sites. HyPhy recommends
+# p <= 0.1 rather than the conventional 0.05, because MEME is a conservative test
+# on small alignments (hyphy.org selection tutorial). Overridable via
+# config hyphy.p_value_threshold; FUBAR uses a posterior probability instead
+# (>= 0.9, see bridge.tiers.*.min_purifying_prob).
+MEME_PVALUE_THRESHOLD = 0.1
 
 # Full IUPAC ambiguity lookup: frozenset of observed bases -> IUPAC code.
 # Only 2-base and 3-base combos are listed; 4-base = N.
@@ -121,8 +134,12 @@ def build_entropy_profile(records):
         consensus_base — majority-vote base (plain A/T/G/C or '-')
         iupac_base     — IUPAC-encoded base if minor allele >= IUPAC_THRESHOLD,
                          else same as consensus_base
-        entropy        — Shannon entropy in bits (0 = fully conserved, 2 = max)
-        freq_A, freq_T, freq_G, freq_C — per-base frequencies (gap-excluded)
+        entropy        — Shannon entropy in bits over the 5-symbol alphabet
+                         {A,T,G,C,-} (0 = fully conserved, log2(5) ~= 2.322 = max);
+                         gaps and other non-ACGT symbols count toward variability
+                         so deletions correctly drive conservation down.
+        freq_A, freq_T, freq_G, freq_C — per-base frequencies (gap-excluded,
+                         used for consensus / IUPAC degenerate-base decisions)
     """
     if not records:
         return [], 0, 0
@@ -136,14 +153,18 @@ def build_entropy_profile(records):
     for i in range(aln_length):
         column = [str(rec.seq[i]).upper() for rec in records]
         bases  = [b for b in column if b in "ACGT"]
-        n      = len(bases)
+        n      = len(bases)                       # ACGT-only count
+        gap_like = n_sequences - n                # gaps + N + other ambiguity
 
         if n == 0:
+            # No usable base in ANY sequence (all gap/N): undesignable column.
+            # Assign maximum entropy -> conservation score 0 so the region is
+            # disqualified rather than mislabelled as a perfectly conserved gap.
             profile.append({
                 "position": i,
                 "consensus_base": "-",
                 "iupac_base": "-",
-                "entropy": 1.0,
+                "entropy": MAX_ENTROPY_BITS,
                 **_empty_freq,
             })
             continue
@@ -151,11 +172,21 @@ def build_entropy_profile(records):
         counter = Counter(bases)
         consensus = counter.most_common(1)[0][0]
 
+        # ACGT-only frequencies drive consensus / IUPAC degeneracy and the
+        # reported freq_* columns (documented as gap-excluded).
         freq = {b: c / n for b, c in counter.items()}
         iupac = _to_iupac_base(freq)
 
+        # Entropy uses the documented gap-inclusive 5-symbol alphabet: the
+        # denominator is ALL sequences and every non-ACGT symbol (gap, N,
+        # ambiguity) is folded into a single "gap" state, since like a deletion
+        # it cannot be relied on for primer hybridisation.
         entropy = 0.0
-        for p in freq.values():
+        ent_counts = list(counter.values())
+        if gap_like > 0:
+            ent_counts.append(gap_like)
+        for c in ent_counts:
+            p = c / n_sequences
             if p > 0:
                 entropy -= p * math.log2(p)
 
@@ -204,7 +235,7 @@ def scan_conservation(profile, window_size, entropy_threshold):
                 "start": i,
                 "end": i + window_size,
                 "mean_entropy": mean_e,
-                "conservation_pct": round((1 - mean_e / 2.0) * 100, 2),
+                "conservation_pct": round((1 - mean_e / MAX_ENTROPY_BITS) * 100, 2),
                 "length": window_size
             })
             
@@ -348,26 +379,76 @@ def find_gene_for_position(pos, genes, utrs):
 # --- HyPhy Score Mapper ---
 
 def parse_fubar_json(filepath):
+    """Extract per-codon FUBAR estimates.
+
+    Returns entries with three fields, which serve different purposes:
+
+      fubar_purifying_prob — Prob[alpha>beta], the posterior probability that the
+        codon is under purifying selection AT THE PROTEIN LEVEL. Used by the tier
+        system, where the conventional >= 0.9 cut-off applies.
+
+      alpha — mean posterior SYNONYMOUS substitution rate.
+      beta  — mean posterior NONSYNONYMOUS substitution rate.
+
+    The rates were previously discarded, and that mattered. A primer does not read
+    protein: what breaks it is nucleotide change at any of the three codon
+    positions. Under strong purifying selection the nonsynonymous channel is
+    suppressed while the synonymous one — concentrated at the wobble position — is
+    not, so a codon can have a high Prob[alpha>beta] and still turn over its
+    nucleotides rapidly. Ranking primer targets on Prob[alpha>beta] alone therefore
+    scores a fast-drifting site identically to a genuinely static one.
+    """
     with open(filepath, "r") as f:
         data = json.load(f)
     mle = data.get("MLE", {})
     headers = mle.get("headers", [])
     rows = mle.get("content", {}).get("0", [])
 
-    purifying_idx = None
-    for i, h in enumerate(headers):
-        label = h[0] if isinstance(h, list) else str(h)
-        if "alpha>beta" in label.lower() or "prob[alpha>beta]" in label.lower():
-            purifying_idx = i
-            break
-    if purifying_idx is None:
-        purifying_idx = 5
+    def _find(*predicates, fallback=None):
+        for i, h in enumerate(headers):
+            label = (h[0] if isinstance(h, list) else str(h)).lower().strip()
+            if any(pred(label) for pred in predicates):
+                return i
+        return fallback
+
+    # Match Prob[alpha>beta] before the bare "alpha" column, or the substring test
+    # would claim the wrong index.
+    purifying_idx = _find(lambda l: "alpha>beta" in l.replace(" ", ""), fallback=5)
+    alpha_idx = _find(lambda l: l == "alpha", lambda l: l.startswith("alpha "),
+                      fallback=0)
+    beta_idx = _find(lambda l: l == "beta", lambda l: l.startswith("beta "),
+                     fallback=1)
 
     results = []
     for i, row in enumerate(rows):
-        prob = row[purifying_idx] if purifying_idx < len(row) else 0.5
-        results.append({"codon_idx": i, "fubar_purifying_prob": prob})
+        results.append({
+            "codon_idx": i,
+            "fubar_purifying_prob": row[purifying_idx] if purifying_idx < len(row) else 0.5,
+            "alpha": row[alpha_idx] if alpha_idx is not None and alpha_idx < len(row) else None,
+            "beta": row[beta_idx] if beta_idx is not None and beta_idx < len(row) else None,
+        })
     return results
+
+
+# Average number of synonymous / nonsynonymous nucleotide sites in a codon. A
+# codon has 3 positions; roughly three quarters of possible single-nucleotide
+# changes are nonsynonymous. Used to convert FUBAR's two rates into one expected
+# nucleotide substitution rate, which is the quantity a primer actually cares
+# about.
+SYN_SITE_FRACTION = 0.25
+
+
+def codon_substitution_rate(alpha, beta):
+    """Expected nucleotide substitution rate for a codon, or None if unmeasured.
+
+    alpha and beta are per-site rates for the synonymous and nonsynonymous
+    channels; weighting them by how many of the codon's nucleotide sites belong to
+    each channel gives the rate at which ANY of its three bases changes -- which is
+    what determines whether a primer overlapping it keeps matching.
+    """
+    if alpha is None or beta is None:
+        return None
+    return SYN_SITE_FRACTION * alpha + (1.0 - SYN_SITE_FRACTION) * beta
 
 def parse_meme_json(filepath):
     with open(filepath, "r") as f:
@@ -413,7 +494,8 @@ def parse_gard_json(filepath):
     return breakpoints
 
 def map_hyphy_to_genome(genes, hyphy_dir, target_genes):
-    codon_data = {}  # {gene_name: {genomic_pos: entry}}
+    codon_data = {}       # {gene_name: {genomic_pos: entry}}
+    gene_median_rate = {} # {gene_name: median codon substitution rate or None}
     gard_breakpoints = []
 
     for gene in genes:
@@ -455,9 +537,12 @@ def map_hyphy_to_genome(genes, hyphy_dir, target_genes):
                     "codon_idx": ci,
                     "fubar_purifying_prob": 0.5,
                     "meme_pvalue": 1.0,
+                    "subst_rate": None,
                 }
                 if ci < len(fubar_data):
                     entry["fubar_purifying_prob"] = fubar_data[ci]["fubar_purifying_prob"]
+                    entry["subst_rate"] = codon_substitution_rate(
+                        fubar_data[ci].get("alpha"), fubar_data[ci].get("beta"))
                 if ci < len(meme_data):
                     entry["meme_pvalue"] = meme_data[ci]["meme_pvalue"]
 
@@ -465,6 +550,20 @@ def map_hyphy_to_genome(genes, hyphy_dir, target_genes):
                 for offset in range(3):
                     gpos = cds_coords[ci * 3 + offset]
                     codon_data[name][gpos] = entry
+
+            # FUBAR rates are relative to this alignment's own scaling, so an
+            # absolute cut-off would not transfer between genes or builds. Record
+            # the gene's median so a region can be judged against its own gene.
+            rates = sorted({id(e): e for e in codon_data[name].values()}.values(),
+                           key=lambda e: e["codon_idx"])
+            measured = [e["subst_rate"] for e in rates if e["subst_rate"] is not None]
+            gene_median_rate[name] = (statistics.median(measured) if measured else None)
+            if measured:
+                print(f"[M07] {name}: median codon substitution rate = "
+                      f"{gene_median_rate[name]:.4f} over {len(measured)} codons")
+            else:
+                print(f"[M07] {name}: no FUBAR rate data — durability multiplier "
+                      f"will fall back to the no-evidence value")
 
         gard_path = hyphy_dir / f"gard_{name}.json"
         if gard_path.exists():
@@ -479,7 +578,7 @@ def map_hyphy_to_genome(genes, hyphy_dir, target_genes):
                         })
             except Exception: pass
 
-    return codon_data, gard_breakpoints
+    return codon_data, gard_breakpoints, gene_median_rate
 
 # --- Multipliers Computation ---
 
@@ -525,13 +624,54 @@ GRADE_TEXT = {
     "D": "Excluded — Composite score <0.60; failed one or more critical biomechanical or evolutionary constraints.",
 }
 
+def compute_durability_multiplier(rel_rate, cfg):
+    """Discount a region by how fast its nucleotides turn over.
+
+    `rel_rate` is the region's mean codon substitution rate divided by the gene's
+    median, so it is self-calibrating: 1.0 means "typical for this gene". None
+    means the rate could not be measured (non-coding region, or no FUBAR data).
+
+    This replaces an additive purifying-selection term in the core score. The
+    additive form let evolutionary evidence SUBSTITUTE for conservation: over the
+    full range of the old term it could overturn a 25.8 percentage-point gap in
+    conservation, i.e. rank a site with ~14.5% minor-allele frequency above a
+    perfectly conserved one. A primer cannot trade a mismatch today for evidence
+    of constraint tomorrow -- it either hybridises or it does not. Conservation is
+    therefore the core, and durability only modulates it, exactly as every other
+    evolutionary and biomechanical factor in this module already does.
+
+    The floor is the single free parameter and has a direct reading: with floor f,
+    the multiplier's full range can overturn a conservation gap of at most (1 - f).
+    At the default 0.95 that is 5 percentage points, about the difference between
+    0% and 1.6% minor-allele frequency -- a trade the pipeline is willing to make,
+    since a site at 1.5% MAF under low substitution pressure may well outlast one
+    at 0% that is conserved only by chance in a small sample.
+    """
+    floor = cfg.get("floor", 0.95)
+    no_data = cfg.get("no_evidence", 0.95)
+    cap = cfg.get("rate_cap", 3.0)   # rel_rate at or above which the floor applies
+
+    if rel_rate is None:
+        return no_data
+    if rel_rate <= 1.0:
+        return 1.0
+    if rel_rate >= cap:
+        return floor
+    # Linear between the gene median and the cap.
+    frac = (rel_rate - 1.0) / (cap - 1.0)
+    return 1.0 - frac * (1.0 - floor)
+
+
 def score_regions(regions, profile, ref_seq, codon_data, gard_breakpoints, genes, utrs,
-                  scoring_config, tiers_config, gard_buffer_bp):
+                  scoring_config, tiers_config, gard_buffer_bp,
+                  meme_pvalue_threshold=MEME_PVALUE_THRESHOLD,
+                  gene_median_rate=None):
     """Score each conserved region using Core x Multipliers."""
     
-    # Core Weights
-    w_cons = scoring_config.get("core", {}).get("conservation_weight", 0.66)
-    w_fub = scoring_config.get("core", {}).get("purifying_weight", 0.34)
+    # The core is conservation alone. Purifying selection used to be a second
+    # additive term here (conservation_weight / purifying_weight); it is now the
+    # `durability` multiplier below. See compute_durability_multiplier().
+    gene_median_rate = gene_median_rate or {}
     
     # Multiplier Configs
     mult_cfgs = scoring_config.get("multipliers", {})
@@ -540,6 +680,7 @@ def score_regions(regions, profile, ref_seq, codon_data, gard_breakpoints, genes
     gc_cfg = mult_cfgs.get("gc_content", {})
     block_cfg = mult_cfgs.get("conserved_block", {})
     homo_cfg = mult_cfgs.get("homopolymer", {})
+    dur_cfg = mult_cfgs.get("durability", {})
 
     scored = []
 
@@ -555,7 +696,7 @@ def score_regions(regions, profile, ref_seq, codon_data, gard_breakpoints, genes
             gene_name, is_coding = find_gene_for_position(mid, genes, utrs)
 
         # 1. Gather HyPhy Data
-        fubar_probs, meme_pvals = [], []
+        fubar_probs, meme_pvals, subst_rates = [], [], []
         has_hyphy = False
         gene_codon_data = codon_data.get(gene_name, {})
         for pos in range(start, end):
@@ -563,9 +704,24 @@ def score_regions(regions, profile, ref_seq, codon_data, gard_breakpoints, genes
                 has_hyphy = True
                 fubar_probs.append(gene_codon_data[pos]["fubar_purifying_prob"])
                 meme_pvals.append(gene_codon_data[pos]["meme_pvalue"])
+                r = gene_codon_data[pos].get("subst_rate")
+                if r is not None:
+                    subst_rates.append(r)
 
         avg_fubar = sum(fubar_probs) / len(fubar_probs) if fubar_probs else 0.0
-        meme_danger_sites = sum(1 for p in meme_pvals if p < 0.05)
+
+        # Nucleotide turnover relative to this gene's own median, so the figure is
+        # comparable across genes and builds despite FUBAR's per-alignment scaling.
+        median_rate = gene_median_rate.get(gene_name) if gene_name else None
+        avg_rate = (sum(subst_rates) / len(subst_rates)) if subst_rates else None
+        if avg_rate is not None and median_rate:
+            rel_rate = avg_rate / median_rate
+        else:
+            rel_rate = None
+        # HyPhy recommends p <= 0.1 for MEME, deliberately looser than the usual
+        # 0.05 because MEME is conservative on small alignments. This was hardcoded
+        # to 0.05 while config carried an unread hyphy.p_value_threshold.
+        meme_danger_sites = sum(1 for p in meme_pvals if p < meme_pvalue_threshold)
 
         # Check GARD
         near_recomb = False
@@ -586,22 +742,29 @@ def score_regions(regions, profile, ref_seq, codon_data, gard_breakpoints, genes
         mismatches = get_mismatch_positions(profile, start, end, threshold=block_t_hr)
 
         # 3. Core Score Calculation
-        # Normalized conservation: DNA entropy max is 2.0 -> Range [0.0, 1.0]
-        cons_norm = 1.0 - (region["mean_entropy"] / 2.0)
+        # Normalized conservation over the 5-symbol alphabet {A,T,G,C,-}:
+        # max entropy = log2(5); clamp guards against float drift / all-gap columns.
+        cons_norm = 1.0 - (region["mean_entropy"] / MAX_ENTROPY_BITS)
+        cons_norm = max(0.0, min(1.0, cons_norm))
         
-        if has_hyphy:
-            core = (w_cons * cons_norm) + (w_fub * avg_fubar)
-        else:
-            core = cons_norm * 0.95 # Cap non-coding core
+        # The core is conservation alone: it is the only quantity that determines
+        # whether the primer matches the strains circulating right now. Everything
+        # else modulates it. The old code capped non-coding regions at 0.95 here
+        # while coding regions carried an additive purifying term, which put the
+        # two branches on incomparable scales -- a perfectly conserved coding
+        # region with a weak selection signal scored 0.83 against a non-coding
+        # region's 0.95. Both now go through the same durability multiplier.
+        core = cons_norm
 
         # 4. Multipliers
+        m_dur = compute_durability_multiplier(rel_rate, dur_cfg)
         m_meme = compute_meme_multiplier(meme_danger_sites, meme_cfg)
         m_rec = rec_cfg.get("near_penalty", 0.5) if near_recomb else 1.0
         m_gc = compute_gc_multiplier(gc_pct, gc_cfg)
         m_block = compute_block_multiplier(max_block_len, block_cfg)
         m_homo = compute_homo_multiplier(has_homo, homo_cfg)
 
-        final_score = core * m_meme * m_rec * m_gc * m_block * m_homo
+        final_score = core * m_dur * m_meme * m_rec * m_gc * m_block * m_homo
         final_score = max(0.0, min(1.0, final_score))
 
         # --- Tier System (Fail-safe checks on raw metrics) ---
@@ -625,6 +788,15 @@ def score_regions(regions, profile, ref_seq, codon_data, gard_breakpoints, genes
                 tier = 2
 
         # --- Grade Classification ---
+        # NOTE: two distinct classifications are emitted, previously easy to confuse
+        # because the code's letters clashed with the documentation's:
+        #   grade      — fine-grained ranking on the MULTIPLIED final_score (S..D).
+        #                Code-internal; "A" here means final_score >= 0.85, which is
+        #                NOT the docs' Grade A.
+        #   tier_grade — the A/B/C/D scheme documented in
+        #                docs/pipeline-architecture/m07-bridge-builder.md, keyed on
+        #                the RAW conservation (C) and purifying (P) metrics via tier.
+        #                This is the one to read as "Grade A / B are primary targets".
         if final_score >= 0.95: grade = "S"
         elif final_score >= 0.90: grade = "A+"
         elif final_score >= 0.85: grade = "A"
@@ -633,6 +805,17 @@ def score_regions(regions, profile, ref_seq, codon_data, gard_breakpoints, genes
         elif final_score >= 0.70: grade = "B"
         elif final_score >= 0.60: grade = "C"
         else: grade = "D"
+
+        # Documented tier -> grade mapping (Strict=A, Moderate=B, Survival=C, Reject=D).
+        survival_min = tiers_config.get("survival", {}).get("min_conservation", 0.80)
+        if tier == 1:
+            tier_grade = "A"
+        elif tier == 2:
+            tier_grade = "B"
+        elif cons_frac >= survival_min:
+            tier_grade = "C"
+        else:
+            tier_grade = "D"
 
         # Build the three sequence representations for this window:
         #   consensus_sequence       — majority-vote per column (plain ATGC)
@@ -659,6 +842,12 @@ def score_regions(regions, profile, ref_seq, codon_data, gard_breakpoints, genes
             "conservation_pct": round(region["conservation_pct"], 2),
             "mean_entropy": round(region["mean_entropy"], 6),
             "avg_fubar_purifying_prob": round(avg_fubar, 4),
+            # Nucleotide turnover: what actually determines how long a primer keeps
+            # matching. avg_fubar measures protein-level constraint, which is not
+            # the same thing — see parse_fubar_json().
+            "avg_subst_rate": round(avg_rate, 5) if avg_rate is not None else "",
+            "rel_subst_rate": round(rel_rate, 3) if rel_rate is not None else "",
+            "durability_multiplier": round(m_dur, 3),
             "meme_episodic_sites": meme_danger_sites,
             "gc_pct": round(gc_pct, 2),
             "max_block_len": max_block_len,
@@ -666,6 +855,7 @@ def score_regions(regions, profile, ref_seq, codon_data, gard_breakpoints, genes
             "composite_score": round(final_score, 4),
             "tier": tier,
             "grade": grade,
+            "tier_grade": tier_grade,
             "recommendation": GRADE_TEXT[grade],
             # Three sequence representations
             "consensus_sequence": consensus_seq,
@@ -785,6 +975,7 @@ def write_manifest(regions, build_name, ref_genome, buffer_bp, path, profile, co
             "gene": r["gene"],
             "tier": r["tier"],
             "grade": r["grade"],
+            "tier_grade": r.get("tier_grade", ""),
             "composite_score": r["composite_score"],
             "conserved_zone": {
                 "start": r["start"],
@@ -800,6 +991,8 @@ def write_manifest(regions, build_name, ref_genome, buffer_bp, path, profile, co
                 "conservation_pct": r["conservation_pct"],
                 "mean_entropy": r["mean_entropy"],
                 "avg_fubar_purifying_prob": r["avg_fubar_purifying_prob"],
+                "rel_subst_rate": r.get("rel_subst_rate", ""),
+                "durability_multiplier": r.get("durability_multiplier", ""),
                 "meme_episodic_sites": r["meme_episodic_sites"],
                 "gc_pct": r["gc_pct"],
                 "max_block_len": r["max_block_len"],
@@ -849,6 +1042,7 @@ def write_csv(regions, path):
         "gene",
         "tier",
         "grade",
+        "tier_grade",
         "composite_score",
         "start_0based",
         "end_0based",
@@ -856,6 +1050,9 @@ def write_csv(regions, path):
         "conservation_pct",
         "mean_entropy",
         "avg_fubar_purifying_prob",
+        "avg_subst_rate",
+        "rel_subst_rate",
+        "durability_multiplier",
         "meme_episodic_sites",
         "iupac_positions",
         "iupac_density",
@@ -886,6 +1083,7 @@ def write_csv(regions, path):
                 "gene": r.get("gene", ""),
                 "tier": r.get("tier", ""),
                 "grade": r.get("grade", ""),
+                "tier_grade": r.get("tier_grade", ""),
                 "composite_score": r.get("composite_score", ""),
                 "start_0based": r.get("start", ""),
                 "end_0based": r.get("end", ""),
@@ -893,6 +1091,9 @@ def write_csv(regions, path):
                 "conservation_pct": r.get("conservation_pct", ""),
                 "mean_entropy": r.get("mean_entropy", ""),
                 "avg_fubar_purifying_prob": r.get("avg_fubar_purifying_prob", ""),
+                "avg_subst_rate": r.get("avg_subst_rate", ""),
+                "rel_subst_rate": r.get("rel_subst_rate", ""),
+                "durability_multiplier": r.get("durability_multiplier", ""),
                 "meme_episodic_sites": r.get("meme_episodic_sites", ""),
                 "iupac_positions": r.get("iupac_positions", ""),
                 "iupac_density": r.get("iupac_density", ""),
@@ -917,7 +1118,8 @@ def write_csv(regions, path):
 def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir, 
                   window_size, entropy_threshold, overlap_threshold, gard_buffer_bp, 
                   scoring_config, tiers_config, ref_id, ref_seq, outdir, build_name, buffer_bp, args_reference,
-                  strategy="windowed", design_regions=None, prefix=""):
+                  strategy="windowed", design_regions=None, prefix="",
+                  meme_pvalue_threshold=MEME_PVALUE_THRESHOLD):
     print(f"\n[M07] ============================================")
     print(f"[M07]  Track: {track_name}")
     print(f"[M07] ============================================")
@@ -963,7 +1165,7 @@ def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir,
                     "start": s,
                     "end": e,
                     "mean_entropy": mean_ent,
-                    "conservation_pct": round((1 - mean_ent / 2.0) * 100, 2),
+                    "conservation_pct": round((1 - mean_ent / MAX_ENTROPY_BITS) * 100, 2),
                     "length": e - s,
                     "gene": feat["gene"],
                 })
@@ -976,7 +1178,7 @@ def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir,
                 "start": 0,
                 "end": aln_len,
                 "mean_entropy": mean_ent,
-                "conservation_pct": round((1 - mean_ent / 2.0) * 100, 2),
+                "conservation_pct": round((1 - mean_ent / MAX_ENTROPY_BITS) * 100, 2),
                 "length": aln_len,
                 "gene": "Whole_Segment",
             }]
@@ -988,20 +1190,24 @@ def execute_track(track_name, records, genes, utrs, target_genes, hyphy_dir,
 
         if not regions:
             print(f"[M07] [{track_name}] WARNING: Relaxing threshold significantly to find candidates (survival mode)")
-            regions = scan_conservation(profile, window_size, 0.45)
+            # 0.45 was calibrated on the old 4-symbol entropy scale; rescale by
+            # log2(5)/log2(4) so the survival fallback keeps the same strictness.
+            regions = scan_conservation(profile, window_size, 0.45 * (MAX_ENTROPY_BITS / 2.0))
 
         if not regions:
              print(f"[M07] [{track_name}] No conserved regions found even after max relaxation. Skipping.")
              return
 
     print(f"\n[M07] [{track_name}] Step 3: HyPhy Score Mapper")
-    codon_data, gard_bps = map_hyphy_to_genome(genes, hyphy_dir, target_genes)
+    codon_data, gard_bps, gene_median_rate = map_hyphy_to_genome(genes, hyphy_dir, target_genes)
     total_positions = sum(len(codon_data[g]) for g in codon_data)
     print(f"[M07] [{track_name}] Mapped {total_positions} positions across {len(codon_data)} genes, {len(gard_bps)} GARD breakpoints")
 
     print(f"\n[M07] [{track_name}] Step 4: Biomechanical Analysis & Core × Multipliers Scoring")
     scored = score_regions(regions, profile, ref_seq, codon_data, gard_bps, genes, utrs,
-                           scoring_config, tiers_config, gard_buffer_bp)
+                           scoring_config, tiers_config, gard_buffer_bp,
+                           meme_pvalue_threshold=meme_pvalue_threshold,
+                           gene_median_rate=gene_median_rate)
 
     print(f"\n[M07] [{track_name}] Step 5: Non-Maximum Suppression (NMS)")
     final_scored = apply_nms(scored, overlap_threshold=overlap_threshold)
@@ -1079,17 +1285,36 @@ def main():
     scoring_config = bridge.get("scoring", {})
     if not scoring_config and "weights" in bridge:
         print("[M07] WARNING: Falling back to v1.0 weights config. Please update to 'scoring' config block.", file=sys.stderr)
-        # Rudimentary fallback mapping
+        # Rudimentary fallback mapping. The composite score S = w_c*C + w_p*P assumes
+        # w_c + w_p == 1.0; the legacy defaults (0.5 / 0.25) sum to 0.75, which
+        # deflates EVERY score by 25% and makes the documented 0.95/0.85 tier
+        # thresholds unreachable even for a perfect region. Renormalise so the
+        # legacy ratio is preserved but the invariant holds.
+        _w_c = bridge["weights"].get("conservation", 0.5)
+        _w_p = bridge["weights"].get("purifying", 0.25)
+        _total = _w_c + _w_p
+        if _total <= 0:
+            print("[M07] ERROR: legacy bridge.weights sum to zero.", file=sys.stderr)
+            sys.exit(1)
+        if abs(_total - 1.0) > 1e-9:
+            print(f"[M07] WARNING: legacy weights sum to {_total:.3f}, not 1.0 — "
+                  f"renormalising to conservation={_w_c/_total:.3f}, "
+                  f"purifying={_w_p/_total:.3f}.", file=sys.stderr)
         scoring_config = {
             "core": {
-                "conservation_weight": bridge["weights"].get("conservation", 0.5),
-                "purifying_weight": bridge["weights"].get("purifying", 0.25)
+                "conservation_weight": _w_c / _total,
+                "purifying_weight": _w_p / _total
             },
             "multipliers": {}
         }
         
     tiers_config = bridge.get("tiers", {})
     target_genes = config.get("hyphy", {}).get("target_genes", [])
+    # hyphy.p_value_threshold existed in every config but was read by nothing;
+    # M07 counted MEME danger sites against a hardcoded 0.05 instead. Wire it, and
+    # keep HyPhy's own recommendation (0.1) as the fallback.
+    meme_p = config.get("hyphy", {}).get("p_value_threshold", MEME_PVALUE_THRESHOLD)
+    print(f"[M07] MEME episodic-selection threshold: p < {meme_p}")
     design_regions = bridge.get("design_regions", None)   # e.g. ["segment-MP"] or null
     if design_regions:
         print(f"[M07] design_regions filter active: {design_regions}")
@@ -1113,10 +1338,32 @@ def main():
     ref_seq = str(ref_records[0].seq).upper()
     ref_id = ref_records[0].id
 
+    # COORDINATE INVARIANT: this module treats an alignment column index as a
+    # reference genome index (extract_reference_subsequence, HyPhy codon mapping,
+    # conserved_regions.bed, the manifest that M08/M09/IGV consume as ground truth).
+    # That only holds because M03 runs `augur align --reference-sequence ... --fill-gaps`,
+    # which pins the alignment length to the reference via mafft --keeplength.
+    # The invariant is enforced entirely OUTSIDE this script, so verify it here:
+    # if a different reference is ever passed, ref_seq[start:end] slices the wrong
+    # bases and Python raises nothing — every downstream coordinate is silently wrong.
+    aln_len_check = len(records[0].seq)
+    if len(ref_seq) != aln_len_check:
+        print(
+            f"ERROR: reference length ({len(ref_seq)} bp, {ref_id}) != alignment length "
+            f"({aln_len_check} bp).\n"
+            f"       M07 maps alignment columns directly onto reference coordinates, so "
+            f"these MUST match.\n"
+            f"       Likely cause: the --reference given to M07 is not the one used for "
+            f"`augur align` in M03.\n"
+            f"       Refusing to emit coordinates that would be silently wrong.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     print("[M07] ============================================")
     print("[M07]  Bridge Builder v2.0 — Biomechanical Scoring")
     print("[M07] ============================================")
-    print(f"[M07] Reference : {ref_id} ({len(ref_seq)} bp)")
+    print(f"[M07] Reference : {ref_id} ({len(ref_seq)} bp, matches alignment length)")
     print(f"[M07] Strategy  : {args.strategy}")
     if args.strategy == "windowed":
         print(f"[M07] Window    : {window_size} bp")
@@ -1132,7 +1379,8 @@ def main():
     execute_track("Universal", all_records, genes, utrs, target_genes, hyphy_dir,
                   window_size, entropy_threshold, overlap_threshold, gard_buffer_bp,
                   scoring_config, tiers_config, ref_id, ref_seq, outdir, args.build_name, buffer_bp, args.reference,
-                  strategy=args.strategy, design_regions=design_regions)
+                  strategy=args.strategy, design_regions=design_regions,
+                  meme_pvalue_threshold=meme_p)
 
     # Route B: Subtype-Specific Tracks
     if args.metadata and Path(args.metadata).exists():
@@ -1161,7 +1409,8 @@ def main():
                 execute_track(subtype, recs, genes, utrs, target_genes, hyphy_dir,
                               window_size, entropy_threshold, overlap_threshold, gard_buffer_bp,
                               scoring_config, tiers_config, ref_id, ref_seq, outdir, args.build_name, buffer_bp, args.reference,
-                              strategy=args.strategy, design_regions=design_regions)
+                              strategy=args.strategy, design_regions=design_regions,
+                              meme_pvalue_threshold=meme_p)
             else:
                 print(f"[M07] Skipping subtype {subtype} (only {len(recs)} sequences, needs >={args.min_subtype_count})")
 

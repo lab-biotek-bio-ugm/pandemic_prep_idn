@@ -96,7 +96,10 @@ TIER1_DEFAULTS = {
 # Tier 2: Secondary columns — filled silently with defaults
 TIER2_DEFAULTS = {
     "region": "Unknown",
-    "host": "Human",
+    # NOT "Human": for an influenza pipeline, silently labelling a record with a
+    # missing host as human misclassifies avian/swine-origin strains in the Auspice
+    # host colour-by. "Unknown" is honest and matches the other Tier 2 defaults.
+    "host": "Unknown",
     "division": "Unknown",
 }
 

@@ -77,7 +77,15 @@ hyphy:
   threads: 8          # 8 is sufficient for short segments (≤2000 seqs).
                       # HyPhy scales poorly beyond ~8-12 threads for short alignments.
                       # Keeping threads low allows Snakemake to run more jobs in parallel.
-  p_value_threshold: 0.1
+  p_value_threshold: 0.1   # MEME episodic-selection significance, consumed by M07 when
+                           # counting "danger sites" in a candidate region.
+                           # JUSTIFIKASI: hyphy.org merekomendasikan p <= 0.1 untuk MEME
+                           # (sengaja lebih longgar dari 0.05 konvensional, karena MEME
+                           # bersifat konservatif pada alignment kecil). FUBAR memakai
+                           # posterior probability, bukan p-value — ambangnya >= 0.9,
+                           # lihat bridge.tiers.*.min_purifying_prob.
+                           # CATATAN: sampai revisi ini nilai ini TIDAK PERNAH DIBACA;
+                           # M07 memakai 0.05 yang di-hardcode.
   methods:
     - "FUBAR"
     - "MEME"
@@ -112,9 +120,13 @@ bridge:
   design_regions:
     - "segment-HA"
   scoring:
-    core:
-      conservation_weight: 0.66
-      purifying_weight: 0.34
+    # CATATAN: blok `core` dengan conservation_weight/purifying_weight SUDAH DIHAPUS.
+    # Dulu: core = 0.66*C + 0.34*P, lalu dikali multiplier.
+    # Masalahnya bentuk aditif membuat bukti seleksi bisa MENGGANTIKAN konservasi:
+    # rentang penuh term P mampu membalik kesenjangan konservasi 25.8 poin persen,
+    # yaitu memilih situs MAF ~14.5% di atas situs yang konservasinya sempurna.
+    # Primer tidak bisa menukar mismatch hari ini dengan bukti kendala evolusi.
+    # Sekarang core = C saja, dan durabilitas jadi multiplier di bawah.
     multipliers:
       meme:
         thresholds:
@@ -125,6 +137,24 @@ bridge:
           - max_sites: 3
             multiplier: 0.7
         veto_above: 3
+      # Diskon berdasarkan LAJU PERGANTIAN NUKLEOTIDA, bukan dN/dS.
+      # FUBAR melaporkan alpha (laju sinonim) dan beta (laju non-sinonim) per kodon.
+      # Prob[alpha>beta] -- yang dipakai sebelumnya -- mengukur kendala di tingkat
+      # PROTEIN. Primer tidak membaca protein: di bawah seleksi purifying kuat,
+      # posisi kodon ke-3 (wobble) tetap bebas berubah, jadi sebuah situs bisa
+      # punya Prob[alpha>beta] tinggi tapi nukleotidanya berputar cepat -- persis
+      # kasus yang membuat primer cepat tidak berguna.
+      #
+      # rel_rate = (rata-rata laju substitusi region) / (median laju gen tsb).
+      # Self-calibrating, karena laju FUBAR relatif terhadap skala alignment sendiri.
+      #
+      # floor: satu-satunya parameter bebas, dan bacaannya langsung -- rentang penuh
+      # multiplier hanya boleh membalik kesenjangan konservasi sebesar (1 - floor).
+      # 0.95 => 5 poin persen, kira-kira selisih MAF 0% vs 1.6%.
+      durability:
+        floor: 0.95        # diskon maksimum saat pergantian nukleotida sangat cepat
+        rate_cap: 3.0      # rel_rate di atas ini langsung kena floor (3x median gen)
+        no_evidence: 0.95  # tidak ada data FUBAR (non-coding / gen tak dianalisis)
       recombination:
         near_penalty: 0.5
       gc_content:
@@ -165,7 +195,9 @@ snp_finder:
   gard_buffer_bp: 50             # Recombination breakpoint penalty buffer
   min_fixation_freq: 0.90        # Minimum frequency for an allele to be fixed
   min_coverage: 0.80             # Minimum data density ignoring N/Gaps
-  p_value_threshold: 0.01        # Statistics significance threshold
+  # p_value_threshold DIHAPUS: tidak pernah dibaca kode manapun, dan nilainya (0.01)
+  # bertentangan dengan hyphy.p_value_threshold (0.1) yang kini benar-benar dipakai.
+  # Ambang signifikansi seleksi hanya didefinisikan di blok `hyphy`.
   group_by: "subtype"            # Metadata column for classification
 
 # [M08] PrimerLab Integration
@@ -281,6 +313,17 @@ insilico_pcr:
                               # Subtypes with fewer sequences are collapsed into
                               # "Other (rare, n<30)" — cannot be generalized statistically.
   # RAA isothermal amplification binding parameters
-  raa_3prime_bp: 8            # Jumlah bp ujung 3' yang dianggap kritis (recombinase extension)
+  raa_3prime_bp: 4            # Jumlah bp ujung 3' yang dianggap kritis (recombinase extension).
+                              # JUSTIFIKASI: Higgins et al. 2022, J Mol Diagn 24(11):1207-1216
+                              # (doi:10.1016/j.jmoldx.2022.08.005) mendefinisikan "anchor region"
+                              # RPA sebagai pre-ante-penultimate s/d terminal 3' = 4 nt terakhir,
+                              # dan menemukan mismatch tunggal DI LUAR posisi terminal tidak
+                              # berdampak signifikan pada time-to-positivity. Nilai 8 sebelumnya
+                              # tidak punya sumber dan membebankan posisi 5-8 ke kuota ketat,
+                              # sehingga coverage dilaporkan terlalu rendah.
   raa_max_3prime_mm: 1        # Maks mismatch yang ditoleransi di region 3' kritis
   raa_max_internal_mm: 4      # Maks mismatch yang ditoleransi di region internal (5')
+  raa_probe_max_mm: 5         # Maks TOTAL mismatch probe-target. Probe TIDAK dinilai dengan
+                              # kinetika 3' seperti primer: ujungnya diblok (C3-spacer) sehingga
+                              # tidak bisa diperpanjang polimerase. TwistAmp manual 2.7:
+                              # performa RPA tak terpengaruh 5-9 mismatch pada primer & probe.

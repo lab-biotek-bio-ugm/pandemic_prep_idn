@@ -31,6 +31,7 @@ rule m05_hyphy_subsample:
         strategy=_SUB_CFG.get("strategy", "balanced"),
         seed=_SUB_CFG.get("seed", 42),
         min_subtype_count=config.get("global_params", {}).get("min_subtype_count", 30),
+        ref_id=config["references"].get("reference_id", ""),
         subtype_flag="" if _SUB_GRP.get("subtype", True) else "--no-group-by-subtype",
         clade_flag="" if _SUB_GRP.get("clade", True) else "--no-group-by-clade",
         country_flag="" if _SUB_GRP.get("country", True) else "--no-group-by-country",
@@ -52,6 +53,7 @@ rule m05_hyphy_subsample:
                 --strategy {params.strategy} \
                 --seed {params.seed} \
                 --min-subtype-count {params.min_subtype_count} \
+                --reference-id "{params.ref_id}" \
                 {params.subtype_flag} \
                 {params.clade_flag} \
                 {params.country_flag} \
@@ -112,6 +114,8 @@ rule m05_hyphy_fubar:
         json=f"results/{BUILD}/m05/fubar_{{gene}}.json"
     threads:
         config.get("hyphy", {}).get("threads", 32)
+    params:
+        min_seq=config.get("hyphy", {}).get("min_sequences_for_selection", 10)
     conda:
         "../envs/hyphy_macse.yaml"
     log:
@@ -126,8 +130,22 @@ rule m05_hyphy_fubar:
             --output {output.json} 2>&1 | tee {log}; then
             echo "[FUBAR] Successfully finished FUBAR analysis."
         else
-            echo "[FUBAR] HyPhy FUBAR warning: small cohort / insufficient variation. Generating fallback JSON." | tee -a {log}
-            python3 -c "import json; json.dump({{'MLE': {{'content': {{'0': []}}, 'headers': []}}, 'analysis': {{'info': 'fallback_small_cohort'}}}}, open('{output.json}', 'w'))"
+            # Two conditions may legitimately soft-fail: a genuinely small cohort,
+            # and an alignment with no usable variation (HyPhy exits non-zero on
+            # invariant/near-identical data regardless of sequence count). Anything
+            # else is a REAL error (bad tree, tip/alignment mismatch, OOM, bad args)
+            # and must NOT be masked as "no selection".
+            NSEQ=$(grep -c '^>' {input.alignment} || echo 0)
+            if grep -qiE 'not enough|too few|insufficient|invariant|no variation|at least [0-9]+ sequences' {log}; then
+                echo "[FUBAR] HyPhy reported insufficient data/variation (n=$NSEQ): writing labelled fallback JSON." | tee -a {log}
+                python3 -c "import json; json.dump({{'MLE': {{'content': {{'0': []}}, 'headers': []}}, 'analysis': {{'info': 'fallback_insufficient_variation', 'n_seq': $NSEQ}}}}, open('{output.json}', 'w'))"
+            elif [ "$NSEQ" -lt "{params.min_seq}" ]; then
+                echo "[FUBAR] Genuinely small cohort (n=$NSEQ < {params.min_seq}): writing labelled fallback JSON." | tee -a {log}
+                python3 -c "import json; json.dump({{'MLE': {{'content': {{'0': []}}, 'headers': []}}, 'analysis': {{'info': 'fallback_small_cohort', 'n_seq': $NSEQ}}}}, open('{output.json}', 'w'))"
+            else
+                echo "[FUBAR][FATAL] HyPhy FUBAR FAILED on an adequately-sized alignment (n=$NSEQ >= {params.min_seq}) with no recognised benign cause. Treating as a real error rather than 'no selection'. See {log}." | tee -a {log}
+                exit 1
+            fi
         fi
         """
 
@@ -142,6 +160,8 @@ rule m05_hyphy_meme:
         json=f"results/{BUILD}/m05/meme_{{gene}}.json"
     threads:
         config.get("hyphy", {}).get("threads", 32)
+    params:
+        min_seq=config.get("hyphy", {}).get("min_sequences_for_selection", 10)
     conda:
         "../envs/hyphy_macse.yaml"
     log:
@@ -156,8 +176,19 @@ rule m05_hyphy_meme:
             --output {output.json} 2>&1 | tee {log}; then
             echo "[MEME] Successfully finished MEME analysis."
         else
-            echo "[MEME] HyPhy MEME warning: small cohort / insufficient variation. Generating fallback JSON." | tee -a {log}
-            python3 -c "import json; json.dump({{'MLE': {{'content': {{'0': []}}, 'headers': []}}, 'analysis': {{'info': 'fallback_small_cohort'}}}}, open('{output.json}', 'w'))"
+            # See FUBAR rule: soft-fail only for a small cohort or genuinely
+            # insufficient variation; anything else is a real error.
+            NSEQ=$(grep -c '^>' {input.alignment} || echo 0)
+            if grep -qiE 'not enough|too few|insufficient|invariant|no variation|at least [0-9]+ sequences' {log}; then
+                echo "[MEME] HyPhy reported insufficient data/variation (n=$NSEQ): writing labelled fallback JSON." | tee -a {log}
+                python3 -c "import json; json.dump({{'MLE': {{'content': {{'0': []}}, 'headers': []}}, 'analysis': {{'info': 'fallback_insufficient_variation', 'n_seq': $NSEQ}}}}, open('{output.json}', 'w'))"
+            elif [ "$NSEQ" -lt "{params.min_seq}" ]; then
+                echo "[MEME] Genuinely small cohort (n=$NSEQ < {params.min_seq}): writing labelled fallback JSON." | tee -a {log}
+                python3 -c "import json; json.dump({{'MLE': {{'content': {{'0': []}}, 'headers': []}}, 'analysis': {{'info': 'fallback_small_cohort', 'n_seq': $NSEQ}}}}, open('{output.json}', 'w'))"
+            else
+                echo "[MEME][FATAL] HyPhy MEME FAILED on an adequately-sized alignment (n=$NSEQ >= {params.min_seq}) with no recognised benign cause. Treating as a real error. See {log}." | tee -a {log}
+                exit 1
+            fi
         fi
         """
 
