@@ -203,3 +203,66 @@ def test_thf_cleavage_window_claim_removed_from_docs():
     # anyone who read the old page still believing it.
     assert "there is no 2 bp cleavage window" in doc
     assert "5–9 base pair mismatches" in doc, "the contradicting source is not cited"
+
+
+# --- M10: a probe must not be judged with primer 3' kinetics ------------------
+
+def _m10():
+    return load_module("scripts/m10_insilico_pcr.py", "m10_insilico_pcr")
+
+
+def test_probe_3prime_mismatches_no_longer_reject_detection():
+    """An RAA probe carries a 3' blocking group so the polymerase cannot extend
+    it. Running it through assess_raa_binding() applied primer extension kinetics
+    to an oligo that cannot be extended, rejecting probes for mismatches at a
+    position where the chemistry gives them no effect — understating coverage for
+    exactly the sequences with 3'-proximal probe variation."""
+    m10 = _m10()
+    probe = "GAATTTCAGAGGCTATAGCGATCTCAGGTCAATCGATAGATCGCTA"
+    flip = {"A": "G", "G": "A", "C": "T", "T": "C"}
+
+    def mutate(positions):
+        s = list(probe)
+        for i in positions:
+            s[i] = flip[s[i]]
+        return "ACGTACGTAC" + "".join(s) + "TTGCAATTGC"
+
+    near_3p = mutate([len(probe) - 3, len(probe) - 6])
+    # The old criterion rejected this; the mismatch load is only 2.
+    assert m10.assess_raa_binding(probe, near_3p, critical_3prime_bp=8,
+                                  max_3prime_mm=1, max_internal_mm=4)[0] is False
+    ok, n_mm = m10.assess_probe_binding(probe, near_3p, max_mismatches=5)
+    assert ok is True and n_mm == 2
+
+
+def test_probe_still_rejected_above_the_documented_tolerance():
+    """The TwistAmp manual's 5-9 range is a tolerance, not a licence: a probe
+    carrying more mismatches than the threshold must still fail."""
+    m10 = _m10()
+    probe = "GAATTTCAGAGGCTATAGCGATCTCAGGTCAATCGATAGATCGCTA"
+    flip = {"A": "G", "G": "A", "C": "T", "T": "C"}
+    s = list(probe)
+    for i in (3, 9, 15, 21, 28, 35, 42):
+        s[i] = flip[s[i]]
+    amp = "ACGTACGTAC" + "".join(s) + "TTGCAATTGC"
+    ok, n_mm = m10.assess_probe_binding(probe, amp, max_mismatches=5)
+    assert ok is False and n_mm == 7
+
+
+def test_absent_probe_does_not_block_detection():
+    """A candidate with no probe means detection == amplification, not failure."""
+    m10 = _m10()
+    assert m10.assess_probe_binding("", "ACGTACGT", max_mismatches=5) == (True, 0)
+
+
+def test_probe_threshold_is_wired_end_to_end():
+    """A threshold that exists only as a CLI default is not configurable."""
+    import yaml
+    cfg = yaml.safe_load(open("config/config.yaml"))
+    assert cfg["insilico_pcr"]["raa_probe_max_mm"] == 5
+    smk = open("rules/m10_insilico_pcr.smk").read()
+    assert "raa_probe_max_mm=config" in smk
+    assert "--raa-probe-max-mm {params.raa_probe_max_mm}" in smk
+    src = open("scripts/m10_insilico_pcr.py").read()
+    # No probe path may still call the primer routine.
+    assert "assess_raa_binding(\n                            probe_deg" not in src

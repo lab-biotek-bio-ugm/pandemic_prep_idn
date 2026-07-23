@@ -27,6 +27,10 @@ A full audit of the pipeline's scripts and algorithms, followed by validation of
 - **Documented the $\Delta G$ thresholds' provenance.** No validated RPA/RAA-specific threshold exists — TwistAmp §2.2 says there are "no fixed rules" and prescribes bench screening. The −9/−12 kcal/mol values derive from general IDT guidance, and because they are evaluated at 39°C rather than 60°C they are stricter than they appear: over 200 random 32-mer pairs, 88% fall below −3 at 39°C versus 6.5% at 60°C.
 - **Every report now carries a methodology note** stating these caveats, so a bench reader sees them without opening the docs.
 
+### Corrected — M10 probe assessment
+
+- **A probe was being judged as if it were a primer.** M10 ran the probe through the same `assess_raa_binding()` routine as the primers (`raa_3prime_bp=8`, `raa_max_3prime_mm=1`), applying extension kinetics to an oligo that carries a 3' blocking group precisely so the polymerase *cannot* extend it. Probes are now judged on total mismatch load (`raa_probe_max_mm`, default 5 — the conservative end of the 5–9 range TwistAmp §2.7 describes as tolerated). Only probes with more than one mismatch clustered near the 3' end change verdict, but those were counted as detection failures, so reported RAA coverage was **understated** for exactly the sequences carrying 3'-proximal probe variation.
+
 ### Added — PrimerLab data flow
 
 - `Primer.to_dict()` now exports `thf_index`, `probe_type`, `probe_label_mismatches` and `probe_compliant`. The abasic-site position was computed and then discarded before serialisation, so no downstream module could locate the cleavage site.

@@ -297,6 +297,12 @@ insilico_pcr:
   raa_3prime_bp: 8            # Jumlah bp ujung 3' yang dianggap kritis (recombinase extension)
   raa_max_3prime_mm: 1        # Maks mismatch yang ditoleransi di region 3' kritis
   raa_max_internal_mm: 4      # Maks mismatch yang ditoleransi di region internal (5')
+  raa_probe_max_mm: 5         # Maks TOTAL mismatch probe-target (RAA). Probe TIDAK dinilai
+                              # dengan kinetika 3' seperti primer: ujung 3'-nya diblok
+                              # (C3-spacer) sehingga tidak bisa diperpanjang polimerase.
+                              # Kriterianya hibridisasi keseluruhan. TwistAmp manual 2.7:
+                              # performa RPA tidak terpengaruh oleh 5-9 mismatch pada
+                              # primer maupun probe; 5 = ujung konservatif rentang itu.
                               # CATATAN: untuk primer reverse, ujung 3' oligo berada di
                               # INDEKS 0 (karena disimpan dalam orientasi genomik = RC dari
                               # oligo 5'->3'). M10 menanganinya lewat three_prime_at='left'.

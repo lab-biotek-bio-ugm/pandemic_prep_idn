@@ -107,6 +107,33 @@ def reverse_complement(seq: str) -> str:
     }
     return "".join(complement.get(base.upper(), base) for base in reversed(seq))
 
+def assess_probe_binding(probe_seq: str, amplicon_seq: str,
+                         max_mismatches: int) -> tuple:
+    """Decide whether an RAA probe still reports on this amplicon.
+
+    A probe is NOT a primer and must not be judged like one. Its 3' terminus
+    carries a blocking group (C3-spacer, phosphate or biotin-TEG) precisely so the
+    polymerase cannot extend it, so a mismatch there has none of the extension
+    consequence that makes 3' mismatches decisive for a primer. Running the probe
+    through assess_raa_binding() — as this module previously did, with the primer
+    settings critical_3prime_bp=8 / max_3prime_mm=1 — rejected probes for
+    mismatches at a position where the chemistry gives them no effect.
+
+    What governs a probe instead is whether it hybridises well enough for the
+    repair enzyme to find the abasic residue in a duplex context, which is a
+    whole-oligo property. The TwistAmp Assay Design Manual §2.7 reports RPA
+    performance "not affected when primers and probe carry 5-9 base pair
+    mismatches", so the total count is the criterion and the default sits at the
+    conservative end of that range.
+
+    Returns (ok, n_mismatches).
+    """
+    if not probe_seq:
+        return (True, 0)
+    n_mm = min_mismatches_sliding_window(probe_seq, amplicon_seq)
+    return (n_mm <= max_mismatches, n_mm)
+
+
 def min_mismatches_sliding_window(probe_seq: str, amplicon_seq: str) -> int:
     """Find the minimum mismatches of the probe in the amplicon sequence (IUPAC-aware)."""
     probe_len = len(probe_seq)
@@ -656,29 +683,16 @@ def _evaluate_candidate(idx_cand, args, seq_mappings, actual_candidates, seqkit_
             # probe_deg and probe_possible are always in 5'->3' format.
             if probe_deg:
                 if has_deg_pool and probe_possible:
-                    # Best-of-pool for probe (5'->3' format)
+                    # Best-of-pool: the synthesised pool contains every variant, so
+                    # the best-matching one determines whether the tube reports.
                     prb_mismatch = min(
                         min_mismatches_sliding_window(pv, amp_seq) for pv in probe_possible
                     )
-                    probe_raa_ok = False
-                    for pv in probe_possible:
-                        ok, _, _, _ = assess_raa_binding(
-                            pv, amp_seq,
-                            critical_3prime_bp=args.raa_3prime_bp,
-                            max_3prime_mm=args.raa_max_3prime_mm,
-                            max_internal_mm=args.raa_max_internal_mm,
-                        )
-                        if ok:
-                            probe_raa_ok = True
-                            break
                 else:
                     prb_mismatch = min_mismatches_sliding_window(probe_deg, amp_seq)
-                    probe_raa_ok, _, _, _ = assess_raa_binding(
-                        probe_deg, amp_seq,
-                        critical_3prime_bp=args.raa_3prime_bp,
-                        max_3prime_mm=args.raa_max_3prime_mm,
-                        max_internal_mm=args.raa_max_internal_mm,
-                    )
+                # A probe is judged on its total mismatch load, not on primer 3'
+                # kinetics — see assess_probe_binding() for why.
+                probe_raa_ok = prb_mismatch <= args.raa_probe_max_mm
                 raa_probe_mm = prb_mismatch
             else:
                 prb_mismatch = 0
@@ -808,22 +822,18 @@ def _evaluate_candidate(idx_cand, args, seq_mappings, actual_candidates, seqkit_
                     is_raa_amp_des = _fwd_ok and _rev_ok
                 # Probe RAA check (only if primer binding passes)
                 if is_raa_amp_des and probe:
+                    # Same criterion as the surveillance path: total mismatch load,
+                    # not primer 3' kinetics (the probe's 3' end is blocked).
                     if has_deg_pool and probe_possible:
-                        is_raa_det_des = any(
-                            assess_raa_binding(
-                                pv, amp_seq_des,
-                                critical_3prime_bp=args.raa_3prime_bp,
-                                max_3prime_mm=args.raa_max_3prime_mm,
-                                max_internal_mm=args.raa_max_internal_mm,
-                            )[0]
+                        _prb_mm_des = min(
+                            min_mismatches_sliding_window(pv, amp_seq_des)
                             for pv in probe_possible
                         )
+                        is_raa_det_des = _prb_mm_des <= args.raa_probe_max_mm
                     else:
-                        is_raa_det_des, _, _, _ = assess_raa_binding(
+                        is_raa_det_des, _ = assess_probe_binding(
                             probe_deg, amp_seq_des,
-                            critical_3prime_bp=args.raa_3prime_bp,
-                            max_3prime_mm=args.raa_max_3prime_mm,
-                            max_internal_mm=args.raa_max_internal_mm,
+                            max_mismatches=args.raa_probe_max_mm,
                         )
                 elif is_raa_amp_des and not probe:
                     # No probe → detection == amplification
@@ -987,6 +997,12 @@ def main():
                         help="Number of 3' end bases considered critical for RAA binding (default: 8)")
     parser.add_argument("--raa-max-3prime-mm", type=int, default=1,
                         help="Max mismatches allowed in the RAA critical 3' region (default: 1)")
+    parser.add_argument("--raa-probe-max-mm", type=int, default=5,
+                        help="Max total probe-target mismatches tolerated in RAA mode "
+                             "(default: 5). A probe is 3'-blocked and cannot be extended, "
+                             "so it is judged on whole-oligo hybridisation rather than on "
+                             "primer 3' kinetics; TwistAmp manual 2.7 reports RPA "
+                             "unaffected by 5-9 mismatches in primers and probe.")
     parser.add_argument("--raa-max-internal-mm", type=int, default=4,
                         help="Max mismatches allowed in the RAA internal/5' region (default: 4)")
     parser.add_argument("--min-subtype-seqs", type=int, default=30,

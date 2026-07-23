@@ -52,7 +52,23 @@ Fluorogenic RAA probes carry an internal abasic residue (tetrahydrofuran, THF) b
 
     Implementing the rule would also have been self-defeating. Where a probe cannot find two suitably spaced thymines, PrimerLab now deliberately places a dT label on a non-T base — the vendor-sanctioned fallback above. A window check would have flagged the pipeline's own design as a defect. Those positions are exported as `probe_label_mismatches` so they can be discounted rather than counted as target variation.
 
-**What M10 checks instead**: the probe's overall mismatch load against each surveillance sequence, warning above ~5 mismatches — the lower bound of the range the manual describes as tolerated. Probe geometry itself (≥30 bases 5' of the abasic residue, ≥15 bases 3', dT-flanked labels) is enforced upstream at design time in PrimerLab, not re-derived here.
+### What M10 checks instead
+
+A probe is judged on its **total mismatch load** against each surveillance sequence — `raa_probe_max_mm`, default **5**, the conservative end of the 5–9 range the manual describes as tolerated. Probe geometry itself (≥30 bases 5' of the abasic residue, ≥15 bases 3', dT-flanked labels) is enforced upstream at design time in PrimerLab and is not re-derived here.
+
+!!! warning "Corrected: a probe was being judged as if it were a primer"
+    Until this revision, M10 ran the probe through the **same** `assess_raa_binding()` routine as the primers, with `raa_3prime_bp=8` and `raa_max_3prime_mm=1`. That applies primer extension kinetics to an oligo that is chemically prevented from being extended: an RAA probe carries a 3' blocking group (C3-spacer, phosphate or biotin-TEG) precisely so the polymerase cannot extend it, so a mismatch at its 3' terminus has none of the consequence that makes 3' mismatches decisive for a primer.
+
+    The effect was a false rejection. Measured on a 46 nt probe:
+
+    | Mismatch pattern | Old (primer kinetics) | New (total load) |
+    |---|---|---|
+    | 2 mismatches in the last 8 bases | **rejected** | detected (2 mm) |
+    | 2 mismatches mid-probe | detected | detected (2 mm) |
+    | 5 mismatches scattered | detected | detected (5 mm) |
+    | 7 mismatches scattered | rejected | rejected (7 mm) |
+
+    Only probes with more than one mismatch clustered near the 3' end change verdict — but those were being counted as detection failures, so reported RAA coverage was **understated** for exactly the sequences carrying 3'-proximal probe variation.
 
 ---
 
