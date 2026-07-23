@@ -236,3 +236,54 @@ def clear_caches() -> None:
     """
     _heterodimer_cache.clear()
     _raw_p3_cache.clear()
+
+
+# ---------------------------------------------------------------------------
+# Spectral Dye Channel Separation
+# ---------------------------------------------------------------------------
+# Maps common qPCR fluorophores to their detection channel. Two targets read on
+# the SAME channel cannot be distinguished in a multiplex, so they collide.
+DYE_CHANNELS = {
+    "FAM": "green", "SYBR": "green", "SYTO9": "green", "ALEXA488": "green",
+    "HEX": "yellow", "VIC": "yellow", "JOE": "yellow", "TET": "yellow", "YAKIMA": "yellow",
+    "CY3": "orange", "NED": "orange", "TAMRA": "orange", "ATTO550": "orange",
+    "ROX": "red", "TEXASRED": "red", "CALRED610": "red", "CALFLUORRED610": "red",
+    "CY5": "farred", "QUASAR670": "farred", "ATTO647N": "farred",
+    "CY5.5": "infrared", "QUASAR705": "infrared",
+}
+
+
+def _normalize_dye(dye: str) -> str:
+    return (dye or "").upper().replace(" ", "").replace("-", "").replace("_", "")
+
+
+def check_dye_separation(*dyes: str) -> Tuple[str, bool]:
+    """Verify that every target in a multiplex is read on a distinct spectral channel.
+
+    Returns (human_readable_status, ok). ``ok`` is False if any two dyes map to the
+    same detection channel (a collision — targets become indistinguishable) or if a
+    dye is not in DYE_CHANNELS (cannot be verified — reported, never silently passed).
+    """
+    names = [d for d in dyes if d]
+    channels = []
+    unknown = []
+    for d in names:
+        ch = DYE_CHANNELS.get(_normalize_dye(d))
+        if ch is None:
+            unknown.append(d)
+        channels.append((d, ch))
+
+    if unknown:
+        return (f"UNKNOWN (dye(s) not in channel table: {', '.join(unknown)}; "
+                f"cannot verify spectral separation)", False)
+
+    # Detect any shared channel between two distinct targets.
+    seen = {}
+    for d, ch in channels:
+        if ch in seen:
+            return (f"FAIL ({seen[ch]} & {d} share the '{ch}' channel — "
+                    f"targets cannot be distinguished)", False)
+        seen[ch] = d
+
+    labels = ", ".join(f"{d}={ch}" for d, ch in channels)
+    return (f"PASSED (distinct channels: {labels})", True)
