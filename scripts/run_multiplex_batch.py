@@ -18,10 +18,56 @@ def run_cmd(cmd):
         print(f"[Error] Command failed with code {res.returncode}: {cmd}")
         sys.exit(res.returncode)
 
+# Sentinel used when a target's detection fluorophore cannot be determined from
+# config. Passing this (rather than letting the checker fall back to FAM/HEX)
+# makes check_dye_separation report UNKNOWN instead of silently asserting that
+# two targets are spectrally separated.
+UNRESOLVED_DYE = "UNRESOLVED"
+
+
 def parse_build_name(config_path):
     with open(config_path, "r") as f:
         cfg = yaml.safe_load(f)
     return cfg.get("build_name", os.path.basename(config_path).replace(".yaml", ""))
+
+
+def resolve_dye(cfg, config_path):
+    """Resolve a target's probe fluorophore.
+
+    Order: explicit `dye` / `primerlab.dye` on the target config, else the
+    `parameters.probe.labels.fluorophore` of the referenced primerlab template.
+    Returns UNRESOLVED_DYE if it cannot be determined, so the multiplex dye-channel
+    check flags it rather than assuming a default.
+    """
+    primerlab = cfg.get("primerlab") or {}
+    explicit = cfg.get("dye") or primerlab.get("dye")
+    if explicit:
+        return str(explicit)
+
+    template = primerlab.get("template")
+    if not template:
+        print(f"[WARN] {config_path}: no primerlab.template — cannot resolve dye.")
+        return UNRESOLVED_DYE
+    try:
+        with open(template, "r") as f:
+            tpl = yaml.safe_load(f) or {}
+        dye = (((tpl.get("parameters") or {}).get("probe") or {})
+               .get("labels") or {}).get("fluorophore")
+        if dye:
+            return str(dye)
+        print(f"[WARN] {template}: parameters.probe.labels.fluorophore missing.")
+    except Exception as e:
+        print(f"[WARN] Could not read dye from template '{template}': {e}")
+    return UNRESOLVED_DYE
+
+
+def parse_target_meta(config_path):
+    """Return (build_name, dye, label) for one target config."""
+    with open(config_path, "r") as f:
+        cfg = yaml.safe_load(f) or {}
+    build = cfg.get("build_name", os.path.basename(config_path).replace(".yaml", ""))
+    label = cfg.get("target_label") or build
+    return build, resolve_dye(cfg, config_path), label
 
 def main():
     parser = argparse.ArgumentParser(description="Multi-Target Batching & Multiplex Orchestrator")
@@ -30,19 +76,27 @@ def main():
     parser.add_argument("--skip-snakemake", action="store_true", help="Skip Snakemake runs if result folders already exist")
     parser.add_argument("--snakemake-args", type=str, default="--use-conda --rerun-incomplete", help="Additional flags to pass directly to Snakemake (e.g., '--use-conda --unlock --rerun-incomplete')")
     parser.add_argument("--num-candidates", type=int, default=10, help="Number of top candidates per target to screen for multiplexing")
+    parser.add_argument("--outdir", default="supplementary", help="Output directory for the supplementary workbooks")
+    parser.add_argument("--skip-export", action="store_true", help="Skip the supplementary export step")
+    parser.add_argument("--mirror-dir", default=os.environ.get("SUPPLEMENTARY_MIRROR_DIR", ""),
+                        help="Optional directory to mirror the supplementary folder into "
+                             "(default: $SUPPLEMENTARY_MIRROR_DIR, unset = no mirroring)")
     args = parser.parse_args()
 
     build_names = []
-    
+    targets = {}  # build_name -> {"dye": ..., "label": ...}
+
     print("=" * 80)
     print("🚀 PANDEMIC PREPAREDNESS MULTI-TARGET BATCH ORCHESTRATOR")
     print("=" * 80)
 
     # Step 1: Run Snakemake for each target config
     for idx, cfg in enumerate(args.configs, 1):
-        build_name = parse_build_name(cfg)
+        build_name, dye, label = parse_target_meta(cfg)
         build_names.append((cfg, build_name))
-        print(f"\n[Target {idx}/{len(args.configs)}] Config: {cfg} ---> Build: {build_name}")
+        targets[build_name] = {"dye": dye, "label": label}
+        print(f"\n[Target {idx}/{len(args.configs)}] Config: {cfg} ---> Build: {build_name} "
+              f"(dye: {dye})")
         
         if args.skip_snakemake:
             print(f"[Info] --skip-snakemake flag set. Skipping Snakemake execution for {build_name}.")
@@ -77,13 +131,23 @@ def main():
                         break
 
             out_dir = f"results/multiplex-{build_a}_x_{build_b}"
-            
-            print(f"\n[Multiplex Pair] {build_a}  <--->  {build_b}")
+            meta_a = targets.get(build_a, {})
+            meta_b = targets.get(build_b, {})
+            dye_a = meta_a.get("dye", UNRESOLVED_DYE)
+            dye_b = meta_b.get("dye", UNRESOLVED_DYE)
+
+            print(f"\n[Multiplex Pair] {build_a} ({dye_a})  <--->  {build_b} ({dye_b})")
             print(f"  Input A: {cand_a}")
             print(f"  Input B: {cand_b}")
             print(f"  Output: {out_dir}")
 
-            m11_cmd = f"python scripts/m11_multiplex_checker.py --file-a {cand_a} --file-b {cand_b} --outdir {out_dir} --num-candidates {args.num_candidates}"
+            m11_cmd = (
+                f"python scripts/m11_multiplex_checker.py"
+                f" --file-a {cand_a} --file-b {cand_b} --outdir {out_dir}"
+                f" --num-candidates {args.num_candidates}"
+                f" --dye-a {dye_a} --dye-b {dye_b}"
+                f" --label-a {meta_a.get('label', build_a)} --label-b {meta_b.get('label', build_b)}"
+            )
             run_cmd(m11_cmd)
 
     # Step 3: Execute Module 11 Triplex Compatibility for 3 targets if present
@@ -109,14 +173,49 @@ def main():
         cand_c = find_candidates(build_c)
         
         out_dir = "results/multiplex-triplex-all-3"
-        print(f"\n[Triplex Combo] {build_a} + {build_b} + {build_c}")
+        meta_a = targets.get(build_a, {})
+        meta_b = targets.get(build_b, {})
+        meta_c = targets.get(build_c, {})
+        dye_a = meta_a.get("dye", UNRESOLVED_DYE)
+        dye_b = meta_b.get("dye", UNRESOLVED_DYE)
+        dye_c = meta_c.get("dye", UNRESOLVED_DYE)
+
+        print(f"\n[Triplex Combo] {build_a} ({dye_a}) + {build_b} ({dye_b}) + {build_c} ({dye_c})")
         print(f"  Input A: {cand_a}")
         print(f"  Input B: {cand_b}")
         print(f"  Input C: {cand_c}")
         print(f"  Output: {out_dir}")
-        
-        triplex_cmd = f"python scripts/m11_triplex_checker.py --file-a {cand_a} --file-b {cand_b} --file-c {cand_c} --outdir {out_dir} --num-candidates {args.num_candidates}"
+
+        triplex_cmd = (
+            f"python scripts/m11_triplex_checker.py"
+            f" --file-a {cand_a} --file-b {cand_b} --file-c {cand_c} --outdir {out_dir}"
+            f" --num-candidates {args.num_candidates}"
+            f" --dye-a {dye_a} --dye-b {dye_b} --dye-c {dye_c}"
+            f" --label-a {meta_a.get('label', build_a)}"
+            f" --label-b {meta_b.get('label', build_b)}"
+            f" --label-c {meta_c.get('label', build_c)}"
+        )
         run_cmd(triplex_cmd)
+
+    # Step 4: Consolidate supplementary workbooks, restricted to THIS run's targets
+    # so builds from previous runs cannot leak into the exported reports.
+    if not args.skip_export:
+        print("\n" + "=" * 80)
+        print("📊 CONSOLIDATING SUPPLEMENTARY EXCEL REPORTS")
+        print("=" * 80)
+
+        active = " ".join(b for _, b in build_names)
+        export_cmd = (
+            f"python3 scripts/export_supplementary.py"
+            f" --results-dir results --outdir {args.outdir}"
+            f" --only-degenerate --active-targets {active}"
+        )
+        run_cmd(export_cmd)
+
+        if args.mirror_dir:
+            print(f"[Orchestrator] Mirroring supplementary folder to {args.mirror_dir} ...")
+            os.makedirs(args.mirror_dir, exist_ok=True)
+            run_cmd(f"cp -r {args.outdir}/* {args.mirror_dir}/")
 
     print("\n" + "=" * 80)
     print("✅ MULTI-TARGET BATCHING & MULTIPLEX SCREENING COMPLETED SUCCESSFULLY!")

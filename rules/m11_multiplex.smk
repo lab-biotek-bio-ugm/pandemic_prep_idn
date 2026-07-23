@@ -29,6 +29,27 @@ wildcard_constraints:
     build_c = r"[^/]+"
 
 
+# Per-build detection fluorophore / display label for the multiplex rules.
+# The main Snakefile loads ONE config, so cross-build dyes must be declared
+# explicitly, e.g.:
+#   multiplex:
+#     dyes:   {influenza-a-mp-indo-only: FAM, influenza-b-mp-indo-only: HEX}
+#     labels: {influenza-a-mp-indo-only: "Influenza A MP"}
+# Unknown builds resolve to UNRESOLVED so check_dye_separation reports UNKNOWN
+# rather than silently assuming the targets are spectrally separated.
+_MUX_CFG = config.get("multiplex", {}) or {}
+_DYE_MAP = _MUX_CFG.get("dyes", {}) or {}
+_LABEL_MAP = _MUX_CFG.get("labels", {}) or {}
+
+
+def _dye_for(build):
+    return _DYE_MAP.get(build, "UNRESOLVED")
+
+
+def _label_for(build):
+    return _LABEL_MAP.get(build, build)
+
+
 def _find_m09_candidates(build):
     """Resolve a build's degenerate M09 final_candidates.json without hardcoding the
     segment. Returns the on-disk path if present, else a deterministic expected path
@@ -52,7 +73,11 @@ rule m11_multiplex_compatibility:
     params:
         outdir         = "results/multiplex-{build_a}_x_{build_b}",
         num_candidates = 10,
-        max_variants   = config.get("primerlab", {}).get("design", {}).get("degenerate", {}).get("max_iupac_variants", 16)
+        max_variants   = config.get("primerlab", {}).get("design", {}).get("degenerate", {}).get("max_iupac_variants", 16),
+        dye_a          = lambda wc: _dye_for(wc.build_a),
+        dye_b          = lambda wc: _dye_for(wc.build_b),
+        label_a        = lambda wc: _label_for(wc.build_a),
+        label_b        = lambda wc: _label_for(wc.build_b)
     log:
         "logs/m11_multiplex_{build_a}_x_{build_b}.log"
     shell:
@@ -62,7 +87,9 @@ rule m11_multiplex_compatibility:
             --file-b {input.target_b} \
             --outdir {params.outdir} \
             --num-candidates {params.num_candidates} \
-            --max-variants {params.max_variants} > {log} 2>&1
+            --max-variants {params.max_variants} \
+            --dye-a {params.dye_a} --dye-b {params.dye_b} \
+            --label-a "{params.label_a}" --label-b "{params.label_b}" > {log} 2>&1
         """
 
 # ------------------------------------------------------------------------------
@@ -79,7 +106,13 @@ rule m11_triplex_compatibility:
     params:
         outdir         = "results/multiplex-triplex-{build_a}_{build_b}_{build_c}",
         num_candidates = 10,
-        max_variants   = config.get("primerlab", {}).get("design", {}).get("degenerate", {}).get("max_iupac_variants", 16)
+        max_variants   = config.get("primerlab", {}).get("design", {}).get("degenerate", {}).get("max_iupac_variants", 16),
+        dye_a          = lambda wc: _dye_for(wc.build_a),
+        dye_b          = lambda wc: _dye_for(wc.build_b),
+        dye_c          = lambda wc: _dye_for(wc.build_c),
+        label_a        = lambda wc: _label_for(wc.build_a),
+        label_b        = lambda wc: _label_for(wc.build_b),
+        label_c        = lambda wc: _label_for(wc.build_c)
     log:
         "logs/m11_triplex_{build_a}_{build_b}_{build_c}.log"
     shell:
@@ -90,7 +123,9 @@ rule m11_triplex_compatibility:
             --file-c {input.target_c} \
             --outdir {params.outdir} \
             --num-candidates {params.num_candidates} \
-            --max-variants {params.max_variants} > {log} 2>&1
+            --max-variants {params.max_variants} \
+            --dye-a {params.dye_a} --dye-b {params.dye_b} --dye-c {params.dye_c} \
+            --label-a "{params.label_a}" --label-b "{params.label_b}" --label-c "{params.label_c}" > {log} 2>&1
         """
 
 # ------------------------------------------------------------------------------

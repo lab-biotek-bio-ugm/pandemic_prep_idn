@@ -89,7 +89,12 @@ def is_multiplex_active(name: str) -> bool:
     present_known = [v for v in _KNOWN_VIRUSES if v in n]
     if not present_known:
         return True
-    return all(v in ACTIVE_TARGETS for v in present_known)
+    # ACTIVE_TARGETS may hold canonical virus tokens ("influenza-a") or full build
+    # names ("influenza-a-mp-indo-only"), so match in both directions.
+    def _active(v: str) -> bool:
+        return any(v == a or v in a or a in v for a in ACTIVE_TARGETS)
+
+    return all(_active(v) for v in present_known)
 
 CANDIDATE_COLUMNS = {
     "rank": "Rank", "status": "Status", "final_score": "Final Score", "tier": "Tier",
