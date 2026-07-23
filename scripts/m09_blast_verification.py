@@ -86,6 +86,8 @@ def main():
     outdir.mkdir(parents=True, exist_ok=True)
     
     skipped_count = 0
+    failed_count = 0
+    attempted_count = 0
     for idx, cand in enumerate(to_process):
         rank = cand.get("final_rank") or (idx + 1)
         print(f"\n--- Processing Candidate #{rank}{db_label_str} ---")
@@ -173,13 +175,17 @@ def main():
                     sys.stdout.flush()
                 
             process.wait()
-            
+
+            attempted_count += 1
             if process.returncode == 0:
                 print(f"[SUCCESS] Candidate #{rank}{db_label_str} verification complete.")
             else:
+                failed_count += 1
                 print(f"[FAIL] Candidate #{rank}{db_label_str} BLAST verification failed with exit code {process.returncode}.")
-                
+
         except Exception as e:
+            attempted_count += 1
+            failed_count += 1
             print(f"[FAIL] Error verifying candidate #{rank}{db_label_str}: {e}")
         finally:
             if os.path.exists(temp_json_path):
@@ -187,7 +193,18 @@ def main():
 
     if skipped_count > 0:
         print(f"\n[INFO] {skipped_count} candidate(s) skipped (already verified from a previous run).")
-                
+
+    # Fail loudly rather than fail-open: an unverified primer must never be
+    # allowed to look "specific" downstream just because BLAST never ran.
+    if failed_count > 0:
+        print(f"\n[WARNING] {failed_count}/{attempted_count} candidate BLAST verification(s) FAILED "
+              f"(non-zero exit or error){db_label_str}.")
+    if attempted_count > 0 and failed_count == attempted_count:
+        print("[FATAL] Every attempted BLAST verification failed (e.g. missing 'primerlab' binary, "
+              "unreachable/corrupt database). Aborting so downstream modules do not treat unverified "
+              "primers as specific.")
+        sys.exit(1)
+
     # Write marker file only if this is a standalone run (no db_label / remote mode).
     # In local dual-db mode, the Snakemake shell writes the marker after both db runs.
     if not args.db_label:
@@ -333,6 +350,15 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
         remote_score, remote_grade, remote_status = "-", "-", "-"
         remote_offtargets, remote_dangerous, remote_pathogen = "-", "-", "-"
 
+        # Which databases were EXPECTED for this candidate: a db_* subdir means a
+        # local dual-db run attempted it; absence of both means a remote run whose
+        # result sits at the candidate root. A database that was attempted but
+        # produced no parseable result is a verification FAILURE, not a benign "-".
+        human_expected = (cand_dir / "db_human").exists()
+        virus_expected = (cand_dir / "db_virus").exists()
+        remote_expected = not (human_expected or virus_expected)
+        human_failed = virus_failed = remote_failed = False
+
         # Load local human result
         human_json = cand_dir / "db_human" / "blast_result.json"
         if human_json.exists():
@@ -366,6 +392,10 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
                 human_dangerous = sum(1 for ot in fwd_list + rev_list if ot.get("three_prime_involved", False))
             except Exception as e:
                 print(f"Warning: Failed to parse human JSON for candidate {rank}: {e}")
+                human_failed = True
+        elif human_expected:
+            print(f"[FAIL] Candidate {rank}: human DB attempted but no result produced — verification incomplete.")
+            human_failed = True
 
         # Load local virus result
         virus_json = cand_dir / "db_virus" / "blast_result.json"
@@ -405,6 +435,10 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
                 virus_pathogen = fwd_path_cnt + rev_path_cnt
             except Exception as e:
                 print(f"Warning: Failed to parse virus JSON for candidate {rank}: {e}")
+                virus_failed = True
+        elif virus_expected:
+            print(f"[FAIL] Candidate {rank}: virus DB attempted but no result produced — verification incomplete.")
+            virus_failed = True
 
         # Load remote result
         remote_json = cand_dir / "blast_result.json"
@@ -447,6 +481,10 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
                 remote_pathogen = fwd_path_cnt + rev_path_cnt
             except Exception as e:
                 print(f"Warning: Failed to parse remote JSON for candidate {rank}: {e}")
+                remote_failed = True
+        elif remote_expected:
+            print(f"[FAIL] Candidate {rank}: remote BLAST expected but no result produced — verification incomplete.")
+            remote_failed = True
 
         # Fallback to alternatives.json if sequences are still empty
         fallback = alt_sequences.get(rank, {})
@@ -460,7 +498,12 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
             if not probe_seq:
                 probe_seq = fallback.get("probe", "")
 
-        if human_score == "-" and virus_score == "-" and remote_score == "-":
+        verification_incomplete = human_failed or virus_failed or remote_failed
+
+        # Skip candidates with genuinely no databases requested AND no failures.
+        # If a database was expected but failed, we must NOT skip — record it as FAIL.
+        if (human_score == "-" and virus_score == "-" and remote_score == "-"
+                and not verification_incomplete):
             continue
 
         # --- POLISH-1: BORDERLINE status for scores 65-69.9 ---
@@ -473,7 +516,17 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
                 elif score_val < 70.0:
                     is_borderline = True
 
-        if not is_pass:
+        status_reason = ""
+        if verification_incomplete:
+            # Fail-closed: an unverified database can hide a real cross-reactive
+            # off-target hit, so the candidate cannot be certified specific.
+            is_pass = False
+            missing = [name for name, failed in
+                       (("human", human_failed), ("virus", virus_failed), ("remote", remote_failed))
+                       if failed]
+            status_reason = "verification incomplete: " + ", ".join(missing) + " DB not verified"
+            status_text = "FAIL"
+        elif not is_pass:
             status_text = "FAIL"
         elif is_borderline:
             status_text = "BORDERLINE"
@@ -597,6 +650,7 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
             "remote_dangerous": remote_dangerous,
             "remote_pathogen": remote_pathogen,
             "status": status_text,
+            "status_reason": status_reason,
             "gard_near": gard_near,
             "gard_details": gard_details,
         })
