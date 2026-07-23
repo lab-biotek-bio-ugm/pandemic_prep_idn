@@ -79,6 +79,11 @@ hyphy:
                       # Keeping threads low allows Snakemake to run more jobs in parallel
                       # when processing multiple genes or when integrated with other pipelines.
   p_value_threshold: 0.1
+  # Below this sequence count a FUBAR/MEME failure is accepted as a genuine
+  # "small cohort" and soft-fails to an empty (labelled) result. At or above it,
+  # a HyPhy failure is treated as a REAL error (bad tree, tip/alignment mismatch,
+  # OOM) and aborts the run, so a broken analysis is never read as "no selection".
+  min_sequences_for_selection: 10
   methods:
     - "FUBAR"
     - "MEME"
@@ -289,6 +294,39 @@ insilico_pcr:
   raa_3prime_bp: 8            # Jumlah bp ujung 3' yang dianggap kritis (recombinase extension)
   raa_max_3prime_mm: 1        # Maks mismatch yang ditoleransi di region 3' kritis
   raa_max_internal_mm: 4      # Maks mismatch yang ditoleransi di region internal (5')
+                              # CATATAN: untuk primer reverse, ujung 3' oligo berada di
+                              # INDEKS 0 (karena disimpan dalam orientasi genomik = RC dari
+                              # oligo 5'->3'). M10 menanganinya lewat three_prime_at='left'.
+
+# [M11] Multiplex Compatibility & Supplementary Reporting
+# ---------------------------------------------------------------------------
+# Dipakai saat menyaring kompatibilitas multiplex lintas-target dan saat
+# mengekspor workbook supplementary. Blok ini opsional: orkestrator
+# scripts/run_multiplex_batch.py menurunkan nilainya sendiri dari tiap config
+# target. Isi blok ini hanya bila menjalankan rule M11 langsung via Snakemake,
+# karena Snakefile hanya memuat SATU config sehingga tidak bisa mengetahui dye
+# milik build lain.
+multiplex:
+  # build_name -> fluorophore deteksi. Build yang tidak terdaftar bernilai
+  # "UNRESOLVED", sehingga pengecekan kanal melaporkan UNKNOWN alih-alih
+  # diam-diam menyatakan dua target terpisah secara spektral.
+  dyes: {}
+  #   influenza-a-mp-indo-only: "FAM"    # Channel 1 — green  (~520 nm)
+  #   influenza-b-mp-indo-only: "HEX"    # Channel 2 — yellow (~556 nm)
+  #   measles-indo-only:        "Cy5"    # Channel 3 — far-red(~670 nm)
+
+  # build_name -> nama tampilan untuk judul laporan (default: build_name).
+  labels: {}
+
+# Batasi SEMUA sheet supplementary hanya pada target berikut. Boleh berisi token
+# virus kanonik ("influenza-a") maupun build_name lengkap
+# ("influenza-a-mp-indo-only"). Kosongkan untuk auto-deteksi dari isi results/.
+# Mencegah build dari run sebelumnya (mis. Measles) bocor ke laporan.
+active_targets: []
+
+# Salin folder supplementary/ ke direktori eksternal setelah ekspor.
+# Kosongkan untuk menonaktifkan (sebelumnya path dev di-hardcode).
+supplementary_mirror_dir: ""
 
 
 
