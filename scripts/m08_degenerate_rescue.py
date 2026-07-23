@@ -14,6 +14,10 @@ import itertools
 from pathlib import Path
 import primer3
 
+# Worst-case ΔG sentinel used when a primer3 thermodynamic call fails: fail-closed
+# so an evaluation error can never be mistaken for a structure-free (safe) primer.
+_THERMO_FAIL_DG = -99.0
+
 # IUPAC degeneracy nucleotide mapping
 IUPAC_DICT = {
     'R': ['A', 'G'], 'Y': ['C', 'T'], 'S': ['G', 'C'], 'W': ['A', 'T'],
@@ -89,6 +93,7 @@ def evaluate_thermodynamics(possible_seqs: list, thermo_mode: str = "worst_case"
     gcs = []
     hairpin_dgs = []
     homodimer_dgs = []
+    thermo_failed = False  # fail-closed: a primer3 error must not read as "no structure"
 
     for seq in possible_seqs:
         # Tm calculation using primer3
@@ -96,26 +101,32 @@ def evaluate_thermodynamics(possible_seqs: list, thermo_mode: str = "worst_case"
             tm = primer3.calc_tm(seq)
             tms.append(tm)
         except Exception:
-            # Fallback Tm
+            # Fallback Tm (Wallace rule) is an accepted approximation, not a safety gate.
             w_a = seq.count('A') + seq.count('T')
             g_c = seq.count('G') + seq.count('C')
             tms.append(2 * w_a + 4 * g_c)
 
         gcs.append(calculate_gc(seq))
 
-        # Hairpin using primer3 (cal to kcal)
+        # Hairpin using primer3 (cal to kcal). On failure we CANNOT assume the primer
+        # is structure-free (that would silently pass a bad primer), so record the
+        # worst-case sentinel and flag the candidate as unverifiable.
         try:
             hp = primer3.calc_hairpin(seq).dg / 1000.0
             hairpin_dgs.append(hp)
-        except Exception:
-            hairpin_dgs.append(0.0)
+        except Exception as e:
+            print(f"[Rescue][WARN] primer3 hairpin failed for '{seq}': {e} — flagging QC as failed.")
+            hairpin_dgs.append(_THERMO_FAIL_DG)
+            thermo_failed = True
 
         # Homodimer using primer3
         try:
             hd = primer3.calc_homodimer(seq).dg / 1000.0
             homodimer_dgs.append(hd)
-        except Exception:
-            homodimer_dgs.append(0.0)
+        except Exception as e:
+            print(f"[Rescue][WARN] primer3 homodimer failed for '{seq}': {e} — flagging QC as failed.")
+            homodimer_dgs.append(_THERMO_FAIL_DG)
+            thermo_failed = True
 
     # Heterodimers between different sequences in the same pool (if any)
     cross_self_dgs = []
@@ -124,8 +135,10 @@ def evaluate_thermodynamics(possible_seqs: list, thermo_mode: str = "worst_case"
             try:
                 ht = primer3.calc_heterodimer(seq1, seq2).dg / 1000.0
                 cross_self_dgs.append(ht)
-            except Exception:
-                cross_self_dgs.append(0.0)
+            except Exception as e:
+                print(f"[Rescue][WARN] primer3 heterodimer failed for '{seq1}'/'{seq2}': {e} — flagging QC as failed.")
+                cross_self_dgs.append(_THERMO_FAIL_DG)
+                thermo_failed = True
 
     # Determine aggregated values
     min_tm = min(tms)
@@ -151,6 +164,7 @@ def evaluate_thermodynamics(possible_seqs: list, thermo_mode: str = "worst_case"
         "gc_avg": avg_gc,
         "worst_hairpin_dg": worst_hairpin,
         "worst_homodimer_dg": worst_homodimer,
+        "thermo_failed": thermo_failed,
         "tm_str": f"{min_tm:.2f} - {max_tm:.2f} °C" if min_tm != max_tm else f"{min_tm:.2f} °C",
         "gc_str": f"{min_gc:.2f} - {max_gc:.2f} %" if min_gc != max_gc else f"{min_gc:.2f} %"
     }
@@ -227,6 +241,7 @@ def rescue_primer(primer_dict: dict, iupac_seq: str, consensus_seq: str, max_mul
     updated["_gc_avg"] = thermo["gc_avg"]
     updated["_hairpin_dg"] = thermo["worst_hairpin_dg"]
     updated["_homodimer_dg"] = thermo["worst_homodimer_dg"]
+    updated["_thermo_failed"] = thermo["thermo_failed"]
 
     return updated
 
@@ -241,6 +256,13 @@ def main():
     parser.add_argument("--max-multiplier", type=int, default=16, help="Maximum allowed degeneracy combinations")
     parser.add_argument("--thermo-mode", default="worst_case", choices=["worst_case", "average", "best_case"], help="Thermodynamic evaluation mode")
     parser.add_argument("--vienna-temp", type=float, default=37.0, help="Temperature for thermodynamic calculations")
+    # QC thresholds (kcal/mol) — defaults match docs/pipeline-architecture/m08-primer-design.md.
+    # A candidate is flagged when ΔG is MORE negative (more stable structure) than the threshold.
+    parser.add_argument("--hairpin-dg-min", type=float, default=-3.0, help="Min acceptable hairpin ΔG (kcal/mol)")
+    parser.add_argument("--homodimer-dg-min", type=float, default=-5.0, help="Min acceptable homodimer ΔG (kcal/mol)")
+    parser.add_argument("--heterodimer-dg-min", type=float, default=-6.0, help="Min acceptable heterodimer/cross-dimer ΔG (kcal/mol)")
+    parser.add_argument("--tm-diff-max", type=float, default=3.0, help="Max acceptable forward/reverse Tm difference (°C)")
+    parser.add_argument("--strict-qc", action="store_true", help="Drop QC-failing candidates entirely instead of demoting them below passing ones")
 
     args = parser.parse_args()
 
@@ -332,11 +354,20 @@ def main():
         tm_diff = abs(fwd_res["_tm_avg"] - rev_res["_tm_avg"])
         qc["tm_diff"] = round(tm_diff, 2)
 
-        # Check QC criteria (thermo mode check)
-        qc["hairpin_ok"] = qc["hairpin_dg"] >= -2.0
-        qc["homodimer_ok"] = qc["homodimer_dg"] >= -6.0
-        qc["heterodimer_ok"] = qc["heterodimer_dg"] >= -7.0
-        qc["tm_balance_ok"] = tm_diff <= 3.0
+        # Check QC criteria against the documented thresholds (config-driven).
+        thermo_failed = any(
+            r.get("_thermo_failed", False) for r in (fwd_res, rev_res, prb_res) if r
+        )
+        qc["hairpin_ok"] = (qc["hairpin_dg"] >= args.hairpin_dg_min) and not thermo_failed
+        qc["homodimer_ok"] = (qc["homodimer_dg"] >= args.homodimer_dg_min) and not thermo_failed
+        qc["heterodimer_ok"] = (qc["heterodimer_dg"] >= args.heterodimer_dg_min) and not thermo_failed
+        qc["tm_balance_ok"] = tm_diff <= args.tm_diff_max
+        qc["thermo_failed"] = thermo_failed
+        # Composite gate consumed by ranking / best-primer selection.
+        qc["qc_pass"] = bool(
+            qc["hairpin_ok"] and qc["homodimer_ok"]
+            and qc["heterodimer_ok"] and qc["tm_balance_ok"]
+        )
 
         # Construct new candidate object
         new_candidate = dict(candidate)
@@ -354,12 +385,31 @@ def main():
 
         rescued_alternatives.append(new_candidate)
 
-    # Sort rescued alternatives:
-    # First priority: passes QC checks
-    # Second priority: lower/better final score (we can preserve primerlab's final score or re-sort based on worst-case penalties)
-    # We will preserve the order, but filter out bad ones if strict, or just keep them sorted by final_score.
-    # Let's keep them sorted by final_score.
-    rescued_alternatives.sort(key=lambda x: x.get("final_score", 999.0))
+    # Enforce the QC gate. In strict mode, QC-failing candidates are dropped
+    # entirely; otherwise they are demoted below every QC-passing candidate so
+    # best_primers.json can never be a candidate that failed hairpin/dimer/Tm QC.
+    n_total = len(rescued_alternatives)
+    n_pass = sum(1 for c in rescued_alternatives if c.get("qc", {}).get("qc_pass"))
+    n_fail = n_total - n_pass
+    if n_fail:
+        print(f"[Rescue] QC gate: {n_pass}/{n_total} candidates pass, {n_fail} fail "
+              f"(hairpin<{args.hairpin_dg_min} / homodimer<{args.homodimer_dg_min} / "
+              f"heterodimer<{args.heterodimer_dg_min} kcal/mol, or Tm diff>{args.tm_diff_max}°C, "
+              f"or primer3 evaluation error).")
+
+    if args.strict_qc:
+        kept = [c for c in rescued_alternatives if c.get("qc", {}).get("qc_pass")]
+        if n_fail:
+            print(f"[Rescue] --strict-qc: dropped {n_fail} QC-failing candidate(s).")
+        if not kept and n_total:
+            print("[Rescue][WARN] No candidate passed QC under --strict-qc; "
+                  "best_primers.json will be empty. Review M07 targets / thresholds.")
+        rescued_alternatives = kept
+
+    # Sort: QC-passing candidates first, then by best (lowest) final_score.
+    rescued_alternatives.sort(
+        key=lambda x: (not x.get("qc", {}).get("qc_pass", False), x.get("final_score", 999.0))
+    )
 
     # Re-rank candidates
     for idx, cand in enumerate(rescued_alternatives):
