@@ -387,3 +387,103 @@ def test_dead_bridge_p_value_threshold_removed():
     for path in glob.glob("config/config*.yaml"):
         cfg = yaml.safe_load(open(path))
         assert "p_value_threshold" not in cfg.get("bridge", {}), path
+
+
+# --- M07 core score: conservation is not substitutable ------------------------
+
+def _m07():
+    return load_module("scripts/m07_bridge_builder.py", "m07_bridge_builder")
+
+
+def test_fubar_rates_are_extracted_not_only_the_posterior():
+    """Prob[alpha>beta] measures PROTEIN-level constraint. A primer reads
+    nucleotides: under strong purifying selection the wobble position still drifts,
+    so a codon can score highly on Prob[alpha>beta] and still turn over rapidly.
+    FUBAR reports alpha and beta per codon and they were being discarded."""
+    m07 = _m07()
+    stable = m07.codon_substitution_rate(0.1, 0.05)
+    churning = m07.codon_substitution_rate(5.0, 1.0)
+    assert churning > stable * 20, "the two must be clearly separable"
+    assert m07.codon_substitution_rate(None, 0.5) is None
+    assert m07.codon_substitution_rate(0.5, None) is None
+
+    src = open("scripts/m07_bridge_builder.py").read()
+    assert '"alpha"' in src and '"beta"' in src
+    assert '"subst_rate"' in src
+
+
+def test_conservation_cannot_be_bought_with_selection_evidence():
+    """The old additive core (0.66*C + 0.34*P) let evolutionary evidence SUBSTITUTE
+    for conservation, ranking C=0.80/P=1.0 (0.868) above C=0.95/P=0.5 (0.797) —
+    a site with ~10% minor-allele frequency above one at ~1.6%."""
+    m07 = _m07()
+    cfg = {"floor": 0.95, "rate_cap": 3.0, "no_evidence": 0.95}
+    weak_cons_best_rate = 0.80 * m07.compute_durability_multiplier(0.2, cfg)
+    good_cons_worst_rate = 0.95 * m07.compute_durability_multiplier(9.0, cfg)
+    assert good_cons_worst_rate > weak_cons_best_rate
+
+    # The core must be conservation alone.
+    src = open("scripts/m07_bridge_builder.py").read()
+    assert "core = cons_norm" in src
+    assert "w_cons * cons_norm" not in src, "the additive core is still there"
+
+
+def test_durability_floor_bounds_the_tradeoff_it_can_make():
+    """The floor is the model's only free parameter and must have a direct reading:
+    the multiplier's full range may overturn a conservation gap of at most
+    (1 - floor)."""
+    m07 = _m07()
+    for floor in (0.99, 0.95, 0.90):
+        cfg = {"floor": floor, "rate_cap": 3.0, "no_evidence": floor}
+        assert m07.compute_durability_multiplier(0.5, cfg) == 1.0
+        assert m07.compute_durability_multiplier(99.0, cfg) == pytest.approx(floor)
+        # A conservation gap just larger than (1 - floor) must survive the worst
+        # possible durability penalty.
+        gap = (1 - floor) * 1.05
+        better = (1.0 - gap) * 1.0
+        worse = 1.0 * m07.compute_durability_multiplier(99.0, cfg)
+        assert worse > better
+
+
+def test_having_hyphy_data_is_never_a_penalty():
+    """A perfectly conserved coding region used to score 0.83 against a non-coding
+    region's 0.95, purely because its selection signal was weak or unmeasured."""
+    m07 = _m07()
+    cfg = {"floor": 0.95, "rate_cap": 3.0, "no_evidence": 0.95}
+    non_coding = 1.00 * m07.compute_durability_multiplier(None, cfg)
+    coding_typical = 1.00 * m07.compute_durability_multiplier(1.0, cfg)
+    assert coding_typical >= non_coding
+    assert "cons_norm * 0.95" not in open("scripts/m07_bridge_builder.py").read()
+
+
+def test_sensitivity_sweep_models_the_scorer_it_claims_to_analyse():
+    """The sweep evaluated a four-term additive score with its own grade cut-offs —
+    a model the pipeline does not run — which made it useless for justifying
+    parameters, the one job it exists for."""
+    src = open("scripts/tools/m07_sensitivity_sweep.py").read()
+    assert "cons_score * m_dur * m_meme * m_rec" in src
+    assert "weights['purifying']" not in src
+    assert "durability_multiplier" in src
+
+    # Its mirror of the multiplier must agree with the real one.
+    m07 = _m07()
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "sweep", "scripts/tools/m07_sensitivity_sweep.py")
+    sweep = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(sweep)
+    cfg = {"floor": 0.95, "rate_cap": 3.0, "no_evidence": 0.95}
+    for rel in (None, 0.5, 1.0, 1.5, 2.0, 3.0, 8.0):
+        assert sweep.durability_multiplier(rel, 0.95) == pytest.approx(
+            m07.compute_durability_multiplier(rel, cfg)), f"diverged at rel={rel}"
+
+
+def test_core_weights_removed_from_every_config():
+    import glob
+    import yaml
+    for path in glob.glob("config/config*.yaml"):
+        scoring = yaml.safe_load(open(path)).get("bridge", {}).get("scoring", {})
+        assert "core" not in scoring, f"{path} still defines core weights"
+        dur = scoring.get("multipliers", {}).get("durability")
+        assert dur is not None, f"{path} has no durability multiplier"
+        assert 0.5 < dur["floor"] <= 1.0

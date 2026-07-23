@@ -117,9 +117,13 @@ bridge:
   design_regions:
     - "segment-N"
   scoring:
-    core:
-      conservation_weight: 0.66
-      purifying_weight: 0.34
+    # CATATAN: blok `core` dengan conservation_weight/purifying_weight SUDAH DIHAPUS.
+    # Dulu: core = 0.66*C + 0.34*P, lalu dikali multiplier.
+    # Masalahnya bentuk aditif membuat bukti seleksi bisa MENGGANTIKAN konservasi:
+    # rentang penuh term P mampu membalik kesenjangan konservasi 25.8 poin persen,
+    # yaitu memilih situs MAF ~14.5% di atas situs yang konservasinya sempurna.
+    # Primer tidak bisa menukar mismatch hari ini dengan bukti kendala evolusi.
+    # Sekarang core = C saja, dan durabilitas jadi multiplier di bawah.
     multipliers:
       meme:
         thresholds:
@@ -130,6 +134,24 @@ bridge:
           - max_sites: 3
             multiplier: 0.7
         veto_above: 3
+      # Diskon berdasarkan LAJU PERGANTIAN NUKLEOTIDA, bukan dN/dS.
+      # FUBAR melaporkan alpha (laju sinonim) dan beta (laju non-sinonim) per kodon.
+      # Prob[alpha>beta] -- yang dipakai sebelumnya -- mengukur kendala di tingkat
+      # PROTEIN. Primer tidak membaca protein: di bawah seleksi purifying kuat,
+      # posisi kodon ke-3 (wobble) tetap bebas berubah, jadi sebuah situs bisa
+      # punya Prob[alpha>beta] tinggi tapi nukleotidanya berputar cepat -- persis
+      # kasus yang membuat primer cepat tidak berguna.
+      #
+      # rel_rate = (rata-rata laju substitusi region) / (median laju gen tsb).
+      # Self-calibrating, karena laju FUBAR relatif terhadap skala alignment sendiri.
+      #
+      # floor: satu-satunya parameter bebas, dan bacaannya langsung -- rentang penuh
+      # multiplier hanya boleh membalik kesenjangan konservasi sebesar (1 - floor).
+      # 0.95 => 5 poin persen, kira-kira selisih MAF 0% vs 1.6%.
+      durability:
+        floor: 0.95        # diskon maksimum saat pergantian nukleotida sangat cepat
+        rate_cap: 3.0      # rel_rate di atas ini langsung kena floor (3x median gen)
+        no_evidence: 0.95  # tidak ada data FUBAR (non-coding / gen tak dianalisis)
       recombination:
         near_penalty: 0.5
       gc_content:
