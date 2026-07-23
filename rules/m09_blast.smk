@@ -150,6 +150,7 @@ rule m09_blast_verification:
                 --ref-fasta "{params.ref_fasta}" \
                 --gff "{params.gff}" \
                 --bridge-report "{params.bridge_report_path}" \
+                --expected-dbs "human,virus" \
                 --compile-only \
                 >> "{log}" 2>&1
 
@@ -184,6 +185,7 @@ rule m09_blast_verification:
                 --gff "{params.gff}" \
                 --pathogen "{params.pathogen}" \
                 --bridge-report "{params.bridge_report_path}" \
+                --expected-dbs "remote" \
                 >> "{log}" 2>&1
 
             # Marker is written by the Python script in remote mode (no --db-label)

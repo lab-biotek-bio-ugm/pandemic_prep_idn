@@ -43,6 +43,16 @@ def main():
         "--gff", default=None,
         help="Path to GFF3 annotation file for the reference genome. Used to generate correct IGV gene tracks."
     )
+    parser.add_argument(
+        "--expected-dbs", default=None,
+        help="Comma-separated databases this run must verify (human,virus,remote). "
+             "Authoritative over directory sniffing, which is fooled by stale db_* dirs "
+             "left behind when switching between local and remote mode in one outdir."
+    )
+    parser.add_argument(
+        "--evalue-cutoff", type=float, default=None,
+        help="BLAST e-value significance threshold passed through to primerlab blast."
+    )
     
     args = parser.parse_args()
 
@@ -55,6 +65,7 @@ def main():
                 bridge_report_path=args.bridge_report,
                 ref_fasta_path=args.ref_fasta,
                 ref_annotation_gff_path=args.gff,
+                expected_dbs=_parse_expected_dbs(args.expected_dbs),
             )
         except Exception as e:
             import traceback
@@ -111,9 +122,17 @@ def main():
         
         result_check_file = result_check_dir / "blast_result.json"
         if result_check_file.exists():
-            print(f"[SKIP] Candidate #{rank}{db_label_str} already verified. Skipping (result exists at {result_check_file}).")
-            skipped_count += 1
-            continue
+            # Validate rather than trusting existence: a truncated file from an
+            # interrupted run would otherwise permanently block re-verification.
+            try:
+                with open(result_check_file, "r") as _rf:
+                    json.load(_rf)
+                print(f"[SKIP] Candidate #{rank}{db_label_str} already verified. Skipping (result exists at {result_check_file}).")
+                skipped_count += 1
+                continue
+            except Exception as _e:
+                print(f"[REDO] Candidate #{rank}{db_label_str}: existing {result_check_file.name} "
+                      f"is unreadable ({_e}); re-running verification.")
             
         # Prepare primers for BLAST (use majority_sequence if degenerate is present to prevent BLAST IUPAC issues)
         primers_to_blast = {}
@@ -152,6 +171,8 @@ def main():
                 cmd.extend(["--target", args.target])
             if args.pathogen:
                 cmd.extend(["--pathogen", args.pathogen])
+            if args.evalue_cutoff is not None:
+                cmd.extend(["--evalue", str(args.evalue_cutoff)])
             
             if args.mode == "remote":
                 cmd.append("--online")
@@ -261,6 +282,35 @@ def _safe_coord(val):
         return None
 
 
+def _parse_expected_dbs(value: Optional[str]) -> Optional[set]:
+    """Parse --expected-dbs into a set, or None to fall back to directory sniffing."""
+    if not value:
+        return None
+    return {v.strip().lower() for v in value.split(",") if v.strip()}
+
+
+def _ref_length(ref_fasta_path: Optional[str], default: int = 15000) -> int:
+    """Length of the reference sequence for the GFF3 ##sequence-region header.
+
+    Previously hardcoded to 15000, which is wrong for any target genome that is not
+    ~15 kb (e.g. a 1027 bp influenza MP segment) and makes viewers mis-scale the track.
+    """
+    if not ref_fasta_path:
+        return default
+    try:
+        total = 0
+        with open(ref_fasta_path, "r", encoding="utf-8", errors="ignore") as fh:
+            for line in fh:
+                if line.startswith(">"):
+                    if total:
+                        break  # first record only
+                    continue
+                total += len(line.strip())
+        return total or default
+    except Exception:
+        return default
+
+
 def _clean_gff_val(val):
     """Clean value for GFF3 attribute writing by removing unit suffixes
     and percent-encoding any reserved characters.
@@ -302,7 +352,8 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
                     target_id: Optional[str] = None,
                     bridge_report_path: Optional[str] = None,
                     ref_fasta_path: Optional[str] = None,
-                    ref_annotation_gff_path: Optional[str] = None):
+                    ref_annotation_gff_path: Optional[str] = None,
+                    expected_dbs: Optional[set] = None):
     """
     Scans output directory, loads JSON results for all candidates,
     and generates master CSV and Markdown reports for comparison.
@@ -360,9 +411,20 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
         # local dual-db run attempted it; absence of both means a remote run whose
         # result sits at the candidate root. A database that was attempted but
         # produced no parseable result is a verification FAILURE, not a benign "-".
-        human_expected = (cand_dir / "db_human").exists()
-        virus_expected = (cand_dir / "db_virus").exists()
-        remote_expected = not (human_expected or virus_expected)
+        #
+        # `expected_dbs` (from the caller, derived from the run's actual mode) takes
+        # precedence over directory sniffing. Sniffing alone is fooled by STALE dirs:
+        # switching local->remote in the same outdir leaves db_human/db_virus behind,
+        # which would mark remote as "not expected" and re-open the very hole this
+        # check exists to close, while serving scores from an old database.
+        if expected_dbs is not None:
+            human_expected = "human" in expected_dbs
+            virus_expected = "virus" in expected_dbs
+            remote_expected = "remote" in expected_dbs
+        else:
+            human_expected = (cand_dir / "db_human").exists()
+            virus_expected = (cand_dir / "db_virus").exists()
+            remote_expected = not (human_expected or virus_expected)
         human_failed = virus_failed = remote_failed = False
 
         # Load local human result
@@ -675,7 +737,7 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
         "Virus_Specificity_Score", "Virus_Grade", "Virus_Status", "Virus_Pathogen_Hits", "Virus_Total_Offtargets",
         "Remote_Specificity_Score", "Remote_Grade", "Remote_Status", "Remote_Total_Offtargets", "Remote_Dangerous_3Prime_Offtargets", "Remote_Pathogen_Hits",
         "GARD_Breakpoint_Nearby",
-        "Overall_Decision"
+        "Overall_Decision", "Decision_Reason"
     ]
     with open(csv_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
@@ -690,7 +752,7 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
                 d["virus_score"], d["virus_grade"], d["virus_status"], d["virus_pathogen"], d["virus_offtargets"],
                 d["remote_score"], d["remote_grade"], d["remote_status"], d["remote_offtargets"], d["remote_dangerous"], d["remote_pathogen"],
                 "YES" if d["gard_near"] else "NO",
-                d["status"]
+                d["status"], d.get("status_reason", "")
             ])
     print(f"Overall Summary CSV generated: {csv_path}")
 
@@ -785,44 +847,44 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
     try:
         with open(gff_path, "w", encoding="utf-8") as f:
             f.write("##gff-version 3\n")
-            f.write(f"##sequence-region {target} 1 15000\n")
+            f.write(f"##sequence-region {target} 1 {_ref_length(ref_fasta_path)}\n")
             for d in pass_candidates:
                 rank = d["rank"]
                 amp_start = d["amplicon_start"]
                 amp_end = d["amplicon_end"]
                 # Compute lengths of primer elements
-                fwd_len = d["fwd_end"] - d["fwd_start"] + 1 if (d["fwd_start"] is not None and d["fwd_end"] is not None) else 0
-                rev_len = d["rev_end"] - d["rev_start"] + 1 if (d["rev_start"] is not None and d["rev_end"] is not None) else 0
-                prb_len = d["probe_end"] - d["probe_start"] + 1 if (d["probe_start"] is not None and d["probe_end"] is not None) else 0
-                amp_len = amp_end - amp_start + 1 if (amp_start is not None and amp_end is not None) else 0
+                fwd_len = d["fwd_end"] - d["fwd_start"] if (d["fwd_start"] is not None and d["fwd_end"] is not None) else 0
+                rev_len = d["rev_end"] - d["rev_start"] if (d["rev_start"] is not None and d["rev_end"] is not None) else 0
+                prb_len = d["probe_end"] - d["probe_start"] if (d["probe_start"] is not None and d["probe_end"] is not None) else 0
+                amp_len = amp_end - amp_start if (amp_start is not None and amp_end is not None) else 0
 
                 # BUG-3: Only write if coordinates are valid (>= 0 and not None)
                 if amp_start is not None and amp_end is not None and amp_start < amp_end:
                     # GFF3 is 1-based, inclusive coordinates
                     clean_score = _clean_gff_val(d['final_score'])
                     clean_tier = _clean_gff_val(d['tier'])
-                    f.write(f"{target}\tPrimerLab\tmRNA\t{amp_start+1}\t{amp_end+1}\t{clean_score}\t+\t.\tID=cand_{rank}_amp;Name=Candidate_{rank}_({amp_len}_bp);Score={clean_score};Tier={clean_tier}\n")
+                    f.write(f"{target}\tPrimerLab\tmRNA\t{amp_start+1}\t{amp_end}\t{clean_score}\t+\t.\tID=cand_{rank}_amp;Name=Candidate_{rank}_({amp_len}_bp);Score={clean_score};Tier={clean_tier}\n")
                 
                 fwd_start = d["fwd_start"]
                 fwd_end = d["fwd_end"]
                 if fwd_start is not None and fwd_end is not None and fwd_start < fwd_end:
                     clean_tm = _clean_gff_val(d['fwd_tm'])
                     clean_gc = _clean_gff_val(d['fwd_gc'])
-                    f.write(f"{target}\tPrimerLab\texon\t{fwd_start+1}\t{fwd_end+1}\t.\t+\t.\tID=cand_{rank}_F;Name=Fwd_({fwd_len}_bp);Parent=cand_{rank}_amp;Tm={clean_tm};GC={clean_gc}\n")
+                    f.write(f"{target}\tPrimerLab\texon\t{fwd_start+1}\t{fwd_end}\t.\t+\t.\tID=cand_{rank}_F;Name=Fwd_({fwd_len}_bp);Parent=cand_{rank}_amp;Tm={clean_tm};GC={clean_gc}\n")
                 
                 rev_start = d["rev_start"]
                 rev_end = d["rev_end"]
                 if rev_start is not None and rev_end is not None and rev_start < rev_end:
                     clean_tm = _clean_gff_val(d['rev_tm'])
                     clean_gc = _clean_gff_val(d['rev_gc'])
-                    f.write(f"{target}\tPrimerLab\texon\t{rev_start+1}\t{rev_end+1}\t.\t-\t.\tID=cand_{rank}_R;Name=Rev_({rev_len}_bp);Parent=cand_{rank}_amp;Tm={clean_tm};GC={clean_gc}\n")
+                    f.write(f"{target}\tPrimerLab\texon\t{rev_start+1}\t{rev_end}\t.\t-\t.\tID=cand_{rank}_R;Name=Rev_({rev_len}_bp);Parent=cand_{rank}_amp;Tm={clean_tm};GC={clean_gc}\n")
                 
                 prb_start = d["probe_start"]
                 prb_end = d["probe_end"]
                 if prb_start is not None and prb_end is not None and prb_start < prb_end:
                     clean_tm = _clean_gff_val(d['probe_tm'])
                     clean_gc = _clean_gff_val(d['probe_gc'])
-                    f.write(f"{target}\tPrimerLab\texon\t{prb_start+1}\t{prb_end+1}\t.\t+\t.\tID=cand_{rank}_P;Name=Prb_({prb_len}_bp);Parent=cand_{rank}_amp;Tm={clean_tm};GC={clean_gc}\n")
+                    f.write(f"{target}\tPrimerLab\texon\t{prb_start+1}\t{prb_end}\t.\t+\t.\tID=cand_{rank}_P;Name=Prb_({prb_len}_bp);Parent=cand_{rank}_amp;Tm={clean_tm};GC={clean_gc}\n")
         print(f"GFF3 Genomic track generated: {gff_path}")
     except Exception as e:
         print(f"Warning: Failed to generate GFF3: {e}")
@@ -837,22 +899,22 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
                 amp_start = d["amplicon_start"]
                 amp_end = d["amplicon_end"]
                 if amp_start is not None and amp_end is not None and amp_start < amp_end:
-                    f.write(f"{target}\t{amp_start}\t{amp_end+1}\tCandidate_{rank}_Amplicon\t1000\t+\n")
+                    f.write(f"{target}\t{amp_start}\t{amp_end}\tCandidate_{rank}_Amplicon\t1000\t+\n")
                 
                 fwd_start = d["fwd_start"]
                 fwd_end = d["fwd_end"]
                 if fwd_start is not None and fwd_end is not None and fwd_start < fwd_end:
-                    f.write(f"{target}\t{fwd_start}\t{fwd_end+1}\tCandidate_{rank}_Forward\t800\t+\n")
+                    f.write(f"{target}\t{fwd_start}\t{fwd_end}\tCandidate_{rank}_Forward\t800\t+\n")
                 
                 rev_start = d["rev_start"]
                 rev_end = d["rev_end"]
                 if rev_start is not None and rev_end is not None and rev_start < rev_end:
-                    f.write(f"{target}\t{rev_start}\t{rev_end+1}\tCandidate_{rank}_Reverse\t800\t-\n")
+                    f.write(f"{target}\t{rev_start}\t{rev_end}\tCandidate_{rank}_Reverse\t800\t-\n")
                 
                 prb_start = d["probe_start"]
                 prb_end = d["probe_end"]
                 if prb_start is not None and prb_end is not None and prb_start < prb_end:
-                    f.write(f"{target}\t{prb_start}\t{prb_end+1}\tCandidate_{rank}_Probe\t900\t+\n")
+                    f.write(f"{target}\t{prb_start}\t{prb_end}\tCandidate_{rank}_Probe\t900\t+\n")
         print(f"BED track generated: {bed_path}")
     except Exception as e:
         print(f"Warning: Failed to generate BED: {e}")
@@ -1106,7 +1168,7 @@ def _generate_individual_forbidden_tracks(
         try:
             with open(entropy_path, "w", encoding="utf-8") as f:
                 f.write("##gff-version 3\n")
-                f.write(f"##sequence-region {target} 1 15000\n")
+                f.write(f"##sequence-region {target} 1 {_ref_length(ref_fasta_path)}\n")
                 for idx, block in enumerate(high_entropy_blocks):
                     start = block["start"]
                     end = block["end"]
@@ -1120,7 +1182,7 @@ def _generate_individual_forbidden_tracks(
         try:
             with open(meme_path, "w", encoding="utf-8") as f:
                 f.write("##gff-version 3\n")
-                f.write(f"##sequence-region {target} 1 15000\n")
+                f.write(f"##sequence-region {target} 1 {_ref_length(ref_fasta_path)}\n")
                 for idx, block in enumerate(meme_blocks):
                     start = block["start"]
                     end = block["end"]
@@ -1134,7 +1196,7 @@ def _generate_individual_forbidden_tracks(
         try:
             with open(fubar_path, "w", encoding="utf-8") as f:
                 f.write("##gff-version 3\n")
-                f.write(f"##sequence-region {target} 1 15000\n")
+                f.write(f"##sequence-region {target} 1 {_ref_length(ref_fasta_path)}\n")
                 for idx, block in enumerate(fubar_blocks):
                     start = block["start"]
                     end = block["end"]
@@ -1148,7 +1210,7 @@ def _generate_individual_forbidden_tracks(
         try:
             with open(gard_path, "w", encoding="utf-8") as f:
                 f.write("##gff-version 3\n")
-                f.write(f"##sequence-region {target} 1 15000\n")
+                f.write(f"##sequence-region {target} 1 {_ref_length(ref_fasta_path)}\n")
                 for idx, bp in enumerate(gard_breakpoints):
                     pos = bp.get("genome_pos")
                     pval = bp.get("p_value", 0.0)
