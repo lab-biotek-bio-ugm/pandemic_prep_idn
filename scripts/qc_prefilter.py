@@ -74,21 +74,40 @@ def main():
         try:
             with open(args.metadata, "r", encoding="utf-8", errors="ignore") as f:
                 reader = csv.DictReader(f, delimiter=delim)
-                
-                # Identify segment ID column (e.g., MP Segment_Id, HA Segment_Id, etc.)
-                id_col = None
-                for col in reader.fieldnames:
-                    if "Segment_Id" in col or "Accession" in col or "Isolate_Id" in col:
-                        id_col = col
-                        break
-                
+                fieldnames = reader.fieldnames or []
+
+                # Case-insensitive column lookup. M02 runs on metadata AFTER
+                # sanitize_metadata.py, which renames the ID column to 'strain'
+                # and the subtype column to lowercase 'subtype'. We still accept
+                # the legacy raw GISAID/NCBI names so pre-sanitize files also work.
+                def find_col(candidates):
+                    lower_map = {c.lower(): c for c in fieldnames}
+                    for cand in candidates:
+                        if cand.lower() in lower_map:
+                            return lower_map[cand.lower()]
+                    # substring fallback (e.g. "MP Segment_Id")
+                    for cand in candidates:
+                        for c in fieldnames:
+                            if cand.lower() in c.lower():
+                                return c
+                    return None
+
+                id_col = find_col(["strain", "Segment_Id", "Isolate_Id", "Accession", "gisaid_epi_isl"])
+                subtype_col = find_col(["subtype", "Subtype", "Subtype_Full", "serotype"])
+
                 if not id_col:
-                    print(f"WARNING: Could not find ID column in metadata. Subtype filtering might be limited.")
-                
+                    print("WARNING: Could not find ID column (tried strain/Segment_Id/Isolate_Id/Accession). "
+                          "Subtype filtering might be limited.")
+                if not subtype_col:
+                    print("WARNING: Could not find subtype column (tried subtype/Subtype/serotype). "
+                          "Subtype scarcity filter will be a no-op.")
+                else:
+                    print(f"[QC] Using ID column '{id_col}' and subtype column '{subtype_col}'.")
+
                 for row in reader:
-                    st = row.get("Subtype", "Unknown").strip()
+                    st = (row.get(subtype_col, "Unknown") if subtype_col else "Unknown").strip() or "Unknown"
                     counts[st] = counts.get(st, 0) + 1
-                    
+
                     if id_col:
                         # GISAID IDs often look like "EPI123456|NAME"
                         raw_id = row.get(id_col, "")
@@ -213,12 +232,6 @@ def main():
         "output_count": len(deduplicated),
         "retention_pct": round((len(deduplicated) / total_input) * 100, 1) if total_input > 0 else 0,
     }
-
-    report_path = Path(args.report)
-    report_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(report_path, "w") as f:
-        json.dump(report, f, indent=2)
-    print(f"[QC] Report written to: {report_path}")
 
     report_path = Path(args.report)
     report_path.parent.mkdir(parents=True, exist_ok=True)
