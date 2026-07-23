@@ -28,8 +28,17 @@ _IUPAC_MASK = {
     'M':3,'B':14,'D':13,'H':11,'V':7,'N':15,'-':0,
 }
 
-def _assess_raa_numpy(primer_seq, amp_seq, critical_3prime_bp=8, max_3prime_mm=1, max_internal_mm=4):
-    """Vectorized RAA binding assessment using numpy bitmask (~8x faster than pure Python)."""
+def _assess_raa_numpy(primer_seq, amp_seq, critical_3prime_bp=8, max_3prime_mm=1, max_internal_mm=4,
+                      three_prime_at='right'):
+    """Vectorized RAA binding assessment using numpy bitmask (~8x faster than pure Python).
+
+    ``three_prime_at`` marks which end of ``primer_seq`` carries the oligo's 3'-OH
+    terminus. Forward primers are supplied in 5'->3' orientation ('right'). Reverse
+    primers are supplied in GENOMIC (+ strand) orientation, i.e. the reverse-complement
+    of the 5'->3' oligo, so their 3' terminus sits at index 0 ('left'). Reverse-complementing
+    a sequence flips the terminus to the opposite end, so each search orientation tracks its
+    own 3' side.
+    """
     primer_len = len(primer_seq)
     amp_len    = len(amp_seq)
     if amp_len < primer_len:
@@ -37,10 +46,13 @@ def _assess_raa_numpy(primer_seq, amp_seq, critical_3prime_bp=8, max_3prime_mm=1
     internal_len = primer_len - critical_3prime_bp
     best_3p, best_int, best_tot = primer_len, primer_len, primer_len
     rc = reverse_complement(primer_seq)
-    seqs = [primer_seq] if primer_seq == rc else [primer_seq, rc]
-    for p_seq in seqs:
-        p_arr   = _np.array([_IUPAC_MASK.get(b.upper(), 15) for b in p_seq], dtype=_np.uint8)
-        amp_arr = _np.array([_IUPAC_MASK.get(b.upper(), 15) for b in amp_seq], dtype=_np.uint8)
+    flipped = 'left' if three_prime_at == 'right' else 'right'
+    orientations = [(primer_seq, three_prime_at)]
+    if primer_seq != rc:
+        orientations.append((rc, flipped))
+    amp_arr = _np.array([_IUPAC_MASK.get(b.upper(), 15) for b in amp_seq], dtype=_np.uint8)
+    for p_seq, tp_side in orientations:
+        p_arr = _np.array([_IUPAC_MASK.get(b.upper(), 15) for b in p_seq], dtype=_np.uint8)
         n_win = amp_len - primer_len + 1
         if n_win <= 0:
             continue
@@ -48,8 +60,12 @@ def _assess_raa_numpy(primer_seq, amp_seq, critical_3prime_bp=8, max_3prime_mm=1
         wins = _np.lib.stride_tricks.as_strided(amp_arr, shape=(n_win, primer_len), strides=(s, s))
         mm = ((p_arr[None, :] & wins) == 0).view(_np.uint8)
         tot_arr = mm.sum(axis=1)
-        int_arr = mm[:, :internal_len].sum(axis=1)
-        t3_arr  = mm[:, internal_len:].sum(axis=1)
+        if tp_side == 'right':
+            int_arr = mm[:, :internal_len].sum(axis=1)
+            t3_arr  = mm[:, internal_len:].sum(axis=1)
+        else:  # 3' terminus at index 0 (reverse primer in genomic orientation)
+            t3_arr  = mm[:, :critical_3prime_bp].sum(axis=1)
+            int_arr = mm[:, critical_3prime_bp:].sum(axis=1)
         bi = int(tot_arr.argmin())
         tot = int(tot_arr[bi]); t3 = int(t3_arr[bi]); it = int(int_arr[bi])
         if tot < best_tot:
@@ -121,6 +137,7 @@ def assess_raa_binding(
     critical_3prime_bp: int = 8,
     max_3prime_mm: int = 1,
     max_internal_mm: int = 4,
+    three_prime_at: str = 'right',
 ) -> tuple:
     """Assess if a primer can bind in RAA/RPA conditions.
 
@@ -128,6 +145,12 @@ def assess_raa_binding(
     - Recombinase (RecA-like) loads on the primer and drives strand invasion.
     - INTERNAL mismatches (5' half) are tolerated because recombinase can bypass them.
     - 3' END mismatches are CRITICAL: polymerase needs accurate 3' annealing for extension.
+
+    ``three_prime_at`` marks which end of ``primer_seq`` holds the oligo's 3'-OH terminus.
+    Forward primers are given in 5'->3' orientation ('right'); reverse primers are given in
+    GENOMIC (+ strand) orientation — the reverse-complement of the 5'->3' oligo — so their
+    3' terminus is at index 0 ('left'). Reverse-complementing flips the terminus to the other
+    end, so each of the two search orientations tracks its own 3' side.
 
     Returns:
         (is_raa_bound, 3prime_mm, internal_mm, total_mm)
@@ -140,21 +163,30 @@ def assess_raa_binding(
     best_3prime_mm = primer_len
     best_internal_mm = primer_len
     best_total_mm = primer_len
+    internal_len = primer_len - critical_3prime_bp
 
-    for p_seq in [primer_seq, reverse_complement(primer_seq)]:
+    rc_seq = reverse_complement(primer_seq)
+    flipped = 'left' if three_prime_at == 'right' else 'right'
+    orientations = [(primer_seq, three_prime_at)]
+    if rc_seq != primer_seq:
+        orientations.append((rc_seq, flipped))
+
+    for p_seq, tp_side in orientations:
         for i in range(amp_len - primer_len + 1):
             window = amp_seq[i : i + primer_len]
             total_mm = 0
             three_prime_mm = 0
             internal_mm = 0
-            internal_len = primer_len - critical_3prime_bp
 
             for j in range(primer_len):
                 mismatch = not match_base(p_seq[j], window[j])
                 if mismatch:
                     total_mm += 1
-                    # Positions [internal_len .. end] are the 3' end
-                    if j >= internal_len:
+                    if tp_side == 'right':
+                        is_three_prime = j >= internal_len
+                    else:  # 3' terminus at index 0
+                        is_three_prime = j < critical_3prime_bp
+                    if is_three_prime:
                         three_prime_mm += 1
                     else:
                         internal_mm += 1
@@ -174,6 +206,19 @@ def assess_raa_binding(
 
 import tempfile
 import itertools
+
+# Shared fail-closed subprocess primitive (keeps "tool crashed" distinct from
+# "tool ran, no amplicon"). scripts/tools is on sys.path when run via Snakemake;
+# fall back gracefully if imported in isolation.
+try:
+    from pathlib import Path as _Path
+    sys.path.insert(0, str(_Path(__file__).resolve().parent / "tools"))
+    from proc_utils import run_tool, require_tool, ToolError
+    _HAS_PROC_UTILS = True
+except Exception:  # pragma: no cover - defensive import guard
+    _HAS_PROC_UTILS = False
+    class ToolError(RuntimeError):
+        pass
 
 def is_degenerate(seq: str) -> bool:
     return any(c.upper() not in {'A', 'T', 'G', 'C', 'U', '-'} for c in seq)
@@ -230,12 +275,13 @@ def run_seqkit_amplicon(fwd: str, rev: str, max_mismatch: int, fasta_path: str, 
         ]
     
     try:
-        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"Error running seqkit: {e.stderr}", file=sys.stderr)
-        if temp_tsv_path and os.path.exists(temp_tsv_path):
-            os.remove(temp_tsv_path)
-        raise e
+        # Fail-closed: a seqkit crash/missing binary raises ToolError instead of
+        # being confused with a legitimate empty (no-amplicon) result.
+        if _HAS_PROC_UTILS:
+            result = run_tool(cmd, tool="seqkit", stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE, capture_output=False)
+        else:
+            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
     finally:
         if temp_tsv_path and os.path.exists(temp_tsv_path):
             os.remove(temp_tsv_path)
@@ -298,11 +344,17 @@ def run_seqkit_amplicon_pool(
             "--bed",
             str(fasta_path)
         ]
-        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        if res.returncode != 0:
-            print(f"[WARN] seqkit pool returned code {res.returncode} for {cand_id}: {res.stderr[:500]}",
-                  file=sys.stderr)
-            return {}
+        # Fail-closed: a seqkit crash / missing binary must NOT be silently read as
+        # "0% amplification" (a plausible-but-false negative). Only a SUCCESSFUL run
+        # with no matching lines counts as genuinely no amplicon.
+        if _HAS_PROC_UTILS:
+            res = run_tool(cmd, tool="seqkit", stdout=subprocess.PIPE,
+                           stderr=subprocess.PIPE, capture_output=False)
+        else:
+            res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            if res.returncode != 0:
+                raise ToolError("seqkit",
+                                f"seqkit pool exit {res.returncode} for {cand_id}: {res.stderr[:500]}")
 
         if res.stderr.strip():
             # Print first 3 lines of stderr for debugging (seqkit logs progress there)
@@ -329,9 +381,13 @@ def run_seqkit_amplicon_pool(
                     matches[sid] = ""  # Mark as amplified without stored seq
         return matches
 
+    except ToolError:
+        # A genuine tool failure must propagate (fail-closed), not become "0%".
+        raise
     except Exception as e:
-        print(f"[ERROR] seqkit pool exception for {cand_id}: {e}", file=sys.stderr)
-        return {}
+        # Unexpected parsing/IO error: also fail-closed rather than fabricate a
+        # zero-coverage result that looks like a real (bad) primer.
+        raise ToolError("seqkit", f"seqkit pool unexpected error for {cand_id}: {e}") from e
     finally:
         if tmp_tsv and os.path.exists(tmp_tsv):
             os.remove(tmp_tsv)
@@ -459,11 +515,8 @@ def _evaluate_candidate(idx_cand, args, seq_mappings, actual_candidates, seqkit_
         )
         print(f"  -> [SURVEILLANCE] Union matched: {len(matches_max)} sequences")
     else:
-        try:
-            matches_max = run_seqkit_amplicon(fwd, rev, args.max_mismatch, args.sequences, seqkit_threads)
-        except Exception as e:
-            print(f"[ERROR] seqkit failed for {cand_id}: {e}")
-            matches_max = {}
+        # A real seqkit failure (ToolError) must abort, not become 0% coverage.
+        matches_max = run_seqkit_amplicon(fwd, rev, args.max_mismatch, args.sequences, seqkit_threads)
 
     # ── [OPTIONAL] Design-DB coverage ───────────────────────────────────────
     # If --design-sequences is provided, run a second pass against the smaller
@@ -480,10 +533,7 @@ def _evaluate_candidate(idx_cand, args, seq_mappings, actual_candidates, seqkit_
                 rev_list_is_genomic=True,  # rev_possible stored as RC of 5'->3' primer
             )
         else:
-            try:
-                design_matches = run_seqkit_amplicon(fwd, rev, args.max_mismatch, args.design_sequences, seqkit_threads)
-            except Exception as e:
-                print(f"[ERROR] seqkit design-db failed for {cand_id}: {e}")
+            design_matches = run_seqkit_amplicon(fwd, rev, args.max_mismatch, args.design_sequences, seqkit_threads)
         print(f"  -> [DESIGN-DB]  Matched: {len(design_matches)} sequences")
 
     matched_seqs = set(matches_max.keys())
@@ -562,6 +612,7 @@ def _evaluate_candidate(idx_cand, args, seq_mappings, actual_candidates, seqkit_
                         critical_3prime_bp=args.raa_3prime_bp,
                         max_3prime_mm=args.raa_max_3prime_mm,
                         max_internal_mm=args.raa_max_internal_mm,
+                        three_prime_at='left',  # rev_possible is genomic (RC of 5'->3' oligo)
                     )
                     if ok:
                         rev_raa_ok = True
@@ -582,6 +633,7 @@ def _evaluate_candidate(idx_cand, args, seq_mappings, actual_candidates, seqkit_
                     critical_3prime_bp=args.raa_3prime_bp,
                     max_3prime_mm=args.raa_max_3prime_mm,
                     max_internal_mm=args.raa_max_internal_mm,
+                    three_prime_at='left',  # RC(rev_deg) is genomic; oligo 3' terminus at index 0
                 )
 
             is_raa_amplified = fwd_raa_ok and rev_raa_ok
@@ -722,6 +774,7 @@ def _evaluate_candidate(idx_cand, args, seq_mappings, actual_candidates, seqkit_
                             critical_3prime_bp=args.raa_3prime_bp,
                             max_3prime_mm=args.raa_max_3prime_mm,
                             max_internal_mm=args.raa_max_internal_mm,
+                            three_prime_at='left',  # rev_possible is genomic (RC of 5'->3' oligo)
                         )[0]
                         for rv in _rev_raa
                     )
@@ -738,6 +791,7 @@ def _evaluate_candidate(idx_cand, args, seq_mappings, actual_candidates, seqkit_
                         critical_3prime_bp=args.raa_3prime_bp,
                         max_3prime_mm=args.raa_max_3prime_mm,
                         max_internal_mm=args.raa_max_internal_mm,
+                        three_prime_at='left',  # RC(rev_deg) is genomic; oligo 3' terminus at index 0
                     )
                     is_raa_amp_des = _fwd_ok and _rev_ok
                 # Probe RAA check (only if primer binding passes)
