@@ -38,9 +38,21 @@ For RAA and RPA isothermal assays, the recombinase enzyme binds to the primer an
 - **RAA/RPA**: Up to 4 mismatches are tolerated in the 5' internal region (primer length minus 8 bp) due to the long primer length (30–35 bp) which accommodates higher mismatch loads.
 - **PCR**: Up to 2 mismatches are tolerated in the 5' half; mismatches in the 3' critical end must be zero.
 
-### 3. Probe Cleavage Verification
-For fluorogenic probes containing an internal Tetrahydrofuran (THF) modification flanked by a fluorophore and quencher, the endonuclease IV (EndoIV) enzyme must cleave the THF site to separate the dyes.
-- **Cleavage Window**: Mismatches within **2 bp** of the THF site are prohibited. Any mismatch here prevents enzyme binding and signal release, leading to false-negatives even if amplification succeeds.
+### 3. Probe Cleavage — What Is and Is Not Checked
+
+Fluorogenic RAA probes carry an internal abasic residue (tetrahydrofuran, THF) between a dT-fluorophore and a dT-quencher. The signal only appears when the repair enzyme in the kit — Exonuclease III for `exo` probes, Endonuclease IV for `nfo`/`fpg` probes — cleaves that residue, separating the two dyes. Both enzyme systems share the same probe geometry; the choice affects how the signal is read (real-time fluorescence vs lateral flow), not where the abasic residue goes.
+
+!!! warning "Corrected: there is no 2 bp cleavage window"
+    Earlier revisions of this page stated that *"mismatches within 2 bp of the THF site are prohibited... leading to false-negatives even if amplification succeeds"*. **That rule has no support and has been removed.** No literature or vendor documentation was found for it, and the primary source contradicts it:
+
+    - TwistAmp Assay Design Manual §2.7: *"RPA is generally quite robust to mismatches. It has been shown that the performance of RPA assays is not affected when primers and probe carry 5–9 base pair mismatches"*.
+    - §3.1.1 sanctions a **deliberate** mismatch inside that very window: *"It is also possible to tolerate a mismatch in the probe such that if two conveniently separated thymines cannot be located one can simply ignore the mismatch of one of the thymines"*. Those thymines are the dT-label positions, which §3.1.2 places **0, 1 or 2 bases** from the THF.
+
+    A supporting-looking result in [NAR 24(22):4572](https://academic.oup.com/nar/article/24/22/4572/2386348) — that Exonuclease III does not cleave duplexes containing an A:A or C:A mismatch — was checked and does not apply: those mismatches were placed **at** the abasic position, as a substitute for it. That is evidence of specificity *for* abasic sites, not of a positional window around one.
+
+    Implementing the rule would also have been self-defeating. Where a probe cannot find two suitably spaced thymines, PrimerLab now deliberately places a dT label on a non-T base — the vendor-sanctioned fallback above. A window check would have flagged the pipeline's own design as a defect. Those positions are exported as `probe_label_mismatches` so they can be discounted rather than counted as target variation.
+
+**What M10 checks instead**: the probe's overall mismatch load against each surveillance sequence, warning above ~5 mismatches — the lower bound of the range the manual describes as tolerated. Probe geometry itself (≥30 bases 5' of the abasic residue, ≥15 bases 3', dT-flanked labels) is enforced upstream at design time in PrimerLab, not re-derived here.
 
 ---
 

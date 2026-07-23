@@ -8,6 +8,31 @@ All notable changes to the Evolutionary Diagnostic Pipeline will be documented i
 
 ---
 
+## [1.1.0] - 2026-07-23 (Correctness Audit: Literature Validation of Design Rules)
+
+A full audit of the pipeline's scripts and algorithms, followed by validation of the assay-design rules against primary sources. Several rules turned out to be unsupported or inverted; those are corrected here with the evidence recorded, not silently changed.
+
+### Corrected — assay design rules
+
+- **Removed the "2 bp THF cleavage window" rule (M10).** The documentation stated that mismatches within 2 bp of the abasic site were prohibited and caused false negatives. No supporting source exists, and the TwistAmp Assay Design Manual contradicts it directly: §2.7 reports RPA performance unaffected by 5–9 mismatches in primers and probe, and §3.1.1 sanctions a *deliberate* mismatch on a dT-label position — which §3.1.2 places 0–2 bases from the abasic residue. A supporting-looking Exonuclease III result ([NAR 24(22):4572](https://academic.oup.com/nar/article/24/22/4572/2386348)) was checked and does not apply: those mismatches sat **at** the abasic position, not near it.
+- **Fixed abasic-site placement in PrimerLab (M08).** The residue could land 28–29 bases from the probe's 5' end, which the manual lists verbatim as a "Poor probe design", and the 30–38 working range had no upper bound. More seriously, the label logic was **inverted**: the code anchored the abasic residue onto the nearest `T` and let the dT-fluorophore and dT-quencher fall on whatever bases were adjacent, so every probe could silently carry two unnecessary probe–target mismatches. The flanking positions are what must be `T`; the abasic position has no sequence requirement. Placement now degrades in the order the manual prescribes and reports every relaxation.
+- **Verified against the manual's worked example**, which the corrected implementation now reproduces exactly (30 bases 5', 15 bases 3', both labels on real thymines).
+
+### Changed — multiplex screening (M11)
+
+- **Unified all thresholds and the score formula** into `scripts/tools/iupac_utils.py`. Pairwise and triplex previously held separate literals that had already drifted: $\Delta T_m$ was 3.5°C in one and 4.0°C in the other, so an identical oligo set could be `PASS` in one report and `WARNING` in the other.
+- **Unified the score weights** to $\Delta G \times 4.0$, $\Delta T_m \times 3.0$ (pairwise previously used 3.5/4.0, weighting them the opposite way). $\Delta G$ dominates because at 39°C strand invasion is recombinase-driven, so inter-primer $T_m$ matching matters far less than dimer formation.
+- **Stopped rendering the compatibility score as a percentage.** It is an uncalibrated 0–100 heuristic, not a probability.
+- **Added a 3'-end anchoring check.** Only an annealed 3' terminus can be extended, and those products amplify as primer noise — the factor TwistAmp §2.6 names as limiting sensitivity. The criterion is the longest 3'-anchored complementary run (> 5 bp warns), *not* a $\Delta G$: a $\Delta G$ over a short terminal window was implemented first and rejected on measurement, because a 5 nt window saturates near −6.3 kcal/mol regardless of how much complementarity exists and an 8 nt window overlaps the clean background.
+- **Documented the $\Delta G$ thresholds' provenance.** No validated RPA/RAA-specific threshold exists — TwistAmp §2.2 says there are "no fixed rules" and prescribes bench screening. The −9/−12 kcal/mol values derive from general IDT guidance, and because they are evaluated at 39°C rather than 60°C they are stricter than they appear: over 200 random 32-mer pairs, 88% fall below −3 at 39°C versus 6.5% at 60°C.
+- **Every report now carries a methodology note** stating these caveats, so a bench reader sees them without opening the docs.
+
+### Added — PrimerLab data flow
+
+- `Primer.to_dict()` now exports `thf_index`, `probe_type`, `probe_label_mismatches` and `probe_compliant`. The abasic-site position was computed and then discarded before serialisation, so no downstream module could locate the cleavage site.
+
+---
+
 ## [1.0.0] - 2026-07-02 (Official Stable Production Release)
 
 The first stable production release of the 10-Module Evolutionary Diagnostic Pipeline.

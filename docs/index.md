@@ -54,7 +54,7 @@ To protect assays against mutational drift (a primary cause of false-negative cl
     Models primer-dimer, hairpin, and cross-hybridization binding energies at target temperatures (e.g. 39°C for RAA, 55°C for PCR) using ViennaRNA.
   </Card>
   <Card title="Amplification Kinetics" icon="chart-line">
-    Simulates in-silico PCR on surveillance sequences, enforcing strict 3' recombinase extension and probe THF endonuclease IV cleavage windows.
+    Simulates in-silico PCR on surveillance sequences, enforcing strict 3' recombinase extension limits and reporting probe mismatch load.
   </Card>
 </CardGroup>
 

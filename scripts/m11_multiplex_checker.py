@@ -22,10 +22,16 @@ from tools.iupac_utils import (
     calculate_gc,
     calculate_tm,
     evaluate_pair_heterodimer,
+    evaluate_three_prime_dimer,
+    three_prime_anchor_length,
+    compatibility_score,
     check_dye_separation,
+    screening_methodology_note,
     MAX_DELTA_TM_C,
     MIN_CROSS_DIMER_DG,
     VETO_CROSS_DIMER_DG,
+    MAX_THREE_PRIME_ANCHOR_BP,
+    THREE_PRIME_WINDOW_NT,
 )
 
 # MAX_VARIANTS is set from CLI --max-variants (default 16, matching config.yaml).
@@ -110,7 +116,26 @@ def run_multiplex_screening(file_a, file_b, out_dir, num_candidates=10,
                         if dg < min_dg_qpcr:
                             min_dg_qpcr = dg
                             
-            status_raa = ("PASS" if (min_dg_raa >= MIN_CROSS_DIMER_DG and delta_tm <= MAX_DELTA_TM_C)
+            # --- 3'-end complementarity (primer noise precursor) ---
+            # A global ΔG can look acceptable while it is the 3' ends that
+            # interact; only an annealed 3' terminus gets extended, and those
+            # extension products are what amplify as primer noise.
+            min_dg_3p = 0.0
+            max_anchor_3p = 0
+            three_prime_pairs = {}
+            for name_a, seq_a in oligos_a:
+                for name_b, seq_b in oligos_b:
+                    if seq_a and seq_b:
+                        dg3 = evaluate_three_prime_dimer(seq_a, seq_b, temp_c=39.0)
+                        anchor = three_prime_anchor_length(seq_a, seq_b)
+                        three_prime_pairs[f"{name_a}_vs_{name_b}"] = {
+                            "anchor_bp": anchor, "dg_39c": round(dg3, 2)}
+                        min_dg_3p = min(min_dg_3p, dg3)
+                        max_anchor_3p = max(max_anchor_3p, anchor)
+
+            status_raa = ("PASS" if (min_dg_raa >= MIN_CROSS_DIMER_DG
+                                     and delta_tm <= MAX_DELTA_TM_C
+                                     and max_anchor_3p <= MAX_THREE_PRIME_ANCHOR_BP)
                           else "WARNING")
             if min_dg_raa < VETO_CROSS_DIMER_DG:
                 status_raa = "VETO (High Dimer Risk)"
@@ -119,14 +144,8 @@ def run_multiplex_screening(file_a, file_b, out_dir, num_candidates=10,
             if not dye_ok:
                 status_raa = "VETO (Dye Channel Collision)"
 
-            score = 100.0
-            if min_dg_raa < 0:
-                score += min_dg_raa * 3.5
-            score -= delta_tm * 4.0
-            if not dye_ok:
-                score = 0.0
-            score = max(0.0, round(score, 1))
-            
+            score = compatibility_score(min_dg_raa, delta_tm, dye_ok)
+
             results.append({
                 "pair_id": f"FluA_Rank{rank_a}_x_FluB_Rank{rank_b}",
                 "rank_a": rank_a,
@@ -135,6 +154,9 @@ def run_multiplex_screening(file_a, file_b, out_dir, num_candidates=10,
                 "status_raa_39c": status_raa,
                 "min_dg_raa_39c": round(min_dg_raa, 2),
                 "min_dg_qpcr_55c": round(min_dg_qpcr, 2),
+                "max_3prime_anchor_bp": max_anchor_3p,
+                "min_dg_3prime_39c": round(min_dg_3p, 2),
+                "three_prime_window_nt": THREE_PRIME_WINDOW_NT,
                 "delta_tm": round(delta_tm, 2),
                 "dye_a": dye_a,
                 "dye_b": dye_b,
@@ -153,7 +175,8 @@ def run_multiplex_screening(file_a, file_b, out_dir, num_candidates=10,
                     }
                 },
                 "cross_dimers_39c": cross_dimers_raa,
-                "cross_dimers_55c": cross_dimers_qpcr
+                "cross_dimers_55c": cross_dimers_qpcr,
+                "three_prime_dimers_39c": three_prime_pairs
             })
             
     results.sort(key=lambda x: x["score"], reverse=True)
@@ -171,12 +194,12 @@ def run_multiplex_screening(file_a, file_b, out_dir, num_candidates=10,
         f.write(f"**Spectral dye separation:** {dye_status}\n\n")
         f.write(f"Screened **{len(results)} candidate combinations** ($10 \\times 10$) across two temperature regimes ($39.0^\\circ\\text{{C}}$ RT-RAA & $55.0^\\circ\\text{{C}}$ qPCR).\n\n")
         f.write("### Top 5 Recommended Multiplex Combinations\n\n")
-        f.write("| Rank | Candidate Pair | Compatibility Score | RAA ΔG (39°C) | qPCR ΔG (55°C) | ΔTm (°C) | Status (39°C) |\n")
-        f.write("|---|---|---|---|---|---|---|\n")
+        f.write("| Rank | Candidate Pair | Compatibility Score | RAA ΔG (39°C) | 3' Anchor | qPCR ΔG (55°C) | ΔTm (°C) | Status (39°C) |\n")
+        f.write("|---|---|---|---|---|---|---|---|\n")
         for idx, r in enumerate(results[:5], 1):
-            f.write(f"| {idx} | **{r['pair_id']}** | **{r['score']}%** | {r['min_dg_raa_39c']} kcal/mol | {r['min_dg_qpcr_55c']} kcal/mol | {r['delta_tm']}°C | `{r['status_raa_39c']}` |\n")
-            
-        f.write("\n\n### Rank 1 Oligo Synthesis Specifications (`FluA_Rank7_x_FluB_Rank6`)\n\n")
+            f.write(f"| {idx} | **{r['pair_id']}** | **{r['score']}** | {r['min_dg_raa_39c']} kcal/mol | {r['max_3prime_anchor_bp']} bp | {r['min_dg_qpcr_55c']} kcal/mol | {r['delta_tm']}°C | `{r['status_raa_39c']}` |\n")
+
+        f.write(f"\n\n### Rank 1 Oligo Synthesis Specifications (`{results[0]['pair_id']}`)\n\n")
         r1 = results[0]
         oligos = r1['oligos_synthesis']
         
@@ -195,12 +218,16 @@ def run_multiplex_screening(file_a, file_b, out_dir, num_candidates=10,
         f.write(f"| FluB_Probe | Exo-Probe | `{oligos['flu_b']['probe']['deg_seq']}` | {oligos['flu_b']['probe']['len']} nt | {oligos['flu_b']['probe']['tm']}°C | {oligos['flu_b']['probe']['gc']}% | {oligos['flu_b']['probe']['label']} |\n\n")
 
         f.write("### Cross-Dimer Inter-Assay Interactions\n\n")
-        f.write("| Oligo Pair | Cross-Dimer ΔG (39°C) | Cross-Dimer ΔG (55°C) |\n")
-        f.write("|---|---|---|\n")
+        f.write("| Oligo Pair | Cross-Dimer ΔG (39°C) | 3' Anchor | 3'-End ΔG (39°C) | Cross-Dimer ΔG (55°C) |\n")
+        f.write("|---|---|---|---|---|\n")
         for pair_name, dg in r1['cross_dimers_39c'].items():
             dg_55 = r1['cross_dimers_55c'].get(pair_name, "-")
-            f.write(f"| {pair_name} | {dg} kcal/mol | {dg_55} kcal/mol |\n")
-            
+            tp = r1.get('three_prime_dimers_39c', {}).get(pair_name) or {}
+            f.write(f"| {pair_name} | {dg} kcal/mol | {tp.get('anchor_bp', '-')} bp "
+                    f"| {tp.get('dg_39c', '-')} kcal/mol | {dg_55} kcal/mol |\n")
+
+        f.write(screening_methodology_note())
+
     print(f"[M11] Saved Markdown report to: {md_path}")
 
 def main():

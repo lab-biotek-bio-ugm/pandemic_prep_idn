@@ -22,10 +22,16 @@ from tools.iupac_utils import (
     calculate_gc,
     calculate_tm,
     evaluate_pair_heterodimer,
+    evaluate_three_prime_dimer,
+    three_prime_anchor_length,
+    compatibility_score,
     check_dye_separation,
+    screening_methodology_note,
     MAX_DELTA_TM_C,
     MIN_CROSS_DIMER_DG,
     VETO_CROSS_DIMER_DG,
+    MAX_THREE_PRIME_ANCHOR_BP,
+    THREE_PRIME_WINDOW_NT,
 )
 
 # MAX_VARIANTS is set from CLI --max-variants (default 16, matching config.yaml).
@@ -149,7 +155,27 @@ def run_triplex_screening(file_a, file_b, file_c, out_dir, num_candidates=10,
                         if dg_55 < min_dg_55c:
                             min_dg_55c = dg_55
                             
-                status_39c = ("PASS" if (min_dg_39c >= MIN_CROSS_DIMER_DG and delta_tm <= MAX_DELTA_TM_C)
+                # 3'-end complementarity across all three target pairs. Only an
+                # annealed 3' terminus gets extended, and those products are what
+                # amplify as primer noise (TwistAmp manual 2.6).
+                min_dg_3p = 0.0
+                max_anchor_3p = 0
+                three_prime_dimers = {}
+                for (grp_x, grp_y) in ((oligos_a, oligos_b), (oligos_a, oligos_c), (oligos_b, oligos_c)):
+                    for name_x, seq_x in grp_x:
+                        for name_y, seq_y in grp_y:
+                            if not (seq_x and seq_y):
+                                continue
+                            dg3 = evaluate_three_prime_dimer(seq_x, seq_y, temp_c=39.0)
+                            anchor = three_prime_anchor_length(seq_x, seq_y)
+                            three_prime_dimers[f"{name_x}_vs_{name_y}"] = {
+                                "anchor_bp": anchor, "dg_39c": round(dg3, 2)}
+                            min_dg_3p = min(min_dg_3p, dg3)
+                            max_anchor_3p = max(max_anchor_3p, anchor)
+
+                status_39c = ("PASS" if (min_dg_39c >= MIN_CROSS_DIMER_DG
+                                         and delta_tm <= MAX_DELTA_TM_C
+                                         and max_anchor_3p <= MAX_THREE_PRIME_ANCHOR_BP)
                               else "WARNING")
                 if min_dg_39c < VETO_CROSS_DIMER_DG:
                     status_39c = "VETO"
@@ -158,14 +184,7 @@ def run_triplex_screening(file_a, file_b, file_c, out_dir, num_candidates=10,
                 if not dye_ok:
                     status_39c = "VETO (Dye Channel Collision)"
 
-                # Score out of 100
-                score = 100.0
-                if min_dg_39c < 0:
-                    score += min_dg_39c * 4.0
-                score -= delta_tm * 3.0
-                if not dye_ok:
-                    score = 0.0
-                score = max(0.0, round(score, 1))
+                score = compatibility_score(min_dg_39c, delta_tm, dye_ok)
 
                 results.append({
                     "triplex_id": f"{label_a}_R{rank_a}_{label_b}_R{rank_b}_{label_c}_R{rank_c}",
@@ -175,6 +194,9 @@ def run_triplex_screening(file_a, file_b, file_c, out_dir, num_candidates=10,
                     "dye_status": dye_status,
                     "min_dg_39c": round(min_dg_39c, 2),
                     "min_dg_55c": round(min_dg_55c, 2),
+                    "max_3prime_anchor_bp": max_anchor_3p,
+                    "min_dg_3prime_39c": round(min_dg_3p, 2),
+                    "three_prime_window_nt": THREE_PRIME_WINDOW_NT,
                     "delta_tm": round(delta_tm, 2),
                     "oligos_synthesis": {
                         "flu_a": {
@@ -194,7 +216,8 @@ def run_triplex_screening(file_a, file_b, file_c, out_dir, num_candidates=10,
                         }
                     },
                     "cross_dimers_39c": cross_dimers_39c,
-                    "cross_dimers_55c": cross_dimers_55c
+                    "cross_dimers_55c": cross_dimers_55c,
+                    "three_prime_dimers_39c": three_prime_dimers
                 })
                 
     results.sort(key=lambda x: x["score"], reverse=True)
@@ -213,10 +236,10 @@ def run_triplex_screening(file_a, file_b, file_c, out_dir, num_candidates=10,
         f.write(f"**Spectral dye separation:** {dye_status}\n\n")
         f.write(f"Screened **{len(results)} triplex combinations** ({len(cands_a)} x {len(cands_b)} x {len(cands_c)}) at RAA operating temperature ($39.0^\\circ\\text{{C}}$) and qPCR benchmark ($55.0^\\circ\\text{{C}}$).\n\n")
         f.write("### Top 5 Recommended Triplex Combinations\n\n")
-        f.write("| Rank | Triplex Candidate Set | Compatibility Score | Worst RAA ΔG (39°C) | Worst qPCR ΔG (55°C) | Max ΔTm (°C) | Status (39°C) |\n")
-        f.write("|---|---|---|---|---|---|---|\n")
+        f.write("| Rank | Triplex Candidate Set | Compatibility Score | Worst RAA ΔG (39°C) | Longest 3' Anchor | Worst qPCR ΔG (55°C) | Max ΔTm (°C) | Status (39°C) |\n")
+        f.write("|---|---|---|---|---|---|---|---|\n")
         for idx, r in enumerate(results[:5], 1):
-            f.write(f"| {idx} | **{r['triplex_id']}** | **{r['score']}%** | {r['min_dg_39c']} kcal/mol | {r['min_dg_55c']} kcal/mol | {r['delta_tm']}°C | `{r['status_39c']}` |\n")
+            f.write(f"| {idx} | **{r['triplex_id']}** | **{r['score']}** | {r['min_dg_39c']} kcal/mol | {r['max_3prime_anchor_bp']} bp | {r['min_dg_55c']} kcal/mol | {r['delta_tm']}°C | `{r['status_39c']}` |\n")
             
         # Detailed specs of Rank 1
         r1 = results[0]
@@ -246,15 +269,26 @@ def run_triplex_screening(file_a, file_b, file_c, out_dir, num_candidates=10,
         f.write(f"| Measles_Rev | Rev Primer | `{r1['oligos_synthesis']['measles']['rev']}` | {r1['oligos_synthesis']['measles']['rev_tm']}°C | Unlabeled |\n")
         f.write(f"| Measles_Probe | Exo-Probe | `{r1['oligos_synthesis']['measles']['probe']}` | {r1['oligos_synthesis']['measles']['probe_tm']}°C | {r1['oligos_synthesis']['measles']['probe_label']} |\n\n")
         
-        # Cross dimer detail
-        f.write("### Worst Cross-Dimer Interactions (< -5.0 kcal/mol)\n\n")
-        f.write("| Oligo Pair | Cross-Dimer ΔG (39°C) | Cross-Dimer ΔG (55°C) |\n")
-        f.write("|---|---|---|\n")
+        # Cross dimer detail. The listing threshold is deliberately more permissive
+        # than the PASS threshold so a reader can see what sits just short of it;
+        # at 39°C a clean random pair already sits near -4 kcal/mol (see the
+        # methodology note below), so -5 is "worth a look", not "a problem".
+        f.write("### Notable Oligo Interactions (ΔG < -5.0 kcal/mol at 39°C, or a 3' anchor over the limit)\n\n")
+        f.write("| Oligo Pair | Cross-Dimer ΔG (39°C) | 3' Anchor | 3'-End ΔG (39°C) | Cross-Dimer ΔG (55°C) |\n")
+        f.write("|---|---|---|---|---|\n")
+        listed = 0
         for pair_name, dg in r1['cross_dimers_39c'].items():
-            if dg < -5.0:
+            tp = r1.get('three_prime_dimers_39c', {}).get(pair_name) or {}
+            if dg < -5.0 or tp.get('anchor_bp', 0) > MAX_THREE_PRIME_ANCHOR_BP:
                 dg_55 = r1['cross_dimers_55c'].get(pair_name, "-")
-                f.write(f"| {pair_name} | {dg} kcal/mol | {dg_55} kcal/mol |\n")
-                
+                f.write(f"| {pair_name} | {dg} kcal/mol | {tp.get('anchor_bp', '-')} bp "
+                        f"| {tp.get('dg_39c', '-')} kcal/mol | {dg_55} kcal/mol |\n")
+                listed += 1
+        if not listed:
+            f.write("| _(none)_ | | | | |\n")
+
+        f.write(screening_methodology_note())
+
     print(f"[Triplex] Saved Markdown report to: {md_path}")
 
 def main():
