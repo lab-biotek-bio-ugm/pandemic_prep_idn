@@ -39,11 +39,18 @@ def _assess_raa_numpy(primer_seq, amp_seq, critical_3prime_bp=8, max_3prime_mm=1
     a sequence flips the terminus to the opposite end, so each search orientation tracks its
     own 3' side.
     """
+    if three_prime_at not in ("right", "left"):
+        raise ValueError(f"three_prime_at must be 'right' or 'left', got {three_prime_at!r}")
     primer_len = len(primer_seq)
     amp_len    = len(amp_seq)
     if amp_len < primer_len:
         return False, primer_len, primer_len, primer_len
-    internal_len = primer_len - critical_3prime_bp
+    # Clamp: with critical_3prime_bp >= primer_len the whole oligo is 3'-critical.
+    # Without this, internal_len goes negative and mm[:, :internal_len] /
+    # mm[:, internal_len:] silently misassign columns (and disagree with the pure
+    # Python implementation, whose `j >= internal_len` would then always be true).
+    crit = min(critical_3prime_bp, primer_len)
+    internal_len = primer_len - crit
     best_3p, best_int, best_tot = primer_len, primer_len, primer_len
     rc = reverse_complement(primer_seq)
     flipped = 'left' if three_prime_at == 'right' else 'right'
@@ -64,8 +71,8 @@ def _assess_raa_numpy(primer_seq, amp_seq, critical_3prime_bp=8, max_3prime_mm=1
             int_arr = mm[:, :internal_len].sum(axis=1)
             t3_arr  = mm[:, internal_len:].sum(axis=1)
         else:  # 3' terminus at index 0 (reverse primer in genomic orientation)
-            t3_arr  = mm[:, :critical_3prime_bp].sum(axis=1)
-            int_arr = mm[:, critical_3prime_bp:].sum(axis=1)
+            t3_arr  = mm[:, :crit].sum(axis=1)
+            int_arr = mm[:, crit:].sum(axis=1)
         bi = int(tot_arr.argmin())
         tot = int(tot_arr[bi]); t3 = int(t3_arr[bi]); it = int(int_arr[bi])
         if tot < best_tot:
@@ -155,6 +162,8 @@ def assess_raa_binding(
     Returns:
         (is_raa_bound, 3prime_mm, internal_mm, total_mm)
     """
+    if three_prime_at not in ("right", "left"):
+        raise ValueError(f"three_prime_at must be 'right' or 'left', got {three_prime_at!r}")
     primer_len = len(primer_seq)
     amp_len = len(amp_seq)
     if amp_len < primer_len:
@@ -163,7 +172,10 @@ def assess_raa_binding(
     best_3prime_mm = primer_len
     best_internal_mm = primer_len
     best_total_mm = primer_len
-    internal_len = primer_len - critical_3prime_bp
+    # See _assess_raa_numpy: clamp so a critical region longer than the oligo does
+    # not produce a negative internal_len (which would make every position "3'").
+    crit = min(critical_3prime_bp, primer_len)
+    internal_len = primer_len - crit
 
     rc_seq = reverse_complement(primer_seq)
     flipped = 'left' if three_prime_at == 'right' else 'right'
@@ -185,7 +197,7 @@ def assess_raa_binding(
                     if tp_side == 'right':
                         is_three_prime = j >= internal_len
                     else:  # 3' terminus at index 0
-                        is_three_prime = j < critical_3prime_bp
+                        is_three_prime = j < crit
                     if is_three_prime:
                         three_prime_mm += 1
                     else:

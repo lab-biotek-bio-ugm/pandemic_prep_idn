@@ -100,7 +100,11 @@ def run_tool(
         raise ToolError(name, f"OS error launching '{name}': {e}") from e
 
     if result.returncode != 0 and not allow_nonzero:
-        stderr = (result.stderr or "") if capture_output else ""
+        # Read stderr whenever it was actually captured. Callers may pipe it
+        # explicitly via stderr=PIPE while passing capture_output=False; keying on
+        # capture_output alone discarded the tool's own error message, leaving the
+        # operator with nothing but an exit code.
+        stderr = result.stderr or ""
         raise ToolError(
             name,
             f"'{name}' failed with exit code {result.returncode}."
