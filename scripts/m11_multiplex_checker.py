@@ -35,7 +35,8 @@ from tools.iupac_utils import (
     THREE_PRIME_WINDOW_NT,
 )
 
-from tools.candidate_selection import select, selection_note, annotate
+from tools.candidate_selection import (
+    select, selection_note, annotate, prefilter, cap_to_budget)
 
 # MAX_VARIANTS is set from CLI --max-variants (default 16, matching config.yaml).
 # Injected into module-level functions at startup by main().
@@ -71,7 +72,8 @@ def attach_coverage(cands, coverage):
 def run_multiplex_screening(file_a, file_b, out_dir, num_candidates=10,
                             dye_a="FAM", dye_b="HEX",
                             label_a="Target A", label_b="Target B",
-                            coverage_a=None, coverage_b=None):
+                            coverage_a=None, coverage_b=None,
+                            combination_budget=50000):
     os.makedirs(out_dir, exist_ok=True)
 
     # Real spectral-separation check (not a hardcoded string): two targets read on
@@ -96,6 +98,29 @@ def run_multiplex_screening(file_a, file_b, out_dir, num_candidates=10,
     attach_coverage(cands_b, cov_b)
     by_rank_a = {c.get("rank"): c for c in cands_a}
     by_rank_b = {c.get("rank"): c for c in cands_b}
+
+    # Per-candidate gates BEFORE the pair loop. Specificity, human off-target
+    # amplicons and coverage do not depend on what a candidate is paired with, so
+    # applying them afterwards meant computing thermodynamics for pairs that could
+    # never be recommended — and it was the sole reason a cut by Primer3 penalty
+    # existed, which is what discarded the highest-coverage candidate of the run.
+    kept_a, lvl_a, rej_a = prefilter(cands_a, label_a)
+    kept_b, lvl_b, rej_b = prefilter(cands_b, label_b)
+    for who, kept, before, lvl in ((label_a, kept_a, cands_a, lvl_a),
+                                   (label_b, kept_b, cands_b, lvl_b)):
+        print(f"[M11] {who}: {len(kept)}/{len(before)} candidates passed the "
+              f"per-candidate gates"
+              + (f" at {lvl['name']}" if lvl else " (none passed at any level)"))
+        if lvl and lvl.get("level_counts"):
+            print(f"[M11]   what each level would admit: "
+                  + ", ".join(f"{k}={v}" for k, v in lvl["level_counts"].items()))
+    (kept_a, kept_b), trimmed = cap_to_budget([kept_a, kept_b], combination_budget)
+    if trimmed:
+        print(f"[M11] Trimmed to {len(kept_a)} x {len(kept_b)} to stay within the "
+              f"{combination_budget:,}-combination budget, keeping the best by "
+              f"coverage then specificity")
+    cands_a, cands_b = kept_a, kept_b
+    prefilter_rejections = {**rej_a, **rej_b}
         
     print(f"[M11] Screening {len(cands_a)} x {len(cands_b)} = {len(cands_a) * len(cands_b)} candidate pairs...")
     
@@ -229,6 +254,10 @@ def run_multiplex_screening(file_a, file_b, out_dir, num_candidates=10,
                    (label_b, by_rank_b.get(r["rank_b"], {}))],
         status_key="status_raa_39c",
     )
+    # Candidates dropped before pairing never became combinations, so their
+    # reasons would otherwise vanish from the report entirely.
+    for reason, n in prefilter_rejections.items():
+        selection["rejections"].setdefault(f"(pre-pairing) {reason}", n)
     if selection["selected"]:
         chosen = selection["selected"]
         dropped = [r for r in results if r not in chosen]
@@ -327,6 +356,11 @@ def main():
     parser.add_argument("--dye-b", default="HEX", help="Detection fluorophore for Target B (e.g. HEX)")
     parser.add_argument("--label-a", default="Target A", help="Human-readable name for Target A")
     parser.add_argument("--label-b", default="Target B", help="Human-readable name for Target B")
+    parser.add_argument("--combination-budget", type=int, default=50000,
+                        help="Maximum combinations to evaluate. Survivors of the "
+                             "per-candidate gates are trimmed by coverage then "
+                             "specificity if the product exceeds this. Pairwise "
+                             "rarely reaches it; the cubic triplex case does.")
     parser.add_argument("--coverage-a", default=None,
                         help="Path to Target A M10 coverage_summary.tsv. Without it the "
                              "coverage gate cannot be evaluated and every candidate is "
@@ -348,8 +382,8 @@ def main():
     run_multiplex_screening(args.file_a, args.file_b, args.outdir, args.num_candidates,
                             dye_a=args.dye_a, dye_b=args.dye_b,
                             label_a=args.label_a, label_b=args.label_b,
-        coverage_a=args.coverage_a,
-        coverage_b=args.coverage_b)
+                            coverage_a=args.coverage_a, coverage_b=args.coverage_b,
+                            combination_budget=args.combination_budget)
 
 if __name__ == "__main__":
     main()

@@ -285,6 +285,10 @@ multiplex:
   # tingkat pertama yang menghasilkan kandidat, dan laporan menyebutkan tingkat
   # mana yang dipakai. Hasil nol karena itu mustahil kecuali semua kandidat
   # melanggar kelas 1 -- dan itu memang informasi penting, bukan kegagalan.
+  # Batas jumlah kombinasi yang dievaluasi M11. Survivor gerbang per-kandidat
+  # dipangkas menurut coverage lalu spesifisitas kalau hasil kalinya melebihi ini.
+  # Pairwise jarang menyentuhnya; kasus triplex yang kubik yang membutuhkannya.
+  combination_budget: 50000
   selection:
     levels:
       - name: L0

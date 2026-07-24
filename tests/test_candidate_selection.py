@@ -189,7 +189,7 @@ def test_every_config_defines_the_selection_ladder():
 def test_both_checkers_use_the_shared_selection():
     for path in ("scripts/m11_multiplex_checker.py", "scripts/m11_triplex_checker.py"):
         src = open(path).read()
-        assert "from tools.candidate_selection import select" in src, path
+        assert "candidate_selection import" in src and "select" in src, path
         assert 'results.sort(key=lambda x: x["score"], reverse=True)' in src, \
             f"{path} must keep the score sort only as the no-selection fallback"
 
@@ -256,3 +256,89 @@ def test_both_checkers_stamp_the_verdict_before_writing_json():
         assert "annotate(results, selection)" in src, path
         assert src.index("annotate(results, selection)") < src.index("json.dump(results"), \
             f"{path}: the verdict must be stamped before the JSON is written"
+
+
+# --- Per-candidate gates run before combination ------------------------------
+
+def test_prefilter_removes_candidates_before_they_are_paired():
+    """Specificity, human amplicons and coverage are properties of ONE candidate.
+    Applying them after combining wasted thermodynamics on pairs that could never
+    be recommended — and was the only reason a cut by Primer3 penalty existed,
+    which is what discarded the run's highest-coverage candidate."""
+    cands = [member(coverage=99.0, human_grade="A"),
+             member(coverage=99.0, human_products=2),
+             member(coverage=99.0, human_grade="F")]
+    kept, level, reasons = sel.prefilter(cands, "T")
+    assert len(kept) == 1
+    assert level["name"] == "L0"
+    assert any("off-target amplicon" in r for r in reasons)
+
+
+def test_prefilter_reports_what_each_level_would_admit():
+    """The choice between one candidate at 98% coverage and ten at 91% belongs to
+    whoever orders the oligos, and cannot be made without both numbers."""
+    cands = [member(coverage=98.0)] + [member(coverage=91.0) for _ in range(9)]
+    kept, level, _ = sel.prefilter(cands, "T")
+    counts = level["level_counts"]
+    assert counts["L0"] == 1
+    assert counts["L2"] == 10
+    assert len(kept) == 1, "the strictest level that yields anything must win"
+
+
+def test_prefilter_relaxes_per_target_independently():
+    easy = [member(coverage=99.0) for _ in range(3)]
+    hard = [member(coverage=60.0) for _ in range(3)]
+    _, lvl_easy, _ = sel.prefilter(easy, "easy")
+    _, lvl_hard, _ = sel.prefilter(hard, "hard")
+    assert lvl_easy["name"] == "L0"
+    assert lvl_hard["name"] != "L0", \
+        "a hard target must relax without dragging an easy one down with it"
+
+
+def test_budget_trims_by_diagnostic_merit_not_primer3_penalty():
+    """The previous cut ranked by Primer3 penalty. When a budget forces a trim it
+    must keep the candidates that matter diagnostically."""
+    group = [member(coverage=99.0, human_score=95.0, final_score=99.0),   # best assay
+             member(coverage=80.0, human_score=95.0, final_score=1.0)]    # best penalty
+    (trimmed,), was_trimmed = sel.cap_to_budget([group], budget=1)
+    assert was_trimmed is True
+    assert trimmed[0]["coverage"] == 99.0
+
+
+def test_budget_never_starves_a_target_completely():
+    groups = [[member() for _ in range(20)] for _ in range(3)]
+    capped, was_trimmed = sel.cap_to_budget(groups, budget=8)
+    assert was_trimmed is True
+    assert all(len(g) >= 1 for g in capped)
+    n = 1
+    for g in capped:
+        n *= len(g)
+    assert n <= 8
+
+
+def test_checkers_prefilter_before_the_combination_loop():
+    for path in ("scripts/m11_multiplex_checker.py", "scripts/m11_triplex_checker.py"):
+        src = open(path).read()
+        assert "prefilter(" in src, path
+        assert "cap_to_budget(" in src, path
+        # The gates must be applied before the loop that builds combinations.
+        assert src.index("prefilter(") < src.index("for cand_a in cands_a"), \
+            f"{path}: gates must run before the combination loop, not after"
+
+
+def test_m10_scopes_by_specificity_not_by_rank():
+    """M10's coverage budget was spent on the top N by Primer3 penalty, so the
+    highest-coverage candidate barely made the cut while worse ones consumed it."""
+    src = open("scripts/m10_insilico_pcr.py").read()
+    assert "ELIGIBLE_GRADES" in src
+    assert "eligible = [c for c in candidates" in src
+    assert "candidates[:args.num_candidates]" in src, \
+        "the rank cut must remain only as the no-eligible-candidate fallback"
+
+
+def test_m10_ships_sequence_metadata_once_per_worker():
+    """Passing it per task pickled ~50k rows for every candidate, so the cost grew
+    with the number of candidates — penalising the decision to measure more."""
+    src = open("scripts/m10_insilico_pcr.py").read()
+    assert "initializer=_init_worker" in src
+    assert "_WORKER_SEQ_MAPPINGS" in src

@@ -107,6 +107,11 @@ def reverse_complement(seq: str) -> str:
     }
     return "".join(complement.get(base.upper(), base) for base in reversed(seq))
 
+# Grades M10 will spend coverage computation on. Anything worse is already
+# excluded by the M11 selection gates, so measuring it would be wasted work.
+ELIGIBLE_GRADES = {"A", "B", "C", "-"}
+
+
 def assess_probe_binding(probe_seq: str, amplicon_seq: str,
                          max_mismatches: int) -> tuple:
     """Decide whether an RAA probe still reports on this amplicon.
@@ -479,7 +484,21 @@ def parse_year(date_str: str) -> str:
 
 
 
+# Set once per worker process by _init_worker so the ~50k-row sequence metadata
+# is not re-pickled for every candidate task.
+_WORKER_SEQ_MAPPINGS = None
+
+
+def _init_worker(seq_mappings):
+    global _WORKER_SEQ_MAPPINGS
+    _WORKER_SEQ_MAPPINGS = seq_mappings
+
+
 def _evaluate_candidate(idx_cand, args, seq_mappings, actual_candidates, seqkit_threads):
+    # None means "use the copy this worker already holds"; an explicit value is
+    # still honoured so the function stays callable outside a pool (tests).
+    if seq_mappings is None:
+        seq_mappings = _WORKER_SEQ_MAPPINGS
     """Worker function: evaluate one candidate. Returns (cand_summary, result_row) or None."""
     idx, cand = idx_cand
     cand_id = cand.get("cand_id", f"cand_{idx}")
@@ -989,7 +1008,12 @@ def main():
     parser.add_argument("--gff", required=True, help="Path to GFF3 annotation file")
     parser.add_argument("--outdir", required=True, help="Output directory")
     parser.add_argument("--max-mismatch", type=int, default=3, help="Max mismatches allowed for PCR mode (default: 3)")
-    parser.add_argument("--num-candidates", type=int, default=10, help="Number of candidates to evaluate per region")
+    parser.add_argument("--num-candidates", type=int, default=40,
+                        help="Upper bound on candidates evaluated per region. The set "
+                             "is chosen by M09 specificity first; this only caps how "
+                             "many of those are measured. Runtime scales in waves of "
+                             "16 parallel workers, so 30 costs the same as 20.")
+
     parser.add_argument("--threads", type=int, default=None,
                         help="Total CPU threads to use. Splits between seqkit (-j) and candidate parallelism. Default: auto-detect (os.cpu_count).")
     # RAA-specific binding parameters
@@ -1151,8 +1175,37 @@ def main():
             print(f"Warning: Failed to parse {cand_path}: {e}. Skipping.")
             continue
 
-        # Limit to top N per region
-        for idx, c in enumerate(candidates[:args.num_candidates]):
+        # Scope by CRITERION, not by an arbitrary rank cut.
+        #
+        # `candidates` is ordered by PrimerLab's Primer3 penalty — a general
+        # oligo-quality measure with little bearing on diagnostic performance.
+        # Taking the top N by that order measured coverage for the wrong subset:
+        # in the first production run the highest-coverage candidate (98.13%) sat
+        # at rank 17 and only just made the cut, while several ~85% candidates
+        # ahead of it consumed the budget.
+        #
+        # Measure everything that already passed M09's specificity gates instead.
+        # The BLAST work is done, so this only decides how much of it is used.
+        eligible = [c for c in candidates
+                    if str(c.get("status", "")).upper() != "FAIL"
+                    and str(c.get("human_grade", "A")).upper() in ELIGIBLE_GRADES
+                    and not (isinstance(c.get("human_products"), (int, float))
+                             and c["human_products"] > 0)]
+        if not eligible:
+            print(f"    No candidate in {region_name} passed the specificity "
+                  f"filter; falling back to the top {args.num_candidates} by rank "
+                  f"so coverage is still reported.")
+            eligible = candidates[:args.num_candidates]
+        elif args.num_candidates and len(eligible) > args.num_candidates:
+            print(f"    {region_name}: {len(eligible)} candidates passed the "
+                  f"specificity filter, capped at --num-candidates="
+                  f"{args.num_candidates}")
+            eligible = eligible[:args.num_candidates]
+        else:
+            print(f"    {region_name}: evaluating {len(eligible)} of "
+                  f"{len(candidates)} candidates that passed the specificity filter")
+
+        for idx, c in enumerate(eligible):
             c["region"] = region_name
             c["gene"] = region_name.split("_region_")[0]
             # Create a unique ID for this candidate (use rank or index as fallback)
@@ -1206,8 +1259,16 @@ def main():
     # ── Run candidates in parallel ────────────────────────────────────────────
     results_list = []
     summary_data = []
-    with concurrent.futures.ProcessPoolExecutor(max_workers=worker_threads) as pool:
-        futures = {pool.submit(_evaluate_candidate, (i, c), args, seq_mappings, actual_candidates, seqkit_threads): i
+    # seq_mappings is metadata for every sequence in the database (~50k rows).
+    # Passing it as a task argument pickled and shipped the whole thing ONCE PER
+    # CANDIDATE, so the serialisation cost grew linearly with the number of
+    # candidates — penalising exactly the decision to measure more of them. An
+    # initializer sends it once per worker instead.
+    with concurrent.futures.ProcessPoolExecutor(
+            max_workers=worker_threads,
+            initializer=_init_worker,
+            initargs=(seq_mappings,)) as pool:
+        futures = {pool.submit(_evaluate_candidate, (i, c), args, None, actual_candidates, seqkit_threads): i
                    for i, c in enumerate(all_candidates)}
         for fut in concurrent.futures.as_completed(futures):
             out = fut.result()

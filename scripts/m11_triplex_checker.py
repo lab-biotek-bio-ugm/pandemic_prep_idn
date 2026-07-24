@@ -35,7 +35,8 @@ from tools.iupac_utils import (
     THREE_PRIME_WINDOW_NT,
 )
 
-from tools.candidate_selection import select, selection_note, annotate
+from tools.candidate_selection import (
+    select, selection_note, annotate, prefilter, cap_to_budget)
 
 # MAX_VARIANTS is set from CLI --max-variants (default 16, matching config.yaml).
 _MAX_VARIANTS = 16
@@ -68,7 +69,8 @@ def _safe_tm(seq):
 def run_triplex_screening(file_a, file_b, file_c, out_dir, num_candidates=10,
                           dye_a="FAM", dye_b="HEX", dye_c="Cy5",
                           label_a="Target A", label_b="Target B", label_c="Target C",
-                          coverage_a=None, coverage_b=None, coverage_c=None):
+                          coverage_a=None, coverage_b=None, coverage_c=None,
+                          combination_budget=50000):
     os.makedirs(out_dir, exist_ok=True)
 
     # Real 3-way spectral-separation check (not hardcoded): all three targets must
@@ -96,6 +98,27 @@ def run_triplex_screening(file_a, file_b, file_c, out_dir, num_candidates=10,
         print("[Triplex] WARNING: M10 coverage missing for at least one target - "
               "the coverage gate cannot be applied and will reject those candidates")
     by_rank = [{c.get("rank"): c for c in cands} for cands in (cands_a, cands_b, cands_c)]
+
+    # Per-candidate gates before the cubic loop; see the pairwise checker.
+    groups, levels_used, rej = [], [], {}
+    for who, cands in ((label_a, cands_a), (label_b, cands_b), (label_c, cands_c)):
+        kept, lvl, reasons = prefilter(cands, who)
+        print(f"[Triplex] {who}: {len(kept)}/{len(cands)} candidates passed the "
+              f"per-candidate gates"
+              + (f" at {lvl['name']}" if lvl else " (none passed at any level)"))
+        if lvl and lvl.get("level_counts"):
+            print(f"[Triplex]   what each level would admit: "
+                  + ", ".join(f"{k}={v}" for k, v in lvl["level_counts"].items()))
+        groups.append(kept)
+        levels_used.append(lvl)
+        rej.update(reasons)
+    groups, trimmed = cap_to_budget(groups, combination_budget)
+    if trimmed:
+        print(f"[Triplex] Trimmed to {len(groups[0])} x {len(groups[1])} x "
+              f"{len(groups[2])} to stay within the {combination_budget:,}-combination "
+              f"budget, keeping the best by coverage then specificity")
+    cands_a, cands_b, cands_c = groups
+    prefilter_rejections = rej
         
     total_combs = len(cands_a) * len(cands_b) * len(cands_c)
     print(f"[Triplex] Screening {len(cands_a)} x {len(cands_b)} x {len(cands_c)} = {total_combs} triplex combinations...")
@@ -263,6 +286,8 @@ def run_triplex_screening(file_a, file_b, file_c, out_dir, num_candidates=10,
                    (label_c, by_rank[2].get(r["rank_c"], {}))],
         status_key="status_39c",
     )
+    for reason, n in prefilter_rejections.items():
+        selection["rejections"].setdefault(f"(pre-combination) {reason}", n)
     if selection["selected"]:
         chosen = selection["selected"]
         dropped = [r for r in results if r not in chosen]
@@ -380,6 +405,9 @@ def main():
     parser.add_argument("--label-a", default="Target A", help="Human-readable name for Target A")
     parser.add_argument("--label-b", default="Target B", help="Human-readable name for Target B")
     parser.add_argument("--label-c", default="Target C", help="Human-readable name for Target C")
+    parser.add_argument("--combination-budget", type=int, default=50000,
+                        help="Maximum combinations to evaluate; survivors are trimmed "
+                             "by coverage then specificity if the product exceeds it")
     parser.add_argument("--coverage-a", default=None, help="Target A M10 coverage_summary.tsv")
     parser.add_argument("--coverage-b", default=None, help="Target B M10 coverage_summary.tsv")
     parser.add_argument("--coverage-c", default=None, help="Target C M10 coverage_summary.tsv")
@@ -399,7 +427,8 @@ def main():
                           dye_a=args.dye_a, dye_b=args.dye_b, dye_c=args.dye_c,
                           label_a=args.label_a, label_b=args.label_b, label_c=args.label_c,
         coverage_a=args.coverage_a, coverage_b=args.coverage_b,
-        coverage_c=args.coverage_c)
+        coverage_c=args.coverage_c,
+        combination_budget=args.combination_budget)
 
 if __name__ == "__main__":
     main()

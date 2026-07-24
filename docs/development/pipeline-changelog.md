@@ -18,6 +18,19 @@ A full audit of the pipeline's scripts and algorithms, followed by validation of
 - **Fixed abasic-site placement in PrimerLab (M08).** The residue could land 28–29 bases from the probe's 5' end, which the manual lists verbatim as a "Poor probe design", and the 30–38 working range had no upper bound. More seriously, the label logic was **inverted**: the code anchored the abasic residue onto the nearest `T` and let the dT-fluorophore and dT-quencher fall on whatever bases were adjacent, so every probe could silently carry two unnecessary probe–target mismatches. The flanking positions are what must be `T`; the abasic position has no sequence requirement. Placement now degrades in the order the manual prescribes and reports every relaxation.
 - **Verified against the manual's worked example**, which the corrected implementation now reproduces exactly (30 bases 5', 15 bases 3', both labels on real thymines).
 
+### Changed — per-candidate gates now run before combinations are built
+
+- **The cut by Primer3 penalty is gone.** M11 took the top 10 candidates ordered by PrimerLab's Primer3 penalty purely to keep the pair count manageable, then applied the gates afterwards. But specificity, human off-target amplicons and coverage are properties of a *single* candidate — they do not depend on what it is paired with. Filtering first removes the need for any arbitrary cut: pairwise on the survivors is a few thousand combinations, which is cheap.
+- **Effect on the real run:** with all 78/88 candidates considered, the recommendation becomes `FluA_Rank17 × FluB_Rank12` at level **L0** — the target profile, no relaxation. FluA rank 17 carries **98.13%** coverage against the 91.17% of the previously recommended candidate; it had been invisible because rank 17 fell outside a top-10 ordered by a criterion unrelated to diagnostic performance.
+- **Each target relaxes independently**, so an intrinsically hard target does not drag an easy one down.
+- **The report states what every level would have admitted** (`L0=1, L1=1, L2=10, L3=11, L4=17, L5=75`). The choice between one candidate at 98% coverage and ten at 91% belongs to whoever orders the oligos and cannot be made without both numbers.
+- **`cap_to_budget()`** trims survivors only when the combination count exceeds a configurable budget — needed for the cubic triplex case (55 × 45 × 45 = 111,375), where the constraint is output size and memory rather than speed. It trims by coverage then specificity, and never starves a target to zero.
+
+### Changed — M10 scopes coverage by criterion, not by rank
+
+- M10 measured the top N candidates **ordered by Primer3 penalty**, so its budget was spent on the wrong subset: the highest-coverage candidate sat at rank 17 while several ~85% candidates ahead of it consumed the quota. It now measures everything that passed M09's specificity gates, capped by `num_candidates` (raised 20 → 40). Runtime scales in waves of 16 parallel workers, so 30 costs the same as 20; 40 is three waves.
+- **Sequence metadata is shipped once per worker instead of once per task.** `seq_mappings` (~50k rows) was passed as a task argument, so serialisation cost grew linearly with the candidate count — penalising exactly the decision to measure more of them. A `ProcessPoolExecutor` initializer sends it once.
+
 ### Changed — candidate selection now gates before ranking (M11)
 
 - **The recommended assay ignored both specificity and coverage.** The first production run recommended a pair whose both members were human-specificity grade C while grade A candidates with equal coverage sat unused, because M11 ranked on multiplex thermodynamics alone. `human_grade` was already in the file it reads.

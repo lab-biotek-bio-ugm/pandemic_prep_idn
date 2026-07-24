@@ -169,6 +169,105 @@ def _check_class2(member: Dict[str, Any], who: str, level: Dict[str, Any],
         raise Rejection(f"{who}: coverage {detail}", 2)
 
 
+
+def best_coverage_of(candidates: List[Dict[str, Any]]) -> Optional[float]:
+    covs = [c.get("coverage") for c in candidates if c.get("coverage") is not None]
+    return max(covs) if covs else None
+
+
+def prefilter(candidates: List[Dict[str, Any]], who: str,
+              levels: Optional[List[Dict[str, Any]]] = None,
+              min_keep: int = 1) -> Tuple[List[Dict[str, Any]], Optional[Dict[str, Any]], Dict[str, int]]:
+    """Apply the per-candidate gates BEFORE combinations are built.
+
+    Specificity grade, human off-target amplicons and coverage are properties of a
+    single candidate — they do not depend on what it is paired with. Applying them
+    after combining was both wasteful and the reason an arbitrary cut existed at
+    all: M11 took the top N by Primer3 penalty purely to keep the pair count down,
+    and that cut discarded the highest-coverage candidate in the run.
+
+    Filtering first removes the need for that cut. Pairwise on the survivors is a
+    few thousand combinations, which is cheap; the cubic triplex case is handled by
+    cap_to_budget() afterwards.
+
+    Each target relaxes independently, because one may be intrinsically harder than
+    another and forcing a shared level would penalise the easy one.
+
+    Returns (survivors, level_used, rejection_counts).
+    """
+    levels = levels or DEFAULT_LEVELS
+    best_cov = best_coverage_of(candidates)
+    reasons: Dict[str, int] = {}
+    # Every level is evaluated, not just up to the first that succeeds, so the
+    # report can show what relaxing one more step would have bought. The choice
+    # between "one candidate at 98% coverage" and "ten at 91%" belongs to the
+    # person ordering the oligos, and they cannot make it without both numbers.
+    counts: Dict[str, int] = {}
+    chosen = None
+    for level in levels:
+        keep, reasons = [], {}
+        for cand in candidates:
+            try:
+                _check_class1(cand, who)
+                if not level.get("last_resort", False):
+                    _check_class2(cand, who, level, best_cov)
+            except Rejection as rej:
+                reasons[rej.reason] = reasons.get(rej.reason, 0) + 1
+            else:
+                keep.append(cand)
+        counts[level["name"]] = len(keep)
+        if chosen is None and len(keep) >= min_keep:
+            chosen = (keep, level, reasons)
+    if chosen:
+        keep, level, reasons = chosen
+        level = dict(level, level_counts=counts)
+        return keep, level, reasons
+    return [], None, reasons
+
+
+def candidate_sort_key(cand: Dict[str, Any]) -> tuple:
+    """Rank one candidate on diagnostic merit: coverage first, then specificity.
+
+    Used only to decide which survivors to keep when a combination budget forces a
+    trim. The previous cut ranked by Primer3 penalty — a general oligo-quality
+    measure with little bearing on whether the assay detects circulating strains.
+    """
+    cov = cand.get("coverage")
+    spec = cand.get("human_score")
+    return (
+        -round((cov if cov is not None else 0.0) * 2) / 2,
+        -(spec if isinstance(spec, (int, float)) else 0.0),
+        cand.get("final_score") if isinstance(cand.get("final_score"), (int, float)) else 1e9,
+    )
+
+
+def cap_to_budget(groups: List[List[Dict[str, Any]]], budget: int) -> Tuple[List[List[Dict[str, Any]]], bool]:
+    """Trim each target's survivors until the combination count fits `budget`.
+
+    Only needed for the cubic triplex case: 55 x 45 x 45 is 111,375 combinations,
+    each holding a full oligo specification, so the constraint is output size and
+    memory rather than raw speed.
+
+    Trimming keeps the best candidates by diagnostic merit, and takes from the
+    largest group first so no target is starved. Returns (groups, was_trimmed) so
+    the report can say a cut happened rather than hiding it.
+    """
+    groups = [sorted(g, key=candidate_sort_key) for g in groups]
+
+    def total(gs):
+        n = 1
+        for g in gs:
+            n *= max(len(g), 1)
+        return n
+
+    trimmed = False
+    while total(groups) > budget and any(len(g) > 1 for g in groups):
+        biggest = max(range(len(groups)), key=lambda i: len(groups[i]))
+        groups[biggest] = groups[biggest][:-1]
+        trimmed = True
+    return groups, trimmed
+
+
 def evaluate_combination(
     members: List[Tuple[str, Dict[str, Any]]],
     combo: Dict[str, Any],
