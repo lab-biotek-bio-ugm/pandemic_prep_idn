@@ -329,3 +329,60 @@ insilico_pcr:
                               # kinetika 3' seperti primer: ujungnya diblok (C3-spacer) sehingga
                               # tidak bisa diperpanjang polimerase. TwistAmp manual 2.7:
                               # performa RPA tak terpengaruh 5-9 mismatch pada primer & probe.
+
+multiplex:
+  # --- CANDIDATE SELECTION (M11) ---
+  # Gerbang dulu, baru pengurutan. Kriteria yang membuat asai SALAH menggugurkan
+  # kandidat dan tidak pernah ditukar dengan kriteria yang membuatnya sekadar
+  # KURANG BAIK. Lihat scripts/tools/candidate_selection.py.
+  #
+  # Gerbang KELAS 1 tidak ada di sini karena tidak pernah dilonggarkan: amplikon
+  # off-target di DNA manusia, off-target ke virus lain, situs ikat manusia dengan
+  # ujung 3' terjangkar penuh, tabrakan kanal fluorofor, dan cross-dimer di bawah
+  # veto. Semuanya menguji MEKANISME, bukan skor -- skor spesifisitas bersifat
+  # akumulatif sehingga satu situs katastrofik dan dua puluh yang remeh
+  # menghasilkan grade yang sama.
+  #
+  # Tangga di bawah hanya melonggarkan gerbang KELAS 2. Seleksi berhenti di
+  # tingkat pertama yang menghasilkan kandidat, dan laporan menyebutkan tingkat
+  # mana yang dipakai. Hasil nol karena itu mustahil kecuali semua kandidat
+  # melanggar kelas 1 -- dan itu memang informasi penting, bukan kegagalan.
+  selection:
+    levels:
+      - name: L0
+        label: "target profile"
+        max_grade: B          # grade spesifisitas manusia terburuk yang diterima
+        min_coverage: 95.0    # lantai coverage RAA absolut (%)
+        coverage_within: null # toleransi relatif thd coverage terbaik (poin persen)
+        allow_warning: false  # boleh merekomendasikan pair berstatus WARNING?
+      - name: L1
+        label: "coverage judged relative to the best achievable"
+        max_grade: B
+        min_coverage: 95.0
+        coverage_within: 2.0
+        allow_warning: false
+      - name: L2
+        label: "absolute coverage floor lowered to 90%"
+        max_grade: B
+        min_coverage: 90.0
+        coverage_within: 2.0
+        allow_warning: false
+      - name: L3
+        label: "specificity floor lowered to grade C"
+        max_grade: C
+        min_coverage: 90.0
+        coverage_within: 2.0
+        allow_warning: false
+      - name: L4
+        label: "multiplex WARNING accepted"
+        max_grade: C
+        min_coverage: 85.0
+        coverage_within: 5.0
+        allow_warning: true
+      - name: L5
+        label: "LAST RESORT - every quality floor waived; only the non-negotiable safety gates were applied"
+        max_grade: null
+        min_coverage: null
+        coverage_within: null
+        allow_warning: true
+        last_resort: true

@@ -400,6 +400,14 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
         
         human_score, human_grade, human_status = "-", "-", "-"
         human_offtargets, human_dangerous = "-", "-"
+        # Mechanistic false-positive risk, kept separate from the aggregate score.
+        # The specificity score is an ACCUMULATING penalty (see PrimerLab
+        # offtarget/scorer.py): one perfectly 3'-anchored off-target costs 20, and
+        # twenty trivial ones also cost 20, so an identical grade can mean either.
+        # A grade threshold therefore cannot rule out a catastrophic single hit.
+        # These two fields describe the mechanism instead of scoring it.
+        human_products = "-"       # off-target amplicons the pair could actually make
+        human_worst_hit = None     # tightest single binding site seen
         
         virus_score, virus_grade, virus_status = "-", "-", "-"
         virus_pathogen, virus_offtargets = "-", "-"
@@ -458,6 +466,29 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
                 fwd_list = fwd_ots if isinstance(fwd_ots, list) else []
                 rev_list = rev_ots if isinstance(rev_ots, list) else []
                 human_dangerous = sum(1 for ot in fwd_list + rev_list if ot.get("three_prime_involved", False))
+
+                # A single primer binding somewhere cannot produce anything on its
+                # own; a false positive needs two primers facing each other within
+                # amplicon distance. That is what potential_products counts.
+                human_products = data.get("potential_products", 0)
+
+                probe_list = probe_res.get("offtargets", []) if isinstance(
+                    probe_res.get("offtargets"), list) else []
+                worst = None
+                for ot in fwd_list + rev_list + probe_list:
+                    ovhg = ot.get("three_prime_overhang", 99)
+                    mm = ot.get("mismatches", 99)
+                    cov = ot.get("coverage_percent", 0.0)
+                    key = (ovhg, mm, -cov)
+                    if worst is None or key < worst[0]:
+                        worst = (key, {
+                            "three_prime_overhang": ovhg,
+                            "mismatches": mm,
+                            "coverage_percent": cov,
+                            "identity": ot.get("identity"),
+                            "subject": (ot.get("sequence_title") or "")[:80],
+                        })
+                human_worst_hit = worst[1] if worst else None
             except Exception as e:
                 print(f"Warning: Failed to parse human JSON for candidate {rank}: {e}")
                 human_failed = True
@@ -721,6 +752,8 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
             "human_status": human_status,
             "human_offtargets": human_offtargets,
             "human_dangerous": human_dangerous,
+            "human_products": human_products,
+            "human_worst_hit": human_worst_hit,
             "virus_score": virus_score,
             "virus_grade": virus_grade,
             "virus_status": virus_status,

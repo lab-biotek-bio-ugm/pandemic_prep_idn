@@ -18,6 +18,14 @@ A full audit of the pipeline's scripts and algorithms, followed by validation of
 - **Fixed abasic-site placement in PrimerLab (M08).** The residue could land 28–29 bases from the probe's 5' end, which the manual lists verbatim as a "Poor probe design", and the 30–38 working range had no upper bound. More seriously, the label logic was **inverted**: the code anchored the abasic residue onto the nearest `T` and let the dT-fluorophore and dT-quencher fall on whatever bases were adjacent, so every probe could silently carry two unnecessary probe–target mismatches. The flanking positions are what must be `T`; the abasic position has no sequence requirement. Placement now degrades in the order the manual prescribes and reports every relaxation.
 - **Verified against the manual's worked example**, which the corrected implementation now reproduces exactly (30 bases 5', 15 bases 3', both labels on real thymines).
 
+### Changed — candidate selection now gates before ranking (M11)
+
+- **The recommended assay ignored both specificity and coverage.** The first production run recommended a pair whose both members were human-specificity grade C while grade A candidates with equal coverage sat unused, because M11 ranked on multiplex thermodynamics alone. `human_grade` was already in the file it reads.
+- **Nothing read M10's coverage output.** The number deciding whether an assay detects circulating strains never reached the selection step; across FluA candidates it ranged 85.3%–98.1%. M11 now receives `coverage_summary.tsv` per target, matched on the same degenerate/non_degenerate mode as the candidates.
+- **New `scripts/tools/candidate_selection.py`**, shared by both checkers. Class 1 gates (human off-target amplicon, cross-virus off-target, fully-anchored human binding site, dye collision, cross-dimer veto, M09 FAIL) are never relaxed and test the *mechanism* rather than a score — the specificity score is an accumulating penalty in which one catastrophic hit and twenty trivial ones give the same grade. Class 2 gates (grade floor, coverage floor, multiplex status) relax down a six-level ladder ending in an explicit last-resort level, so an empty result is impossible unless every candidate trips Class 1.
+- **M09 now forwards `human_products` and `human_worst_hit`**, the mechanistic fields the Class 1 gates need; they existed only inside per-candidate `blast_result.json`.
+- Ranking among survivors is lexicographic with coverage bucketed to 0.5 pp, so measurement noise cannot outrank a real specificity difference.
+
 ### Changed — multiplex screening (M11)
 
 - **Unified all thresholds and the score formula** into `scripts/tools/iupac_utils.py`. Pairwise and triplex previously held separate literals that had already drifted: $\Delta T_m$ was 3.5°C in one and 4.0°C in the other, so an identical oligo set could be `PASS` in one report and `WARNING` in the other.

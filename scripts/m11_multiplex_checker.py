@@ -35,13 +35,43 @@ from tools.iupac_utils import (
     THREE_PRIME_WINDOW_NT,
 )
 
+from tools.candidate_selection import select, selection_note
+
 # MAX_VARIANTS is set from CLI --max-variants (default 16, matching config.yaml).
 # Injected into module-level functions at startup by main().
 _MAX_VARIANTS = 16
 
+
+def load_coverage(path):
+    """Map candidate rank -> RAA detection coverage from an M10 summary TSV.
+
+    M10 computes this and, until now, nothing read it: the number that decides
+    whether an assay detects circulating strains never reached the step that
+    picks what to order. Returns {} when the file is absent, and the coverage
+    gate then reports "no data" rather than quietly passing.
+    """
+    import csv
+    if not path or not os.path.exists(path):
+        return {}
+    out = {}
+    with open(path, newline="") as fh:
+        for row in csv.DictReader(fh, delimiter="\t"):
+            try:
+                out[int(row["rank"])] = float(row["raa_detected_pct"])
+            except (KeyError, TypeError, ValueError):
+                continue
+    return out
+
+
+def attach_coverage(cands, coverage):
+    for c in cands:
+        c["coverage"] = coverage.get(c.get("rank"))
+    return cands
+
 def run_multiplex_screening(file_a, file_b, out_dir, num_candidates=10,
                             dye_a="FAM", dye_b="HEX",
-                            label_a="Target A", label_b="Target B"):
+                            label_a="Target A", label_b="Target B",
+                            coverage_a=None, coverage_b=None):
     os.makedirs(out_dir, exist_ok=True)
 
     # Real spectral-separation check (not a hardcoded string): two targets read on
@@ -56,6 +86,16 @@ def run_multiplex_screening(file_a, file_b, out_dir, num_candidates=10,
     print(f"[M11] Loading {label_b} candidates from: {file_b}")
     with open(file_b, "r") as f:
         cands_b = json.load(f)[:num_candidates]
+
+    cov_a, cov_b = load_coverage(coverage_a), load_coverage(coverage_b)
+    print(f"[M11] Coverage data: {label_a} {len(cov_a)} candidates, "
+          f"{label_b} {len(cov_b)} candidates"
+          + ("" if (cov_a and cov_b) else "  [WARNING: missing — the coverage gate "
+                                          "cannot be applied and will reject]"))
+    attach_coverage(cands_a, cov_a)
+    attach_coverage(cands_b, cov_b)
+    by_rank_a = {c.get("rank"): c for c in cands_a}
+    by_rank_b = {c.get("rank"): c for c in cands_b}
         
     print(f"[M11] Screening {len(cands_a)} x {len(cands_b)} = {len(cands_a) * len(cands_b)} candidate pairs...")
     
@@ -180,7 +220,27 @@ def run_multiplex_screening(file_a, file_b, out_dir, num_candidates=10,
                 "three_prime_dimers_39c": three_prime_pairs
             })
             
-    results.sort(key=lambda x: x["score"], reverse=True)
+    # Gates before ranking. Sorting on the compatibility score alone previously
+    # recommended a pair whose members were both human-specificity grade C while
+    # grade A candidates with equal coverage went unused.
+    selection = select(
+        results,
+        lambda r: [(label_a, by_rank_a.get(r["rank_a"], {})),
+                   (label_b, by_rank_b.get(r["rank_b"], {}))],
+        status_key="status_raa_39c",
+    )
+    if selection["selected"]:
+        chosen = selection["selected"]
+        dropped = [r for r in results if r not in chosen]
+        dropped.sort(key=lambda x: x["score"], reverse=True)
+        results = chosen + dropped
+        print(f"[M11] Selection level {selection['level']} "
+              f"({selection['level_label']}): {selection['n_selected']} of "
+              f"{selection['n_input']} combinations passed the gates")
+    else:
+        results.sort(key=lambda x: x["score"], reverse=True)
+        print("[M11] WARNING: no combination passed the non-negotiable gates. "
+              "Nothing is recommended; see the report for reasons.")
     
     json_path = os.path.join(out_dir, "multiplex_candidates.json")
     with open(json_path, "w") as f:
@@ -237,6 +297,7 @@ def run_multiplex_screening(file_a, file_b, out_dir, num_candidates=10,
             f.write(f"| {pair_name} | {dg} kcal/mol | {tp.get('anchor_bp', '-')} bp "
                     f"| {tp.get('dg_39c', '-')} kcal/mol | {dg_55} kcal/mol |\n")
 
+        f.write(selection_note(selection))
         f.write(screening_methodology_note())
 
     print(f"[M11] Saved Markdown report to: {md_path}")
@@ -261,6 +322,12 @@ def main():
     parser.add_argument("--dye-b", default="HEX", help="Detection fluorophore for Target B (e.g. HEX)")
     parser.add_argument("--label-a", default="Target A", help="Human-readable name for Target A")
     parser.add_argument("--label-b", default="Target B", help="Human-readable name for Target B")
+    parser.add_argument("--coverage-a", default=None,
+                        help="Path to Target A M10 coverage_summary.tsv. Without it the "
+                             "coverage gate cannot be evaluated and every candidate is "
+                             "rejected for missing data rather than silently passed.")
+    parser.add_argument("--coverage-b", default=None,
+                        help="Path to Target B M10 coverage_summary.tsv")
     parser.add_argument(
         "--max-variants",
         type=int,
@@ -275,7 +342,9 @@ def main():
 
     run_multiplex_screening(args.file_a, args.file_b, args.outdir, args.num_candidates,
                             dye_a=args.dye_a, dye_b=args.dye_b,
-                            label_a=args.label_a, label_b=args.label_b)
+                            label_a=args.label_a, label_b=args.label_b,
+        coverage_a=args.coverage_a,
+        coverage_b=args.coverage_b)
 
 if __name__ == "__main__":
     main()

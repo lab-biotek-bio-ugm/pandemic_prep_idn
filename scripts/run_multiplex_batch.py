@@ -85,6 +85,29 @@ def find_candidates(build: str) -> str:
     return f"{base}/segment-UNKNOWN_region_1/final_candidates.json"
 
 
+def find_coverage(build: str, candidates_path: str) -> str:
+    """Resolve the M10 coverage summary matching a build's candidate file.
+
+    The mode (degenerate / non_degenerate) must match the one the candidates came
+    from, or coverage would be read for a different set of oligos entirely. It is
+    therefore taken from the candidate path rather than assumed.
+
+    Returns "" when absent. M11 then reports that the coverage gate could not be
+    applied instead of silently passing candidates whose sensitivity is unknown.
+    """
+    mode = "degenerate"
+    for part in candidates_path.replace("\\", "/").split("/"):
+        if part in ("degenerate", "non_degenerate"):
+            mode = part
+            break
+    path = f"results/{build}/m10/{mode}/coverage_summary.tsv"
+    if os.path.exists(path):
+        return path
+    print(f"  [WARN] No M10 coverage for {build} ({mode}): {path} — the coverage "
+          f"gate cannot be applied to this target")
+    return ""
+
+
 def parse_build_name(config_path):
     with open(config_path, "r") as f:
         cfg = yaml.safe_load(f)
@@ -211,14 +234,21 @@ def main():
                 print(f"  [SKIP] No final_candidates.json for: {', '.join(missing)}")
                 continue
 
-            run_argv([
+            argv = [
                 sys.executable, "scripts/m11_multiplex_checker.py",
                 "--file-a", cand_a, "--file-b", cand_b, "--outdir", out_dir,
                 "--num-candidates", str(args.num_candidates),
                 "--dye-a", dye_a, "--dye-b", dye_b,
                 "--label-a", str(meta_a.get("label", build_a)),
                 "--label-b", str(meta_b.get("label", build_b)),
-            ], fatal=False)
+            ]
+            cov_a = find_coverage(build_a, cand_a)
+            cov_b = find_coverage(build_b, cand_b)
+            if cov_a:
+                argv += ["--coverage-a", cov_a]
+            if cov_b:
+                argv += ["--coverage-b", cov_b]
+            run_argv(argv, fatal=False)
 
     # Step 3: Execute Module 11 Triplex Compatibility for 3 targets if present
     if len(build_names) == 3:
@@ -252,7 +282,7 @@ def main():
         if missing:
             print(f"  [SKIP] Triplex needs all three targets; missing: {', '.join(missing)}")
         else:
-            run_argv([
+            argv = [
                 sys.executable, "scripts/m11_triplex_checker.py",
                 "--file-a", cand_a, "--file-b", cand_b, "--file-c", cand_c,
                 "--outdir", out_dir,
@@ -261,7 +291,14 @@ def main():
                 "--label-a", str(meta_a.get("label", build_a)),
                 "--label-b", str(meta_b.get("label", build_b)),
                 "--label-c", str(meta_c.get("label", build_c)),
-            ], fatal=False)
+            ]
+        for flag, build, cand in (("--coverage-a", build_a, cand_a),
+                                  ("--coverage-b", build_b, cand_b),
+                                  ("--coverage-c", build_c, cand_c)):
+            cov = find_coverage(build, cand)
+            if cov:
+                argv += [flag, cov]
+        run_argv(argv, fatal=False)
 
     # Step 4: Consolidate supplementary workbooks, restricted to THIS run's targets
     # so builds from previous runs cannot leak into the exported reports.

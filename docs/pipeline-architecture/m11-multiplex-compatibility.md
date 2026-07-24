@@ -78,6 +78,72 @@ $\Delta G$ is weighted above $\Delta T_m$ because that is where the reaction che
 !!! tip "Before ordering oligos"
     Treat the ranking as a shortlist, not a verdict. Following the vendor's own protocol, order **several** of the top-ranked combinations rather than rank 1 alone — no in-silico calculation predicts primer noise reliably, and the decisive comparison is sensitivity on the bench.
 
+
+---
+
+## Candidate Selection: Gates First, Then Ranking
+
+The compatibility score decides *how well two assays coexist*. It does not decide which oligos to order. That decision now runs through `scripts/tools/candidate_selection.py`, shared by the pairwise checker, the triplex checker and the supplementary export.
+
+!!! warning "Corrected: the recommendation ignored specificity and coverage entirely"
+    The first production run recommended `FluA_Rank9 × FluB_Rank7` — a pair whose **both** members were human-specificity grade C, carrying 18 and 11 extensible human off-targets, while grade A candidates with equal coverage went unused. Two causes:
+
+    - M11 ranked on multiplex thermodynamics alone. `human_grade` was present in the `final_candidates.json` it reads and was never consulted.
+    - **Nothing in the pipeline read M10's coverage output.** The number that decides whether an assay detects circulating strains never reached the step that picks what to order. Across the FluA candidates coverage ranged 85.3%–98.1%.
+
+    Worse, M11 only saw the top 10 candidates ranked by *Primer3 penalty*, so the highest-coverage FluA candidate (98.13%, grade B) was never a contender at all.
+
+### The decision rule
+
+For every criterion, ask whether violating it makes the assay **wrong** or merely **worse**. Wrong belongs in a gate; worse belongs in the ranking. A criterion that is already gated must not also appear in the ranking — that invents a trade-off which should not exist.
+
+**Class 1 gates — never relaxed.** An off-target amplicon possible on human DNA, an off-target against another virus, a human binding site with the 3' end fully anchored, a dye-channel collision, a cross-dimer past the veto limit, or M09 status `FAIL`.
+
+These test the **mechanism**, not a score, and that distinction matters. PrimerLab's specificity score is an *accumulating* penalty: one perfectly 3'-anchored off-target costs 20 points and twenty trivial ones also cost 20, so an identical grade can mean either. No grade threshold can rule out a single catastrophic binding site. `human_products` — off-target amplicons the primer *pair* could actually produce — can not be masked by aggregation, because a lone primer binding somewhere produces nothing; a false positive needs two primers facing each other within amplicon distance.
+
+**Class 2 gates — relaxed stepwise.** Specificity grade floor, coverage floor, multiplex status.
+
+### The relaxation ladder
+
+Selection tries the strictest profile and walks down only as far as needed, reporting which level was used:
+
+| Level | What it gives up |
+|---|---|
+| L0 | nothing — the target profile |
+| L1 | coverage judged relative to the best achievable, not absolutely |
+| L2 | absolute coverage floor lowered to 90% |
+| L3 | specificity floor lowered to grade C |
+| L4 | multiplex `WARNING` accepted |
+| L5 | **last resort** — every quality floor waived; only Class 1 applies |
+
+L5 exists so an empty result is impossible unless every candidate violates a Class 1 gate — and *that* outcome is a finding worth surfacing, not a failure to paper over. An operator facing a difficult target needs the least-bad option, loudly labelled, not silence.
+
+The relative-coverage criterion at L1 matters for intrinsically hard targets: a fixed floor can eliminate every candidate, so a combination also passes when it sits within a few points of the best coverage achievable *for that target*.
+
+### Ranking among survivors
+
+Lexicographic, not a weighted sum — the same reasoning as the M07 core score. Multiplex status (PASS before WARNING), then coverage **bucketed to 0.5 pp**, then the weakest member's specificity score, then the compatibility score, then the Primer3 penalty as a deterministic tiebreak.
+
+Coverage leads not because it outranks specificity, but because specificity is already guaranteed at the gate. The bucketing is deliberate: unbucketed, a 91.17% vs 91.16% difference — pure noise — would outrank a real difference in specificity further down the key.
+
+### Effect on the first production run
+
+| | Before | After |
+|---|---|---|
+| Pair | FluA_Rank9 × FluB_Rank7 | FluA_Rank10 × FluB_Rank12 |
+| Multiplex status | WARNING | PASS |
+| FluA specificity | C (71.1) | A (92.6) |
+| FluB specificity | C (74.5) | A (96.8) |
+| Compatibility score | 69.1 | 64.5 |
+
+4.6 points of an uncalibrated heuristic traded for both members moving C→A and the status moving WARNING→PASS.
+
+### Auditability
+
+Every report states the level used, whether floors were relaxed, and a table of how many combinations were dropped for each reason. When M10 coverage is missing the gate reports "no data" and rejects rather than silently passing candidates whose sensitivity is unknown.
+
+Thresholds live in `multiplex.selection.levels` in each config; a malformed block falls back to the built-in ladder rather than running with no floors at all.
+
 ---
 
 ## Orchestrating a Multiplex Run

@@ -35,8 +35,29 @@ from tools.iupac_utils import (
     THREE_PRIME_WINDOW_NT,
 )
 
+from tools.candidate_selection import select, selection_note
+
 # MAX_VARIANTS is set from CLI --max-variants (default 16, matching config.yaml).
 _MAX_VARIANTS = 16
+
+
+def load_coverage(path):
+    """Map candidate rank to RAA detection coverage from an M10 summary TSV.
+
+    Returns an empty mapping when the file is absent; the coverage gate then
+    rejects for missing data rather than passing candidates it cannot judge.
+    """
+    import csv
+    if not path or not os.path.exists(path):
+        return {}
+    out = {}
+    with open(path, newline="") as fh:
+        for row in csv.DictReader(fh, delimiter="\t"):
+            try:
+                out[int(row["rank"])] = float(row["raa_detected_pct"])
+            except (KeyError, TypeError, ValueError):
+                continue
+    return out
 
 
 def _safe_tm(seq):
@@ -46,7 +67,8 @@ def _safe_tm(seq):
 
 def run_triplex_screening(file_a, file_b, file_c, out_dir, num_candidates=10,
                           dye_a="FAM", dye_b="HEX", dye_c="Cy5",
-                          label_a="Target A", label_b="Target B", label_c="Target C"):
+                          label_a="Target A", label_b="Target B", label_c="Target C",
+                          coverage_a=None, coverage_b=None, coverage_c=None):
     os.makedirs(out_dir, exist_ok=True)
 
     # Real 3-way spectral-separation check (not hardcoded): all three targets must
@@ -65,6 +87,15 @@ def run_triplex_screening(file_a, file_b, file_c, out_dir, num_candidates=10,
     print(f"[Triplex] Loading {label_c} candidates from: {file_c}")
     with open(file_c, "r") as f:
         cands_c = json.load(f)[:num_candidates]
+
+    covs = [load_coverage(coverage_a), load_coverage(coverage_b), load_coverage(coverage_c)]
+    for cands, cov in zip((cands_a, cands_b, cands_c), covs):
+        for c in cands:
+            c["coverage"] = cov.get(c.get("rank"))
+    if not all(covs):
+        print("[Triplex] WARNING: M10 coverage missing for at least one target - "
+              "the coverage gate cannot be applied and will reject those candidates")
+    by_rank = [{c.get("rank"): c for c in cands} for cands in (cands_a, cands_b, cands_c)]
         
     total_combs = len(cands_a) * len(cands_b) * len(cands_c)
     print(f"[Triplex] Screening {len(cands_a)} x {len(cands_b)} x {len(cands_c)} = {total_combs} triplex combinations...")
@@ -189,6 +220,9 @@ def run_triplex_screening(file_a, file_b, file_c, out_dir, num_candidates=10,
 
                 results.append({
                     "triplex_id": f"{label_a}_R{rank_a}_{label_b}_R{rank_b}_{label_c}_R{rank_c}",
+                    "rank_a": rank_a,
+                    "rank_b": rank_b,
+                    "rank_c": rank_c,
                     "score": score,
                     "status_39c": status_39c,
                     "dye_ok": dye_ok,
@@ -221,7 +255,25 @@ def run_triplex_screening(file_a, file_b, file_c, out_dir, num_candidates=10,
                     "three_prime_dimers_39c": three_prime_dimers
                 })
                 
-    results.sort(key=lambda x: x["score"], reverse=True)
+    # Gates before ranking; see scripts/tools/candidate_selection.py.
+    selection = select(
+        results,
+        lambda r: [(label_a, by_rank[0].get(r["rank_a"], {})),
+                   (label_b, by_rank[1].get(r["rank_b"], {})),
+                   (label_c, by_rank[2].get(r["rank_c"], {}))],
+        status_key="status_39c",
+    )
+    if selection["selected"]:
+        chosen = selection["selected"]
+        dropped = [r for r in results if r not in chosen]
+        dropped.sort(key=lambda x: x["score"], reverse=True)
+        results = chosen + dropped
+        print(f"[Triplex] Selection level {selection['level']} "
+              f"({selection['level_label']}): {selection['n_selected']} of "
+              f"{selection['n_input']} combinations passed the gates")
+    else:
+        results.sort(key=lambda x: x["score"], reverse=True)
+        print("[Triplex] WARNING: no combination passed the non-negotiable gates.")
     
     # Save JSON
     json_path = os.path.join(out_dir, "triplex_candidates.json")
@@ -303,6 +355,7 @@ def run_triplex_screening(file_a, file_b, file_c, out_dir, num_candidates=10,
         if not listed:
             f.write("| _(none)_ | | | | |\n")
 
+        f.write(selection_note(selection))
         f.write(screening_methodology_note())
 
     print(f"[Triplex] Saved Markdown report to: {md_path}")
@@ -322,6 +375,9 @@ def main():
     parser.add_argument("--label-a", default="Target A", help="Human-readable name for Target A")
     parser.add_argument("--label-b", default="Target B", help="Human-readable name for Target B")
     parser.add_argument("--label-c", default="Target C", help="Human-readable name for Target C")
+    parser.add_argument("--coverage-a", default=None, help="Target A M10 coverage_summary.tsv")
+    parser.add_argument("--coverage-b", default=None, help="Target B M10 coverage_summary.tsv")
+    parser.add_argument("--coverage-c", default=None, help="Target C M10 coverage_summary.tsv")
     parser.add_argument(
         "--max-variants",
         type=int,
@@ -336,7 +392,9 @@ def main():
 
     run_triplex_screening(args.file_a, args.file_b, args.file_c, args.outdir, args.num_candidates,
                           dye_a=args.dye_a, dye_b=args.dye_b, dye_c=args.dye_c,
-                          label_a=args.label_a, label_b=args.label_b, label_c=args.label_c)
+                          label_a=args.label_a, label_b=args.label_b, label_c=args.label_c,
+        coverage_a=args.coverage_a, coverage_b=args.coverage_b,
+        coverage_c=args.coverage_c)
 
 if __name__ == "__main__":
     main()
