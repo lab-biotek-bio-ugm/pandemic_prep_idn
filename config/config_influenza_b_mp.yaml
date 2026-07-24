@@ -311,7 +311,11 @@ blast_verification:
 insilico_pcr:
   enabled: true
   max_mismatch: 3 # Toleransi mismatch maksimal untuk primer & probe
-  num_candidates: 20 # Evaluasi terhadap 20 kandidat teratas dari M09
+  num_candidates: 40          # BATAS ATAS kandidat yang diukur coverage-nya per region.
+                              # Himpunannya dipilih lewat gerbang spesifisitas M09 dulu;
+                              # angka ini hanya membatasi berapa yang diukur. Runtime
+                              # M10 naik per gelombang 16 worker paralel, jadi 30 sama
+                              # mahalnya dengan 20; 40 = 3 gelombang, 50 = 4.
   min_subtype_seqs:
     30 # Minimum total sequences per subtype in breakdown.
     # Subtypes with fewer sequences are collapsed into

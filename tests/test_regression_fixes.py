@@ -602,3 +602,18 @@ def test_failure_summary_counts_only_genuine_failures():
     assert "non-zero exit or error" not in src, \
         "the summary still equates a non-zero exit with a failure"
     assert "specificity is UNKNOWN" in src
+
+
+def test_m10_candidate_cap_is_consistent_and_did_not_clobber_blast():
+    """A config edit that matched the wrong key once changed
+    blast_verification.num_candidates from 100 to 40, which would have shrunk the
+    BLAST set instead of widening the coverage set — the opposite of the intent.
+    The two keys live in different blocks and must be pinned separately."""
+    import glob
+    import yaml
+    for path in glob.glob("config/config*.yaml"):
+        cfg = yaml.safe_load(open(path))
+        if "insilico_pcr" in cfg:
+            assert cfg["insilico_pcr"]["num_candidates"] == 40, path
+        if "blast_verification" in cfg:
+            assert cfg["blast_verification"]["num_candidates"] == 100, path
