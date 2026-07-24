@@ -316,7 +316,11 @@ def create_executive_summary(results_root: Path, outdir: Path):
             with open(cands_json[0], "r") as f:
                 c_data = json.load(f)
                 if c_data:
-                    top_cand = f"Rank 1 Score: {c_data[0].get('final_score')}"
+                    # final_score is PrimerLab's Primer3 PENALTY: lower is
+                    # better. Labelling it "Score" read as a mark out of 100 and
+                    # made the best candidate look like the worst.
+                    top_cand = (f"Rank 1 Primer3 penalty: "
+                                f"{c_data[0].get('final_score')} (lower is better)")
 
         overview_data.append({
             "Target Cohort": build_label(b.name),
@@ -359,7 +363,17 @@ def create_executive_summary(results_root: Path, outdir: Path):
             plex_lbl = nplex_label(n_targets)
 
         for rank_idx, combo in enumerate(t_data, 1):
-            cat = "BEST RECOMMENDED (RANK 1)" if rank_idx == 1 else f"ALTERNATIVE RANK {rank_idx}"
+            # Label from the selection verdict, not from position in the list.
+            # A combination that failed the gates must never be presented as a
+            # recommendation just because it sorted first.
+            if not combo.get("selection_passed", True):
+                cat = "NOT RECOMMENDED — failed selection gates"
+            elif rank_idx == 1:
+                cat = "BEST RECOMMENDED (RANK 1)"
+                if combo.get("selection_relaxed"):
+                    cat += f" — quality floors relaxed to {combo.get('selection_level')}"
+            else:
+                cat = f"ALTERNATIVE RANK {rank_idx}"
             oligos = combo.get("oligos_synthesis", {})
             combo_id = combo.get("triplex_id") or combo.get("pair_id") or combo.get("combo_id")
             score = combo.get("score")

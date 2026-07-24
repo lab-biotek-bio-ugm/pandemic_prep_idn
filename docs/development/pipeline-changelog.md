@@ -26,6 +26,12 @@ A full audit of the pipeline's scripts and algorithms, followed by validation of
 - **M09 now forwards `human_products` and `human_worst_hit`**, the mechanistic fields the Class 1 gates need; they existed only inside per-candidate `blast_result.json`.
 - Ranking among survivors is lexicographic with coverage bucketed to 0.5 pp, so measurement noise cannot outrank a real specificity difference.
 
+### Fixed — the supplementary sheets said the opposite of what the numbers meant
+
+- **"BEST RECOMMENDED (RANK 1)" was applied by list position**, so a combination that failed the selection gates would still carry it if it happened to sort first. The label now comes from the selection verdict, states the relaxation level when quality floors were loosened, and reads `NOT RECOMMENDED — failed selection gates` otherwise. The verdict is stamped into `multiplex_candidates.json`, since the export reads the JSON rather than the report.
+- **`Rank 1 Score: 6.0` was a Primer3 *penalty*** — lower is better — so the best candidate looked like the worst. Now `Rank 1 Primer3 penalty: 6.0 (lower is better)`.
+- **`Virus_Pathogen_Hits` renamed to `Virus_OnTarget_Hits`.** It counts hits to the *target* pathogen, so 200 is the desired outcome, but the name read as hits to other pathogens.
+
 ### Changed — multiplex screening (M11)
 
 - **Unified all thresholds and the score formula** into `scripts/tools/iupac_utils.py`. Pairwise and triplex previously held separate literals that had already drifted: $\Delta T_m$ was 3.5°C in one and 4.0°C in the other, so an identical oligo set could be `PASS` in one report and `WARNING` in the other.

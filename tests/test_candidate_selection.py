@@ -204,3 +204,55 @@ def test_m09_forwards_the_mechanistic_offtarget_fields():
     src = open("scripts/m09_blast_verification.py").read()
     for field in ("human_products", "human_worst_hit"):
         assert f'"{field}":' in src, f"M09 does not forward {field}"
+
+
+# --- The verdict must reach the ordering sheet -------------------------------
+
+def test_annotate_marks_pass_fail_and_rank():
+    """The export reads the JSON, not the report. Without the verdict in the file
+    it labelled whatever sat at index 0 as BEST RECOMMENDED, with no way to know
+    whether it had passed the gates or merely sorted first in a fallback."""
+    good = combo(tag="good", a=member(coverage=99.5), b=member(coverage=99.5))
+    bad = combo(tag="bad", a=member(human_products=2))
+    combos = [good, bad]
+    result = run(combos)
+    sel.annotate(combos, result)
+
+    assert good["selection_passed"] is True
+    assert good["selection_rank"] == 1
+    assert bad["selection_passed"] is False
+    assert bad["selection_rank"] is None
+    assert good["selection_level"] == result["level"]
+
+
+def test_export_labels_come_from_the_verdict_not_the_position():
+    src = open("scripts/export_supplementary.py").read()
+    assert 'combo.get("selection_passed"' in src, \
+        "the export still labels by list position"
+    assert "NOT RECOMMENDED" in src
+    assert "selection_relaxed" in src, \
+        "a recommendation made under relaxed floors must say so on the sheet"
+
+
+def test_export_does_not_call_the_primer3_penalty_a_score():
+    """final_score is a PENALTY: lower is better. Labelling it 'Score' made the
+    best candidate (6.0) look like the worst on the overview sheet."""
+    src = open("scripts/export_supplementary.py").read()
+    assert "Rank 1 Score:" not in src
+    assert "lower is better" in src
+
+
+def test_on_target_virus_hits_are_not_called_pathogen_hits():
+    """`Virus_Pathogen_Hits` counts hits to the TARGET pathogen — 200 of them is
+    the desired outcome — but reads as hits to other pathogens."""
+    src = open("scripts/m09_blast_verification.py").read()
+    assert "Virus_Pathogen_Hits" not in src
+    assert "Virus_OnTarget_Hits" in src
+
+
+def test_both_checkers_stamp_the_verdict_before_writing_json():
+    for path in ("scripts/m11_multiplex_checker.py", "scripts/m11_triplex_checker.py"):
+        src = open(path).read()
+        assert "annotate(results, selection)" in src, path
+        assert src.index("annotate(results, selection)") < src.index("json.dump(results"), \
+            f"{path}: the verdict must be stamped before the JSON is written"

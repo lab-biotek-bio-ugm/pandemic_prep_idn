@@ -292,6 +292,25 @@ def select(
     }
 
 
+
+def annotate(combos: List[Dict[str, Any]], result: Dict[str, Any]) -> None:
+    """Stamp the selection verdict onto each combination, in place.
+
+    The verdict has to survive into the JSON, because the supplementary export
+    reads that file and previously labelled whatever sat at index 0 as
+    "BEST RECOMMENDED" — with no way to know whether it had passed the gates or
+    merely come first in a fallback ordering.
+    """
+    passed = {id(c) for c in result.get("selected", [])}
+    for i, combo in enumerate(combos):
+        is_sel = id(combo) in passed
+        combo["selection_passed"] = is_sel
+        combo["selection_level"] = result.get("level")
+        combo["selection_level_label"] = result.get("level_label")
+        combo["selection_relaxed"] = bool(result.get("relaxed"))
+        combo["selection_rank"] = (i + 1) if is_sel else None
+
+
 def selection_note(result: Dict[str, Any], top_n: int = 8) -> str:
     """Markdown block explaining what the gates did, for the report."""
     lines = ["", "---", "", "## How This Recommendation Was Chosen", ""]

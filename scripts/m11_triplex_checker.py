@@ -35,7 +35,7 @@ from tools.iupac_utils import (
     THREE_PRIME_WINDOW_NT,
 )
 
-from tools.candidate_selection import select, selection_note
+from tools.candidate_selection import select, selection_note, annotate
 
 # MAX_VARIANTS is set from CLI --max-variants (default 16, matching config.yaml).
 _MAX_VARIANTS = 16
@@ -276,6 +276,11 @@ def run_triplex_screening(file_a, file_b, file_c, out_dir, num_candidates=10,
         print("[Triplex] WARNING: no combination passed the non-negotiable gates.")
     
     # Save JSON
+    # Stamp the selection verdict onto each combination so it survives into the
+    # JSON: the supplementary export reads that file and must not label whatever
+    # sits at index 0 as "BEST RECOMMENDED" without knowing it passed the gates.
+    annotate(results, selection)
+
     json_path = os.path.join(out_dir, "triplex_candidates.json")
     with open(json_path, "w") as f:
         json.dump(results, f, indent=2)

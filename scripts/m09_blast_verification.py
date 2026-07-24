@@ -782,7 +782,7 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
         "PrimerLab_Penalty_Score", "Vienna_Penalty", "Tier",
         "Amplicon_Length", "Cross_Dimer_dG", "Dimer_dG", "Hairpin_dG",
         "Human_Specificity_Score", "Human_Grade", "Human_Status", "Human_Total_Offtargets", "Human_Dangerous_3Prime_Offtargets",
-        "Virus_Specificity_Score", "Virus_Grade", "Virus_Status", "Virus_Pathogen_Hits", "Virus_Total_Offtargets",
+        "Virus_Specificity_Score", "Virus_Grade", "Virus_Status", "Virus_OnTarget_Hits", "Virus_Total_Offtargets",
         "Remote_Specificity_Score", "Remote_Grade", "Remote_Status", "Remote_Total_Offtargets", "Remote_Dangerous_3Prime_Offtargets", "Remote_Pathogen_Hits",
         "GARD_Breakpoint_Nearby",
         "Overall_Decision", "Decision_Reason"
@@ -1046,7 +1046,7 @@ def compile_summary(outdir_path: str, alternatives_path: Optional[str] = None,
                 f"| **Human BLAST Score** ↑ | {d['human_score']} ({d['human_grade']}) |",
                 f"| **Human Off-targets (3' involved)** | {d['human_dangerous']} |",
                 f"| **Virus BLAST Score** ↑ | {d['virus_score']} ({d['virus_grade']}) |",
-                f"| **Virus Pathogen Hits** | {d['virus_pathogen']} |",
+                f"| **Virus On-Target Hits** (target pathogen; higher is better) | {d['virus_pathogen']} |",
             ])
             if d["gard_near"]:
                 rep_lines.append(f"| **GARD Breakpoint** | Recombination breakpoint detected nearby: {[bp.get('genome_pos') for bp in d['gard_details']]} |")
