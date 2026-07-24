@@ -42,6 +42,11 @@ from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 
+# Timing instrumentation. The first production run recorded no durations
+# anywhere, so sizing decisions had to be argued from a model of the code.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from tools.benchmark import timed_main
+
 import yaml
 from Bio import SeqIO
 
@@ -1321,6 +1326,8 @@ def main():
     hyphy_dir = Path(args.hyphy_dir)
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
+
+    timed_main("m07_bridge", args.build_name, strategy=args.strategy)
 
     global IUPAC_THRESHOLD
     IUPAC_THRESHOLD = args.iupac_threshold

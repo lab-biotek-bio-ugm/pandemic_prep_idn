@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import re
 import pathlib
 import math
 import argparse
@@ -11,6 +12,12 @@ import shutil
 from pathlib import Path
 from datetime import datetime
 from typing import Optional
+
+# Timing instrumentation. The first production run recorded no durations anywhere,
+# so sizing decisions had to be argued from a model of the code rather than
+# measurement.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from tools.benchmark import timed_main
 
 
 def main():
@@ -56,6 +63,9 @@ def main():
     )
     
     args = parser.parse_args()
+    _m = re.search(r"results/([^/]+)/m09", str(args.outdir).replace("\\", "/"))
+    timed_main("m09_blast", _m.group(1) if _m else None,
+               db_label=getattr(args, "db_label", None) or "-")
 
     # --- Compile-only mode: skip BLAST, just compile reports ---
     if args.compile_only:

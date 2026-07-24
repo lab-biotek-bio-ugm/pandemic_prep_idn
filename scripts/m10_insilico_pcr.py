@@ -6,6 +6,10 @@ computes coverage breakdowns (by subtype, collection year, country), and generat
 """
 
 import argparse
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0, str(_Path(__file__).resolve().parent))
+from tools.benchmark import timed_main
 import json
 import os
 import re
@@ -1044,6 +1048,18 @@ def main():
     # For degenerate candidates with hundreds of primer combinations, seqkit benefits
     # greatly from more -j goroutines, so we balance between candidate count and threads.
     total_cpus = args.threads or os.cpu_count() or 8
+
+    # Record how long this took and under what conditions. Without it, sizing
+    # questions -- how many candidates to evaluate, whether the 16-worker cap is
+    # right -- can only be argued from a model of the code.
+    _build = None
+    for _part in _Path(args.outdir).resolve().parts:
+        pass
+    _m = re.search(r"results/([^/]+)/m10", str(args.outdir).replace("\\", "/"))
+    _build = _m.group(1) if _m else None
+    timed_main("m10_insilico_pcr", _build,
+               mode=_Path(args.outdir).name, cpus=total_cpus,
+               num_candidates=args.num_candidates)
     # Pre-count candidates to tune allocation (we haven't loaded them yet, so estimate)
     # Conservative estimate: max_candidates = num_candidates × (number of m09 dirs)
     est_candidates = max(1, args.num_candidates)  # refine below after load

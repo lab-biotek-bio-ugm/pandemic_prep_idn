@@ -129,3 +129,51 @@ def test_m07_refuses_a_reference_of_the_wrong_length(m07_inputs):
     r = _run_m07(m07_inputs)
     assert r.returncode == 1
     assert "!= alignment length" in r.stderr, r.stderr
+
+
+# --- Timing instrumentation --------------------------------------------------
+
+def test_benchmark_records_a_failed_step_too(tmp_path, monkeypatch):
+    """A step that dies after forty minutes is exactly the one worth measuring,
+    so the duration must be written on the error path as well."""
+    import sys as _s
+    _s.path.insert(0, "scripts")
+    from tools.benchmark import timed, summarise
+    monkeypatch.chdir(tmp_path)
+
+    with timed("fast_step", "b"):
+        pass
+    with pytest.raises(RuntimeError):
+        with timed("dying_step", "b"):
+            raise RuntimeError("blastn not found")
+
+    lines = (tmp_path / "results" / "b" / "benchmark.jsonl").read_text().splitlines()
+    entries = {json.loads(l)["step"]: json.loads(l) for l in lines}
+    assert entries["fast_step"]["status"] == "ok"
+    assert entries["dying_step"]["status"] == "failed"
+    assert "blastn not found" in entries["dying_step"]["error"]
+    assert "dying_step" in summarise("b")
+
+
+def test_benchmark_never_breaks_a_run(tmp_path, monkeypatch):
+    """Instrumentation that can abort the pipeline is worse than none."""
+    import sys as _s
+    _s.path.insert(0, "scripts")
+    from tools.benchmark import record
+    monkeypatch.chdir(tmp_path)
+    record("s", None, 1.0)                       # no build -> silently skipped
+    record("s", "b/../../escape", 1.0)           # unwritable path must not raise
+    monkeypatch.setenv("PANDEMIC_BENCHMARK_OFF", "1")
+    record("s", "b", 1.0)
+    assert not (tmp_path / "results" / "b" / "benchmark.jsonl").exists()
+
+
+def test_expensive_modules_are_instrumented():
+    """M07, M09 and M10 are where the wall-clock goes; the first production run
+    left no way to answer 'how long did M10 take?'."""
+    for path, step in (("scripts/m07_bridge_builder.py", "m07_bridge"),
+                       ("scripts/m09_blast_verification.py", "m09_blast"),
+                       ("scripts/m10_insilico_pcr.py", "m10_insilico_pcr")):
+        src = open(path).read()
+        assert "from tools.benchmark import timed_main" in src, path
+        assert f'timed_main("{step}"' in src, f"{path} does not record {step}"
