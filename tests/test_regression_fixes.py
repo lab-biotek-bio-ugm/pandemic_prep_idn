@@ -576,3 +576,29 @@ def test_m10_thread_helper_survives_a_dry_run_without_cores():
     assert "workflow.cores is not None" not in body, "the broken guard is back"
     assert "try:" in body and "except" in body, \
         "get_m10_threads must guard the access with try/except, not a None check"
+
+
+def test_a_non_specific_verdict_is_not_reported_as_a_failure():
+    """`primerlab blast` exits 1 to mean "this oligo set is NOT specific" — a
+    RESULT, not an error. In the first production run all 28 non-zero exits had
+    complete results with is_specific=False and all 72 zero exits had
+    is_specific=True: a perfect separation.
+
+    Labelling those 28 "[FAIL] BLAST verification failed" inverted the meaning and
+    made a genuine failure (missing binary, broken database) indistinguishable
+    from a routine verdict — the one signal that must never be lost in noise.
+    """
+    src = open("scripts/m09_blast_verification.py").read()
+    assert "[NOT SPECIFIC]" in src, "a non-specific verdict must have its own label"
+    assert "BLAST verification failed with exit code" not in src, \
+        "the misleading message is back"
+    # The failure branch must be reached only when no usable artefact exists.
+    assert "Specificity is UNKNOWN for this candidate" in src
+    assert 'result_file = pathlib.Path(output_arg) / "blast_result.json"' in src
+
+
+def test_failure_summary_counts_only_genuine_failures():
+    src = open("scripts/m09_blast_verification.py").read()
+    assert "non-zero exit or error" not in src, \
+        "the summary still equates a non-zero exit with a failure"
+    assert "specificity is UNKNOWN" in src

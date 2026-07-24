@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import pathlib
 import math
 import argparse
 import subprocess
@@ -199,11 +200,42 @@ def main():
             process.wait()
 
             attempted_count += 1
-            if process.returncode == 0:
-                print(f"[SUCCESS] Candidate #{rank}{db_label_str} verification complete.")
+            # A non-zero exit does NOT mean the verification failed. `primerlab
+            # blast` exits 1 to signal "this oligo set is NOT specific" -- a
+            # RESULT, not an error. In the first production run all 28 non-zero
+            # exits had complete, parseable results with is_specific=False, and
+            # all 72 zero exits had is_specific=True: a perfect separation.
+            #
+            # Reporting those 28 as "[FAIL] BLAST verification failed" inverted
+            # the meaning and, worse, made a genuine failure (missing binary,
+            # broken database) indistinguishable from a routine verdict. The
+            # signal that matters must not be buried in noise it cannot be told
+            # apart from, so the verdict is read from the artefact instead.
+            result_file = pathlib.Path(output_arg) / "blast_result.json"
+            verdict = None
+            if result_file.exists():
+                try:
+                    with open(result_file, "r", encoding="utf-8") as rf:
+                        verdict = json.load(rf)
+                except Exception:
+                    verdict = None
+
+            if verdict is not None:
+                specific = verdict.get("is_specific")
+                score = verdict.get("combined_score")
+                if specific is False:
+                    print(f"[NOT SPECIFIC] Candidate #{rank}{db_label_str}: "
+                          f"verification completed, score {score} — below the "
+                          f"specificity threshold. This is a result, not an error.")
+                else:
+                    print(f"[SUCCESS] Candidate #{rank}{db_label_str} verification "
+                          f"complete (score {score}).")
             else:
+                # No usable artefact: verification genuinely did not complete.
                 failed_count += 1
-                print(f"[FAIL] Candidate #{rank}{db_label_str} BLAST verification failed with exit code {process.returncode}.")
+                print(f"[FAIL] Candidate #{rank}{db_label_str}: verification did not "
+                      f"complete — exit code {process.returncode} and no readable "
+                      f"blast_result.json. Specificity is UNKNOWN for this candidate.")
 
         except Exception as e:
             attempted_count += 1
@@ -219,8 +251,11 @@ def main():
     # Fail loudly rather than fail-open: an unverified primer must never be
     # allowed to look "specific" downstream just because BLAST never ran.
     if failed_count > 0:
-        print(f"\n[WARNING] {failed_count}/{attempted_count} candidate BLAST verification(s) FAILED "
-              f"(non-zero exit or error){db_label_str}.")
+        print(f"\n[WARNING] {failed_count}/{attempted_count} candidate BLAST verification(s) "
+              f"did not complete{db_label_str} — no readable result was produced, so "
+              f"their specificity is UNKNOWN and compile_summary will mark them FAIL. "
+              f"This counts genuine failures only; a candidate found NOT SPECIFIC is a "
+              f"completed verification and is not counted here.")
     # Abort ONLY when this run produced no usable verification at all. If some
     # candidates were skipped because they already have results, a single failing
     # candidate must not exit non-zero: under `set -euo pipefail` that would stop

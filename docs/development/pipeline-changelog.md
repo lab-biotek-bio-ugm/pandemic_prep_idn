@@ -18,6 +18,14 @@ A full audit of the pipeline's scripts and algorithms, followed by validation of
 - **Fixed abasic-site placement in PrimerLab (M08).** The residue could land 28–29 bases from the probe's 5' end, which the manual lists verbatim as a "Poor probe design", and the 30–38 working range had no upper bound. More seriously, the label logic was **inverted**: the code anchored the abasic residue onto the nearest `T` and let the dT-fluorophore and dT-quencher fall on whatever bases were adjacent, so every probe could silently carry two unnecessary probe–target mismatches. The flanking positions are what must be `T`; the abasic position has no sequence requirement. Placement now degrades in the order the manual prescribes and reports every relaxation.
 - **Verified against the manual's worked example**, which the corrected implementation now reproduces exactly (30 bases 5', 15 bases 3', both labels on real thymines).
 
+### Fixed — a routine verdict was reported as a verification failure (M09)
+
+- `primerlab blast` exits **1 to mean "this oligo set is NOT specific"** — a result, not an error. M09 reported every non-zero exit as `[FAIL] ... BLAST verification failed with exit code 1`, and summarised them as `28/100 candidate BLAST verification(s) FAILED`.
+- In the first production run the separation was perfect: all **28** non-zero exits had complete, parseable results with `is_specific=False` (scores 32.0–69.9), and all **72** zero exits had `is_specific=True` (70.5–97.4). Nothing had actually failed.
+- The consequence is worse than the wrong wording: a **genuine** failure — missing binary, unreadable database — would have been indistinguishable from 28 routine verdicts. The one signal that must never be lost was buried in noise it could not be told apart from. During this audit the message misled the analysis twice.
+- M09 now reads the verdict from the artefact rather than the exit code: a completed run reports `[SUCCESS]` or `[NOT SPECIFIC]` with its score, and `[FAIL]` is reserved for the case where no readable `blast_result.json` exists — the only case where specificity is genuinely unknown. The summary counts genuine failures only.
+- The fail-closed logic in `compile_summary()` was verified against the real run and behaved correctly throughout: every excluded candidate was excluded on score, none on a phantom failure.
+
 ### Changed — per-candidate gates now run before combinations are built
 
 - **The cut by Primer3 penalty is gone.** M11 took the top 10 candidates ordered by PrimerLab's Primer3 penalty purely to keep the pair count manageable, then applied the gates afterwards. But specificity, human off-target amplicons and coverage are properties of a *single* candidate — they do not depend on what it is paired with. Filtering first removes the need for any arbitrary cut: pairwise on the survivors is a few thousand combinations, which is cheap.
