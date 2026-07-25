@@ -195,3 +195,40 @@ To balance universality (broad coverage) and sensitivity, the pipeline enforces 
 | 49 | 273 | C | C | 0.0% | 12.8% | 0.0% | 87.2% | Conserved (minor variation &lt;15% ignored: T (12.8%)) |
 | 50 | 274 | C | C | 0.0% | 0.5% | 0.0% | 99.5% | Conserved (minor variation &lt;15% ignored: T (0.5%)) |
 :::
+
+---
+
+## 5. Automated Supplementary Excel Exporter Tool
+
+To export full executive and detailed supporting workbooks for laboratory synthesis and supplementary submission, use `scripts/export_supplementary.py`:
+
+```bash
+# Export all active target builds (auto-detected from results/):
+python scripts/export_supplementary.py \
+  --results-dir results \
+  --outdir supplementary \
+  --only-degenerate
+
+# Export specific subset (e.g. Influenza A & B only, excluding Measles):
+python scripts/export_supplementary.py \
+  --results-dir results \
+  --outdir supplementary \
+  --only-degenerate \
+  --exclude-targets measles
+
+# Alternatively, restrict to specific target YAML config files:
+python scripts/export_supplementary.py \
+  --results-dir results \
+  --outdir supplementary \
+  --only-degenerate \
+  config/config_influenza_a_mp.yaml config/config_influenza_b_mp.yaml
+```
+
+### Generated Workbooks Package
+1. **`Executive_Summary_Diagnostic_Assays.xlsx`**: Overview, Oligo Synthesis Orders (Rank 1 Best + 3 Alts), Pairwise/N-Plex compatibility, and BLAST summary.
+2. **`S1_Primer_Candidates.xlsx`**: Granular candidate metrics for each target build.
+3. **`S2_BLAST_Specificity.xlsx`**: Off-target BLAST specificity details.
+4. **`S3_Multiplex_Compatibility.xlsx`**: N-Plex thermodynamic cross-dimer screening.
+5. **`S4_QC_Summary.xlsx`**: Sequence retention & QC stats.
+6. **`S5_Conservation_Scoring.xlsx`**: Entropy and conservation grades.
+

@@ -236,11 +236,13 @@ Below is the complete $10 \times 10$ candidate matrix showing compatibility scor
 
 ---
 
-## 5. Triplex Multiplex Compatibility Results (3-Virus Assay)
+## 5. Dynamic N-Plex Compatibility Results (Expandable Multi-Virus Panels)
 
-To enable single-reaction surveillance of all three targets (**Influenza A**, **Influenza B**, and **Measles**), the top candidates from each virus cohort were evaluated across a **9-oligo mixture** (6 primers + 3 probes).
+To enable single-reaction surveillance across expanded target panels (**Influenza A**, **Influenza B**, **Measles**, and future pathogen targets), top candidate assays from each active target build are evaluated dynamically across an **N-Plex reaction mixture** (e.g. 9-oligo mixture for 3 targets: 6 primers + 3 probes). 
 
-### Top 5 Recommended Triplex Combinations
+Depending on clinical or regional surveillance priorities (e.g., executing a **Dual-Target Influenza A/B assay** vs. a **3-Virus Respiratory/Exanthem Panel**), the pipeline automatically filters and calculates cross-dimer thermodynamics for the requested target subset.
+
+### Recommended 3-Target Panel Combinations (Triplex Benchmark)
 
 | Rank | Triplex Candidate Set | Compatibility Score | Worst RAA ΔG (39°C) | Worst qPCR ΔG (55°C) | Max ΔTm (°C) | Status (39°C) |
 |---|---|---|---|---|---|---|

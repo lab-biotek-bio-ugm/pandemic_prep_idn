@@ -2,11 +2,11 @@
 
 The Multiplex Compatibility Screening module evaluates the thermodynamic, kinetic, and spectral compatibility of candidate primers and probes designed for different pathogens or segments, allowing them to be combined into a single reaction tube (Multiplex Assay).
 
-This module supports both **Pairwise (dual-target)** and **Triplex (three-way)** assay compatibility checks.
+This module supports **Pairwise (dual-target)**, **Triplex (three-way)**, and generic **N-Plex** assay compatibility checks across arbitrary combinations of viral targets.
 
 ---
 
-All thresholds, weights and the score formula live in one place — `scripts/tools/iupac_utils.py` — and are imported by both the pairwise and the triplex checker. They previously existed as separate literals in each script and had already drifted apart (the $\Delta T_m$ limit was 3.5°C in one and 4.0°C in the other), so an identical oligo set could be reported `PASS` in one report and `WARNING` in the other.
+All thresholds, weights and the score formula live in one place — `scripts/tools/iupac_utils.py` — and are imported by the multiplex screening engine.
 
 ## Overview of Screening Criteria
 
@@ -58,10 +58,11 @@ Only a 3' terminus that anneals can be extended by the polymerase, and those ext
 This is a **soft** criterion for the primary RAA mode. At 39°C strand invasion is recombinase-driven rather than annealing-driven, so inter-primer $T_m$ matching matters far less than it does in PCR; the check is retained mainly for the 55°C qPCR cross-check.
 
 ### 4. Spectral Separation (Dye Assignment)
-Probes for different targets must be labeled with fluorophores that have non-overlapping emission spectra to prevent crosstalk. Assignments are read from `config.yaml` (`multiplex.dyes`); the defaults are:
-*   **Target A (Influenza A)**: **FAM** (green channel, emission ~520 nm).
-*   **Target B (Influenza B)**: **HEX** (yellow channel, emission ~556 nm).
-*   **Target C (Measles)**: **Cy5** (far-red channel, emission ~670 nm).
+Probes for different targets must be labeled with fluorophores that have non-overlapping emission spectra to prevent crosstalk. Default channel assignments across targets use a multi-channel palette:
+*   **Target 1 (e.g. Influenza A)**: **FAM** (green channel, emission ~520 nm).
+*   **Target 2 (e.g. Influenza B)**: **HEX** (yellow channel, emission ~556 nm).
+*   **Target 3 (e.g. Measles)**: **Cy5** (far-red channel, emission ~670 nm).
+*   **Target 4+**: **Cy3 / ROX / Texas Red / Atto 647N** (dynamic channel palette extension).
 
 Two targets mapping to the same detection channel are optically inseparable, so a collision is a hard **VETO** and zeroes the score regardless of thermodynamic quality. A dye that is missing or absent from the channel table reports `UNKNOWN` and does **not** pass.
 

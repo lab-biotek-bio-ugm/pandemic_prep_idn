@@ -65,7 +65,8 @@
             "pages": [
               "operations/monitoring",
               "operations/troubleshooting",
-              "operations/data-management"
+              "operations/data-management",
+              "operations/supplementary-exports"
             ]
           },
           {
