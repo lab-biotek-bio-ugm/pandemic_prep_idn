@@ -1,15 +1,17 @@
 name: Render and Deploy Quarto Report to Cloudflare Pages
 
+# Dormant: manual trigger only ("Run workflow" in the Actions tab, or
+# `gh workflow run publish.yml`). It does NOT auto-deploy on push yet. To
+# automate later, uncomment the push block below.
 on:
-  push:
-    branches:
-      - main
-      - report
-    paths:
-      - 'report/**'
-      - '.github/workflows/publish.yml'
-
   workflow_dispatch:
+  # push:
+  #   branches:
+  #     - main
+  #     - report
+  #   paths:
+  #     - 'report/**'
+  #     - '.github/workflows/publish.yml'
 
 # `contents: write` is what peaceiris/actions-gh-pages needs to push the
 # rendered site to the cf-pages branch. The GitHub Pages deployment API is not

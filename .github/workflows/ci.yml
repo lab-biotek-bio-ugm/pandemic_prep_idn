@@ -1,48 +1,46 @@
 name: CI
 
-# Path filters are kept, not widened to everything: this repository is private,
-# so Actions minutes are metered (2,000/month on the Free plan, billed per job
-# and rounded up to the minute).
+# Dormant: this workflow runs on manual trigger only. Start it from the Actions
+# tab ("Run workflow") or with `gh workflow run ci.yml`. It does NOT run
+# automatically on push or pull request yet.
 #
-# They are extended beyond the previous scripts|rules|tests|Snakefile set to
-# cover config/**, envs/** and docs/**. The old filter had a hole that mattered:
-# around fifteen tests assert directly on config/config*.yaml, and commit
-# 38a99fd ("fix(config): align the M10 candidate cap across every config") --
-# exactly the bug class this CI exists to catch -- was config-only and therefore
-# ran no checks at all.
-#
-# The path list is repeated under push and pull_request on purpose. GitHub
-# Actions rejects YAML anchors and aliases in workflow files, so the duplication
-# cannot be factored out.
+# To automate later, once the pipeline is ready: uncomment the push and
+# pull_request blocks below. They are kept here so re-enabling is a one-step
+# edit. The path filters matter because this repository is private and Actions
+# minutes are metered (2,000/month on the Free plan, billed per job, rounded up);
+# they cover exactly the trees whose changes the tests and DAG check assert on
+# (config/** included -- commit 38a99fd was config-only and otherwise ran no
+# checks). The list is duplicated under push and pull_request because GitHub
+# Actions rejects YAML anchors.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'scripts/**'
-      - 'rules/**'
-      - 'tests/**'
-      - 'config/**'
-      - 'envs/**'
-      - 'docs/**'
-      - 'requirements/**'
-      - 'Snakefile'
-      - 'pyproject.toml'
-      - 'pytest.ini'
-      - '.github/workflows/ci.yml'
-  pull_request:
-    paths:
-      - 'scripts/**'
-      - 'rules/**'
-      - 'tests/**'
-      - 'config/**'
-      - 'envs/**'
-      - 'docs/**'
-      - 'requirements/**'
-      - 'Snakefile'
-      - 'pyproject.toml'
-      - 'pytest.ini'
-      - '.github/workflows/ci.yml'
   workflow_dispatch:
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - 'scripts/**'
+  #     - 'rules/**'
+  #     - 'tests/**'
+  #     - 'config/**'
+  #     - 'envs/**'
+  #     - 'docs/**'
+  #     - 'requirements/**'
+  #     - 'Snakefile'
+  #     - 'pyproject.toml'
+  #     - 'pytest.ini'
+  #     - '.github/workflows/ci.yml'
+  # pull_request:
+  #   paths:
+  #     - 'scripts/**'
+  #     - 'rules/**'
+  #     - 'tests/**'
+  #     - 'config/**'
+  #     - 'envs/**'
+  #     - 'docs/**'
+  #     - 'requirements/**'
+  #     - 'Snakefile'
+  #     - 'pyproject.toml'
+  #     - 'pytest.ini'
+  #     - '.github/workflows/ci.yml'
 
 # The commit cadence here runs to thirty-plus pushes on an active day, so
 # superseding runs matters more than finishing them.
