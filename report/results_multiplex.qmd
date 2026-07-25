@@ -19,24 +19,25 @@ To guarantee assay robustness, **100 candidate combinations** ($10 \times 10$ ma
 
 ## 2. Top Recommended Multiplex Assay Combinations
 
-The table below highlights the top 5 multiplex combinations ranked by overall compatibility score ($0 - 100\%$), accounting for cross-dimer penalties and kinetic alignment:
+The table below highlights the top 5 multiplex combinations ranked by candidate selection gates (combining coverage, specificity, and multiplex compatibility scores), accounting for cross-dimer penalties, 3'-end anchoring, and kinetic alignment:
 
-| Rank | Candidate Pair | Compatibility Score | RAA ΔG (39°C) | qPCR ΔG (55°C) | ΔTm (°C) | Channel Separation | Status (39°C) |
+| Rank | Candidate Pair | Compatibility Score | RAA ΔG (39°C) | 3' Anchor | qPCR ΔG (55°C) | ΔTm (°C) | Status (39°C) |
 |---|---|---|---|---|---|---|---|
-| **1** | **`FluA_Rank7_x_FluB_Rank6`** | **73.9%** | **-7.13 kcal/mol** | **-5.01 kcal/mol** | **0.29°C** | FAM / HEX | <span style="color: #10b981; font-weight: bold;">PASS</span> |
-| **2** | **`FluA_Rank7_x_FluB_Rank11`** | **73.8%** | **-7.13 kcal/mol** | **-5.01 kcal/mol** | **0.31°C** | FAM / HEX | <span style="color: #10b981; font-weight: bold;">PASS</span> |
-| **3** | **`FluA_Rank7_x_FluB_Rank5`** | **73.2%** | **-7.13 kcal/mol** | **-5.01 kcal/mol** | **0.45°C** | FAM / HEX | <span style="color: #10b981; font-weight: bold;">PASS</span> |
-| **4** | **`FluA_Rank4_x_FluB_Rank6`** | **72.1%** | **-7.13 kcal/mol** | **-5.01 kcal/mol** | **0.74°C** | FAM / HEX | <span style="color: #10b981; font-weight: bold;">PASS</span> |
-| **5** | **`FluA_Rank6_x_FluB_Rank6`** | **72.1%** | **-7.13 kcal/mol** | **-5.01 kcal/mol** | **0.74°C** | FAM / HEX | <span style="color: #10b981; font-weight: bold;">PASS</span> |
+| **1** | **`FluA_Rank10_x_FluB_Rank12`** | **64.5** | **-7.19 kcal/mol** | **5 bp** | **-3.49 kcal/mol** | **2.23°C** | <span style="color: #10b981; font-weight: bold;">PASS</span> |
+| **2** | **`FluA_Rank1_x_FluB_Rank12`** | **64.0** | **-7.19 kcal/mol** | **5 bp** | **-3.49 kcal/mol** | **2.42°C** | <span style="color: #10b981; font-weight: bold;">PASS</span> |
+| **3** | **`FluA_Rank4_x_FluB_Rank12`** | **66.5** | **-7.19 kcal/mol** | **5 bp** | **-3.49 kcal/mol** | **1.59°C** | <span style="color: #10b981; font-weight: bold;">PASS</span> |
+| **4** | **`FluA_Rank4_x_FluB_Rank8`** | **66.3** | **-7.19 kcal/mol** | **5 bp** | **-3.89 kcal/mol** | **1.63°C** | <span style="color: #10b981; font-weight: bold;">PASS</span> |
+| **5** | **`FluA_Rank10_x_FluB_Rank8`** | **64.4** | **-7.19 kcal/mol** | **5 bp** | **-3.89 kcal/mol** | **2.27°C** | <span style="color: #10b981; font-weight: bold;">PASS</span> |
 
 ### Key Biophysical Observations:
-*   **Zero Veto Violations**: All top combinations exhibit a worst-case cross-dimer binding energy $\Delta G > -9.0\text{ kcal/mol}$, preventing spontaneous primer-dimer formation or competition during strand exchange.
-*   **Kinetic Balance**: The rank 1 combination (`FluA_Rank7_x_FluB_Rank6`) achieves an exceptionally tight $T_m$ delta of **$0.29^\circ\text{C}$** across all four primers, ensuring synchronized amplification rates.
+*   **Zero Veto Violations**: All top combinations exhibit a worst-case cross-dimer binding energy $\Delta G > -12.0\text{ kcal/mol}$ (worst observed $\Delta G = -7.19\text{ kcal/mol}$), preventing spontaneous primer-dimer formation or competition during strand exchange.
+*   **3'-End Safety**: All 3' complementarity runs remain $\le 5\text{ bp}$, well below the threshold for priming non-specific noise.
+*   **Kinetic Balance**: $T_m$ differences across all primers in the multiplex mixture stay within acceptable bounds for isothermal and thermal cycling regimes.
 *   **Fluorophore Independence**: Influenza A probe uses FAM ($\lambda_{\text{em}} = 520\text{ nm}$) and Influenza B probe uses HEX ($\lambda_{\text{em}} = 556\text{ nm}$), eliminating optical crosstalk.
 
 ---
 
-## 3. Oligo Synthesis Specifications (Rank 1 Recommended Pair: `FluA_Rank7_x_FluB_Rank6`)
+## 3. Oligo Synthesis Specifications (Rank 1 Recommended Pair: `FluA_Rank10_x_FluB_Rank12`)
 
 To ensure full transparency and laboratory synthesis readiness, the complete sequence strings, lengths, melting temperatures ($T_m$), GC percentages, and fluorophore dye modifications for all 6 oligos in the primary recommended multiplex set are listed below:
 
@@ -44,35 +45,35 @@ To ensure full transparency and laboratory synthesis readiness, the complete seq
 
 | Oligo Name | Type | IUPAC Degenerate Sequence (5' $\rightarrow$ 3') | Length | Tm (°C) | GC (%) | Modification / Tag |
 |---|---|---|---|---|---|---|
-| **FluA_Fwd** | Forward Primer | `CTGACTAARGGRATTTTRGGRTTTGTATT` | 29 nt | 60.1°C | 27.6% | Unlabeled |
-| **FluA_Rev** | Reverse Primer | `AGCAGTTAAACTATATARGAARCTGAARAGR` | 31 nt | 60.4°C | 25.8% | Unlabeled |
-| **FluA_Probe** | Exo-Probe | `ACCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCARAATGCC` | 51 nt | 81.6°C | 56.9% | `5'-FAM` / `3'-BHQ1` / `Internal-THF` |
+| **FluA_Fwd** | Forward Primer | `TCTGACTAARGGRATTTTRGGRTTTGTATTC` | 31 nt | 61.8°C | 35.5% | Unlabeled |
+| **FluA_Rev** | Reverse Primer | `GCAGTTAAACTATATARGAARCTGAARAGRG` | 31 nt | 60.6°C | 35.5% | Unlabeled |
+| **FluA_Probe** | Exo-Probe | `CCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGC[FAM-dT][THF][BHQ1-dT]GTCCAAAATGCCCT[C3-spacer]` | 51 nt | 82.3°C | 61.8% | Internal `FAM-dT`/`THF`/`BHQ1-dT` sandwich, `3'-C3-spacer` |
 
 ### 🟨 Target B: Influenza B MP (HEX Channel)
 
 | Oligo Name | Type | IUPAC Degenerate Sequence (5' $\rightarrow$ 3') | Length | Tm (°C) | GC (%) | Modification / Tag |
 |---|---|---|---|---|---|---|
-| **FluB_Fwd** | Forward Primer | `GAAATAYCTATAATGYTYGAACCATTYCAGA` | 31 nt | 60.4°C | 25.8% | Unlabeled |
-| **FluB_Rev** | Reverse Primer | `TTTATTGTCTCTTTRTTTGGMCCYTTTATTC` | 31 nt | 60.4°C | 25.8% | Unlabeled |
-| **FluB_Probe** | Exo-Probe | `TYTTATCAGCTCTCCATTTCATGGCTTGGACAATAGGRCATTTRAATC` | 48 nt | 71.3°C | 35.4% | `5'-HEX` / `3'-BHQ1` / `Internal-THF` |
+| **FluB_Fwd** | Forward Primer | `CTCTTGTGAAGAAATAYCTATAATGYTYGAA` | 31 nt | 59.5°C | 30.6% | Unlabeled |
+| **FluB_Rev** | Reverse Primer | `AAGAGACAATAAACAGAGAGGTATCAATTTT` | 31 nt | 59.9°C | 29.0% | Unlabeled |
+| **FluB_Probe** | Exo-Probe | `TGTTCTTTTATCTTATCAGCTCTCCATT[HEX-dT]C[THF][BHQ1-dT]GGCTTGGACAATAGGGCA[C3-spacer]` | 49 nt | 71.5°C | 38.8% | Internal `HEX-dT`/`THF`/`BHQ1-dT` sandwich, `3'-C3-spacer` |
 
 ---
 
-## 4. Oligo Cross-Dimer Interactions (Rank 1 Assay)
+## 4. Oligo Cross-Dimer Interactions (Rank 1 Assay: `FluA_Rank10_x_FluB_Rank12`)
 
-Below is the complete 9-pair inter-assay cross-dimer thermodynamic breakdown for the primary recommended multiplex set (`FluA_Rank7_x_FluB_Rank6`):
+Below is the complete 9-pair inter-assay cross-dimer thermodynamic breakdown for the primary recommended multiplex set:
 
-| Oligo Pair Combination | Cross-Dimer ΔG (39°C RT-RAA) | Cross-Dimer ΔG (55°C qPCR) | Risk Assessment |
-|---|---|---|---|
-| **Forward A vs. Forward B** | -4.14 kcal/mol | -2.05 kcal/mol | <span style="color: #10b981; font-weight: bold;">Negligible</span> |
-| **Forward A vs. Reverse B** | -7.13 kcal/mol | -5.01 kcal/mol | <span style="color: #10b981; font-weight: bold;">Low / Safe</span> |
-| **Forward A vs. Probe B** | -3.09 kcal/mol | -1.53 kcal/mol | <span style="color: #10b981; font-weight: bold;">Negligible</span> |
-| **Reverse A vs. Forward B** | -5.95 kcal/mol | -3.06 kcal/mol | <span style="color: #10b981; font-weight: bold;">Low / Safe</span> |
-| **Reverse A vs. Reverse B** | -4.37 kcal/mol | -2.27 kcal/mol | <span style="color: #10b981; font-weight: bold;">Negligible</span> |
-| **Reverse A vs. Probe B** | -5.69 kcal/mol | -3.49 kcal/mol | <span style="color: #10b981; font-weight: bold;">Low / Safe</span> |
-| **Probe A vs. Forward B** | -4.77 kcal/mol | -2.83 kcal/mol | <span style="color: #10b981; font-weight: bold;">Negligible</span> |
-| **Probe A vs. Reverse B** | -6.12 kcal/mol | -3.49 kcal/mol | <span style="color: #10b981; font-weight: bold;">Low / Safe</span> |
-| **Probe A vs. Probe B** | -6.90 kcal/mol | -4.22 kcal/mol | <span style="color: #10b981; font-weight: bold;">Low / Safe</span> |
+| Oligo Pair Combination | Cross-Dimer ΔG (39°C RT-RAA) | 3' Anchor Run | 3'-End ΔG (39°C) | Cross-Dimer ΔG (55°C qPCR) | Risk Assessment |
+|---|---|---|---|---|---|
+| **Forward A vs. Forward B** | -4.07 kcal/mol | 3 bp | -2.30 kcal/mol | -1.88 kcal/mol | <span style="color: #10b981; font-weight: bold;">Negligible</span> |
+| **Forward A vs. Reverse B** | -3.13 kcal/mol | 3 bp | -1.63 kcal/mol | -1.72 kcal/mol | <span style="color: #10b981; font-weight: bold;">Negligible</span> |
+| **Forward A vs. Probe B** | -3.09 kcal/mol | 2 bp | -1.63 kcal/mol | -1.53 kcal/mol | <span style="color: #10b981; font-weight: bold;">Negligible</span> |
+| **Reverse A vs. Forward B** | -5.27 kcal/mol | 5 bp | -3.94 kcal/mol | -2.30 kcal/mol | <span style="color: #10b981; font-weight: bold;">Low / Safe</span> |
+| **Reverse A vs. Reverse B** | -3.95 kcal/mol | 4 bp | -1.35 kcal/mol | -2.47 kcal/mol | <span style="color: #10b981; font-weight: bold;">Negligible</span> |
+| **Reverse A vs. Probe B** | -5.69 kcal/mol | 5 bp | -3.82 kcal/mol | -3.49 kcal/mol | <span style="color: #10b981; font-weight: bold;">Low / Safe</span> |
+| **Probe A vs. Forward B** | -4.77 kcal/mol | 2 bp | -4.77 kcal/mol | -2.83 kcal/mol | <span style="color: #10b981; font-weight: bold;">Negligible</span> |
+| **Probe A vs. Reverse B** | -3.45 kcal/mol | 5 bp | -1.49 kcal/mol | -1.82 kcal/mol | <span style="color: #10b981; font-weight: bold;">Negligible</span> |
+| **Probe A vs. Probe B** | -7.19 kcal/mol | 4 bp | -5.08 kcal/mol | -3.44 kcal/mol | <span style="color: #10b981; font-weight: bold;">Low / Safe</span> |
 
 ---
 
