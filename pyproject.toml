@@ -1,0 +1,60 @@
+# Tool configuration only. This file deliberately declares NO [project] and no
+# [build-system] table, so the repository stays a plain directory of scripts.
+#
+# That is load-bearing: tests/conftest.py loads scripts by file path through
+# importlib.util.spec_from_file_location, and Snakemake's `script:` directive
+# executes them with an injected `snakemake` global. Turning scripts/ into an
+# installable package would break both.
+#
+# pytest configuration stays in pytest.ini so that pytest's rootdir resolution
+# is unchanged.
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100          # advisory only; E501 is not selected
+
+# Snakemake injects `snakemake` as a module-level global into every script run
+# through the `script:` directive. Declaring it here is what replaces the
+# hand-rolled `pyflakes ... | grep -v "'snakemake'"` filter the old CI step used.
+# Without it, ruff reports 9 false F821s in scripts/m02_filter_wrapper.py and
+# scripts/prune_tree.py.
+builtins = ["snakemake"]
+
+extend-exclude = [
+    "report",
+    "results",
+    "dataset",
+    "temp_supplementary",
+    "scratch",
+    ".snakemake",
+]
+
+[tool.ruff.format]
+# The formatter is never invoked in this project: reformatting 30 scripts would
+# bury real changes and risks rewriting line endings. This block only ensures
+# that an accidental `ruff format` cannot emit CRLF.
+line-ending = "lf"
+
+[tool.ruff.lint]
+# Deliberately narrow, and measured green against the tree as of this commit.
+# The point of the initial set is that it can never fail for a reason unrelated
+# to the change under review -- a single maintainer switches off a linter that
+# cries wolf.
+#
+#   E9      syntax / IO errors
+#   F821    undefined name       <- the gate that matters; a NameError inside
+#                                   main() survives compileall and every
+#                                   import-based test, then dies on the cluster
+#   F811    redefinition
+#   E711/E712  `== None` / `== True`
+#   E722    bare `except:`
+#   B006/B008  mutable or call-valued default argument
+#
+# Ratchet, one rule per pull request, only once that rule's backlog is cleared.
+# Counts measured on this tree:
+#   F541  f-string without placeholders   29
+#   F401  unused import                   21
+#   F841  unused local                     8
+#   ARG001 unused function argument        3
+#   B904  raise-without-from in except     2
+select = ["E9", "F821", "F811", "E711", "E712", "E722", "B006", "B008"]

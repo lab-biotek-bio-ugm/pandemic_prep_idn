@@ -11,10 +11,12 @@ on:
 
   workflow_dispatch:
 
+# `contents: write` is what peaceiris/actions-gh-pages needs to push the
+# rendered site to the cf-pages branch. The GitHub Pages deployment API is not
+# used here -- Cloudflare builds from that branch -- so `pages: write` and
+# `id-token: write` granted rights this workflow never exercised.
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 concurrency:
   group: "pages"
@@ -22,7 +24,7 @@ concurrency:
 
 jobs:
   build-deploy:
-    # See the note in tests.yml: dormant on the upstream lab repository, which
+    # See the note in ci.yml: dormant on the upstream lab repository, which
     # would otherwise spend the lab's quota AND publish to their cf-pages branch.
     if: github.repository == 'engkinandatama/pandemic-preparedness'
     runs-on: ubuntu-latest

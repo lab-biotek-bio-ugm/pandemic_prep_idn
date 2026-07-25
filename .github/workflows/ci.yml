@@ -1,0 +1,184 @@
+name: CI
+
+# Path filters are kept, not widened to everything: this repository is private,
+# so Actions minutes are metered (2,000/month on the Free plan, billed per job
+# and rounded up to the minute).
+#
+# They are extended beyond the previous scripts|rules|tests|Snakefile set to
+# cover config/**, envs/** and docs/**. The old filter had a hole that mattered:
+# around fifteen tests assert directly on config/config*.yaml, and commit
+# 38a99fd ("fix(config): align the M10 candidate cap across every config") --
+# exactly the bug class this CI exists to catch -- was config-only and therefore
+# ran no checks at all.
+#
+# The path list is repeated under push and pull_request on purpose. GitHub
+# Actions rejects YAML anchors and aliases in workflow files, so the duplication
+# cannot be factored out.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - 'rules/**'
+      - 'tests/**'
+      - 'config/**'
+      - 'envs/**'
+      - 'docs/**'
+      - 'requirements/**'
+      - 'Snakefile'
+      - 'pyproject.toml'
+      - 'pytest.ini'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    paths:
+      - 'scripts/**'
+      - 'rules/**'
+      - 'tests/**'
+      - 'config/**'
+      - 'envs/**'
+      - 'docs/**'
+      - 'requirements/**'
+      - 'Snakefile'
+      - 'pyproject.toml'
+      - 'pytest.ini'
+      - '.github/workflows/ci.yml'
+  workflow_dispatch:
+
+# The commit cadence here runs to thirty-plus pushes on an active day, so
+# superseding runs matters more than finishing them.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  # Cheapest job, kept separate and first. The most frequent failure -- a config
+  # threshold that drifted -- then reports in well under a minute instead of
+  # waiting behind the scientific dependency install.
+  contract:
+    # Dormant on the upstream lab repository (lab-biotek-bio-ugm/pandemic_prep_idn):
+    # a workflow running there would spend the LAB's Actions quota, including for
+    # pull requests, which bill to the base repository. Keeping the file present
+    # but inert lets the lab switch CI on for itself. GitHub Actions has no
+    # workflow-level `if`, so this has to be repeated on each job.
+    if: github.repository == 'engkinandatama/pandemic-preparedness'
+    name: Contracts and lint (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      # 3.10 is the deployment floor (envs/*.yaml pin python>=3.10, the HPC runs
+      # it); 3.13 is a cheap early-warning that the code still parses and imports
+      # on a newer interpreter than the maintainer's. Only this two-dependency
+      # job is matrixed -- the full suite runs once, on the deployment version.
+      matrix:
+        python-version: ['3.10', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install
+        run: pip install pytest pyyaml ruff==0.16.0
+
+      # Replaces the hand-rolled `pyflakes | grep "undefined name" | grep -v
+      # "'snakemake'"` shell step this workflow used to carry. F821 is the rule
+      # that matters: a NameError inside main() survives compileall and every
+      # import-based test, then dies on the cluster part-way through a HyPhy run.
+      # `builtins = ["snakemake"]` in pyproject.toml handles the global that
+      # Snakemake injects into script:-directive scripts.
+      - name: Lint
+        run: ruff check --output-format=github .
+
+      # Selected by PATH, not by `-m contract`. Marker deselection happens after
+      # collection, and collecting tests/ imports pipeline scripts that need
+      # pandas, Biopython and primer3 -- scripts/export_supplementary.py even
+      # calls sys.exit(1) on ImportError, which crashes collection outright.
+      # Path selection is what keeps this job's dependency list to two packages.
+      - name: Config contracts
+        run: pytest tests/contracts/
+
+  test:
+    if: github.repository == 'engkinandatama/pandemic-preparedness'
+    name: Test suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: pip
+          cache-dependency-path: requirements/ci.txt
+
+      - name: Install
+        run: pip install -r requirements/ci.txt
+
+      - name: Run tests
+        run: pytest --durations=10
+
+  dag:
+    if: github.repository == 'engkinandatama/pandemic-preparedness'
+    name: DAG validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: pip
+          cache-dependency-path: requirements/dag.txt
+
+      - name: Install
+        run: pip install -r requirements/dag.txt
+
+      - name: Byte-compile every script
+        run: python -m compileall -q scripts
+
+      # One job with a loop rather than a seven-leg matrix. Each leg would pay
+      # its own checkout and Snakemake install and be billed as a whole minute,
+      # while the dry runs themselves take seconds.
+      #
+      # Each config is invoked exactly as a user invokes it, merge and all. The
+      # holes that the merge hides -- a key present in one config and absent in
+      # another -- are the job of tests/contracts/, which reads each file
+      # standalone. Trying to catch them here with --replace-workflow-config
+      # would report green on configs that are overlays by design, because the
+      # missing keys would resolve to None and still build a DAG.
+      - name: Snakemake dry-run for every pathogen config
+        run: |
+          set -uo pipefail
+          failed=0
+          for cfg in config/config*.yaml; do
+            echo "::group::${cfg}"
+            out=$(snakemake --dry-run --quiet --configfile "${cfg}" 2>&1) || true
+            echo "${out}"
+            echo "::endgroup::"
+
+            # A positive assertion. The previous version of this step ended in a
+            # bare `exit 0`, so an empty output, a failed install, or an
+            # exception class nobody had thought of all reported green.
+            if ! echo "${out}" | grep -q "Building DAG of jobs"; then
+              echo "::error file=${cfg}::Snakemake never reached DAG construction"
+              failed=1
+              continue
+            fi
+
+            # MissingInputException is expected and tolerated: no raw sequence
+            # data is committed, so every config is missing its cohort here.
+            # Everything listed below means the rules or the config are wrong.
+            if echo "${out}" | grep -qE "WildcardError|SyntaxError|RuleException|KeyError|TypeError|AttributeError|AmbiguousRuleException|IncompleteCheckpointException"; then
+              echo "::error file=${cfg}::rule or config error during DAG build"
+              failed=1
+            fi
+          done
+          exit "${failed}"

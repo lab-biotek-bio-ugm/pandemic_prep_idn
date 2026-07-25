@@ -68,18 +68,19 @@ def test_target_label_is_used_when_provided(tmp_path):
 @pytest.mark.parametrize("cfg_path,expected_dye", [
     ("config/config_influenza_a_mp.yaml", "FAM"),
     ("config/config_influenza_b_mp.yaml", "HEX"),
-    ("config/config_measles.yaml", "Cy5"),
 ])
 def test_real_repo_configs_resolve_expected_dyes(cfg_path, expected_dye):
     _, dye, _ = batch.parse_target_meta(cfg_path)
     assert dye == expected_dye
 
 
-def test_real_flu_a_b_measles_are_spectrally_separated():
+def test_real_flu_a_b_are_spectrally_separated():
+    # The active multiplex panel is influenza A + influenza B (Orthomyxoviridae).
+    # Measles (Cy5) was the third channel; it was dropped when the project
+    # narrowed to influenza, so this now checks the two-dye FAM/HEX panel.
     dyes = [batch.parse_target_meta(p)[1] for p in (
         "config/config_influenza_a_mp.yaml",
         "config/config_influenza_b_mp.yaml",
-        "config/config_measles.yaml",
     )]
     _, ok = iupac.check_dye_separation(*dyes)
     assert ok
@@ -90,6 +91,8 @@ def test_export_filter_accepts_build_names_as_active_targets():
     es.ACTIVE_TARGETS = ["influenza-a-mp-indo-only", "influenza-b-mp-indo-only"]
     assert es.is_multiplex_active(
         "multiplex-influenza-a-mp-indo-only_x_influenza-b-mp-indo-only") is True
+    # An arbitrary build name whose components are not all active targets. The
+    # literal is just a non-active example string, not a reference to any config.
     assert es.is_multiplex_active(
         "multiplex-triplex-influenza-a_influenza-b_measles") is False
 
@@ -151,6 +154,6 @@ def test_wrapper_omits_the_flag_when_none_given():
 def test_wrapper_forwards_a_third_config_for_triplex():
     argv = _run_wrapper("config/config_influenza_a_mp.yaml",
                         "config/config_influenza_b_mp.yaml",
-                        "config/config_measles_all_partial.yaml", "-c", "16")
+                        "config/config_influenza_a_ha.yaml", "-c", "16")
     configs = argv[argv.index("--configs") + 1:argv.index("--cores")]
     assert len(configs) == 3, configs

@@ -1,0 +1,112 @@
+# Contract for every config/config*.yaml, checked by test_config_contract.py.
+#
+# Each file is loaded on its own, with no Snakemake merge. That is deliberate.
+# Snakefile line 6 declares `configfile: "config/config.yaml"`, and Snakemake
+# deep-merges any --configfile on top of it instead of replacing it, so a
+# per-pathogen config that omits a key silently runs on the influenza-A-MP
+# value. A dry run cannot see that; it sees the merged result, which is whole.
+#
+# Every exemption below carries a mandatory reason, so that adding one is a
+# visible act in `git log` -- the only code review this repository has.
+
+# REQUIRED: dotted path -> type and bounds.
+#
+# Curated rather than exhaustive. These are the keys whose absence either raises
+# at DAG-build time or silently changes a scientific threshold.
+required:
+  build_name:                          {type: str, non_empty: true}
+  database:                            {type: str, one_of: [local, ncbi]}
+  references.genome:                   {type: str, is_repo_path: true}
+  references.annotation:               {type: str, is_repo_path: true}
+  hyphy.threads:                       {type: int, min: 1, max: 64}
+  hyphy.target_genes:                  {type: list}
+  blast_verification.enabled:          {type: bool}
+  blast_verification.mode:             {type: str, one_of: [local, remote]}
+  blast_verification.database:         {type: str, non_empty: true}
+  blast_verification.num_candidates:   {type: int, min: 1}
+  insilico_pcr.enabled:                {type: bool}
+  insilico_pcr.num_candidates:         {type: int, min: 1}
+  insilico_pcr.max_mismatch:           {type: int, min: 0}
+  insilico_pcr.raa_3prime_bp:          {type: int, min: 1, max: 20}
+  insilico_pcr.raa_max_3prime_mm:      {type: int, min: 0}
+  insilico_pcr.raa_max_internal_mm:    {type: int, min: 0}
+  insilico_pcr.raa_probe_max_mm:       {type: int, min: 0}
+  multiplex.combination_budget:        {type: int, min: 1}
+  primerlab.template:                  {type: str, is_repo_path: true}
+  primerlab.repo_path:                 {type: str, non_empty: true}
+
+# IDENTICAL_ACROSS_CONFIGS: pipeline-wide policy that must not vary by pathogen.
+#
+# This is the direct guard for the manual seven-file propagation commits, of
+# which 38a99fd "fix(config): align the M10 candidate cap across every config"
+# is the most recent. Those passes are done by hand and nothing checked them.
+identical_across_configs:
+  - insilico_pcr.num_candidates
+  - insilico_pcr.raa_3prime_bp
+  - insilico_pcr.raa_max_3prime_mm
+  - insilico_pcr.raa_max_internal_mm
+  - insilico_pcr.raa_probe_max_mm
+  - blast_verification.num_candidates
+  - multiplex.combination_budget
+  - primerlab.repo_path
+
+# FORBIDDEN: blocks and spellings that no rule and no script reads.
+#
+# A dead block that looks like configuration is worse than no configuration,
+# because an operator will tune it and expect an effect. Each entry was checked
+# with grep over Snakefile, rules/ and scripts/ before being listed. Several of
+# these were introduced by the (now removed) measles configs; they are kept here
+# as guards against re-introduction.
+forbidden:
+  blast:
+    reason: >-
+      Nothing reads config["blast"]. It is also not a misspelling of
+      blast_verification: it would carry a BLAST search parameter set (evalue,
+      word_size, dust, perc_identity, offtarget) rather than the M09
+      verification schema, so it could not simply be renamed. M09 settings
+      belong under blast_verification. All BLAST in this pipeline is local.
+  alignment:
+    reason: >-
+      Nothing reads config["alignment"]. M03 alignment parameters come from the
+      augur rules and from global_params.
+  insilico_pcr.max_mismatches:
+    alias_of: insilico_pcr.max_mismatch
+    reason: >-
+      rules/m10_insilico_pcr.smk reads the singular spelling only. The plural is
+      read by nothing, and the singular would be inherited from config/config.yaml
+      through the Snakemake merge, so a value written under the plural has no effect.
+  bridge.p_value_threshold:
+    reason: "Retired in the 1.1.0 correctness audit. The concept lives at hyphy.p_value_threshold."
+  bridge.scoring.conservation_weight:
+    reason: "Retired with the additive core score in the 1.1.0 correctness audit."
+  bridge.scoring.purifying_weight:
+    reason: "Retired with the additive core score in the 1.1.0 correctness audit."
+
+# KNOWN_GAPS: violations that exist today and are not fixed yet.
+#
+# Recorded rather than hidden. The tests assert the violation set matches these
+# lists EXACTLY, so a new violation still fails, and repairing a recorded one
+# also fails until its entry is deleted. That is the ratchet: the lists can only
+# shrink.
+#
+# Empty today. The only recorded gaps were the two measles configs, which have
+# been removed while the project focuses on influenza (Orthomyxoviridae). If a
+# measles config is re-introduced later, it must meet the schema above or record
+# its gaps here.
+known_gaps:
+  missing_required_keys: {}
+  forbidden_keys_present: {}
+  drifted_thresholds: {}
+
+# MAY_VARY: differences that are deliberate, recorded so a reader can tell
+# "intentional" from "drifted". This list is documentation; it is not asserted.
+may_vary:
+  - build_name
+  - references.*
+  - local_input.*
+  - subsampling.*
+  - early_filter.*
+  - nextclade.*
+  - hyphy.target_genes
+  - bridge.design_regions
+  - primerlab.template                # one template per dye channel

@@ -177,6 +177,24 @@ def nplex_label(n: int) -> str:
     """Duplex / Triplex / Quadruplex / N-Plex — never hardcoded."""
     return {1: "Singleplex", 2: "Duplex", 3: "Triplex", 4: "Quadruplex"}.get(n, f"{n}-Plex")
 
+def recommendation_category(rank_idx: int, combo: dict) -> str:
+    """Label a combination for the ordering sheet.
+
+    The label comes from the selection verdict, not from position in the list.
+    A combination that failed the gates must never be presented as a
+    recommendation just because it sorted first -- that inversion (a failed
+    combo shown as "BEST RECOMMENDED" because it was rank 1) is the class of
+    label bug this guards against.
+    """
+    if not combo.get("selection_passed", True):
+        return "NOT RECOMMENDED — failed selection gates"
+    if rank_idx == 1:
+        cat = "BEST RECOMMENDED (RANK 1)"
+        if combo.get("selection_relaxed"):
+            cat += f" — quality floors relaxed to {combo.get('selection_level')}"
+        return cat
+    return f"ALTERNATIVE RANK {rank_idx}"
+
 def target_key_to_name(key: str) -> str:
     """Convert an oligo JSON key (e.g. 'flu_a') to a human-readable virus name."""
     k = key.lower()
@@ -363,17 +381,7 @@ def create_executive_summary(results_root: Path, outdir: Path):
             plex_lbl = nplex_label(n_targets)
 
         for rank_idx, combo in enumerate(t_data, 1):
-            # Label from the selection verdict, not from position in the list.
-            # A combination that failed the gates must never be presented as a
-            # recommendation just because it sorted first.
-            if not combo.get("selection_passed", True):
-                cat = "NOT RECOMMENDED — failed selection gates"
-            elif rank_idx == 1:
-                cat = "BEST RECOMMENDED (RANK 1)"
-                if combo.get("selection_relaxed"):
-                    cat += f" — quality floors relaxed to {combo.get('selection_level')}"
-            else:
-                cat = f"ALTERNATIVE RANK {rank_idx}"
+            cat = recommendation_category(rank_idx, combo)
             oligos = combo.get("oligos_synthesis", {})
             combo_id = combo.get("triplex_id") or combo.get("pair_id") or combo.get("combo_id")
             score = combo.get("score")

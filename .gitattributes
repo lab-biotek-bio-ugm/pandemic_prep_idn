@@ -1,0 +1,12 @@
+# Freeze line endings byte-for-byte.
+#
+# Every tracked text file here is LF today (`git ls-files --eol` reports 184 lf,
+# 13 binary, 2 empty) and `core.autocrlf` is unset. That combination is fragile:
+# a checkout on Windows, or an editor saving through a WSL mount, can silently
+# renormalise a whole file. The change then arrives as a whole-file diff that
+# buries the one line actually being edited.
+#
+# `-text` disables end-of-line conversion in both directions, so git stores and
+# checks out exactly the bytes it was given. It does not rewrite anything that
+# is already committed.
+* -text

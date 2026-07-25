@@ -1,0 +1,11 @@
+# Everything needed to run the full local gate: `ruff check . && pytest`.
+-r ci.txt
+-r dag.txt
+
+# Pinned exactly, unlike the libraries above. A linter that changes what it
+# reports between runs is a linter that fails for reasons unrelated to the
+# change under review, which is how a single maintainer ends up switching it
+# off. Bump deliberately, in its own commit.
+ruff==0.16.0
+
+pre-commit>=4,<5

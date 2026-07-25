@@ -369,7 +369,7 @@ def test_meme_threshold_follows_the_hyphy_recommendation():
     import yaml
     m07 = load_module("scripts/m07_bridge_builder.py", "m07_bridge_builder")
     assert m07.MEME_PVALUE_THRESHOLD == 0.1
-    for name in ("config.yaml", "config_influenza_a_mp.yaml", "config_measles.yaml"):
+    for name in ("config.yaml", "config_influenza_a_mp.yaml", "config_influenza_b_mp.yaml"):
         cfg = yaml.safe_load(open(f"config/{name}"))
         assert cfg["hyphy"]["p_value_threshold"] == 0.1, name
         # FUBAR keeps a posterior-probability criterion, not a p-value.

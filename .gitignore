@@ -37,6 +37,10 @@ temp_supplementary/
 
 # Test / tooling caches
 .pytest_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
 
 # Ad-hoc analysis / debugging scripts (kept locally, not part of the pipeline)
 scratch/

@@ -1,0 +1,32 @@
+# Local gate, mirroring the cheap CI job. Install once with:
+#
+#     pip install -r requirements/dev.txt
+#     pre-commit install
+#
+# Every hook here is CHECK-ONLY. No hook may rewrite a file.
+#
+# That rule is not stylistic. Formatters and whitespace fixers rewrite whole
+# files, which buries the real change in a diff nobody can review, and they can
+# renormalise line endings -- the exact thing .gitattributes exists to prevent.
+# So no ruff-format, no trailing-whitespace, no end-of-file-fixer, ever.
+#
+# The hooks are `repo: local` rather than pulled from upstream so that they run
+# the same pinned ruff as requirements/dev.txt and need no network.
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff (lint only, never --fix)
+        entry: ruff check --force-exclude
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+
+      # Sub-second, and it catches the failure that costs the most to discover
+      # late: a threshold that drifted between the seven pathogen configs.
+      - id: config-contracts
+        name: config contracts
+        entry: pytest tests/contracts/ -q
+        language: system
+        pass_filenames: false
+        files: ^(config/|tests/contracts/)
