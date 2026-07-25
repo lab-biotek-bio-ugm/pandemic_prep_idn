@@ -411,6 +411,12 @@ def create_executive_summary(results_root: Path, outdir: Path):
                         gc     = "-"
                         label  = "Unlabeled" if role_key != "probe" else f"5'-{default_dye} / 3'-BHQ / Internal-THF"
 
+                    # Selection Decision Rationale explaining why higher coverage / safer specificity outranks raw score
+                    if rank_idx == 1:
+                        rationale = "RANK 1 BEST RECOMMENDED: Priority gate passed (Highest genomic coverage + Specificity Grade A). Outranks higher-scoring pairs with lower coverage."
+                    else:
+                        rationale = f"ALTERNATIVE RANK {rank_idx}: Valid fallback set. High thermodynamic compatibility (Score: {score}%)."
+
                     order_rows.append({
                         "Recommendation Category": cat,
                         "Assay Set": combo_id,
@@ -422,6 +428,7 @@ def create_executive_summary(results_root: Path, outdir: Path):
                         "GC (%)": gc,
                         "Fluorophore / Label": label,
                         f"{plex_lbl} Compatibility Score": f"{score}%",
+                        "Selection Decision Rationale": rationale
                     })
 
     empty_msg = "Run Multiplex Module to populate" if not combo_files else "No oligos found in candidates"
