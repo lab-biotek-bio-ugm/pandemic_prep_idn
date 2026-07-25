@@ -63,24 +63,18 @@ jobs:
     # but inert lets the lab switch CI on for itself. GitHub Actions has no
     # workflow-level `if`, so this has to be repeated on each job.
     if: github.repository == 'engkinandatama/pandemic-preparedness'
-    name: Contracts and lint (py${{ matrix.python-version }})
+    name: Contracts and lint
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: read
-    strategy:
-      fail-fast: false
-      # 3.10 is the deployment floor (envs/*.yaml pin python>=3.10, the HPC runs
-      # it); 3.13 is a cheap early-warning that the code still parses and imports
-      # on a newer interpreter than the maintainer's. Only this two-dependency
-      # job is matrixed -- the full suite runs once, on the deployment version.
-      matrix:
-        python-version: ['3.10', '3.13']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          # Single version: this is the fast fail-first gate. Cross-version
+          # coverage lives on the `test` job below, which runs the real suite.
+          python-version: '3.10'
 
       - name: Install
         run: pip install pytest pyyaml ruff==0.16.0
@@ -104,16 +98,26 @@ jobs:
 
   test:
     if: github.repository == 'engkinandatama/pandemic-preparedness'
-    name: Test suite
+    name: Test suite (py${{ matrix.python-version }})
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      # The real cross-version guard: the whole suite on three interpreters --
+      # 3.10 (the deployment floor that envs/*.yaml pin and the HPC runs), 3.12
+      # (mid), and 3.14 (newest stable). All three are verified green, and every
+      # compiled dependency (numpy, pandas, biopython, primer3-py) ships wheels
+      # for all three, so no build-from-source in CI. Trim to two if Actions
+      # minutes get tight; the deployment floor 3.10 must always stay.
+      matrix:
+        python-version: ['3.10', '3.12', '3.14']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: ${{ matrix.python-version }}
           cache: pip
           cache-dependency-path: requirements/ci.txt
 
