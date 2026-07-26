@@ -143,35 +143,63 @@ def assess_probe_binding(probe_seq: str, amplicon_seq: str,
     return (n_mm <= max_mismatches, n_mm)
 
 
-def min_mismatches_sliding_window(probe_seq: str, amplicon_seq: str) -> int:
-    """Find the minimum mismatches of the probe in the amplicon sequence (IUPAC-aware)."""
-    probe_len = len(probe_seq)
-    amp_len = len(amplicon_seq)
-    if amp_len < probe_len:
-        return probe_len
-    
-    # 1. Exact string matching shortcut (works for most cases, saving compute)
-    if probe_seq in amplicon_seq or reverse_complement(probe_seq) in amplicon_seq:
-        return 0
-        
-    best_mismatch = probe_len
-    
-    # Check both original probe and its reverse complement
-    for p_seq in [probe_seq, reverse_complement(probe_seq)]:
-        for i in range(amp_len - probe_len + 1):
-            window = amplicon_seq[i:i + probe_len]
+def best_binding(oligo: str, target: str, capture: bool = True) -> tuple:
+    """Best IUPAC-aware alignment of ``oligo`` (5'->3') anywhere in ``target`` or
+    its reverse complement.
+
+    Returns ``(mismatches, offset, strand, positions, aligned_bases)``:
+      - ``mismatches``   minimum mismatch count (== the previous sliding-window
+                         result; RC symmetry makes the two enumerations equal, so
+                         coverage numbers are unchanged).
+      - ``offset``       window start on the winning strand (None if too short).
+      - ``strand``       '+' if matched against ``target``, '-' against its RC.
+      - ``positions``    0-based indices IN THE OLIGO's 5'->3' frame that mismatch.
+      - ``aligned_bases`` the target base opposite each oligo position, same frame.
+
+    The last two are the detail the old function computed and threw away; the
+    coverage-failure attribution needs WHERE the mismatches fall, not just how
+    many. ``capture=False`` skips the per-position recompute for callers that want
+    only the count (the hot coverage path).
+    """
+    ln = len(oligo)
+    tn = len(target)
+    if ln == 0 or tn < ln:
+        return (ln, None, None, [], [])
+
+    best_count, best_offset, best_strand = ln, None, None
+    for strand, t in (("+", target), ("-", reverse_complement(target))):
+        idx = t.find(oligo)  # exact-substring shortcut (IUPAC handled by the loop)
+        if idx != -1:
+            best_count, best_offset, best_strand = 0, idx, strand
+            break
+        for i in range(tn - ln + 1):
+            window = t[i:i + ln]
             mismatches = 0
-            for j in range(probe_len):
-                if not match_base(p_seq[j], window[j]):
+            for j in range(ln):
+                if not match_base(oligo[j], window[j]):
                     mismatches += 1
-                    if mismatches >= best_mismatch:
-                        break  # Early exit for this window
-            if mismatches < best_mismatch:
-                best_mismatch = mismatches
-            if best_mismatch == 0:
-                return 0
-                
-    return best_mismatch
+                    if mismatches >= best_count:
+                        break  # early exit; cannot beat the current best
+            if mismatches < best_count:
+                best_count, best_offset, best_strand = mismatches, i, strand
+            if best_count == 0:
+                break
+        if best_count == 0:
+            break
+
+    if not capture or best_offset is None:
+        return (best_count, best_offset, best_strand, [], [])
+    t = target if best_strand == "+" else reverse_complement(target)
+    window = t[best_offset:best_offset + ln]
+    positions = [j for j in range(ln) if not match_base(oligo[j], window[j])]
+    return (best_count, best_offset, best_strand, positions, list(window))
+
+
+def min_mismatches_sliding_window(probe_seq: str, amplicon_seq: str) -> int:
+    """Minimum IUPAC-aware mismatches of the probe anywhere in the amplicon
+    (either strand). Thin wrapper over best_binding for the callers that need only
+    the count; the result is identical to the previous implementation."""
+    return best_binding(probe_seq, amplicon_seq, capture=False)[0]
 
 
 def assess_raa_binding(
@@ -564,21 +592,28 @@ def _evaluate_candidate(idx_cand, args, seq_mappings, actual_candidates, seqkit_
     print(f"[{idx+1}/{actual_candidates}] Simulating PCR for {cand_id} {deg_label} (seqkit -j {seqkit_threads})...")
 
 
+    # Amplification budget for seqkit. RAA tolerates more mismatches than PCR
+    # (Higgins et al. 2022; TwistAmp manual 2.7), so run seqkit at the RAA budget
+    # (3' + internal tolerance) and derive BOTH metrics from the same amplicons:
+    # PCR = post-filter to <= max_mismatch (numbers preserved), RAA = the 3'/internal
+    # gate. Previously seqkit ran at max_mismatch (PCR), which capped RAA below PCR.
+    raa_budget = max(args.max_mismatch, args.raa_max_3prime_mm + args.raa_max_internal_mm)
+
     # ── seqkit amplicon — union-based coverage (surveillance DB) ──────────
     # Strategy: run seqkit against the main --sequences (surveillance/50k DB).
     # For degenerate: pool includes majority + all IUPAC variants.
     if has_deg_pool:
-        print(f"  -> [SURVEILLANCE] seqkit pool {n_combinations} combos (rev in genomic orientation, will RC for seqkit)...")
+        print(f"  -> [SURVEILLANCE] seqkit pool {n_combinations} combos at -m{raa_budget} (rev genomic, will RC for seqkit)...")
         matches_max = run_seqkit_amplicon_pool(
             fwd_possible, rev_possible,
-            args.max_mismatch, args.sequences,
+            raa_budget, args.sequences,
             seqkit_threads, cand_id,
             rev_list_is_genomic=True,  # rev_possible stored as RC of 5'->3' primer
         )
         print(f"  -> [SURVEILLANCE] Union matched: {len(matches_max)} sequences")
     else:
         # A real seqkit failure (ToolError) must abort, not become 0% coverage.
-        matches_max = run_seqkit_amplicon(fwd, rev, args.max_mismatch, args.sequences, seqkit_threads)
+        matches_max = run_seqkit_amplicon(fwd, rev, raa_budget, args.sequences, seqkit_threads)
 
     # ── [OPTIONAL] Design-DB coverage ───────────────────────────────────────
     # If --design-sequences is provided, run a second pass against the smaller
@@ -621,8 +656,10 @@ def _evaluate_candidate(idx_cand, args, seq_mappings, actual_candidates, seqkit_
             is_raa_detected   = False
             raa_probe_mm      = 99
         else:
-            # seqkit confirmed amplification → trust it unconditionally for PCR
-            is_amplified = True
+            # seqkit produced an amplicon within the RAA budget. Whether it counts
+            # as PCR-amplified is decided below by post-filtering to max_mismatch,
+            # so the PCR numbers match the old max_mismatch behaviour while RAA is
+            # free to use the wider budget.
             amp_seq = matches_max[seq_id]
 
             # ─ PCR mismatch level (for reporting, not gating) ─
@@ -637,7 +674,10 @@ def _evaluate_candidate(idx_cand, args, seq_mappings, actual_candidates, seqkit_
                 # rev_deg is 5'->3' format, must RC before matching + strand
                 fwd_mm = min_mismatches_sliding_window(fwd_deg, amp_seq)
                 rev_mm = min_mismatches_sliding_window(reverse_complement(rev_deg), amp_seq)
-            p_mismatch = min(max(fwd_mm, rev_mm), args.max_mismatch)
+            p_mismatch = max(fwd_mm, rev_mm)
+            # PCR gate: post-filter the RAA-budget amplicon to the PCR tolerance.
+            # This reproduces the previous `seqkit -m max_mismatch` result.
+            is_amplified = (fwd_mm <= args.max_mismatch) and (rev_mm <= args.max_mismatch)
 
             # ─ RAA binding assessment — best-of-pool strategy ─
             # For DEGENERATE track: evaluate all variants from fwd_possible and rev_possible.
@@ -1154,7 +1194,11 @@ def main():
                 "seq_id": seq_id,
                 "subtype": meta_row.get("subtype", "Unknown"),
                 "year": parse_year(meta_row.get("date", "Unknown")),
-                "country": meta_row.get("country", "Unknown")
+                "country": meta_row.get("country", "Unknown"),
+                # Clade is carried through for the coverage-failure attribution,
+                # which stratifies below subtype (e.g. H5N1 clade 2.3.4.4b). Absent
+                # in ~17% of records and in some pathogens; defaults to Unknown.
+                "clade": meta_row.get("clade", "Unknown") or "Unknown",
             })
         else:
             # Fallback for sequences without metadata
@@ -1163,7 +1207,8 @@ def main():
                 "seq_id": seq_id,
                 "subtype": "Unknown",
                 "year": "Unknown",
-                "country": "Unknown"
+                "country": "Unknown",
+                "clade": "Unknown"
             })
     
     df_seq_map = pd.DataFrame(seq_mappings)
