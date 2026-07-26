@@ -1,13 +1,16 @@
 name: CI
 
 # Runs automatically on push/PR to main (the dev unit tests the supervisor
-# requires), plus manual dispatch. The github.repository guard on every job keeps
-# it inert on the private lab upstream, so only the engkinandatama fork spends
-# Actions minutes. Path filters are kept because minutes are metered (2,000/month
-# on the Free plan, billed per job, rounded up); they cover exactly the trees the
-# tests and DAG check assert on (config/** included -- commit 38a99fd was
-# config-only and otherwise ran no checks). The list is duplicated under push and
-# pull_request because GitHub Actions rejects YAML anchors.
+# requires), plus manual dispatch. The github.repository guard on every job pins
+# this to the lab upstream (lab-biotek-bio-ugm/pandemic_prep_idn): the supervisor
+# wants the unit tests running on the lab repository itself, and the personal
+# engkinandatama fork skips CI (only publish.yml runs on the fork, since the
+# Cloudflare Pages integration is wired there). Path filters are kept because
+# minutes are metered on private repos (2,000/month on the Free plan, billed per
+# job, rounded up); they cover exactly the trees the tests and DAG check assert on
+# (config/** included -- commit 38a99fd was config-only and otherwise ran no
+# checks). The list is duplicated under push and pull_request because GitHub
+# Actions rejects YAML anchors.
 on:
   workflow_dispatch:
   push:
@@ -51,12 +54,11 @@ jobs:
   # threshold that drifted -- then reports in well under a minute instead of
   # waiting behind the scientific dependency install.
   contract:
-    # Dormant on the upstream lab repository (lab-biotek-bio-ugm/pandemic_prep_idn):
-    # a workflow running there would spend the LAB's Actions quota, including for
-    # pull requests, which bill to the base repository. Keeping the file present
-    # but inert lets the lab switch CI on for itself. GitHub Actions has no
-    # workflow-level `if`, so this has to be repeated on each job.
-    if: github.repository == 'engkinandatama/pandemic-preparedness'
+    # Runs on the lab upstream (lab-biotek-bio-ugm/pandemic_prep_idn) so the
+    # supervisor sees the unit tests running there; skipped on the personal
+    # engkinandatama fork. GitHub Actions has no workflow-level `if`, so this has
+    # to be repeated on each job.
+    if: github.repository == 'lab-biotek-bio-ugm/pandemic_prep_idn'
     name: Contracts and lint
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -91,7 +93,7 @@ jobs:
         run: pytest tests/contracts/
 
   test:
-    if: github.repository == 'engkinandatama/pandemic-preparedness'
+    if: github.repository == 'lab-biotek-bio-ugm/pandemic_prep_idn'
     name: Test suite (py${{ matrix.python-version }})
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -122,7 +124,7 @@ jobs:
         run: pytest --durations=10
 
   dag:
-    if: github.repository == 'engkinandatama/pandemic-preparedness'
+    if: github.repository == 'lab-biotek-bio-ugm/pandemic_prep_idn'
     name: DAG validation
     runs-on: ubuntu-latest
     timeout-minutes: 10

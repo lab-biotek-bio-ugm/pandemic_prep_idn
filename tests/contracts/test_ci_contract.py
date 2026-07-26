@@ -1,11 +1,18 @@
 """Checks on the workflow files themselves.
 
-The dormancy guard is the one piece of CI configuration with a cost attached to
-getting it wrong. The upstream lab repository is private, and a workflow running
-there spends the lab's Actions quota -- including for pull requests, which bill
-to the base repository rather than the fork. GitHub Actions has no
-workflow-level `if`, so the guard has to be repeated on every job, and a job
-added later is exactly the kind of thing that gets it wrong.
+The repository guard is the one piece of CI configuration with a cost attached to
+getting it wrong. Actions minutes on the private lab repository are metered, and a
+job that runs on the wrong repository spends the wrong quota. Each workflow is
+deliberately pinned to a single repository:
+
+  - ci.yml (unit tests) runs on the LAB upstream, where the supervisor wants the
+    tests visible; it is skipped on the personal fork.
+  - publish.yml (Cloudflare deploy) runs on the personal FORK, where the
+    Cloudflare Pages integration is wired; it must never publish to the lab's
+    cf-pages branch.
+
+GitHub Actions has no workflow-level `if`, so the guard has to be repeated on
+every job, and a job added later is exactly the kind of thing that gets it wrong.
 """
 import pytest
 import yaml
@@ -16,7 +23,13 @@ pytestmark = pytest.mark.contract
 
 WORKFLOW_DIR = REPO / ".github" / "workflows"
 WORKFLOWS = sorted(p for p in WORKFLOW_DIR.glob("*.y*ml"))
-GUARD = "github.repository == 'engkinandatama/pandemic-preparedness'"
+FORK = "engkinandatama/pandemic-preparedness"
+LAB = "lab-biotek-bio-ugm/pandemic_prep_idn"
+# Which repository each workflow is pinned to run on.
+EXPECTED_GUARD = {
+    "ci.yml": f"github.repository == '{LAB}'",
+    "publish.yml": f"github.repository == '{FORK}'",
+}
 
 
 def _load(path):
@@ -28,15 +41,21 @@ def test_there_is_at_least_one_workflow():
 
 
 @pytest.mark.parametrize("wf", WORKFLOWS, ids=lambda p: p.name)
-def test_every_job_carries_the_dormancy_guard(wf):
+def test_every_job_carries_the_repository_guard(wf):
     jobs = _load(wf).get("jobs", {})
     assert jobs, f"{wf.name} defines no jobs"
 
-    unguarded = [name for name, job in jobs.items() if GUARD not in str(job.get("if", ""))]
+    guard = EXPECTED_GUARD.get(wf.name)
+    assert guard, (
+        f"{wf.name} has no expected repository guard registered in EXPECTED_GUARD; "
+        f"add one so a new workflow cannot run on the wrong repository unnoticed."
+    )
+
+    unguarded = [name for name, job in jobs.items() if guard not in str(job.get("if", ""))]
     assert not unguarded, (
-        f"{wf.name}: these jobs would also run on the upstream lab repository and "
-        f"spend its Actions quota: {unguarded}\n"
-        f"Add to each one:\n    if: {GUARD}"
+        f"{wf.name}: these jobs are missing the pinning guard and would run on the "
+        f"wrong repository: {unguarded}\n"
+        f"Add to each one:\n    if: {guard}"
     )
 
 
