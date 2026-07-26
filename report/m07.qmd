@@ -90,27 +90,25 @@ Depending on the length and layout of the viral genome, the Bridge Engine can be
 To evaluate target regions, the engine implements a multi-parametric **Core $\times$ Multipliers** scoring function.
 
 ### 4.1. Core Score Calculation
-The base core score is calculated by weighting normalized nucleotide conservation ($Cons_{norm}$) and FUBAR codon purifying selection probability ($FUBAR_{prob}$):
+The core score is **conservation only**. Selection evidence (FUBAR) does *not* enter the core additively — the 1.1.0 correctness audit removed the additive `0.66×Cons + 0.34×FUBAR` model, because a good FUBAR probability could otherwise overturn a large conservation gap. Durability (how fast a codon substitutes) is now a *multiplier*, not a core term.
 
-*   **Normalized Conservation**: Shannon Entropy ($H$) is normalized to a $[0, 1]$ scale:
-    $$Cons_{norm} = 1.0 - \frac{\text{Mean Entropy}}{2.0}$$
+*   **Normalized Conservation**: Shannon Entropy ($H$) is normalized to a $[0, 1]$ scale using the maximum entropy of the 5-symbol alphabet (A/C/G/T/gap):
+    $$Cons_{norm} = 1.0 - \frac{\text{Mean Entropy}}{\log_2 5} \quad (\log_2 5 \approx 2.322)$$
 
-*   **Coding regions (CDS)**:
-    $$\text{Core Score} = (w_{cons} \times Cons_{norm}) + (w_{fub} \times FUBAR_{prob})$$
-    *(Default weights: $w_{cons} = 0.66$ and $w_{fub} = 0.34$)*
-
-*   **Non-coding regions (UTRs)**:
-    $$\text{Core Score} = Cons_{norm} \times 0.95$$
+*   **Coding regions (CDS)** and **UTRs**:
+    $$\text{Core Score} = Cons_{norm}$$
+    (UTRs receive no separate core formula; they simply carry the `durability.no_evidence` multiplier of $0.95$ in §4.2 since no codon-level selection signal exists for them.)
 
 ### 4.2. Biomechanical Multipliers (Penalties)
-The Core Score is multiplied by penalty multipliers (values $\le 1.0$) to discount regions with undesirable thermodynamic or mechanical traits:
-$$\text{Final Score} = \text{Core Score} \times M_{MEME} \times M_{recomb} \times M_{GC} \times M_{block} \times M_{homo}$$
+The Core Score is multiplied by penalty multipliers (values $\le 1.0$) to discount regions with undesirable evolutionary or thermodynamic traits:
+$$\text{Final Score} = \text{Core Score} \times M_{dur} \times M_{MEME} \times M_{recomb} \times M_{GC} \times M_{block} \times M_{homo}$$
 
+*   **Durability ($M_{dur}$)**: Discounts codons that substitute quickly (from the FUBAR $\alpha/\beta$ rates); $0.95$ where there is no codon-level evidence (e.g. UTRs). This is where selection now enters — as a bounded multiplier, not an additive term.
 *   **Episodic Selection ($M_{MEME}$)**: Penalizes regions with sites undergoing transient positive selection (episodic escape hotspots).
-*   **Recombination ($M_{recomb}$)**: Multiplies by $0.5$ if the region is close to recombination breakpoints.
-*   **GC-Content ($M_{GC}$)**: Lowers the score if the GC content falls outside the thermodynamically optimal range ($40\% - 60\%$).
+*   **Recombination ($M_{recomb}$)**: Multiplies by $0.5$ near recombination breakpoints (from GARD, when enabled).
+*   **GC-Content ($M_{GC}$)**: Lowers the score if GC falls outside the optimal range (`ideal_min: 35`, `ideal_max: 60`).
 *   **Conserved Block ($M_{block}$)**: Penalizes windows lacking long contiguous conserved blocks.
-*   **Homopolymer ($M_{homo}$)**: Applies a penalty if the sequence contains homopolymer repeats (e.g., $\ge 5$ identical nucleotides).
+*   **Homopolymer ($M_{homo}$)**: Applies a penalty for homopolymer repeats ($\ge 5$ identical nucleotides).
 
 ### 4.3. Target Grade Classification
 The calculated **Final Score** determines the target grade and recommendation:
@@ -135,24 +133,28 @@ The Bridge Scoring Engine is configured in `config.yaml` to define search strate
 ```yaml
 # [M07] Bridge scoring and window definitions
 bridge:
-  strategy: "full_segment"        # Treat whole segment as target (options: sliding_window, full_segment)
+  strategy: "full_segment"        # Treat whole segment as target (options: windowed, full_segment)
   design_regions:
     - "segment-MP"
   include_utr: true
-  min_region_length: 150
+  entropy_threshold: 0.020        # mean Shannon entropy (bits) below which a window is conserved
   scoring:
-    core:
-      conservation_weight: 0.66   # Weight for Shannon Entropy conservation score (0.0 to 1.0)
-      purifying_weight: 0.34      # Weight for HyPhy FUBAR negative selection probability (0.0 to 1.0)
+    # NOTE: the additive core (conservation_weight/purifying_weight) was REMOVED in
+    # the 1.1.0 audit. Core = conservation only; selection enters as a durability
+    # multiplier (see §4). The keys below are the multiplier settings.
+    multipliers:
+      gc_content: {ideal_min: 35, ideal_max: 60}
+      recombination: {near_penalty: 0.5}
+      homopolymer: {max_repeats: 5}
 ```
 
 ### 5.1. Parameter Tuning Dictionary
 
 | Parameter Name | Allowed Values | Default Value | Purpose & Biological Meaning |
 |---|---|---|---|
-| `bridge.strategy` | `"sliding_window"`, `"full_segment"` | `"full_segment"` | Defines how target regions are carved. `"sliding_window"` divides the genome into slices, which is ideal for long genomes (like Coronaviruses). `"full_segment"` passes the entire segment, which is ideal for short segments (like Influenza MP) so PrimerLab can scan the whole region. |
-| `bridge.scoring.core.conservation_weight` | Float `0.0` to `1.0` | `0.66` | The weight given to sequence alignment conservation (Shannon Entropy). A high weight favors regions with high identity in current databases. |
-| `bridge.scoring.core.purifying_weight` | Float `0.0` to `1.0` | `0.34` | The weight given to HyPhy FUBAR purifying selection probability. A high weight favors codons that are evolutionary forbidden to mutate, ensuring the diagnostic target will remain stable against future drift. |
+| `bridge.strategy` | `"windowed"`, `"full_segment"` | `"full_segment"` | Defines how target regions are carved. `"windowed"` divides the genome into slices (ideal for long genomes like Coronaviruses). `"full_segment"` passes the entire segment (ideal for short segments like Influenza MP) so PrimerLab can scan the whole region. |
+| `bridge.entropy_threshold` | Float (bits) | `0.020` | Mean raw Shannon entropy below which a window is treated as conserved. (Conserved-block detection uses a separate `0.10`.) |
+| `bridge.scoring.multipliers.gc_content` | `ideal_min` / `ideal_max` | `35` / `60` | GC window outside this range is down-weighted; the optimal range is 35–60%. |
 
 ### 5.2. How to Interpret Target Grades
 
@@ -169,10 +171,8 @@ Module 07 outputs a targets list (`primer_targets_manifest.yaml`):
 bridge:
   strategy: "full_segment"
   include_utr: true
-  scoring:
-    core:
-      conservation_weight: 0.66
-      purifying_weight: 0.34
+  entropy_threshold: 0.020
+  # core = conservation only; durability + biomechanical traits applied as multipliers
 ```
 
 ### 2. Bridge Run Command

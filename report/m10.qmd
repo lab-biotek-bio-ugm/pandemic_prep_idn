@@ -48,11 +48,18 @@ The validation engine runs simulated amplifications by matching designed primers
 SeqKit's `amplicon` command matches primer sequences against every target genome in the database, allowing up to a defined number of mismatches (default: $3$ or $4$ mismatches). It returns virtual amplicons for target genomes that match both primers within a designated length range (e.g. 100–300 bp).
 
 ### 1.2. RAA Isothermal Binding Rules
-Because RAA operates at $37^\circ\text{C}$ with a recombinase complex, it is thermodynamically tolerant of minor internal mismatches but highly sensitive to 3' terminal defects. The engine implements strict, multi-zone mismatch criteria:
+Because RAA operates at $39^\circ\text{C}$ with a recombinase complex, it is thermodynamically tolerant of minor internal mismatches but highly sensitive to 3' terminal defects. The engine implements strict, multi-zone mismatch criteria:
 
-*   **3' Critical Zone**: Evaluates the last **8 nucleotides of the 3' end** of both primers. It allows a maximum of **1 mismatch**; any more than 1 mismatch in this zone vetoes the binding.
+*   **3' Critical Zone**: Evaluates the last **4 nucleotides of the 3' end** (the recombinase "anchor region") of both primers, allowing a maximum of **1 mismatch**; more than 1 vetoes binding. The 4-nt window follows @higgins2022 — the only study to characterise primer–template mismatches specifically for RPA — which found single mismatches *outside* the terminal anchor do not significantly affect time-to-positivity. The earlier 8-nt value had no source and under-reported coverage.
 *   **Internal Body**: Allows a maximum of **4 mismatches** across the rest of the 30–35 bp primer body.
-*   **Probe Binding**: Probes (46–52 bp) allow a maximum of **3 mismatches** to maintain hybridization-induced exonuclease cleavage.
+*   **Probe Binding**: Probes (46–52 bp) allow a maximum of **5 total mismatches** (not 3'-weighted — the probe's 3' terminus is C3-blocked and cannot be extended), following the TwistAmp Assay Design Manual §2.7, which reports RPA performance is unaffected by 5–9 mismatches on primers or probe.
+
+### 1.3. Why the reported RAA coverage is currently PCR-capped
+A modelling caveat that materially changes how the numbers below should be read. M10's authoritative amplification call comes from `seqkit amplicon`, run at the **PCR** mismatch budget (`max_mismatch = 3`). The RAA binding rules in §1.2 are then applied **only to sequences seqkit already amplified**. Consequently `raa_detected_pct` is a *subset* of the PCR-amplified set and can never exceed it — the opposite of RAA biology, in which the recombinase tolerates *more* mismatches than PCR.
+
+The effect is large for divergent subtypes. Global A/H5N1 clusters at ~5 total primer mismatches — above the PCR `-m 3` cut, but within the RAA tolerance (1 in the 3' anchor, 4 internal). The seqkit gate therefore drops them and the reported figure reads **31.84%**, whereas a seqkit-free RAA assessment puts the RAA-viable coverage at **~94%**. Only ~6% of global H5N1 fails even the RAA model, concentrated in clade **2.3.4.4b / Japan** and driven by a reverse-primer internal substitution. This per-position attribution is produced by the coverage-failure attribution step (**M12**, `scripts/m12_coverage_attribution.py`) — a generated artifact under `results/<build>/m12/` and surfaced in the per-assay QC dossier, not a separate report page.
+
+The figures on this page are therefore **PCR-conservative for an RAA assay**. A fix that runs `seqkit` at the RAA budget and derives the PCR and RAA metrics separately is prepared; until it is executed on HPC, treat `raa_detected_pct` as a lower bound and the Module 12 RAA-viable estimate as the biologically appropriate figure.
 
 
 ---
@@ -77,11 +84,12 @@ Below are the configuration schemas, CLI commands, and a snippet of the generate
 ```yaml
 # [M10] In-silico validation settings
 insilico_pcr:
-  max_mismatch: 3                 # Maximum mismatches allowed for virtual PCR
+  max_mismatch: 3                 # Mismatch budget for the PCR (seqkit) amplification model
   num_candidates: 10              # Verify the top N candidates from Module 09
-  raa_3prime_bp: 8                # Critical 3' end zone size for RAA
-  raa_max_3prime_mm: 1            # Max mismatches allowed in 3' critical zone
-  raa_max_internal_mm: 4          # Max mismatches allowed in non-3' body
+  raa_3prime_bp: 4                # Critical 3' anchor zone for RAA (Higgins et al. 2022)
+  raa_max_3prime_mm: 1            # Max mismatches allowed in the 3' critical zone
+  raa_max_internal_mm: 4          # Max mismatches allowed in the primer body
+  raa_probe_max_mm: 5             # Max total probe mismatches (TwistAmp manual 2.7)
   min_subtype_seqs: 30            # Minimum sequences to report subtype stats
 ```
 
@@ -97,15 +105,16 @@ python scripts/m10_insilico_pcr.py \
     --outdir results/influenza-a-mp-sea/m10/degenerate \
     --max-mismatch 3 \
     --num-candidates 10 \
-    --raa-3prime-bp 8 \
+    --raa-3prime-bp 4 \
     --raa-max-3prime-mm 1 \
     --raa-max-internal-mm 4 \
+    --raa-probe-max-mm 5 \
     --min-subtype-seqs 30 \
     --threads 16
 ```
 
 ### 3. Output: coverage_summary.json Snippet
-This file summarizes the simulated detection rates against 50,750 global sequences, breaking down performance by viral subtype (e.g., Candidate 1 achieves 98.42% coverage for A/H5N1 and 99.47% for A/H3N2):
+This file breaks performance down by subtype for **two** databases — the 50,750-sequence global surveillance set and the smaller design/focal set — and the two must not be conflated. The **98.42%** for A/H5N1 shown below is the **design/focal DB** (the Indonesian sequences the primers were built on, n=253). On the **global** set the same candidate reads only **31.84%** for A/H5N1 — but, per §1.3, that figure is capped by the PCR amplification gate; under RAA tolerance ~94% of global H5N1 would still be detected. A/H3N2 covers ~99% on both. (The `design_db_breakdowns` key below is the focal set; `breakdowns` is the global set.)
 ```json
 [
   {
@@ -160,29 +169,32 @@ This file summarizes the simulated detection rates against 50,750 global sequenc
 The virtual amplification evaluation is parameterized in `config.yaml` to control mismatch thresholds for both PCR and RAA:
 
 ```yaml
-# [M10] In-silico Validation Parameters
-validation:
-  pcr_mismatch: 2                 # Maximum mismatches allowed for PCR primers (0 to 4)
-  raa_3prime_bp: 8                # Length of the critical 3' end region for RAA (bp)
-  raa_max_3prime_mm: 1            # Maximum mismatches allowed in the RAA 3' critical zone
-  raa_max_internal_mm: 4          # Maximum mismatches allowed in the RAA internal zone
+# [M10] In-silico validation parameters (same block as §1.2/§1.3)
+insilico_pcr:
+  max_mismatch: 3                 # Mismatch budget for the PCR (seqkit) amplification model
+  num_candidates: 40             # Candidates measured for coverage per region
+  raa_3prime_bp: 4                # Critical 3' anchor zone for RAA (Higgins et al. 2022)
+  raa_max_3prime_mm: 1            # Max mismatches allowed in the RAA 3' critical zone
+  raa_max_internal_mm: 4          # Max mismatches allowed in the RAA internal body
+  raa_probe_max_mm: 5             # Max total probe mismatches (TwistAmp manual 2.7)
 ```
 
 ### 3.1. Parameter Tuning Dictionary
 
 | Parameter Name | Allowed Values | Default Value | Purpose & Biological Meaning |
 |---|---|---|---|
-| `validation.pcr_mismatch` | Integer `0` to `5` | `2` | The maximum mismatches allowed for standard PCR. If a primer has $\le 2$ mismatches against a sequence, the template is considered amplified. Set this to `0` for high-specificity screening (e.g. strain differentiation) or `3` to model relaxed PCR assays. |
-| `validation.raa_3prime_bp` | Integer `5` to `15` | `8` | The length of the critical 3' terminal anchoring block of RAA primers. Polymerase extension is highly sensitive to mismatched base pairing at this end. |
-| `validation.raa_max_3prime_mm` | Integer `0` to `2` | `1` | Maximum mismatches allowed in the 8-bp 3' critical zone. Setting this to `0` represents strict, high-fidelity polymerase constraints. |
-| `validation.raa_max_internal_mm` | Integer `0` to `6` | `4` | Maximum mismatches allowed in the remaining internal/5' body of the RAA primer. Isothermal recombinase-mediated strand invasion can tolerate up to 4 internal mismatches without aborting. |
+| `insilico_pcr.max_mismatch` | Integer `0` to `5` | `3` | Mismatch budget for the PCR (seqkit) amplification model. NOTE: this currently also gates the RAA metric — see §1.3. |
+| `insilico_pcr.raa_3prime_bp` | Integer `3` to `8` | `4` | Length of the critical 3' anchor block for RAA. Extension is highly sensitive to mismatch here. The 4-nt value follows @higgins2022 (the earlier 8 had no source). |
+| `insilico_pcr.raa_max_3prime_mm` | Integer `0` to `2` | `1` | Max mismatches allowed in the 4-bp 3' critical zone. |
+| `insilico_pcr.raa_max_internal_mm` | Integer `0` to `6` | `4` | Max mismatches in the internal/5' body. Recombinase-mediated strand invasion tolerates up to 4 internal mismatches. |
+| `insilico_pcr.raa_probe_max_mm` | Integer `0` to `9` | `5` | Max total probe mismatches (probe judged on total load, not 3' kinetics; TwistAmp 2.7). |
 
 ### 3.2. How to Interpret Validation Heatmaps
 
 Module 10 outputs an interactive report (`coverage_heatmap.html`):
 
-*   **PCR vs RAA Amplified**: RAA coverage is almost always slightly lower than PCR coverage because RAA primers are longer ($30-35$ bp), which statistically increases the probability of encountering random mutations along the primer body.
-*   **Subtype Breakdown Table**: Review this table to identify target bias. If a primer set has $99\%$ H3N2 coverage but $0\%$ H5N1 coverage, it indicates that the primer has a critical mismatch against the avian clade sequence. 
+*   **PCR vs RAA Amplified**: in the *current* model RAA reads at or below PCR because RAA detection is a subset of the PCR-`seqkit -m` amplified set (see §1.3) — a modelling artifact, not biology. Under the RAA tolerance itself, RAA coverage is expected to be *higher* than PCR.
+*   **Subtype Breakdown Table**: Review this table to identify target bias. A primer set with $99\%$ H3N2 but a low H5N1 figure signals either a real mismatch against a divergent clade OR the PCR-cap artifact (§1.3) — the Module 12 attribution distinguishes the two.
 
 ---
 
@@ -204,6 +216,6 @@ The files involved in Module 10 are summarized below:
 ## 5. Troubleshooting & Limitations
 
 ### 5.1. Low RAA Coverage compared to PCR Coverage
-*   **Problem**: The RAA amplified percentage is significantly lower than the PCR amplified percentage.
-*   **Cause**: This occurs in target sets with high sequence variability. RAA primers are longer (30–35 bp) than PCR primers (20 bp), which statistically increases the probability of encountering mismatches along the primer body. In addition, the strict 3' terminal zone limit (max 1 mismatch in 8 bp) penalizes binding much harder than standard PCR.
-*   **Solution**: Turn on degenerate base rescue in Module 08 to introduce degenerate bases at variable sites, allowing the primer to match multiple variants and restore RAA coverage.
+*   **Problem**: The RAA amplified percentage reads at or below the PCR amplified percentage.
+*   **Cause**: This is a known modelling artifact, not biology (see §1.3). RAA is currently evaluated only on sequences the PCR `seqkit -m max_mismatch` pass already amplified, so the RAA figure is a *subset* of PCR and cannot exceed it — the opposite of RAA's higher mismatch tolerance. For divergent subtypes (e.g. global H5N1) this understates true RAA coverage substantially (31.84% reported vs ~94% RAA-viable).
+*   **Solution**: A fix that runs `seqkit` at the RAA mismatch budget and derives PCR and RAA separately is prepared (to be run on HPC). Meanwhile use the Module 12 coverage-failure attribution for the RAA-viable estimate, and degenerate base rescue (Module 08) to genuinely raise coverage at variable sites.

@@ -166,9 +166,12 @@ The behavior of Module 02 is governed by the quality control and spatial filteri
 qc:
   max_n_content: 5.0              # Toleransi maksimal % base N (ambiguitas)
   dedup: true                     # Hapus sekuens duplikat identik
+subsampling:
   min_length: 800                 # Panjang sekuens minimal (bp)
   query: "country in ['Indonesia', 'Singapore', 'Malaysia', 'Thailand', 'Vietnam', 'Philippines', 'Myanmar', 'Cambodia', 'Laos', 'Brunei']"
 ```
+
+Note the split: `max_n_content` and `dedup` live under `qc:`, while `min_length` and `query` (the geographic/length boundary of the subsample pool) live under `subsampling:`.
 
 ### 3.1. Parameter Tuning Dictionary
 
@@ -176,8 +179,8 @@ qc:
 |---|---|---|---|
 | `qc.max_n_content` | Float `0.0` to `100.0` | `5.0` | Sets the maximum percentage of ambiguous nucleotides ($N$) allowed in a sequence. Sequences exceeding 5% $N$ are discarded. Ambiguous sequences degrade alignment quality and lead to false mismatch counts during in-silico validation. |
 | `qc.dedup` | `true`, `false` | `true` | When enabled, identical sequences (sharing 100% identity and same length) are collapsed into a single representative sequence. This significantly reduces downstream computational overhead for multiple sequence alignment and phylogenetic building without losing epidemiological diversity. |
-| `qc.min_length` | Integer $\ge 0$ | `800` | Excludes short or partial sequence fragments. For the Influenza MP segment (~1024 bp), setting this to 800 bp ensures that only near-full-length records are processed, preserving structural integrity for primer design. |
-| `qc.query` | Pandas query string | SEA Countries | Defines the geographic and metadata boundary of your dataset. Only sequences matching this query are retained for the subsampling pool. Changing this is how you switch between regional designs (e.g. `indo-only` vs `sea-only`). |
+| `subsampling.min_length` | Integer $\ge 0$ | `800` | Excludes short or partial sequence fragments. For the Influenza MP segment (~1024 bp), setting this to 800 bp ensures that only near-full-length records are processed, preserving structural integrity for primer design. |
+| `subsampling.query` | Pandas query string | SEA Countries | Defines the geographic and metadata boundary of your dataset. Only sequences matching this query are retained for the subsampling pool. Changing this is how you switch between regional designs (e.g. `indo-only` vs `sea-only`). |
 
 ### 3.2. How to Interpret the QC Report
 

@@ -170,16 +170,16 @@ The export process in Module 06 is controlled by the Nextstrain metadata mapping
 ```yaml
 # [M06] Nextstrain Visualization Export
 nextclade:
-  enabled: true                   # Set to true to run nextclade classifier on the dataset
-  dataset_name: "nextstrain/flu/h3n2/ha/3y"  # Nextclade dataset to fetch (e.g. flu_a_mp)
+  enabled: false                  # Off in the shipped config; clade comes from input metadata
+  dataset_name: "nextstrain/flu/h1n1pdm/ha/MW626062"  # Nextclade dataset (used only if enabled)
 ```
 
 ### 4.1. Parameter Tuning Dictionary
 
 | Parameter Name | Allowed Values | Default Value | Purpose & Biological Meaning |
 |---|---|---|---|
-| `nextclade.enabled` | `true`, `false` | `true` | Controls whether Nextclade is invoked. If enabled, the pipeline queries Nextclade to assign lineage and clade designations to the metadata, which are then rendered on the Nextstrain tree. If disabled, the pipeline will fall back to using pre-existing clade annotations from the input metadata. |
-| `nextclade.dataset_name` | Nextclade dataset key | `"nextstrain/flu/h3n2/ha/3y"` | Defines the reference database to download for classification. Ensure that the dataset matches the target species (e.g. using Influenza A datasets for flu runs). |
+| `nextclade.enabled` | `true`, `false` | `false` | Controls whether Nextclade is invoked. **Off by default** in the shipped config: the pipeline uses pre-existing clade annotations from the input metadata (the `clade` column). Enable it to re-assign lineage/clade designations, which are then rendered on the Nextstrain tree. |
+| `nextclade.dataset_name` | Nextclade dataset key | `"nextstrain/flu/h1n1pdm/ha/MW626062"` | Reference dataset to download for classification (used only when `enabled: true`). Match the dataset to the target species. |
 
 ### 4.2. How to Interpret the Auspice Payload
 

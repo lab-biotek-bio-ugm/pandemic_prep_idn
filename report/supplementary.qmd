@@ -41,6 +41,10 @@ To balance universality (broad coverage) and sensitivity, the pipeline enforces 
 
 ---
 
+::: {.callout-warning title="Per-position frequency tables (§2–§4) are from an earlier run"}
+The base-frequency tables in §2–§4 were transcribed from a **previous** `entropy_profile.tsv` and no longer match the latest run to the decimal (e.g. probe position 240 shifted from ~14% to ~18% G, which raises the probe degeneracy from 4× to 8×). They are retained to illustrate the audit method. The authoritative current values are in the linked `entropy_profile.tsv` above; these tables will be regenerated when the results pages are made data-driven.
+:::
+
 ## 2. Forward Primer Audit
 
 * **ID**: `forward_0`
@@ -209,12 +213,12 @@ python scripts/export_supplementary.py \
   --outdir supplementary \
   --only-degenerate
 
-# Export specific subset (e.g. Influenza A & B only, excluding Measles):
+# Export a specific subset (e.g. exclude a build by its target token):
 python scripts/export_supplementary.py \
   --results-dir results \
   --outdir supplementary \
   --only-degenerate \
-  --exclude-targets measles
+  --exclude-targets influenza-b
 
 # Alternatively, restrict to specific target YAML config files:
 python scripts/export_supplementary.py \
@@ -225,10 +229,48 @@ python scripts/export_supplementary.py \
 ```
 
 ### Generated Workbooks Package
-1. **`Executive_Summary_Diagnostic_Assays.xlsx`**: Overview, Oligo Synthesis Orders (Rank 1 Best + 3 Alts), Pairwise/N-Plex compatibility, and BLAST summary.
+1. **`Executive_Summary_Diagnostic_Assays.xlsx`**: Overview, Oligo Synthesis Orders (Best + 3 Alternatives), Pairwise/N-Plex compatibility, BLAST summary, the per-hit **Human Off-Target Risk Audit** (sheet 05), and the cited **QC Decision Audit** (sheet 06).
+
+::: {.callout-note title="How 'BEST RECOMMENDED' is assigned"}
+The recommendation label on the ordering sheet comes from the **selection verdict**, not from list position. A combination that failed the selection gates is labelled *NOT RECOMMENDED* even if it sorted first — it is never shown as BEST just because it is rank 1. (Implemented by `recommendation_category()` in `scripts/export_supplementary.py`; if the quality floors had to be relaxed to find any candidate, the label says so, e.g. "relaxed to L1".)
+:::
 2. **`S1_Primer_Candidates.xlsx`**: Granular candidate metrics for each target build.
 3. **`S2_BLAST_Specificity.xlsx`**: Off-target BLAST specificity details.
 4. **`S3_Multiplex_Compatibility.xlsx`**: N-Plex thermodynamic cross-dimer screening.
 5. **`S4_QC_Summary.xlsx`**: Sequence retention & QC stats.
 6. **`S5_Conservation_Scoring.xlsx`**: Entropy and conservation grades.
+
+## 6. Per-Assay QC Decision Dossier
+
+For surveillance use, each recommended assay carries a standalone, auditable
+dossier. It is generated from the same run artifacts (nothing is recomputed) and
+is emitted alongside the workbooks, into `supplementary/qc_dossier/` (or, in the
+batch orchestrator, `--outdir/qc_dossier/`):
+
+```bash
+python scripts/qc_dossier.py \
+  --results-dir results \
+  --out supplementary/qc_dossier \
+  --top-n 5
+```
+
+Open `qc_dossier/index.html` for the list of assays. Each dossier is a
+self-contained HTML page (plus a markdown mirror) covering, per assay:
+
+- **Coverage audit** — the design/focal figure *and* the surveillance/global
+  figure side by side, with a per-subtype breakdown so a lineage-specific hole is
+  visible rather than hidden in the average. The selection gate judges the global
+  figure; both are shown so the distinction is explicit.
+- **Human off-target audit** — every human hit spelled out (accession, organism,
+  identity, mismatch, 3'-overhang, % bound), each classified against the
+  never-relaxed `FATAL_HIT` gate with the specific reason it is tolerated, plus
+  the pair-level amplicon count — i.e. exactly why a "grade A" candidate that
+  still matches human sequence is safe.
+- **Decision tree** — every go/no-go gate: value → threshold → verdict →
+  rationale → literature citation, from `qc/decision_criteria.yaml` (the single,
+  cited source of truth, kept in lock-step with the code by
+  `tests/contracts/test_decision_registry.py`).
+
+The dossier is a generated artifact and is not committed; regenerate it from a
+run's `results/` with the command above.
 

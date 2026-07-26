@@ -22,7 +22,7 @@ RAA reaction dynamics differ fundamentally from traditional PCR. Because the dou
 ```
 
 ### 1.1. Primer and Probe Dimensions
-*   **Primer Length**: RAA primers must be **30 to 35 nucleotides** long (compared to 18–22 bp for PCR). Shorter primers cannot form a stable recombinase filament and fail to initiate strand exchange at $37^\circ\text{C}$.
+*   **Primer Length**: RAA primers must be **30 to 35 nucleotides** long (compared to 18–22 bp for PCR). Shorter primers cannot form a stable recombinase filament and fail to initiate strand exchange at the $39^\circ\text{C}$ reaction temperature.
 *   **Amplicon Length**: The ideal product size range is **100 to 300 base pairs** (maximum 500 bp) to ensure rapid amplification within 15–20 minutes under isothermal conditions.
 *   **Exo-Probe Structure**: Fluorescent RAA exo-probes must be **46 to 52 nucleotides** long. The probe sequence is modified internally:
     *   An abasic site analog, **Tetrahydrofuran (THF / dSpacer)**, is placed in the middle (at least 30 bp from the 5' end and 15 bp from the 3' end).
@@ -65,18 +65,20 @@ Below are the configuration schemas, execution commands, and output data formats
 ```yaml
 # [M08] PrimerLab execution settings
 primerlab:
-  repo_path: "E:/Project/primerlab-genomic" # Path to local editable package
-  template: "config/primerlab_templates/raa_exo_template.yaml"
+  repo_path: "git+https://github.com/CORE-Lab-Research/primerlab-genomic.git@main"
+  template: "config/primerlab_template.yaml"
   design:
-    num_candidates: 100           # Number of primer-probe candidates to rank
-    window_size: 150              # Sliding window for probe placement
-    search_strategy: "exhaustive" # Search space mode
-    hard_qc_filter: true          # Veto candidates failing GC or homopolymer checks
+    num_candidates: 1000          # Number of primer-probe candidates to rank
+    window_size: null             # null = scan the whole region (full_segment)
+    search_strategy: "standard"   # options: standard / diversified / probe_centered
+    hard_qc_filter: "false"       # keep marginal candidates for downstream ranking
+    vienna_ranking_limit: 500     # ViennaRNA-ranked shortlist size
     degenerate:
+      enabled: true
       maf_threshold: 0.10         # Minimum MAF to trigger degenerate base rescue
       max_multiplier: 16          # Max degeneracy combination complexity limit
       thermo_eval_mode: "worst_case"
-      vienna_temp: 37.0           # Reaction temperature (isothermal)
+      vienna_temp: 37.0           # ViennaRNA folding temperature (reaction temp is 39C)
 ```
 
 ### 2. Payload Generation (YAML Config)
@@ -84,13 +86,11 @@ primerlab:
 # Convert M07 manifest to PrimerLab payload config
 python scripts/m08_payload_generator.py \
     --manifest results/influenza-a-mp-sea/m07/primer_targets_manifest.yaml \
-    --template config/primerlab_templates/raa_exo_template.yaml \
+    --template config/primerlab_template.yaml \
     --outdir results/influenza-a-mp-sea/m08/degenerate \
     --mode degenerate \
-    --num-candidates 100 \
-    --window-size 150 \
-    --search-strategy exhaustive \
-    --hard-qc-filter True
+    --num-candidates 1000 \
+    --search-strategy standard
 ```
 
 ### 3. PrimerLab Execution CLI
@@ -197,8 +197,8 @@ PrimerLab calculates DNA melting temperatures ($T_m$) using nearest-neighbor the
 | `parameters.thermodynamics.dntp_conc` | Float $\ge 0.0$ | `0.8` | Concentration of dNTPs (mM). Higher than standard PCR to fuel fast isothermal transcription. |
 | `parameters.thermodynamics.dna_conc` | Float $\ge 0.0$ | `480.0` | Total primer concentration (nM). RAA requires a highly crowded environment to drive recombinase-mediated strand invasion. |
 | `parameters.primer_size.opt` | Integer | `32` | Optimal length of RAA primers. Isothermal recombinase binding requires long primers ($30-35$ bp) to successfully invade double-stranded DNA templates. |
-| `parameters.probe.type` | `"exo"`, `"taqman"` | `"exo"` | The chemistry type. `"exo"` designs TwistAmp Exo-style probes ($46-52$ bp) with an internal abasic site (THF spacer) for Endonuclease IV cleavage. |
-| `qc.vienna_ranking_limit` | Integer | `50` | The top 50 candidates from Primer3 are sent to ViennaRNA to calculate secondary structures (hairpins, homodimers, heterodimers) at the isothermal temperature of $37^\circ\text{C}$. |
+| `parameters.probe.type` | `"exo"`, `"taqman"` | `"exo"` | The chemistry type. `"exo"` designs TwistAmp Exo-style probes ($46-52$ bp) with an internal abasic site (THF spacer) for **Exonuclease III** cleavage. |
+| `design.vienna_ranking_limit` | Integer | `500` | The top 500 candidates are sent to ViennaRNA to calculate secondary structures (hairpins, homodimers, heterodimers). ViennaRNA folding is evaluated at $37^\circ\text{C}$; the RAA reaction itself runs at $39^\circ\text{C}$. |
 
 ### 4.2. How to Interpret PrimerLab Design Outputs
 

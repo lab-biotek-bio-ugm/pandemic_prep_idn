@@ -16,9 +16,15 @@ The table below summarizes the overall PCR and RAA amplification coverage achiev
 
 | Scenario | PCR (Non-Degen) | PCR (Degenerate) | PCR Uplift | RAA (Non-Degen) | RAA (Degenerate) | RAA Uplift |
 |---|---|---|---|---|---|---|
-| **Indonesia Only** <br> *(`indo-only`)* | 18.61% | **91.20%** | <span style="color: #10b981; font-weight: bold;">+72.59%</span> | 18.33% | **88.83%** | <span style="color: #10b981; font-weight: bold;">+70.50%</span> |
-| **Southeast Asia** <br> *(`sea-only`)* | 33.87% | **34.53%** | <span style="color: #10b981; font-weight: bold;">+0.66%</span> | 33.87% | **34.53%** | <span style="color: #10b981; font-weight: bold;">+0.66%</span> |
-| **All-Partial** <br> *(`all-partial`)* | 17.24% | **17.56%** | <span style="color: #10b981; font-weight: bold;">+0.32%</span> | 17.14% | **17.52%** | <span style="color: #10b981; font-weight: bold;">+0.38%</span> |
+| **Indonesia Only** <br> *(`indo-only`)* | 18.61% | **91.20%** | <span style="color: #10b981; font-weight: bold;">+72.59%</span> | 18.61% | **91.16%** | <span style="color: #10b981; font-weight: bold;">+72.55%</span> |
+| **Southeast Asia** <br> *(`sea-only`)* ‡ | 33.87% | **34.53%** | +0.66% | 33.87% | **34.53%** | +0.66% |
+| **All-Partial** <br> *(`all-partial`)* ‡ | 17.24% | **17.56%** | +0.32% | 17.14% | **17.52%** | +0.38% |
+
+‡ `sea-only` and `all-partial` figures are from a **prior run** and are retained for the design-DB comparison; they will be refreshed when those builds are re-run. Only `indo-only` reflects the latest run.
+
+::: {.callout-important title="Read RAA vs PCR carefully: the RAA column is currently PCR-capped"}
+For `indo-only`, degenerate RAA (**91.16%**) sits just *below* degenerate PCR (**91.20%**) overall — and for divergent subtypes the gap is large and backwards (global A/H5N1 RAA reads 31.84%). That ordering is wrong for the chemistry — RAA tolerates *more* mismatches than PCR — and it is a **modelling artifact, not biology**: M10 uses the PCR `seqkit -m 3` result as the amplification gate and only then applies the RAA tolerance, so the RAA figure is a subset of PCR and cannot exceed it (global A/H5N1 is ~94% RAA-viable, not 31.84%). See the Module 10 page (§1.3) and the coverage-failure attribution (M12; output in `results/<build>/m12/` and surfaced in the QC dossier) for the corrected two-lens view. A fix (running `seqkit` at the RAA mismatch budget) is prepared; the numbers here are what the current pipeline produced and are PCR-conservative for an RAA assay.
+:::
 
 ### Key Findings:
 *   **The Degeneracy Necessity**: For the `indo-only` design, removing degenerate bases collapses the coverage from **91.20%** down to **18.61%** (a drop of over 70 percentage points). This demonstrates mathematically that IUPAC degenerate bases are essential to accommodate the natural genomic variation in circulating Influenza A strains [@elnifro2000]. Non-degenerate primers carrying a consensus-only sequence are systematically excluded from large fractions of the viral sequence space, consistent with documented primer mismatch failures in diagnostic assays [@khan2020].
@@ -118,18 +124,22 @@ For transparency and verification, the pipeline generated interactive HTML repor
 
 ## 3. Subtype-Specific Performance Analysis
 
-To ensure that the designs are effective across different lineages, coverage was analyzed across major Influenza A subtypes:
+Coverage was analyzed across major Influenza A subtypes. **Read the database carefully:** the table below is coverage against the **design / focal DB** (the sequences each design was built on), which is why the numbers are high. It is NOT the global figure — see the global callout beneath it.
 
-| Subtype | Metric | Indo-Only Coverage | SEA-Only Coverage | All-Partial Coverage |
-|---|---|---|---|---|
-| **A / H5N1** <br> *(N=253)* | PCR <br> RAA (Amp) <br> RAA (Det) | **98.42%** <br> **98.42%** <br> **98.02%** | 0.00% <br> 0.00% <br> 0.00% | 47.37% <br> 47.19% <br> 34.91% |
-| **A / H3N2** <br> *(N=187)* | PCR <br> RAA (Amp) <br> RAA (Det) | **99.47%** <br> **99.47%** <br> **99.47%** | **86.67%** <br> **86.67%** <br> **86.67%** | 3.17% <br> 3.17% <br> 3.17% |
-| **A / H1N1** <br> *(N=154)* | PCR <br> RAA (Amp) <br> RAA (Det) | **96.10%** <br> 81.82% <br> 81.82% | 0.53% <br> 0.53% <br> 0.53% | 35.17% <br> 35.17% <br> 35.11% |
+**Design / focal-DB coverage** (RAA detected %; N = design-DB sequences of that subtype):
 
-*   **Subtype Inclusivity**:
-    *   The `indo-only` design is highly effective across all major subtypes, achieving $>96\%$ PCR coverage for H5N1, H3N2, and H1N1.
-    *   The `sea-only` design is heavily biased toward H3N2 ($86.67\%$), failing to detect H5N1 and H1N1 due to regional sequence mismatches.
-    *   The `all-partial` design shows moderate coverage for H5N1 ($47.37\%$) and H1N1 ($35.17\%$), but fails to detect H3N2 ($3.17\%$), indicating a significant design bias.
+| Subtype | Indo-Only (focal) | SEA-Only | All-Partial |
+|---|---|---|---|
+| **A / H5N1** | **98.72%** *(N=312)* | *awaiting re-run* | *awaiting re-run* |
+| **A / H3N2** | **99.58%** *(N=238)* | *awaiting re-run* | *awaiting re-run* |
+| **A / H1N1** | **96.25%** *(N=160)* | *awaiting re-run* | *awaiting re-run* |
+
+::: {.callout-important title="The same subtypes on the GLOBAL surveillance set (indo-only design) tell a different story"}
+Against the 50,750-sequence global set, indo-only per-subtype RAA-detected coverage is **H5N1 31.84%**, H3N2 ~99.0%, H1N1 ~96.9%. The H5N1 drop is **not** a design failure on the target population (focal = 98.7%): it is the strict-PCR gate artifact of §1.3 (M10) — under RAA tolerance ~94% of global H5N1 is still detected, and only ~6% (clade 2.3.4.4b / Japan) truly fails. The design covers what circulates in Indonesia; the global H5N1 gap is an importation/preparedness signal, not a routine-use hole.
+:::
+
+*   **Subtype Inclusivity (focal / target population)**: the `indo-only` design is highly effective across all major subtypes it was built on, achieving $>96\%$ on H5N1, H3N2, and H1N1.
+*   `sea-only` and `all-partial` per-subtype figures are **not shown**: those builds are not in the current run and await a re-run (§2 retains their earlier overall figures for reference).
 
 ---
 

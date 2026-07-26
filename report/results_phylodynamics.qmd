@@ -13,11 +13,11 @@ This section summarizes the database composition, quality filtering metrics, evo
 To ensure high-fidelity evolutionary modeling, raw sequence libraries were subjected to strict quality control (QC) and deduplication filters:
 
 *   **Raw Sequence Database**: The initial raw dataset compiled from GISAID and NCBI databases comprised **50,750 sequences** covering the Influenza A MP segment.
-*   **Quality Filtering & Deduplication**: High-standard sequence quality filtering (discarding sequences with $> 5\%$ ambiguous N-content or invalid characters) followed by sequence deduplication of identical genomes resulted in **20,720 high-quality unique sequences**.
+*   **Quality Filtering & Deduplication**: High-standard sequence quality filtering (discarding sequences with $> 5\%$ ambiguous N-content or invalid characters) followed by sequence deduplication of identical genomes resulted in **20,307 high-quality unique sequences**.
 *   **Phylogenetic Subsampling**: To run computational reconstruction while preserving evolutionary diversity, a balanced spatio-temporal subsampling strategy (grouped by clade, host, country, and collection year) was applied:
-    *   **Indonesia Only Build**: Selected **646 representative sequences** (capturing H1N1, H3N2, and H5N1 subtypes collected in Indonesia).
-    *   **Southeast Asia Only Build**: Subsampled **2,000 representative sequences** (from 2,681 available genomes).
-    *   **All-Partial Database Build**: Subsampled **2,000 representative sequences** (from 6,629 available sequences in the all-partial database, comprising local Indonesian and global contextual strains).
+    *   **Indonesia Only Build**: Selected **759 representative sequences** (capturing H1N1, H3N2, and H5N1 subtypes collected in Indonesia).
+    *   **Southeast Asia Only Build**: *awaiting re-run* (figures from a prior run).
+    *   **All-Partial Database Build**: *awaiting re-run* (figures from a prior run).
 
 ---
 
@@ -83,9 +83,9 @@ By reconstructing ancestral node states, we estimated the temporal alignment and
     *   The molecular clock model estimated the evolutionary rate of the MP segment to be **$3.00 \times 10^{-3}$ substitutions per site per year** across all three datasets (as calculated by TreeTime [@sagulenko2018]). This estimate is consistent with published nucleotide substitution rates for human influenza A, where HA typically evolves at $3$–$5 \times 10^{-3}$ substitutions per site per year [@bhatt2011], while the more structurally constrained Matrix segment exhibits lower rates in purely human seasonal lineages. The convergent rate across all three geographically diverse datasets confirms that the Matrix segment is a stable and temporally calibrated target for diagnostic design.
 *   **Temporal Root Estimation (TMRCA)**:
     *   The most recent common ancestor (TMRCA) varies by dataset due to sampling scope:
-        *   **Indonesia Only**: Estimated around the year **1981.43** (indicating localized ancestral roots tracing to early 1980s).
-        *   **Southeast Asia Only**: Estimated around the year **1970.24**.
-        *   **All-Partial Database**: Estimated around the year **1986.76**.
+        *   **Indonesia Only**: Estimated around the year **1985.21** (indicating localized ancestral roots tracing to early 1980s).
+        *   **Southeast Asia Only**: Estimated *awaiting re-run*.
+        *   **All-Partial Database**: Estimated *awaiting re-run*.
 *   **Branch Lengths & Clades**:
     *   The tree topology exhibits distinct split patterns between the major sub-lineages, with H3N2 and H1N1 separating into deep, long-lived monophyletic branches, while H5N1 strains cluster into distinct geographic sub-clades.
 

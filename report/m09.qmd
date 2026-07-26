@@ -82,7 +82,7 @@ Below are the configuration schemas, CLI commands, and a snippet of the generate
 blast_verification:
   enabled: true                   # Toggle BLAST specificity checking
   mode: "local"                   # local (using custom databases) or remote (NCBI nt)
-  database: "nt"                  # Remote database target
+  database: "custom_respiratory_db"  # local DB name (use "nt" only in remote mode)
   local_db_path: "resources/blast_db"
   num_candidates: 100             # Number of top PrimerLab candidates to verify
   three_prime_critical_bp: 8      # Size of the critical 3' terminal zone

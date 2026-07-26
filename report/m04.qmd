@@ -120,8 +120,8 @@ augur refine \
 The molecular clock modeling in Module 04 is controlled by the clock rate parameters configured in `config.yaml`:
 
 ```yaml
-# [M04] Phylodynamic Reconstruction
-phylodynamics:
+# [M04] Phylodynamic Reconstruction (TreeTime clock priors)
+timetree:
   clock_rate: 0.003               # Estimated substitution rate per site per year
   clock_std_dev: 0.0015           # Standard deviation allowance for the molecular clock
 ```
@@ -130,8 +130,8 @@ phylodynamics:
 
 | Parameter Name | Allowed Values | Default Value | Purpose & Biological Meaning |
 |---|---|---|---|
-| `phylodynamics.clock_rate` | Float $\ge 0.0$ | `0.003` | The baseline mutation velocity (substitutions per site per year). For Influenza A MP, the slow rate of $1.87 \times 10^{-3}$ fits within this prior distribution. If designing for a hyper-variable virus like HIV or SARS-CoV-2, this should be increased (e.g. `0.006` or `0.008`). |
-| `phylodynamics.clock_std_dev` | Float $\ge 0.0$ | `0.0015` | The margin of flexibility allowed for the clock model to deviate across branches (relaxed molecular clock). A higher value allows TreeTime to accommodate localized outbreaks with accelerated mutation rates without crashing. |
+| `timetree.clock_rate` | Float $\ge 0.0$ | `0.003` | The baseline mutation velocity (substitutions per site per year). For Influenza A MP, the slow rate of $1.87 \times 10^{-3}$ fits within this prior distribution. If designing for a hyper-variable virus like HIV or SARS-CoV-2, this should be increased (e.g. `0.006` or `0.008`). |
+| `timetree.clock_std_dev` | Float $\ge 0.0$ | `0.0015` | The margin of flexibility allowed for the clock model to deviate across branches (relaxed molecular clock). A higher value allows TreeTime to accommodate localized outbreaks with accelerated mutation rates without crashing. |
 
 ### 3.2. How to Interpret Molecular Clock Fitting
 

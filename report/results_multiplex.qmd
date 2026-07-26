@@ -10,7 +10,7 @@ The screening engine evaluates all pairwise heterodimerization thermodynamics ($
 
 ## 1. Dual-Temperature Screening Regimes
 
-To guarantee assay robustness, **100 candidate combinations** ($10 \times 10$ matrix of top Influenza A MP and Influenza B MP candidates) were evaluated across two temperature regimes:
+To guarantee assay robustness, the top Influenza A MP and Influenza B MP candidates (a $10 \times 10$ pairing space) were screened; **15 combinations survived the pre-pairing selection gates** and were evaluated across two temperature regimes:
 
 1.  **Isothermal RT-RAA Mode ($39.0^\circ\text{C}$)**: Primary operational temperature for point-of-care recombinase-mediated amplification.
 2.  **qPCR Comparative Benchmark ($55.0^\circ\text{C}$)**: Gold-standard laboratory thermal cycling benchmark.
@@ -79,7 +79,11 @@ Below is the complete 9-pair inter-assay cross-dimer thermodynamic breakdown for
 
 ## 4. Pairwise 10x10 Compatibility Score Matrix
 
-Below is the complete $10 \times 10$ candidate matrix showing compatibility scores (%) and worst-case cross-dimer binding energies ($\Delta G$) for all combinations of Top 10 Influenza A MP vs Top 10 Influenza B MP candidates:
+::: {.callout-note}
+The matrix below is transcribed from an earlier run and is retained for illustration. The authoritative, current view is the generated `multiplex_matrix.html` artifact and the Top-5 table in §2 (which reflects the latest run). This static matrix will be replaced when the results pages are made data-driven.
+:::
+
+Below is a $10 \times 10$ candidate matrix showing compatibility scores (%) and worst-case cross-dimer binding energies ($\Delta G$) for combinations of Top 10 Influenza A MP vs Top 10 Influenza B MP candidates:
 
 ```{=html}
 <div style="overflow-x: auto; margin: 25px 0;">
@@ -237,46 +241,9 @@ Below is the complete $10 \times 10$ candidate matrix showing compatibility scor
 
 ---
 
-## 5. Dynamic N-Plex Compatibility Results (Expandable Multi-Virus Panels)
+## 5. Dynamic N-Plex Compatibility (Expandable Multi-Virus Panels)
 
-To enable single-reaction surveillance across expanded target panels (**Influenza A**, **Influenza B**, **Measles**, and future pathogen targets), top candidate assays from each active target build are evaluated dynamically across an **N-Plex reaction mixture** (e.g. 9-oligo mixture for 3 targets: 6 primers + 3 probes). 
+The multiplex engine is **N-plex capable** — it filters and computes cross-dimer thermodynamics for any requested target subset (duplex, triplex, quadruplex). The **current release targets the Influenza A + Influenza B duplex only** (§1–§4 above); the third channel (Cy5) and the measles target were retired when the project narrowed to influenza (Orthomyxoviridae).
 
-Depending on clinical or regional surveillance priorities (e.g., executing a **Dual-Target Influenza A/B assay** vs. a **3-Virus Respiratory/Exanthem Panel**), the pipeline automatically filters and calculates cross-dimer thermodynamics for the requested target subset.
-
-### Recommended 3-Target Panel Combinations (Triplex Benchmark)
-
-| Rank | Triplex Candidate Set | Compatibility Score | Worst RAA ΔG (39°C) | Worst qPCR ΔG (55°C) | Max ΔTm (°C) | Status (39°C) |
-|---|---|---|---|---|---|---|
-| **1** | **`FluA_R9_FluB_R14_Measles_R1`** | **66.7%** | **-6.90 kcal/mol** | **-4.98 kcal/mol** | **1.88°C** | <span style="color: #10b981; font-weight: bold;">PASS</span> |
-| **2** | **`FluA_R9_FluB_R14_Measles_R2`** | **66.7%** | **-6.90 kcal/mol** | **-4.98 kcal/mol** | **1.88°C** | <span style="color: #10b981; font-weight: bold;">PASS</span> |
-| **3** | **`FluA_R9_FluB_R14_Measles_R3`** | **66.7%** | **-6.90 kcal/mol** | **-4.98 kcal/mol** | **1.88°C** | <span style="color: #10b981; font-weight: bold;">PASS</span> |
-| **4** | **`FluA_R9_FluB_R14_Measles_R5`** | **66.7%** | **-6.90 kcal/mol** | **-4.98 kcal/mol** | **1.88°C** | <span style="color: #10b981; font-weight: bold;">PASS</span> |
-| **5** | **`FluA_R9_FluB_R14_Measles_R6`** | **66.7%** | **-6.90 kcal/mol** | **-4.98 kcal/mol** | **1.88°C** | <span style="color: #10b981; font-weight: bold;">PASS</span> |
-
-> [!NOTE]
-> **Interpreting the Two Temperature Columns**:
-> Both thresholds use the same VETO criterion of $\Delta G \le -12.0$ kcal/mol, but RAA operates at 39°C where dimers are more thermodynamically stable. The qPCR column at 55°C confirms that the same combinations remain safe even at higher thermal cycling temperatures, validating cross-platform compatibility.
-
-### Rank 1 Triplex Specifications (`FluA_R9_FluB_R14_Measles_R1`)
-
-#### 🟩 Target A: Influenza A MP (FAM Channel)
-| Oligo Name | Type | Sequence (5' -> 3') | Tm (°C) | Modification / Label |
-|---|---|---|---|---|
-| **FluA_Fwd** | Fwd Primer | `CTGACTAARGGRATTTTRGGRTTTGTATT` | 60.1°C | Unlabeled |
-| **FluA_Rev** | Rev Primer | `GCAGTTAAACTATATARGAARCTGAARAGR` | 59.4°C | Unlabeled |
-| **FluA_Probe** | Exo-Probe | `ACCGTGCCCAGTGAGCGRGGACTGCAGCGTAGACGCTTTRTCCARAATGCC` | 82.1°C | `5'-FAM` / `3'-BHQ1` / `Internal-THF` |
-
-#### 🟨 Target B: Influenza B MP (HEX Channel)
-| Oligo Name | Type | Sequence (5' -> 3') | Tm (°C) | Modification / Label |
-|---|---|---|---|---|
-| **FluB_Fwd** | Fwd Primer | `TTCAGCTCTTGTGAAGAAATAYCTATAAT` | 58.2°C | Unlabeled |
-| **FluB_Rev** | Rev Primer | `AAGAGACAATAAACAGAGAGGTATCAATTTT` | 59.9°C | Unlabeled |
-| **FluB_Probe** | Exo-Probe | `TYTTATCAGCTCTCCATTTCATGGCTTGGACAATAGGRCATTTRAATC` | 71.3°C | `5'-HEX` / `3'-BHQ1` / `Internal-THF` |
-
-#### 🟦 Target C: Measles Virus (Cy5 Channel)
-| Oligo Name | Type | Sequence (5' -> 3') | Tm (°C) | Modification / Label |
-|---|---|---|---|---|
-| **Measles_Fwd** | Fwd Primer | `GATATAGAGACCTTACCTAACAAAGATACTAT` | 58.4°C | Unlabeled |
-| **Measles_Rev** | Rev Primer | `GAGATCTGTCATAACTAAATAAGATTCAGTAG` | 58.4°C | Unlabeled |
-| **Measles_Probe** | Exo-Probe | `AGCTAGAGGAATTGGCAGCCATCTTATCGATGGCTCTGCTCCTTGGCA` | 77.9°C | `5'-Cy5` / `3'-BHQ2` / `Internal-THF` |
+A triplex benchmark will return here once a validated third target is re-introduced. Because the engine is generic, adding it requires only a new per-target build config — no change to the multiplex logic.
 

@@ -65,7 +65,7 @@ Below is an interactive slide deck showcasing the top three designed primer/prob
         <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">GCAGTTAAACTATATARGAARCTGAARAGRG</code>
       </div>
       <div>
-        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">TaqMan Probe (51 bp, Degeneracy: 4)</span>
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">TaqMan Probe (51 bp, Degeneracy: 8)</span>
         <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">CCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCARAATGCCC</code>
       </div>
     </div>
@@ -80,7 +80,7 @@ Below is an interactive slide deck showcasing the top three designed primer/prob
       </div>
       <div>
         <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Probe Tm</span>
-        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">80.96 - 82.57 °C</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">80.96 - 83.58 °C</span>
       </div>
       <div>
         <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Hairpin ΔG</span>
@@ -109,7 +109,7 @@ Below is an interactive slide deck showcasing the top three designed primer/prob
         <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">AGCAGTTAAACTATATARGAARCTGAARAGR</code>
       </div>
       <div>
-        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">TaqMan Probe (51 bp, Degeneracy: 4)</span>
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">TaqMan Probe (51 bp, Degeneracy: 8)</span>
         <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">CCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCARAATGCCC</code>
       </div>
     </div>
@@ -124,7 +124,7 @@ Below is an interactive slide deck showcasing the top three designed primer/prob
       </div>
       <div>
         <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Probe Tm</span>
-        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">80.96 - 82.57 °C</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">80.96 - 83.58 °C</span>
       </div>
       <div>
         <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Hairpin ΔG</span>
@@ -153,7 +153,7 @@ Below is an interactive slide deck showcasing the top three designed primer/prob
         <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">GCAGTTAAACTATATARGAARCTGAARAGR</code>
       </div>
       <div>
-        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">TaqMan Probe (51 bp, Degeneracy: 4)</span>
+        <span style="font-weight: 600; color: #4b5563; font-size: 12px; display: block; margin-bottom: 4px;">TaqMan Probe (51 bp, Degeneracy: 8)</span>
         <code style="display: block; background-color: #f3f4f6; padding: 8px; border-radius: 4px; font-size: 13px; color: #111827; word-break: break-all; font-family: monospace; border: 1px solid #e5e7eb;">CCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCARAATGCCC</code>
       </div>
     </div>
@@ -168,7 +168,7 @@ Below is an interactive slide deck showcasing the top three designed primer/prob
       </div>
       <div>
         <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Probe Tm</span>
-        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">80.96 - 82.57 °C</span>
+        <span style="font-size: 12px; color: #1f2937; font-weight: 600;">80.96 - 83.58 °C</span>
       </div>
       <div>
         <span style="display: block; font-size: 10px; color: #6b7280; font-weight: 600; text-transform: uppercase; margin-bottom: 2px;">Hairpin ΔG</span>
@@ -556,7 +556,7 @@ To prevent self-priming, hairpin loops, and primer-dimer complexes, the engine e
 IUPAC degenerate bases (such as `R` for A/G, `Y` for C/T, `K` for G/T) are added to primer sequences to ensure the assay can bind to templates containing single nucleotide polymorphisms (SNPs) circulating in the population:
 
 *   **Regional Designs (Indo-Only & SEA-Only)**:
-    *   Designed in the conserved **187–352 bp** M1 region, the primers require a degeneracy multiplier of **16** to achieve $>99.5\%$ coverage of local sequences. This low degeneracy count is ideal because high degeneracy can dilute the concentration of the active primer species in the PCR mix.
+    *   Designed in the conserved **187–341 bp** M1 region (155 bp amplicon), the primers require a degeneracy multiplier of **16** to achieve $>99.5\%$ coverage of local sequences. This low degeneracy count is ideal because high degeneracy can dilute the concentration of the active primer species in the PCR mix.
 *   **Global Design (All-Partial)**:
     *   Because global background sequences introduce high entropy, the M2 target primers require a degeneracy multiplier of **16** for Rank 1 and 2, but Rank 3 requires a higher degeneracy of **32** (on the forward primer) to accommodate global variation, illustrating how database size and geographic filters dictate degeneracy demands.
 
@@ -569,7 +569,7 @@ All generated candidates were filtered through the **NCBI BLAST+ Specificity Ver
 ### 3' End Veto Filter Criteria
 If a candidate pair matches any non-target respiratory pathogen or human sequence with zero mismatches in the last 8 nucleotides at the 3' end, the set is vetoed (**FAIL**).
 
-*   *Indo-Only Vetoes*: Out of 100 raw candidates, **12 sets were vetoed** due to critical 3' end cross-reactivity with the human genome (e.g. Candidate 5 and 18).
+*   *Indo-Only Vetoes*: Out of 100 raw candidates, **22 sets were vetoed** (BLAST `FAIL`) — e.g. Candidate 5 and 18, which drop to grade D/F on human specificity.
 *   *All-Partial Vetoes*: **22 candidate sets were vetoed** due to human genomic cross-reactivity.
 
 ### Specificity Summary Table (Top 10 Candidates - Indonesia Only)
@@ -593,6 +593,6 @@ The table below summarizes the in-silico specificity scores for the first 10 gen
 
 The complete specificity report files generated by Module 09 listing all 100 candidates and their exact alignment coordinate details can be accessed locally:
 
-* 📋 **[Full BLAST Specificity Summary (CSV)](file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-indo-only/m09/degenerate/segment-MP_region_1/blast_specificity_summary.csv)**
-* 📝 **[Full BLAST Specificity Summary (Markdown)](file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-indo-only/m09/degenerate/segment-MP_region_1/blast_specificity_summary.md)**
-* 📄 **[Detailed Final Candidate Validation Report (Markdown)](file:///e:/Project/pandemic-preparedness/ssh-output/results/influenza-a-mp-indo-only/m09/degenerate/segment-MP_region_1/final_candidates_report.md)**
+* 📋 **[Full BLAST Specificity Summary (CSV)](results/influenza-a-mp-indo-only/m09/degenerate/segment-MP_region_1/blast_specificity_summary.csv)**
+* 📝 **[Full BLAST Specificity Summary (Markdown)](results/influenza-a-mp-indo-only/m09/degenerate/segment-MP_region_1/blast_specificity_summary.md)**
+* 📄 **[Detailed Final Candidate Validation Report (Markdown)](results/influenza-a-mp-indo-only/m09/degenerate/segment-MP_region_1/final_candidates_report.md)**
