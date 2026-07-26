@@ -45,6 +45,18 @@ except ImportError:
     print("❌ openpyxl is required: pip install openpyxl")
     sys.exit(1)
 
+# Share the QC decision logic with scripts/qc_dossier.py so the workbook and the
+# HTML dossier classify human off-target hits and gates identically -- one source
+# of truth. If it cannot be imported the human-audit sheet falls back to a plain
+# listing rather than failing the whole export.
+_SCRIPTS_DIR = str(Path(__file__).resolve().parent)
+if _SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPTS_DIR)
+try:
+    import qc_dossier
+except Exception:
+    qc_dossier = None
+
 # ---------------------------------------------------------------------------
 # Formatting Constants
 # ---------------------------------------------------------------------------
@@ -300,6 +312,50 @@ def write_df_to_ws(ws: Worksheet, df: pd.DataFrame, title: str, status_col: str 
 # Executive Summary Exporter
 # ---------------------------------------------------------------------------
 
+def _qc_decision_audit_rows(results_root: Path):
+    """Flat go/no-go audit for the top multiplex assays, one row per gate.
+
+    Reuses scripts/qc_dossier.py so the workbook and the HTML dossier apply the
+    same cited registry. Returns [] if the registry or qc_dossier is unavailable,
+    which the caller renders as a placeholder rather than failing the export.
+    """
+    if qc_dossier is None:
+        return []
+    try:
+        criteria = qc_dossier.default_criteria()
+    except Exception:
+        return []
+    verdict_txt = {True: "PASS", False: "FAIL", None: "N/A"}
+    rows = []
+    for mf in qc_dossier.find_multiplex_files(str(results_root)):
+        combos = sorted(qc_dossier.load_json(mf) or [],
+                        key=lambda c: c.get("selection_rank") or 999)[:4]
+        for combo in combos:
+            pid = combo.get("pair_id") or combo.get("triplex_id") or "assay"
+            member_stats = {}
+            for key, rank in qc_dossier.parse_members(combo):
+                bdir = qc_dossier.find_build(str(results_root), key)
+                if bdir:
+                    member_stats[(key, rank)] = qc_dossier.member_gates(
+                        qc_dossier.member_artifacts(bdir, rank))
+            for g in criteria["gates"]:
+                cite = ", ".join(g.get("references") or [])
+                scope, valstr, ok = qc_dossier.eval_gate(g, combo, {})
+                if scope == "combo":
+                    rows.append({"Assay": pid, "Level": combo.get("selection_level"),
+                                 "Target": "(assay)", "Class": f"C{g['class']}",
+                                 "Gate": g["name"], "Value": valstr,
+                                 "Verdict": verdict_txt[ok], "Citation": cite})
+                else:
+                    for (key, rank), m in member_stats.items():
+                        _, mval, mok = qc_dossier.eval_gate(g, combo, m)
+                        rows.append({"Assay": pid, "Level": combo.get("selection_level"),
+                                     "Target": f"{key} r{rank}", "Class": f"C{g['class']}",
+                                     "Gate": g["name"], "Value": mval,
+                                     "Verdict": verdict_txt[mok], "Citation": cite})
+    return rows
+
+
 def create_executive_summary(results_root: Path, outdir: Path):
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
@@ -513,43 +569,36 @@ def create_executive_summary(results_root: Path, outdir: Path):
                     db_human = c_dir / "db_human"
                     if not db_human.exists(): continue
 
-                    f_csv = db_human / "forward_offtargets.csv"
-                    r_csv = db_human / "reverse_offtargets.csv"
-                    p_csv = db_human / "probe_offtargets.csv"
+                    # Read the per-hit detail from the BLAST result JSON (same source
+                    # the HTML dossier uses), and classify each hit with the exact
+                    # FATAL_HIT logic the selection gate applies -- not a heuristic
+                    # string. The pair-level amplicon count is the true false-positive
+                    # mechanism, so it is stated on every row.
+                    bres = qc_dossier.load_json(db_human / "blast_result.json") if qc_dossier else None
+                    hits = qc_dossier.collect_human_hits(bres) if (qc_dossier and bres) else []
+                    products = (bres or {}).get("potential_products")
 
-                    has_hits = False
-                    for role, csv_path in [("Forward Primer", f_csv), ("Reverse Primer", r_csv), ("TaqMan Exo-Probe", p_csv)]:
-                        if csv_path.exists():
-                            try:
-                                hits_df = pd.read_csv(csv_path)
-                                for _, h_row in hits_df.iterrows():
-                                    has_hits = True
-                                    seq_id = str(h_row.get("Sequence ID") or h_row.get("subject_id") or "-")
-                                    desc = str(h_row.get("Description / Species") or h_row.get("title") or "Homo sapiens genome")
-                                    ident = str(h_row.get("Identity") or h_row.get("pident") or "-")
-                                    overhang = str(h_row.get("3' Overhang") or h_row.get("overhang_3p") or "-")
-                                    risk = str(h_row.get("Risk") or "Low")
-
-                                    # Biological Rationale Generation
-                                    if "Probe" in role:
-                                        rationale = "SAFE / PROBE SPECIFIC: Single-stranded probe hit. No fluorophore cleavage signal without paired primer amplification."
-                                    elif "0" in overhang or "1" in overhang:
-                                        rationale = "SAFE / 3'-END MISMATCH: Critical 3' terminus is unanchored or mismatched (>2 nt). DNA polymerase/recombinase extension blocked."
-                                    else:
-                                        rationale = "SAFE / SINGLE-PRIMER ISOLATION: Isolated single-primer binding on human chromosome. No opposite-strand primer binding within <1000 bp amplicon distance. Zero amplicon risk."
-
-                                    human_audit_rows.append({
-                                        "Build Cohort": build_label(b.name),
-                                        "Candidate Set": cand_num,
-                                        "Oligo Component": role,
-                                        "Human RefSeq ID": seq_id,
-                                        "Chromosome / Gene Annotation": desc,
-                                        "Identity (%)": ident,
-                                        "3' Overhang": overhang,
-                                        "Off-Target Risk": risk,
-                                        "Biological Safety Rationale": rationale
-                                    })
-                            except Exception: pass
+                    has_hits = bool(hits)
+                    role_label = {"forward": "Forward Primer", "reverse": "Reverse Primer",
+                                  "probe": "TaqMan Exo-Probe"}
+                    for h in hits:
+                        verdict, reason = qc_dossier.classify_hit(h)
+                        reason = re.sub(r"<[^>]+>", "", reason).replace("&gt;", ">").replace("&lt;", "<")
+                        amp = (f"pair forms {products} human amplicon(s)"
+                               if products is not None else "amplicon count unknown")
+                        human_audit_rows.append({
+                            "Build Cohort": build_label(b.name),
+                            "Candidate Set": cand_num,
+                            "Oligo Component": role_label.get(h.get("role"), h.get("role")),
+                            "Human RefSeq ID": h.get("sequence_id", "-"),
+                            "Chromosome / Gene Annotation": str(h.get("sequence_title", ""))[:80],
+                            "Identity (%)": h.get("identity"),
+                            "Mismatches": h.get("mismatches"),
+                            "3' Overhang": h.get("three_prime_overhang"),
+                            "Primer Bound (%)": h.get("coverage_percent"),
+                            "Off-Target Risk": "REVIEW" if verdict == "FATAL" else "SAFE",
+                            "Biological Safety Rationale": f"{verdict.upper()}: {reason}; {amp}",
+                        })
 
                     if not has_hits:
                         human_audit_rows.append({
@@ -567,6 +616,15 @@ def create_executive_summary(results_root: Path, outdir: Path):
     df_human_audit = pd.DataFrame(human_audit_rows) if human_audit_rows else pd.DataFrame([{"Status": "No human off-target hits found"}])
     write_df_to_ws(ws5, df_human_audit, "Human Genome (Homo sapiens) Off-Target Risk & Safety Audit", "Off-Target Risk")
     df_human_audit.to_csv(str(csv_dir / "05_Human_OffTarget_Risk_Audit.csv"), index=False)
+
+    # Sheet 06: QC Decision Audit — the cited go/no-go gates per recommended assay,
+    # evaluated with the same registry the HTML dossier renders.
+    ws6 = wb.create_sheet(title="06_QC_Decision_Audit")
+    audit_rows = _qc_decision_audit_rows(results_root)
+    df_audit = pd.DataFrame(audit_rows) if audit_rows else pd.DataFrame(
+        [{"Status": "QC decision registry or multiplex results unavailable"}])
+    write_df_to_ws(ws6, df_audit, "QC Decision Audit — cited go/no-go gates per recommended assay", "Verdict")
+    df_audit.to_csv(str(csv_dir / "06_QC_Decision_Audit.csv"), index=False)
 
     exec_out = outdir / "Executive_Summary_Diagnostic_Assays.xlsx"
     wb.save(str(exec_out))

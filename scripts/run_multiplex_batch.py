@@ -203,6 +203,18 @@ def main():
             snakemake_cmd = f"snakemake -c {args.cores} --configfile {cfg} {extra_args}".strip()
             run_cmd(snakemake_cmd)
 
+    # Step 1b: Coverage-failure attribution per build (M12). Explains, for each
+    # subtype the universal assay reads <90% for, whether that is a strict-PCR
+    # artifact vs a real RAA hole, and which oligo position drives it. Fail-soft:
+    # a build without M10 output must not sink the batch.
+    if not args.skip_export:
+        for _cfg, build_name in build_names:
+            run_argv([
+                sys.executable, "scripts/m12_coverage_attribution.py",
+                "--results-dir", "results", "--build", build_name,
+                "--out", os.path.join("results", build_name, "m12"),
+            ], fatal=False)
+
     # Step 2: Execute Module 11 Multiplex Compatibility for all unique target pairs
     print("\n" + "=" * 80)
     print("🧬 STARTING MODULE 11 MULTIPLEX COMPATIBILITY SCREENING ACROSS TARGET PAIRS")
@@ -313,6 +325,15 @@ def main():
             "--only-degenerate",
             "--active-targets", *[b for _, b in build_names],
         ])
+
+        # Per-assay QC decision dossiers (HTML + markdown) for the recommended
+        # assays, from the same results/. Fail-soft: a run with no multiplex output
+        # must not sink the whole batch.
+        run_argv([
+            sys.executable, "scripts/qc_dossier.py",
+            "--results-dir", "results",
+            "--out", os.path.join(args.outdir, "qc_dossier"),
+        ], fatal=False)
 
         if args.mirror_dir:
             print(f"[Orchestrator] Mirroring supplementary folder to {args.mirror_dir} ...")
