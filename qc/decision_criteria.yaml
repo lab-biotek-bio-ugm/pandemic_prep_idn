@@ -1,0 +1,185 @@
+# Decision criteria registry — the single, cited source of truth for the
+# candidate-selection decision tree that the QC dossier renders.
+#
+# Purpose: the pipeline's end use is national viral surveillance, so every go/no-go
+# gate must be auditable — its threshold, its rationale, and a literature citation.
+# This file IS the "literature database for the decision tree". scripts/qc_dossier.py
+# renders it per assay; tests/contracts/test_decision_registry.py (Phase 2) asserts
+# every numeric `value` here equals the code constant named in `code_constant`, and
+# that every `references` key exists in report/references.bib.
+#
+# Two classes, mirroring scripts/tools/candidate_selection.py:
+#   class 1 = never relaxed. Violating it makes the assay WRONG (false result).
+#   class 2 = quality floor, relaxed step by step down the L0-L5 ladder when
+#             nothing survives; the dossier states which level was used.
+#
+# `code_constant` points at the authoritative definition so the two cannot drift.
+# References are bibkeys in report/references.bib. Two are added in Phase 2 and are
+# marked pending: higgins2022 (RPA 3' anchor region) and nurk2022 (T2T-CHM13).
+
+meta:
+  pending_references: []   # all references are now in report/references.bib
+  mode_note: >-
+    "detected" applies the RAA mismatch-tolerance model (critical_3prime_bp,
+    max_3prime_mm, max_internal_mm) recorded per candidate in
+    m10/<mode>/coverage_summary.json under raa_params.
+
+gates:
+  # --- Class 1: never relaxed (safety) ------------------------------------------
+  - id: m09_verification
+    class: 1
+    name: "BLAST specificity verification (M09)"
+    metric: status
+    rule: "status != FAIL"
+    code_constant: null
+    source: "scripts/tools/candidate_selection.py:123"
+    rationale: >-
+      A candidate that failed BLAST verification has an unresolved specificity
+      problem; it cannot enter an assay regardless of any other merit.
+    consequence: "Unknown specificity — could report a false result."
+    references: [piepenburg2006]
+
+  - id: human_offtarget_amplicon
+    class: 1
+    name: "No off-target amplicon on human DNA"
+    metric: human_products          # blast_result.json: potential_products (pair-level)
+    rule: "human_products == 0"
+    value: 0
+    code_constant: null
+    source: "scripts/tools/candidate_selection.py:126-130"
+    rationale: >-
+      A false positive needs two primers facing each other within amplicon
+      distance on the off-target. A single primer binding a human site produces
+      nothing on its own; the pair-level product count is the true mechanism and
+      cannot be masked by score aggregation.
+    consequence: "Direct false positive on a human clinical sample."
+    references: [elnifro2000, daher2016]
+
+  - id: virus_crossreactivity
+    class: 1
+    name: "No cross-reaction with another virus"
+    metric: virus_offtargets
+    rule: "virus_offtargets == 0"
+    value: 0
+    code_constant: null
+    source: "scripts/tools/candidate_selection.py:132-136"
+    rationale: >-
+      An off-target against a different virus risks reporting the wrong pathogen
+      in surveillance.
+    consequence: "Misidentification of the circulating pathogen."
+    references: [elnifro2000]
+
+  - id: fatal_human_3prime_anchor
+    class: 1
+    name: "No human hit with a fully anchored 3' end"
+    metric: human_worst_hit
+    rule: "not (three_prime_overhang <= 0 and mismatches <= 1 and coverage_percent >= 90)"
+    code_constant: "candidate_selection.FATAL_HIT"
+    value: {max_three_prime_overhang: 0, max_mismatches: 1, min_coverage_percent: 90.0}
+    source: "scripts/tools/candidate_selection.py:89,138-146"
+    rationale: >-
+      Only a 3' terminus that anneals can be extended by the polymerase. A human
+      hit that is 3'-anchored (overhang 0), near-perfect (<=1 mismatch) and nearly
+      fully bound (>=90% coverage) is a genuine priming site, not background. A hit
+      that fails any of these three cannot prime extension and is tolerated — this
+      is why a "grade A" candidate can still carry several partial human matches
+      safely.
+    consequence: "A real human priming site; false-positive risk if it can pair."
+    references: [higgins2022, khan2020, vanaerschot2020]
+
+  - id: dye_channel_separation
+    class: 1
+    name: "Distinct fluorophore channels per target"
+    metric: dye_ok
+    rule: "dye_ok == true"
+    code_constant: null
+    source: "scripts/tools/iupac_utils.py:594 check_dye_separation; m11_multiplex_checker.py:210"
+    rationale: >-
+      Two targets on overlapping detection channels cannot be told apart in a
+      single multiplex reaction.
+    consequence: "Targets indistinguishable — results unreadable."
+    references: [elnifro2000]
+
+  - id: cross_dimer_veto
+    class: 1
+    name: "Cross-dimer below the hard veto"
+    metric: min_dg_raa_39c
+    rule: "min_dg_raa_39c >= VETO_CROSS_DIMER_DG"
+    code_constant: "iupac_utils.VETO_CROSS_DIMER_DG"
+    value: -12.0
+    units: "kcal/mol at 39C"
+    source: "scripts/tools/iupac_utils.py:286; m11_multiplex_checker.py:206-207"
+    rationale: >-
+      A cross-dimer this stable at the 39C RAA reaction temperature will
+      out-compete target priming; evaluated at 39C because dG is markedly more
+      negative there than at qPCR temperatures.
+    consequence: "Primers consume each other instead of amplifying the target."
+    references: [lorenz2011, daher2016]
+
+  # --- Class 2: relaxable quality floors (L0 -> L5 ladder) ----------------------
+  - id: coverage_floor
+    class: 2
+    name: "Inclusivity / coverage floor"
+    metric: coverage                 # m10 raa_detected_pct
+    rule: "coverage >= min_coverage (L0=95, laddered to 90, 85, then waived)"
+    code_constant: "candidate_selection.DEFAULT_LEVELS[*].min_coverage"
+    value: [95.0, 95.0, 90.0, 90.0, 85.0, null]     # L0..L5
+    units: "percent of circulating strains detected"
+    source: "scripts/tools/candidate_selection.py:64-83,157-169"
+    rationale: >-
+      An assay must detect the strains actually circulating. The floor starts at
+      95% and is lowered one step at a time only when nothing meets it, so the
+      dossier can state exactly how much inclusivity was given up. Coverage is
+      also judged per subtype/year/country, because a good average can hide a
+      lineage-specific hole.
+    consequence: "False negatives on under-covered strains/lineages."
+    references: [khan2020, vanaerschot2020]
+
+  - id: specificity_grade_floor
+    class: 2
+    name: "Human specificity grade floor"
+    metric: human_grade
+    rule: "grade_rank(human_grade) <= grade_rank(max_grade)  (L0-L2=B, L3+=C)"
+    code_constant: "candidate_selection.DEFAULT_LEVELS[*].max_grade"
+    value: ["B", "B", "B", "C", "C", null]          # L0..L5
+    source: "scripts/tools/candidate_selection.py:64-83,152-155"
+    rationale: >-
+      The grade is a cumulative penalty and cannot by itself rule out one
+      catastrophic hit (that is the Class-1 fatal-anchor gate's job); this floor is
+      a secondary quality bar, relaxed after coverage.
+    consequence: "More partial human matches tolerated at lower levels."
+    references: [khan2020]
+
+  - id: delta_tm
+    class: 2
+    name: "Inter-primer Tm spread"
+    metric: delta_tm
+    rule: "delta_tm <= MAX_DELTA_TM_C"
+    code_constant: "iupac_utils.MAX_DELTA_TM_C"
+    value: 4.0
+    units: "degrees C"
+    source: "scripts/tools/iupac_utils.py:264"
+    rationale: >-
+      A soft criterion for RAA: at 39C strand invasion is recombinase-driven
+      rather than annealing-driven, so Tm matching matters far less than in PCR.
+      Retained mainly for the 55C qPCR cross-check.
+    consequence: "Unbalanced amplification across targets."
+    references: [koressaar2007, untergasser2012, daher2016]
+
+  - id: three_prime_anchor
+    class: 2
+    name: "Inter-oligo 3'-anchor run"
+    metric: max_3prime_anchor_bp
+    rule: "max_3prime_anchor_bp <= MAX_THREE_PRIME_ANCHOR_BP"
+    code_constant: "iupac_utils.MAX_THREE_PRIME_ANCHOR_BP"
+    value: 5
+    units: "bp of perfectly complementary 3'-terminal run"
+    source: "scripts/tools/iupac_utils.py:312"
+    rationale: >-
+      Only an annealed 3' terminus can be extended, so a long complementary run
+      anchored at a 3' end is what turns a transient dimer into amplifiable primer
+      noise; more than 5 bp is flagged. A dG over a short terminal window was tried
+      and rejected because it saturates — the length of the anchored run is the
+      reported criterion.
+    consequence: "Primer-noise products that reduce sensitivity."
+    references: [higgins2022, daher2016]
