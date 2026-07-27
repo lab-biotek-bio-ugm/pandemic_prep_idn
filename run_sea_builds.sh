@@ -59,24 +59,30 @@ echo
 preflight() {
   local cfg="$1"
   python3 - "$cfg" <<'PY' || echo "  (pre-flight skipped: metadata not readable yet)"
-import sys, yaml
+import sys, os, yaml
 cfg = yaml.safe_load(open(sys.argv[1]))
-meta = cfg.get("local_input", {}).get("metadata")
+build = cfg.get("build_name", "")
+raw = cfg.get("local_input", {}).get("metadata")
 q = cfg["subsampling"]["query"]
 # extract the quoted country names from the "in [...]" list
 import re
 wanted = re.findall(r"'([^']+)'", q)
+import pandas as pd
+# The real filter (augur_filter, M02) runs on the M01-enriched metadata, which
+# has the normalized 'country' column. The raw GISAID export only has 'Location',
+# so prefer the enriched file when a previous run already produced it.
+enriched = f"results/{build}/m01/metadata_enriched.tsv"
+meta, sep = (enriched, "\t") if os.path.exists(enriched) else (raw, ",")
 try:
-    import pandas as pd
-    df = pd.read_csv(meta, dtype=str, low_memory=False)
+    df = pd.read_csv(meta, sep=sep, dtype=str, low_memory=False)
 except Exception as e:
-    print(f"  metadata not loaded ({meta}): {e}")
+    print(f"  metadata not loaded ({meta}): {e}"); sys.exit(0)
+if "country" not in df.columns:
+    print(f"  {meta} has no normalized 'country' column yet (raw GISAID export "
+          f"uses 'Location'). M01 derives 'country' at run time, so the country "
+          f"filter ({', '.join(wanted)}) applies during the run. Skipping pre-count.")
     sys.exit(0)
-col = "country" if "country" in df.columns else None
-if col is None:
-    print(f"  no 'country' column in {meta}; columns: {list(df.columns)[:10]}...")
-    sys.exit(0)
-present = df[col].value_counts()
+present = df["country"].value_counts()
 hit = [(c, int(present.get(c, 0))) for c in wanted if present.get(c, 0) > 0]
 miss = [c for c in wanted if present.get(c, 0) == 0]
 total = sum(n for _, n in hit)
