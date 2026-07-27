@@ -120,9 +120,28 @@ for cfg in "${CONFIGS[@]}"; do
   echo
 done
 
+# --- Multiplex (A x B) + supplementary package --------------------------------
+# `rule all` above only builds the per-target track (m01-m10). The cross-build
+# multiplex screen and the supplementary workbooks come from the orchestrator,
+# which pairs the two builds and exports to a scenario-specific folder. The
+# builds are already done above, so --skip-snakemake goes straight to M12 +
+# multiplex + supplementary export. Skipped on a dry run.
+if [[ "${DRYRUN:-0}" != "1" && " ${EXTRA_ARGS[*]} " != *" --dry-run "* ]]; then
+  echo "=================================================================="
+  echo "Multiplex + supplementary (Flu A x Flu B, all-partial) -> supplementary_all_partial/"
+  echo "=================================================================="
+  python scripts/run_multiplex_batch.py \
+    --configs "${CONFIGS[@]}" \
+    --cores "$CORES" \
+    --skip-snakemake \
+    --outdir supplementary_all_partial
+  echo
+fi
+
 echo "Done. Outputs:"
-echo "  results/influenza-a-mp-all-partial/"
-echo "  results/influenza-b-mp-all-partial/"
+echo "  results/influenza-a-mp-all-partial/   results/influenza-b-mp-all-partial/"
+echo "  results/multiplex-influenza-a-mp-all-partial_x_influenza-b-mp-all-partial/"
+echo "  supplementary_all_partial/   (Excel workbooks + qc_dossier)"
 echo
 echo "Compare against the indo-only and sea-only builds (m10 coverage_summary.json,"
 echo "m07 bridge_report.json, m08 best_primers.json) to see how a global focal+"
