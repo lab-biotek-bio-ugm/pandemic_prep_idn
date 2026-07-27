@@ -106,15 +106,16 @@ FUBAR was run on the Matrix Protein 1 (**M1**, 253 codons) and Matrix Protein 2 
   <!-- Real FUBAR M2 Data Path -->
   <path d="M 60.0,61.0 L 65.2,40.0 L 70.3,103.0 L 75.5,47.1 L 80.6,44.8 L 85.8,126.7 L 90.9,113.0 L 96.1,131.3 L 101.2,57.1 L 106.4,167.6 L 111.5,175.0 L 116.7,171.8 L 121.9,179.7 L 127.0,172.7 L 132.2,75.9 L 137.3,156.4 L 142.5,161.8 L 147.6,179.6 L 152.8,167.7 L 157.9,166.7 L 163.1,146.9 L 168.2,139.6 L 173.4,173.7 L 178.6,40.3 L 183.7,47.7 L 188.9,41.2 L 194.0,179.8 L 199.2,173.0 L 204.3,40.1 L 209.5,42.4 L 214.6,164.7 L 219.8,135.4 L 224.9,145.8 L 230.1,41.4 L 235.3,68.1 L 240.4,173.4 L 245.6,101.8 L 250.7,73.1 L 255.9,117.1 L 261.0,43.9 L 266.2,75.9 L 271.3,145.7 L 276.5,176.0 L 281.6,93.4 L 286.8,40.6 L 292.0,152.1 L 297.1,97.0 L 302.3,170.4 L 307.4,57.7 L 312.6,113.1 L 317.7,46.6 L 322.9,43.1 L 328.0,70.3 L 333.2,163.6 L 338.4,179.7 L 343.5,127.6 L 348.7,116.9 L 353.8,47.5 L 359.0,179.9 L 364.1,144.2 L 369.3,138.7 L 374.4,48.4 L 379.6,155.1 L 384.7,150.0 L 389.9,140.2 L 395.1,160.8 L 400.2,40.0 L 405.4,43.3 L 410.5,43.1 L 415.7,112.7 L 420.8,40.2 L 426.0,81.8 L 431.1,92.8 L 436.3,60.5 L 441.4,40.0 L 446.6,40.0 L 451.8,55.3 L 456.9,173.4 L 462.1,40.0 L 467.2,105.9 L 472.4,102.0 L 477.5,179.9 L 482.7,65.2 L 487.8,49.6 L 493.0,86.4 L 498.1,144.9 L 503.3,102.0 L 508.5,62.6 L 513.6,179.9 L 518.8,143.7 L 523.9,134.1 L 529.1,159.4 L 534.2,175.6 L 539.4,140.9 L 544.5,40.0 L 549.7,40.0 L 554.8,62.1 L 560.0,98.7" fill="none" stroke="#059669" stroke-width="1.5" />
 
-  <!-- Episodic Diversifying Sites (MEME) at codons 11, 13, 18, 36, 59, 93 -->
+  <!-- Episodic Diversifying Sites (MEME) at codons 11, 13, 18, 19, 36, 59, 93 -->
   <polygon points="111.5,168 106.5,180 116.5,180" fill="#f97316" />
   <polygon points="121.9,168 116.9,180 126.9,180" fill="#f97316" />
   <polygon points="147.6,168 142.6,180 152.6,180" fill="#f97316" />
+  <polygon points="152.8,168 147.8,180 157.8,180" fill="#f97316" />
   <polygon points="240.4,168 235.4,180 245.4,180" fill="#f97316" />
   <polygon points="359.0,168 354.0,180 364.0,180" fill="#f97316" />
   <polygon points="534.2,168 529.2,180 539.2,180" fill="#f97316" />
-  
-  <text x="127" y="163" text-anchor="middle" font-size="9" fill="#c2410c" font-weight="700">Codons 11, 13, 18</text>
+
+  <text x="127" y="163" text-anchor="middle" font-size="9" fill="#c2410c" font-weight="700">Codons 11, 13, 18, 19</text>
   <text x="240" y="163" text-anchor="middle" font-size="9" fill="#c2410c" font-weight="700">36</text>
   <text x="359" y="163" text-anchor="middle" font-size="9" fill="#c2410c" font-weight="700">59</text>
   <text x="534" y="163" text-anchor="middle" font-size="9" fill="#c2410c" font-weight="700">93</text>
@@ -135,7 +136,7 @@ FUBAR was run on the Matrix Protein 1 (**M1**, 253 codons) and Matrix Protein 2 
 
 *   **Matrix Protein 1 (M1) Conservation**:
     *   Out of 253 codons, **191 sites (75.5%)** were identified under strong pervasive purifying selection with a posterior probability $\ge 0.90$.
-    *   This extreme conservation explains why the designs were able to place highly sensitive primers in the conserved forward block. The `indo-only` amplicon spans nucleotide positions **187–341 bp** (155 bp); the `sea-only` build (awaiting re-run) placed a slightly longer 187–352 bp amplicon.
+    *   This extreme conservation explains why the design was able to place highly sensitive primers in the conserved forward block. The `indo-only` amplicon spans nucleotide positions **187–341 bp** (155 bp).
 *   **Matrix Protein 2 (M2) Conservation**:
     *   Out of 98 codons, only **26 sites (26.5%)** were identified under purifying selection. M2 exhibits higher sequence entropy than M1, particularly in its extracellular domain (ectodomain), making it less suitable for diagnostic design.
 
@@ -147,7 +148,7 @@ MEME was run to detect transient, branch-specific evolutionary events that stand
 
 *   **Identified Episodic Sites in M1**:
     *   Only **2 codons** (Codons 30 and 235) exhibited evidence of episodic positive selection with a p-value $\le 0.05$.
-    *   *Diagnostic Veto*: Codon 30 is located upstream of the primary forward primer target (which starts at nucleotide position 187). The **Bridge Scoring Engine (Module 07)** successfully detected this selection marker and applied a spatial penalty, ensuring that primer annealing coordinates remain downstream of codon 30.
+    *   *Diagnostic Veto*: Codon 30 lies well upstream of the forward primer target (which starts at nucleotide position 187), so the selected amplicon sits clear of this episodic site. Note that in this run the exported full-segment candidate region carried **no MEME penalty multiplier** (`mult_meme = 1.0`, `meme_episodic_sites = 0` in the Bridge report): the placement downstream of codon 30 is a consequence of where the stable primer coordinates fell, not of an explicit spatial penalty on the exported region.
 *   **Identified Episodic Sites in M2**:
     *   **7 codons** (Codons 11, 13, 18, 19, 36, 59, and 93) exhibited episodic selection. The clustering of these positive selection sites in the M2 segment highlights the risks of placing diagnostic primers in this gene region.
 
@@ -164,20 +165,14 @@ The stark contrast in selection pressure between the two matrix proteins highlig
 
 ## 4. Bridge Scoring Profile & Physical Target Selection
 
-The **Bridge Scoring Engine (Module 07)** integrated site-specific conservation (Shannon Entropy) with HyPhy FUBAR purifying selection probabilities using a weighted core scoring formula:
+The **Bridge Scoring Engine (Module 07)** integrated site-specific conservation (Shannon entropy) with HyPhy FUBAR purifying-selection probability into a weighted core score, favouring regions that are both low-entropy and under purifying selection.
 
-$$\text{Core Score} = 0.66 \times (1 - \text{Entropy}) + 0.34 \times \text{Prob(dN < dS)}$$
-
-This core score was computed across the entire segment. Because the engine was configured with the `full_segment` strategy for the Influenza A MP segment, it evaluated the segment from **0 to 1027 bp** as a single candidate region (`segment-MP_region_1`). The resulting overall scores and grades for this target region are:
+This core score was computed across the entire segment. Because the engine was configured with the `full_segment` strategy for the Influenza A MP segment, it evaluated the segment from **0 to 1027 bp** as a single candidate region (`segment-MP_region_1`). For this exported full-segment region the FUBAR term was not populated (`has_hyphy_data = false` in the Bridge report), so the composite is driven by the conservation/entropy term. The resulting overall score and grade are:
 
 *   **Indonesia Only**: Core composite score of **0.4022** (Grade **D**, mean entropy: **0.2741**, conservation: **88.19%**).
-*   **Southeast Asia Only**: *awaiting re-run* (figures from a prior run).
-*   **All-Partial Database**: *awaiting re-run* (figures from a prior run).
 
 ### Downstream Primer Coordinate Selection (Module 08 & 09)
 
-Although Module 07 exported the entire segment as a single candidate zone (due to the segment's small size and overall conservation), the downstream primer design tool (**Primer3/PrimerLab** in Module 08 and 09) scanned this candidate region to select the most stable physical primer coordinates, demonstrating how local sequence variations alter target selection:
+Although Module 07 exported the entire segment as a single candidate zone (due to the segment's small size and overall conservation), the downstream primer design tool (**Primer3/PrimerLab** in Module 08 and 09) scanned this candidate region to select the most stable physical primer coordinates:
 
 *   **Indonesia Only Design**: The optimal primers were placed in the M1 gene at **187–341 bp** (Forward primer: **187–218 bp**, Reverse primer: **310–341 bp**), generating a **155 bp** amplicon.
-*   **Southeast Asia Only Design**: The primers were placed at **187–352 bp** (Forward: **187–216 bp**, Reverse: **321–352 bp**), generating a **166 bp** amplicon.
-*   **All-Partial Database Design**: When global database variations were introduced, increased sequence entropy in the M1 gene (including at codon 30) forced the primer design tool to shift coordinates to the 3' end of the segment in the M2 gene at **858–1008 bp** (Forward: **858–889 bp**, Reverse: **978–1008 bp**), generating a **151 bp** amplicon.
