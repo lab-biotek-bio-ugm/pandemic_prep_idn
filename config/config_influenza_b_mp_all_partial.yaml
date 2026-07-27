@@ -1,0 +1,400 @@
+# Pandemic Preparedness Diagnostic Pipeline — Configuration Profile
+# Target: Influenza B (Universal) - MP Segment
+---
+# [GLOBAL] Pipeline Metadata
+# --- GLOBAL PARAMETERS ---
+# Use this section to control thresholds across all modules (QC, HyPhy, Bridge)
+global_params:
+  min_subtype_count: 30 # Minimum sequences per subtype to be included in any analysis
+  iupac_threshold: 0.15 # Minor allele frequency to trigger IUPAC encoding (0.15 = 15%)
+
+# --- PIPELINE CONFIGURATION ---
+build_name: "influenza-b-mp-all-partial"
+database: "local"
+
+references:
+  reference_id: "NC_002210.1"
+  genome: "config/references/flu_b_mp_reference.fasta"
+  annotation: "config/references/flu_b_mp_annotation.gff"
+
+# [M01] Data Acquisition
+local_input:
+  sequences: "dataset/EpiFlu/B_MP/EpiFlu_B_MP_Combined_Sequence.fasta"
+  metadata: "dataset/EpiFlu/B_MP/EpiFlu_B_MP_Combined_Metadata.csv"
+  format: "gisaid_epiflu"
+
+# [M01a] Early Filtering (Pre-Nextclade)
+# Digunakan untuk memfilter dataset campuran sebelum diproses.
+early_filter:
+  enabled: true
+  query: null # Contoh: "subtype == 'B'"
+  min_date: null # Buang sekuens di bawah tahun ini
+  max_date: "2026-04-01"
+
+# [M02] Quality Control & Spatio-Temporal Filter
+qc:
+  max_n_content: 5.0 # Toleransi maksimal % base N (ambiguitas)
+  dedup: true # Hapus sekuens duplikat identik
+
+subsampling:
+  # All-partial mode: focal.enabled=true below, so THIS base query is
+  # IGNORED. The build = dense focal Indonesian strains + sparse global
+  # contextual background (see focal/contextual blocks).
+  group_by: "subtype year month"
+  sequences_per_group: 50
+  max_sequences: null
+  min_length: 1000
+  seed: 42
+  query: "country == 'Indonesia'"
+
+  # Targeted Background Subsampling (Focal vs Contextual)
+  focal:
+    enabled: true
+    query: "country == 'Indonesia'"
+    max_sequences: null
+    sequences_per_group: 50
+    group_by: "subtype year month"
+
+  contextual:
+    enabled: true
+    query: "country != 'Indonesia'"
+    max_sequences: null
+    sequences_per_group: 3
+    group_by: "subtype country year month"
+
+# [M03] Sequence Alignment
+# Menggunakan Augur Align dengan parameter GLOBAL references
+
+# [M04] Phylogenetic Inference (Tree Builder)
+augur:
+  threads: 16
+
+timetree:
+  clock_rate: 0.002
+  clock_std_dev: 0.001
+
+# [M05] Evolutionary Selection Pressure (HyPhy)
+hyphy:
+  threads:
+    8 # 8 is sufficient for short segments (≤2000 seqs × 1027bp).
+    # HyPhy scales poorly beyond ~8-12 threads for short alignments.
+    # Keeping threads low allows Snakemake to run more jobs in parallel
+    # when processing multiple genes or when integrated with other pipelines.
+  p_value_threshold: 0.1   # MEME episodic-selection significance, consumed by M07 when
+                           # counting "danger sites" in a candidate region.
+                           # JUSTIFIKASI: hyphy.org merekomendasikan p <= 0.1 untuk MEME
+                           # (sengaja lebih longgar dari 0.05 konvensional, karena MEME
+                           # bersifat konservatif pada alignment kecil). FUBAR memakai
+                           # posterior probability, bukan p-value — ambangnya >= 0.9,
+                           # lihat bridge.tiers.*.min_purifying_prob.
+                           # CATATAN: sampai revisi ini nilai ini TIDAK PERNAH DIBACA;
+                           # M07 memakai 0.05 yang di-hardcode.
+  methods:
+    - "FUBAR"
+    - "MEME"
+  target_genes:
+    - "ALL"
+  subsample:
+    enabled: true
+    max_sequences: 2000
+    min_sequences: 50
+    strategy: "balanced"
+    group_by:
+      subtype: true # Diubah dari Clade ke Subtype karena lebih terstandarisasi
+      country: true
+      year: true
+    seed: 42
+
+# [M06] Annotation & Clade Assignment
+nextclade:
+  enabled: false
+  dataset_name: "nextstrain/flu/h1n1pdm/ha/MW626062"
+
+bridge:
+  strategy: "full_segment" # "windowed" (slices) or "full_segment" (global)
+  window_size: 300 # [IGNORED if strategy=full_segment] Sliding window size for conservation scan
+  min_region_length: 150
+  overlap_threshold: 0.75
+  buffer_bp: 50
+  entropy_threshold: 0.020 # Relaxed compared to MP; HA is highly dynamic
+  gard_buffer_bp: 50
+  include_utr: true
+  # Restrict manifest to these gene labels only (null = export all regions).
+  # segment-MP = full segment including both UTRs → single design target.
+  design_regions:
+    - "segment-MP"
+  scoring:
+    # CATATAN: blok `core` dengan conservation_weight/purifying_weight SUDAH DIHAPUS.
+    # Dulu: core = 0.66*C + 0.34*P, lalu dikali multiplier.
+    # Masalahnya bentuk aditif membuat bukti seleksi bisa MENGGANTIKAN konservasi:
+    # rentang penuh term P mampu membalik kesenjangan konservasi 25.8 poin persen,
+    # yaitu memilih situs MAF ~14.5% di atas situs yang konservasinya sempurna.
+    # Primer tidak bisa menukar mismatch hari ini dengan bukti kendala evolusi.
+    # Sekarang core = C saja, dan durabilitas jadi multiplier di bawah.
+    multipliers:
+      meme:
+        thresholds:
+          - max_sites: 0
+            multiplier: 1.0
+          - max_sites: 1
+            multiplier: 0.9
+          - max_sites: 3
+            multiplier: 0.7
+        veto_above: 3
+      # Diskon berdasarkan LAJU PERGANTIAN NUKLEOTIDA, bukan dN/dS.
+      # FUBAR melaporkan alpha (laju sinonim) dan beta (laju non-sinonim) per kodon.
+      # Prob[alpha>beta] -- yang dipakai sebelumnya -- mengukur kendala di tingkat
+      # PROTEIN. Primer tidak membaca protein: di bawah seleksi purifying kuat,
+      # posisi kodon ke-3 (wobble) tetap bebas berubah, jadi sebuah situs bisa
+      # punya Prob[alpha>beta] tinggi tapi nukleotidanya berputar cepat -- persis
+      # kasus yang membuat primer cepat tidak berguna.
+      #
+      # rel_rate = (rata-rata laju substitusi region) / (median laju gen tsb).
+      # Self-calibrating, karena laju FUBAR relatif terhadap skala alignment sendiri.
+      #
+      # floor: satu-satunya parameter bebas, dan bacaannya langsung -- rentang penuh
+      # multiplier hanya boleh membalik kesenjangan konservasi sebesar (1 - floor).
+      # 0.95 => 5 poin persen, kira-kira selisih MAF 0% vs 1.6%.
+      durability:
+        floor: 0.95        # diskon maksimum saat pergantian nukleotida sangat cepat
+        rate_cap: 3.0      # rel_rate di atas ini langsung kena floor (3x median gen)
+        no_evidence: 0.95  # tidak ada data FUBAR (non-coding / gen tak dianalisis)
+      recombination:
+        near_penalty: 0.5
+      gc_content:
+        ideal_min: 35
+        ideal_max: 60
+        marginal_ranges:
+          - min: 25
+            max: 34
+          - min: 61
+            max: 70
+        marginal_multiplier: 0.7
+        veto_below: 25
+        veto_above: 70
+      conserved_block:
+        entropy_threshold: 0.10
+        ideal_min_len: 35
+        penalty_min_len: 20
+        penalty_multiplier: 0.8
+      homopolymer:
+        max_repeats: 5
+        penalty_multiplier: 0.6
+  tiers:
+    strict:
+      min_conservation: 0.95
+      min_purifying_prob: 0.9
+    moderate:
+      min_conservation: 0.85
+      min_purifying_prob: 0.7
+    survival:
+      min_conservation: 0.80
+
+# 9. Clade SNP Finder (Discriminative Genotyping)
+# Blueprint feature in planning phase.
+snp_finder:
+  enabled: true
+  overlap_threshold: 0.75 # NMS overlap threshold
+  buffer_bp: 150 # Included region buffer for Primer3
+  gard_buffer_bp: 50 # Recombination breakpoint penalty buffer
+  min_fixation_freq: 0.90 # Minimum frequency for an allele to be fixed
+  min_coverage: 0.80 # Minimum data density ignoring N/Gaps
+  # p_value_threshold DIHAPUS: tidak pernah dibaca kode manapun, dan nilainya (0.01)
+  # bertentangan dengan hyphy.p_value_threshold (0.1) yang kini benar-benar dipakai.
+  # Ambang signifikansi seleksi hanya didefinisikan di blok `hyphy`.
+  group_by: "subtype" # Metadata column for classification
+
+# [M08] PrimerLab Integration
+primerlab:
+  repo_path: "git+https://github.com/CORE-Lab-Research/primerlab-genomic.git@main"
+  template: "config/primerlab_template_hex.yaml"
+  # Pengaturan spesifik untuk desain RAA universal
+  design:
+    num_candidates: 1000
+    search_strategy: "standard"
+    hard_qc_filter: "false"
+    max_search_iterations: 5
+    vienna_ranking_limit: 500
+    # Kita biarkan window_size null agar PrimerLab memproses 1191bp sekaligus (lebih akurat untuk RAA)
+    window_size: null
+    overlap: 200
+    validate: true # true: jalankan in-silico PCR & probe binding validation
+    blast_offtarget_check: false # true: cek spesifisitas via BLAST (membutuhkan internet)
+    blast_ranking_limit: 10
+    blast_database: "nt"
+    blast_mode: "remote" # "remote" (NCBI cloud via async) atau "local" (database lokal)
+    blast_local_db_path: null # Path absolut ke database BLAST lokal di server jika menggunakan mode "local"
+    blast_targeted_check: false # true: hitung coverage primer terpilih terhadap database sekuens target
+    blast_targeted_db_path: null # Path ke file FASTA atau database sekuens target
+    entropy_threshold:
+      0.50 # Exclude positions with Shannon entropy >= 0.50 from primer binding sites
+      # 0.50 ~ 30% MAF: strict enough to exclude hypervariable UTRs
+      # but lenient enough to keep M1 coding region available for primer design
+    min_exclusion_block_length:
+      10 # Minimum consecutive excluded positions to form a block.
+      # Prevents hundreds of tiny 1-2bp wobble-position blocks from blocking
+      # all primer placement. Only large continuous variable stretches (UTRs, etc)
+      # will be excluded. Default 10bp.
+
+    # --- DEGENERATE PRIMER DESIGN SIMULATION SETTINGS ---
+    degenerate:
+      enabled: true # true: Aktifkan desain degenerate primer | false: Mode non-degenerate standar
+      maf_threshold: 0.10 # Minor Allele Frequency threshold (0.10 = 10%) untuk menyertakan degenerate base
+      max_multiplier: 16 # Batas maksimal degeneracy multiplier (jumlah kombinasi sekuens) per primer
+      thermo_eval_mode: "worst_case" # Mode kalkulasi termodinamika pool: "worst_case", "average", atau "best_case"
+      vienna_temp: 37.0 # Suhu (°C) untuk pelipatan ViennaRNA (RNAfold/RNAcofold)
+      target_coverage_increase: 0.05 # Kenaikan coverage minimum (5%) untuk menerima versi degenerate vs non-degenerate
+
+# [M09] BLAST Specificity Verification
+blast_verification:
+  enabled: true
+  num_candidates: 100 # Jumlah kandidat teratas yang akan di-BLAST
+  mode: "local" # "remote" (NCBI cloud) atau "local" (custom DB)
+  database: "custom_respiratory_db"
+  local_db_path: "resources/blast_db" # Root folder db; sub-db dikelola oleh build script
+
+  # BLAST Sensitivity and 3 Prime End Analysis
+  # Parameter ini mengontrol filter spesifisitas sesuai prinsip biologi molekuler.
+  # Default sudah divalidasi untuk primer RAA/PCR panjang ~28-35 bp.
+  qcov_hsp_perc: 60 # Min query coverage % di BLAST
+  min_coverage_percent: 30.0 # Backup filter di kode Python (setelah BLAST)
+  three_prime_critical_bp: 8 # N bp terakhir primer yang dianggap kritikal
+
+  # Konfigurasi pembuatan Custom Database — TIDAK ADA hardcode di kode Python
+  # Tambah/hapus hosts atau virus_taxons di sini untuk mengubah cakupan database
+  custom_db_build:
+    enabled: true
+    output_dir: "resources/blast_db" # Di root project, tidak ikut terhapus saat clean results
+    max_seqs_per_taxon: 500 # Batas maks sekuens per taksonomi virus
+    seq_length_min: 500 # Filter sekuens < N bp (buang kontigs pendek)
+    cleanup_intermediates: true # Hapus file .gz, .fna, dan FASTA mentah setelah DB selesai dibangun
+
+    # Host genomes (Inang Manusia) — gabungan GRCh38 + T2T-CHM13
+    # GRCh38 dinonaktifkan secara default (enabled: false) untuk menghindari duplikasi hit off-target homolog.
+    hosts:
+      - name: "GRCh38"
+        fasta_url: "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/001/405/GCF_000001405.40_GRCh38.p14/GCF_000001405.40_GRCh38.p14_genomic.fna.gz"
+        enabled: false
+      - name: "T2T_CHM13"
+        fasta_url: "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/009/914/755/GCF_009914755.1_T2T-CHM13v2.0/GCF_009914755.1_T2T-CHM13v2.0_genomic.fna.gz"
+        enabled: true
+
+    # Virus taksonomi — gunakan taxid NCBI untuk akurasi, bukan string matching
+    # Tambah virus baru dengan menambahkan entri di sini, tidak perlu ubah kode
+    virus_taxons:
+      - name: "Influenza A virus"
+        taxid: 11320 # Alphainfluenzavirus influenzae
+      - name: "Influenza B virus"
+        taxid: 11520 # Betainfluenzavirus influenzae
+      - name: "Influenza C virus"
+        taxid: 11552
+      - name: "Human orthopneumovirus" # RSV A+B
+        taxid: 11250
+      - name: "SARS-CoV-2"
+        taxid: 2697049
+      - name: "Human adenovirus"
+        taxid: 10535
+      - name: "Human rhinovirus"
+        taxid: 12110
+      - name: "Human enterovirus"
+        taxid: 138948
+      - name: "Human parainfluenza virus 1"
+        taxid: 12730
+      - name: "Human parainfluenza virus 2"
+        taxid: 11225
+      - name: "Human parainfluenza virus 3"
+        taxid: 11234
+      - name: "Human parainfluenza virus 4"
+        taxid: 11246
+      - name: "Human metapneumovirus"
+        taxid: 162145
+
+# [M10] In-silico PCR Coverage Analysis
+insilico_pcr:
+  enabled: true
+  max_mismatch: 3 # Toleransi mismatch maksimal untuk primer & probe
+  num_candidates: 40          # BATAS ATAS kandidat yang diukur coverage-nya per region.
+                              # Himpunannya dipilih lewat gerbang spesifisitas M09 dulu;
+                              # angka ini hanya membatasi berapa yang diukur. Runtime
+                              # M10 naik per gelombang 16 worker paralel, jadi 30 sama
+                              # mahalnya dengan 20; 40 = 3 gelombang, 50 = 4.
+  min_subtype_seqs:
+    30 # Minimum total sequences per subtype in breakdown.
+    # Subtypes with fewer sequences are collapsed into
+    # "Other (rare, n<30)" — cannot be generalized statistically.
+  # RAA isothermal amplification binding parameters
+  raa_3prime_bp: 4            # Jumlah bp ujung 3' yang dianggap kritis (recombinase extension).
+                              # JUSTIFIKASI: Higgins et al. 2022, J Mol Diagn 24(11):1207-1216
+                              # (doi:10.1016/j.jmoldx.2022.08.005) mendefinisikan "anchor region"
+                              # RPA sebagai pre-ante-penultimate s/d terminal 3' = 4 nt terakhir,
+                              # dan menemukan mismatch tunggal DI LUAR posisi terminal tidak
+                              # berdampak signifikan pada time-to-positivity. Nilai 8 sebelumnya
+                              # tidak punya sumber dan membebankan posisi 5-8 ke kuota ketat,
+                              # sehingga coverage dilaporkan terlalu rendah.
+  raa_max_3prime_mm: 1        # Maks mismatch yang ditoleransi di region 3' kritis
+  raa_max_internal_mm: 4      # Maks mismatch yang ditoleransi di region internal (5')
+  raa_probe_max_mm: 5         # Maks TOTAL mismatch probe-target. Probe TIDAK dinilai dengan
+                              # kinetika 3' seperti primer: ujungnya diblok (C3-spacer) sehingga
+                              # tidak bisa diperpanjang polimerase. TwistAmp manual 2.7:
+                              # performa RPA tak terpengaruh 5-9 mismatch pada primer & probe.
+
+multiplex:
+  # --- CANDIDATE SELECTION (M11) ---
+  # Gerbang dulu, baru pengurutan. Kriteria yang membuat asai SALAH menggugurkan
+  # kandidat dan tidak pernah ditukar dengan kriteria yang membuatnya sekadar
+  # KURANG BAIK. Lihat scripts/tools/candidate_selection.py.
+  #
+  # Gerbang KELAS 1 tidak ada di sini karena tidak pernah dilonggarkan: amplikon
+  # off-target di DNA manusia, off-target ke virus lain, situs ikat manusia dengan
+  # ujung 3' terjangkar penuh, tabrakan kanal fluorofor, dan cross-dimer di bawah
+  # veto. Semuanya menguji MEKANISME, bukan skor -- skor spesifisitas bersifat
+  # akumulatif sehingga satu situs katastrofik dan dua puluh yang remeh
+  # menghasilkan grade yang sama.
+  #
+  # Tangga di bawah hanya melonggarkan gerbang KELAS 2. Seleksi berhenti di
+  # tingkat pertama yang menghasilkan kandidat, dan laporan menyebutkan tingkat
+  # mana yang dipakai. Hasil nol karena itu mustahil kecuali semua kandidat
+  # melanggar kelas 1 -- dan itu memang informasi penting, bukan kegagalan.
+  # Batas jumlah kombinasi yang dievaluasi M11. Survivor gerbang per-kandidat
+  # dipangkas menurut coverage lalu spesifisitas kalau hasil kalinya melebihi ini.
+  # Pairwise jarang menyentuhnya; kasus triplex yang kubik yang membutuhkannya.
+  combination_budget: 50000
+  selection:
+    levels:
+      - name: L0
+        label: "target profile"
+        max_grade: B          # grade spesifisitas manusia terburuk yang diterima
+        min_coverage: 95.0    # lantai coverage RAA absolut (%)
+        coverage_within: null # toleransi relatif thd coverage terbaik (poin persen)
+        allow_warning: false  # boleh merekomendasikan pair berstatus WARNING?
+      - name: L1
+        label: "coverage judged relative to the best achievable"
+        max_grade: B
+        min_coverage: 95.0
+        coverage_within: 2.0
+        allow_warning: false
+      - name: L2
+        label: "absolute coverage floor lowered to 90%"
+        max_grade: B
+        min_coverage: 90.0
+        coverage_within: 2.0
+        allow_warning: false
+      - name: L3
+        label: "specificity floor lowered to grade C"
+        max_grade: C
+        min_coverage: 90.0
+        coverage_within: 2.0
+        allow_warning: false
+      - name: L4
+        label: "multiplex WARNING accepted"
+        max_grade: C
+        min_coverage: 85.0
+        coverage_within: 5.0
+        allow_warning: true
+      - name: L5
+        label: "LAST RESORT - every quality floor waived; only the non-negotiable safety gates were applied"
+        max_grade: null
+        min_coverage: null
+        coverage_within: null
+        allow_warning: true
+        last_resort: true
