@@ -6,10 +6,11 @@ top-level import or a statement that fails at load time slips through both and
 only surfaces on the cluster. Importing each script here closes that gap cheaply.
 
 Excluded, with reason:
-  - scripts/prune_tree.py, scripts/m02_filter_wrapper.py: read the `snakemake`
-    global that Snakemake injects into script:-directive scripts, so they cannot
-    be imported standalone. ruff F821 (with builtins=["snakemake"]) and the
-    pyflakes sweep in test_scripts_execute.py vet them instead.
+  - scripts/m02_filter_wrapper.py: reads the `snakemake` global that Snakemake
+    injects into script:-directive scripts, so it cannot be imported standalone.
+    ruff F821 (with builtins=["snakemake"]) and the pyflakes sweep in
+    test_scripts_execute.py vet it instead. (scripts/prune_tree.py guards its
+    snakemake call and is covered directly by tests/test_prune_tree.py.)
   - scripts/m07_plot_entropy.py: sys.exit(1) at import if matplotlib is absent,
     and matplotlib is deliberately not a CI dependency.
 """

@@ -8,10 +8,13 @@ from Bio import Phylo, SeqIO
 import sys
 import io
 
-# Fraction of tree tips that may legitimately lack an alignment sequence.
-# Normal `augur refine --timetree` filtering removes only a small share; anything
-# beyond this points at a systematic ID-format mismatch, not real filtering.
-MAX_PRUNED_FRACTION = 0.5
+# Fraction of the gene ALIGNMENT that may legitimately lack a tree tip. The gene
+# alignment comes from the HyPhy subsample (m05, capped at ~2000), while the tree
+# (m04) is built on the full m02 cohort, so pruning the tree down to the subsample
+# routinely removes most tips -- that is expected and NOT an error. A real
+# tree<->alignment ID mismatch (e.g. Newick escaping of '/') instead shows up as
+# alignment sequences that match no tree tip; that fraction is what we bound here.
+MAX_UNMATCHED_ALIGN_FRACTION = 0.5
 
 def main(tree_path, alignment_path, output_path, log_path):
     with open(log_path, "w") as logf:
@@ -44,32 +47,39 @@ def main(tree_path, alignment_path, output_path, log_path):
 
             # Guard against tree<->alignment desync, WITHOUT breaking legitimate runs.
             #
-            # The tree comes from `augur refine --timetree`, which deliberately drops
-            # tips it cannot date and clock outliers. So alignment sequences with no
-            # matching tree tip are EXPECTED and must not be fatal — they are only
-            # reported. HyPhy takes the pruned tree plus the alignment; extra
-            # sequences in the alignment are tolerated.
+            # A large pruned fraction is EXPECTED here: the tree is built on the full
+            # m02 cohort while this gene alignment is the HyPhy subsample (~2000), so
+            # for big builds (all-partial, large sea-only) most tips are legitimately
+            # pruned. What must never happen is the alignment sequences failing to map
+            # onto the tree at all — the systematic ID-format mismatch (e.g. Newick
+            # escaping of strain names containing '/'). We fail on THAT fraction.
             #
-            # The real failure mode is a systematic ID-format mismatch (e.g. Newick
-            # escaping of strain names containing '/'), where almost nothing matches.
-            # That shows up as a huge pruned fraction, which we DO fail on.
+            # A few unmatched alignment sequences are also normal, because
+            # `augur refine --timetree` drops tips it cannot date / clock outliers, so
+            # a subsampled sequence can be absent from the refined tree.
             aln_only = alignment_ids - remaining_tips
+            unmatched_frac = len(aln_only) / len(alignment_ids) if alignment_ids else 0.0
+            pruned_frac = len(tips_to_prune) / len(all_tips) if all_tips else 0.0
+            logf.write(
+                f"Pruned {pruned_frac:.1%} of tree tips (expected when the tree is "
+                f"larger than the HyPhy subsample); {unmatched_frac:.1%} of alignment "
+                f"sequences have no tree tip.\n"
+            )
             if aln_only:
                 preview = ", ".join(sorted(aln_only)[:10])
                 logf.write(
                     f"NOTE: {len(aln_only)} alignment sequence(s) have no tree tip "
-                    f"(expected — augur refine drops undated/clock-outlier tips). "
+                    f"(some expected — augur refine drops undated/clock-outlier tips). "
                     f"Examples: {preview}\n"
                 )
 
-            pruned_frac = len(tips_to_prune) / len(all_tips) if all_tips else 0.0
-            if pruned_frac > MAX_PRUNED_FRACTION:
+            if unmatched_frac > MAX_UNMATCHED_ALIGN_FRACTION:
                 logf.write(
-                    f"ERROR: {pruned_frac:.1%} of tree tips ({len(tips_to_prune)}/{len(all_tips)}) "
-                    f"had no matching alignment sequence, exceeding the "
-                    f"{MAX_PRUNED_FRACTION:.0%} limit. This indicates a systematic "
-                    f"tree<->alignment ID mismatch rather than normal filtering — "
-                    f"HyPhy would run on a wrong taxon set. Aborting.\n"
+                    f"ERROR: {unmatched_frac:.1%} of alignment sequences "
+                    f"({len(aln_only)}/{len(alignment_ids)}) had no matching tree tip, "
+                    f"exceeding the {MAX_UNMATCHED_ALIGN_FRACTION:.0%} limit. This "
+                    f"indicates a systematic tree<->alignment ID mismatch — HyPhy "
+                    f"would run on a wrong taxon set. Aborting.\n"
                 )
                 sys.exit(1)
 
@@ -81,10 +91,12 @@ def main(tree_path, alignment_path, output_path, log_path):
             logf.write(f"ERROR: {e}\n")
             raise
 
-# Snakemake script interface
-main(
-    tree_path=snakemake.input.tree,
-    alignment_path=snakemake.input.alignment,
-    output_path=str(snakemake.output.tree),
-    log_path=str(snakemake.log[0])
-)
+# Snakemake script interface. Guarded so the module can be imported standalone
+# (e.g. by unit tests); Snakemake injects `snakemake` into globals at run time.
+if "snakemake" in globals():
+    main(
+        tree_path=snakemake.input.tree,
+        alignment_path=snakemake.input.alignment,
+        output_path=str(snakemake.output.tree),
+        log_path=str(snakemake.log[0])
+    )
