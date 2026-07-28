@@ -294,6 +294,20 @@ def run_multiplex_screening(file_a, file_b, out_dir, num_candidates=10,
         for idx, r in enumerate(results[:5], 1):
             f.write(f"| {idx} | **{r['pair_id']}** | **{r['score']}** | {r['min_dg_raa_39c']} kcal/mol | {r['max_3prime_anchor_bp']} bp | {r['min_dg_qpcr_55c']} kcal/mol | {r['delta_tm']}°C | `{r['status_raa_39c']}` |\n")
 
+        if not results:
+            # 0 pairs survive when a target has no candidate clearing the gates at
+            # any level (e.g. Flu A all-partial: 0/10 passed). That is a real
+            # outcome, not a tooling error -- so write a clear "nothing recommended"
+            # report instead of indexing results[0] and crashing the batch.
+            f.write("\n\n### No Recommended Combination\n\n")
+            f.write("No candidate pair passed the non-negotiable safety gates, so "
+                    "there is no Rank 1 assay to synthesise. See the selection note "
+                    "below for which gate each target failed.\n")
+            f.write(selection_note(selection))
+            f.write(screening_methodology_note())
+            print(f"[M11] Saved Markdown report to: {md_path} (no recommended pair)")
+            return
+
         f.write(f"\n\n### Rank 1 Oligo Synthesis Specifications (`{results[0]['pair_id']}`)\n\n")
         r1 = results[0]
         oligos = r1['oligos_synthesis']
