@@ -39,11 +39,11 @@ The table below highlights the top 5 multiplex combinations ranked by candidate 
 
 ## 3. Oligo Synthesis Specifications (Rank 1 Recommended Pair: `FluA_Rank10_x_FluB_Rank12`)
 
-To ensure full transparency and laboratory synthesis readiness, the complete sequence strings, lengths, melting temperatures ($T_m$), GC percentages, and fluorophore dye modifications for all 6 oligos in the primary recommended multiplex set are listed below:
+To ensure full transparency and laboratory synthesis readiness, the complete sequence strings, lengths, melting temperatures ($T_m$), GC percentages, and fluorophore dye modifications for all 6 oligos in the primary recommended multiplex set are listed below. The **primers** are shown as their **IUPAC-degenerate** sequences (e.g. `R` = A/G); the **probe** is shown as its **labeled order sequence** — the single majority-base sequence actually synthesised, carrying the internal FAM/HEX-dT, THF abasic site and BHQ1-dT quencher plus the 3′-C3 spacer. (The probe's degenerate form, with the `R`/`Y` positions, is listed on the [Candidate Diagnostics](results_candidates.qmd) page.)
 
 ### 🟩 Target A: Influenza A MP (FAM Channel)
 
-| Oligo Name | Type | IUPAC Degenerate Sequence (5' $\rightarrow$ 3') | Length | Tm (°C) | GC (%) | Modification / Tag |
+| Oligo Name | Type | Sequence (5' $\rightarrow$ 3') | Length | Tm (°C) | GC (%) | Modification / Tag |
 |---|---|---|---|---|---|---|
 | **FluA_Fwd** | Forward Primer | `TCTGACTAARGGRATTTTRGGRTTTGTATTC` | 31 nt | 61.8°C | 35.5% | Unlabeled |
 | **FluA_Rev** | Reverse Primer | `GCAGTTAAACTATATARGAARCTGAARAGRG` | 31 nt | 60.6°C | 35.5% | Unlabeled |
@@ -51,7 +51,7 @@ To ensure full transparency and laboratory synthesis readiness, the complete seq
 
 ### 🟨 Target B: Influenza B MP (HEX Channel)
 
-| Oligo Name | Type | IUPAC Degenerate Sequence (5' $\rightarrow$ 3') | Length | Tm (°C) | GC (%) | Modification / Tag |
+| Oligo Name | Type | Sequence (5' $\rightarrow$ 3') | Length | Tm (°C) | GC (%) | Modification / Tag |
 |---|---|---|---|---|---|---|
 | **FluB_Fwd** | Forward Primer | `CTCTTGTGAAGAAATAYCTATAATGYTYGAA` | 31 nt | 59.5°C | 30.6% | Unlabeled |
 | **FluB_Rev** | Reverse Primer | `AAGAGACAATAAACAGAGAGGTATCAATTTT` | 31 nt | 59.9°C | 29.0% | Unlabeled |
