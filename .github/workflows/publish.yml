@@ -1,8 +1,10 @@
 name: Render and Deploy Quarto Report to Cloudflare Pages
 
-# Dormant: manual trigger only ("Run workflow" in the Actions tab, or
-# `gh workflow run publish.yml`). It does NOT auto-deploy on push yet. To
-# automate later, uncomment the push block below.
+# Manual trigger only ("Run workflow" in the Actions tab, or
+# `gh workflow run publish.yml`). It does NOT auto-deploy on push. Because it only
+# ever runs when a human dispatches it, there is no repository guard: it renders
+# and deploys from whichever repo it is triggered in (the one whose cf-pages
+# branch feeds the live site). To automate on push later, uncomment the block below.
 on:
   workflow_dispatch:
   # push:
@@ -26,9 +28,6 @@ concurrency:
 
 jobs:
   build-deploy:
-    # See the note in ci.yml: dormant on the upstream lab repository, which
-    # would otherwise spend the lab's quota AND publish to their cf-pages branch.
-    if: github.repository == 'engkinandatama/pandemic-preparedness'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

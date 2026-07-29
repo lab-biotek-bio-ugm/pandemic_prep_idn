@@ -23,17 +23,26 @@ pytestmark = pytest.mark.contract
 
 WORKFLOW_DIR = REPO / ".github" / "workflows"
 WORKFLOWS = sorted(p for p in WORKFLOW_DIR.glob("*.y*ml"))
-FORK = "engkinandatama/pandemic-preparedness"
 LAB = "lab-biotek-bio-ugm/pandemic_prep_idn"
-# Which repository each workflow is pinned to run on.
+# Workflows with automatic (push/pull_request) triggers must pin every job to one
+# repository, or an unguarded job auto-runs and spends the wrong repo's quota.
 EXPECTED_GUARD = {
     "ci.yml": f"github.repository == '{LAB}'",
-    "publish.yml": f"github.repository == '{FORK}'",
 }
+# Manual-only workflows (workflow_dispatch, no push/PR trigger) intentionally carry
+# NO repository guard: they run only when a human dispatches them, and deploy from
+# whichever repo that is. Listed here so the test verifies they stay manual-only.
+MANUAL_ONLY = {"publish.yml"}
 
 
 def _load(path):
     return yaml.safe_load(path.read_text(encoding="utf-8"))
+
+
+def _triggers(doc):
+    # PyYAML parses the `on:` key as the boolean True (YAML 1.1), so check both.
+    on = doc.get("on", doc.get(True, {}))
+    return on if isinstance(on, dict) else {t: None for t in ([on] if isinstance(on, str) else on)}
 
 
 def test_there_is_at_least_one_workflow():
@@ -42,13 +51,26 @@ def test_there_is_at_least_one_workflow():
 
 @pytest.mark.parametrize("wf", WORKFLOWS, ids=lambda p: p.name)
 def test_every_job_carries_the_repository_guard(wf):
-    jobs = _load(wf).get("jobs", {})
+    doc = _load(wf)
+    jobs = doc.get("jobs", {})
     assert jobs, f"{wf.name} defines no jobs"
+
+    if wf.name in MANUAL_ONLY:
+        # The missing guard is only safe while the workflow cannot auto-run.
+        triggers = _triggers(doc)
+        assert "workflow_dispatch" in triggers, f"{wf.name} is registered manual-only but has no workflow_dispatch"
+        assert "push" not in triggers and "pull_request" not in triggers, (
+            f"{wf.name} gained an automatic trigger but is registered as manual-only "
+            f"(no repository guard). Either add a guard and move it to EXPECTED_GUARD, "
+            f"or drop the automatic trigger."
+        )
+        return
 
     guard = EXPECTED_GUARD.get(wf.name)
     assert guard, (
-        f"{wf.name} has no expected repository guard registered in EXPECTED_GUARD; "
-        f"add one so a new workflow cannot run on the wrong repository unnoticed."
+        f"{wf.name} has no expected repository guard registered in EXPECTED_GUARD "
+        f"(and is not in MANUAL_ONLY); decide which repo it runs on so a new workflow "
+        f"cannot run on the wrong repository unnoticed."
     )
 
     unguarded = [name for name, job in jobs.items() if guard not in str(job.get("if", ""))]
