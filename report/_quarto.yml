@@ -87,6 +87,8 @@ website:
             text: "Candidate Diagnostics"
           - href: results_performance.qmd
             text: "In-silico Evaluation"
+          - href: results_design_comparison.qmd
+            text: "Design DB Comparison"
           - href: results_multiplex.qmd
             text: "Multiplex Compatibility"
           - href: supplementary.qmd

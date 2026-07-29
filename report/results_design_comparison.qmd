@@ -1,0 +1,129 @@
+---
+title: "Results: Design Database Comparison"
+---
+
+The primer/probe sets were designed three times, each against a different sequence database, to test how the choice of design cohort shapes the final assay:
+
+1.  **Indonesia Only (`indo-only`)** — local Indonesian strains only.
+2.  **Southeast Asia (`sea-only`)** — Indonesia + Malaysia + Singapore (the SEA countries actually represented in the MP dataset; Singapore is the largest cohort).
+3.  **All-Partial (`all-partial`)** — dense focal Indonesian strains **plus** a sparse global contextual background (every other country).
+
+All three were then evaluated on the **same** global surveillance set. The headline is counter-intuitive and is the point of this page: **the design with the highest raw coverage is not the best assay.** `indo-only` is the practical winner — the only design that is simultaneously high-coverage on both detection lenses, safe against human DNA, and able to produce a multiplex assay that passes the non-negotiable safety gates.
+
+::: {.callout-note}
+Figures on this page are transcribed from the July 2026 runs of the three builds (Flu A MP + Flu B MP). They will become render-time computed values once the results pages are made data-driven (see `docs/development/report-data-driven-plan.md`).
+:::
+
+---
+
+## 1. Overall In-Silico Coverage (global set)
+
+Rank-1 candidate of each build, measured on the global surveillance set (Flu A: $N=50{,}750$; Flu B: $N=7{,}248$):
+
+| Target | Design DB | PCR amplified % | RAA detected % |
+|---|---|---|---|
+| **Flu A MP** | `indo-only` | 91.20 | **91.16** |
+| | `sea-only` | **95.68** | 62.07 |
+| | `all-partial` | 93.88 | **95.12** |
+| **Flu B MP** | `indo-only` | 83.22 | 83.22 |
+| | `sea-only` | **99.68** | **99.81** |
+| | `all-partial` | **99.68** | **99.81** |
+
+::: {.callout-important title="Read the bold numbers carefully"}
+For Flu A, the highest PCR (`sea-only`, 95.68%) and the highest RAA (`all-partial`, 95.12%) each belong to a design that **fails elsewhere** — `sea-only`'s RAA assay is globally broken (§2) and `all-partial`'s primers amplify human DNA (§3). `indo-only`'s 91.16% is the only figure that holds up on both lenses **and** survives the safety gates.
+:::
+
+---
+
+## 2. The `sea-only` RAA Blind Spot (probe vs global H3N2)
+
+`sea-only` Flu A shows PCR 95.68% but RAA-detected only 62.07% — a large, biologically backwards gap. Breaking it down by subtype shows the cause is the **probe**, concentrated in one subtype:
+
+| Subtype | N | PCR amplified % | RAA amplified % | **RAA detected %** |
+|---|---|---|---|---|
+| **A / H3N2** | 19,258 | 97.87 | 97.87 | **2.66** |
+| A / H1N1 | 18,468 | 99.15 | 99.53 | 99.12 |
+| A / H9N2 | 4,315 | 77.87 | 97.40 | 97.40 |
+| A / H5N1 | 1,784 | 96.69 | 99.61 | 99.61 |
+
+The `sea-only` primers **amplify** H3N2 fine (97.87%), but the **probe detects only 2.66%** of it. Because H3N2 is the single largest subtype globally (~38% of the set), that one probe failure drags the whole RAA-detected figure to 62%. The design DB (Singapore-heavy) steered the amplicon+probe to a region that is conserved regionally but divergent in global H3N2 — a classic *regional design, globally biased* outcome [@khan2020]. Notably `indo-only`, designed on Indonesian data alone, happened to pick a **better-conserved** probe region that works across all major subtypes globally (RAA 91%).
+
+---
+
+## 3. Safety: Off-Target Amplicon on Human DNA (the decisive gate)
+
+The selection engine (`scripts/tools/candidate_selection.py`) applies **Class-1 safety gates** that are *never relaxed*, because violating them makes the assay **wrong** rather than merely worse: an off-target amplicon on human DNA, an off-target against another virus, a human binding site with the 3′ end fully anchored, a dye-channel collision, or a cross-dimer past the veto. A last-resort selection level (L5) waives every *quality* floor (coverage, grade, WARNING) — but it keeps these Class-1 gates.
+
+`human_products` counts predicted amplicons on the human genome (both primers producing a product) — a direct false-positive mechanism. For the top-10 Flu A candidates of each build:
+
+| Design (Flu A) | top-10 with a human amplicon | human-safe candidates (all ranks) | first safe rank | rank-1 human grade |
+|---|---|---|---|---|
+| `indo-only` | 0 / 10 | 75 / 78 | 1 | A |
+| `sea-only` | 0 / 10 | 47 / 98 | 1 | A |
+| **`all-partial`** | **10 / 10** | 22 / 98 | **11** | C |
+
+Every one of `all-partial`'s top-10 Flu A candidates can amplify human DNA. Its rank-1 worst hit binds *Homo sapiens* T2T-CHM13 chromosome 4 with the **3′ end fully anchored (0 overhang), 1 mismatch, 68.8% of the primer bound**. Since any patient sample contains human DNA, such an assay would false-positive — so the gate correctly refuses it, and this is exactly why `all-partial` returns no recommended multiplex (§4).
+
+---
+
+## 4. Multiplex Outcome per Scenario
+
+Pairing each build's Flu A and Flu B candidates (FAM × HEX) and applying the selection ladder:
+
+| Design | pairs screened | passed (level) | Rank-1 recommended pair |
+|---|---|---|---|
+| `indo-only` | 15 | **6** (L1) | `FluA_Rank10_x_FluB_Rank12` |
+| `sea-only` | 90 | **14** (L1) | `FluA_Rank3_x_FluB_Rank8` |
+| **`all-partial`** | 0 | **0** | **None — no combination passed** |
+
+`all-partial` returns *"No Recommended Combination"* not because the ladder failed to relax, but because every top Flu A candidate trips the Class-1 human-amplicon gate (§3) — an outcome the pipeline reports rather than hides.
+
+---
+
+## 5. Singleplex View & the Database-Scope Divergence
+
+Dropping multiplex does not rescue `all-partial`: the human-amplicon problem is a property of the Flu A primers themselves, not of pairing. Per-target, rank-1 candidate:
+
+| Target | Design | rank-1 human-safe | grade | PCR % | RAA det % |
+|---|---|---|---|---|---|
+| Flu A | `indo-only` | yes | A | 91.20 | 91.16 |
+| | `sea-only` | yes | A | 95.68 | 62.07 |
+| | `all-partial` | **no** | C | 93.88 | 95.12 |
+| Flu B | `indo-only` | yes | B | 83.22 | 83.22 |
+| | `sea-only` | yes | B | 99.68 | 99.81 |
+| | `all-partial` | yes | B | 99.68 | 99.81 |
+
+::: {.callout-important title="A broader database helps Flu B but hurts Flu A"}
+The effect of widening the design database is **opposite for the two targets**:
+
+- **Flu A** — a broader DB is worse. `indo-only` is best; `sea-only` becomes probe-blind to H3N2; `all-partial` drifts into a region whose primers amplify human DNA.
+- **Flu B** — a broader DB is markedly better. Coverage jumps from **83.22%** (`indo-only`) to **99.68% / 99.81%** (`sea-only` and `all-partial`), and all remain human-safe.
+
+So the `all-partial` multiplex failure is entirely the **Flu A** side; `all-partial` Flu B on its own is excellent. A mixed-database design (local Flu A + broad Flu B) is a plausible future direction, but is out of scope here.
+:::
+
+---
+
+## 6. Why the `all-partial` "Rescue" Is Not Worth It
+
+`all-partial` Flu A does have 22 human-safe candidates — but the first appears only at **rank 11**, and they are thermodynamically weak. Lower penalty scores are better:
+
+| Flu A candidate set | p3_penalty | vienna_penalty (secondary structure) | final_score |
+|---|---|---|---|
+| `indo-only` rank-1 (reference) | **8.3** | **0** | **6** |
+| `all-partial` top-10 (human-unsafe) | 10.7 – 11.0 | 40 – 44 | 43 – 52 |
+| `all-partial` human-safe (rank 11+) | 10.9 – 12.2 | 39 – 44 | 53 – 140 |
+
+The distinguishing metric is the **ViennaRNA secondary-structure penalty**: ~42 for every `all-partial` primer versus **0** for `indo-only` — the `all-partial` amplicon region self-folds, which can depress amplification efficiency. The human-safe `all-partial` candidates are worse-ranked than even its own unsafe top-10. Recovering a safe `all-partial` Flu A assay therefore means accepting a self-folding primer far below the `indo-only` design.
+
+---
+
+## 7. Conclusion
+
+| Design | Coverage | Human-safe (Flu A) | Multiplex | Verdict |
+|---|---|---|---|---|
+| **`indo-only`** | balanced (~91% both lenses) | yes | 6 pairs pass | ✅ **recommended** |
+| `sea-only` | PCR high, RAA broken (H3N2) | yes | 14 pairs pass | ⚠️ globally probe-blind |
+| `all-partial` | highest raw coverage | **no** (top candidates) | none | ❌ amplifies human DNA |
+
+`indo-only` is the recommended design: human-safe, balanced on both PCR and RAA, structurally clean (ViennaRNA penalty 0), consistent across all major subtypes, and the source of a multiplex assay that passes the non-negotiable safety gates. The `sea-only` and `all-partial` builds are valuable as **contrast cases** — they show that adding regional or global data pushes the *universal Flu A* design into worse territory (a probe blind spot, or human cross-amplification), confirming that the `indo-only` choice is robust rather than incidental. The one exception worth remembering is Flu B, where a broader database genuinely raises coverage without a safety cost.
