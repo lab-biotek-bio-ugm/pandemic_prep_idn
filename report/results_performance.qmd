@@ -18,7 +18,7 @@ IUPAC degenerate bases were verified by evaluating each candidate in two forms �
 
 | Design DB | PCR non-degen | **PCR degenerate** | RAA detected (see caveat) |
 |---|---|---|---|
-| `indo-only` | 18.61% | **91.20%** | 91.16% † |
+| `indo-only` | 18.61% | **91.20%** | 91.16% *(capped)* |
 | `sea-only` | 80.89% | **95.68%** | 62.07% |
 | `all-partial` | 19.22% | **93.88%** | 95.12% |
 
@@ -26,11 +26,11 @@ IUPAC degenerate bases were verified by evaluating each candidate in two forms �
 
 | Design DB | PCR non-degen | **PCR degenerate** | RAA detected |
 |---|---|---|---|
-| `indo-only` | 83.22% | **83.22%** | 83.22% † |
+| `indo-only` | 83.22% | **83.22%** | 83.22% *(capped)* |
 | `sea-only` | 83.29% | **99.68%** | 99.81% |
 | `all-partial` | 83.29% | **99.68%** | 99.81% |
 
-† `indo-only` RAA is PCR-capped (old M10) — not comparable to the decoupled sea/all-partial RAA; see the caveat above.
+*(capped)* — `indo-only` RAA is PCR-capped (old M10) and not comparable to the decoupled sea/all-partial RAA; see the caveat above.
 
 ### Key findings
 
