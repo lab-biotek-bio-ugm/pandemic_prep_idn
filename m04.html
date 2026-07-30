@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.38">
+<meta name="generator" content="quarto-1.10.18">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -12,10 +12,13 @@
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
 */
-code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
-div.columns{display: flex; gap: min(4vw, 1.5em);}
-div.column{flex: auto; overflow-x: auto;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 ul.task-list{list-style: none;}
 ul.task-list li input[type="checkbox"] {
@@ -94,10 +97,10 @@ div.csl-indent {
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-c875dbb4c9335aca9cc352e974a4ec92.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-aced932c6eb97d642153b8e218288f9f.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-e387a93838f0ba57bdbac1fd43bacd8e.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-cc5790236e901248797d046d1cce2c80.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -145,7 +148,7 @@ div.csl-indent {
 </script>
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
-  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
 
 <script type="text/javascript">
 const typesetMath = (el) => {
@@ -417,6 +420,12 @@ window.Quarto = {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./results_design_comparison.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Design DB Comparison</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./results_multiplex.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Multiplex Compatibility</span></a>
   </div>
@@ -585,8 +594,8 @@ window.Quarto = {
 <section id="configuration-parameterization" class="level2">
 <h2 class="anchored" data-anchor-id="configuration-parameterization">3. Configuration &amp; Parameterization</h2>
 <p>The molecular clock modeling in Module 04 is controlled by the clock rate parameters configured in <code>config.yaml</code>:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M04] Phylodynamic Reconstruction</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">phylodynamics</span><span class="kw">:</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M04] Phylodynamic Reconstruction (TreeTime clock priors)</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">timetree</span><span class="kw">:</span></span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">clock_rate</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.003</span><span class="co">               # Estimated substitution rate per site per year</span></span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">clock_std_dev</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.0015</span><span class="co">           # Standard deviation allowance for the molecular clock</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section id="parameter-tuning-dictionary" class="level3">
@@ -608,13 +617,13 @@ window.Quarto = {
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>phylodynamics.clock_rate</code></td>
+<td><code>timetree.clock_rate</code></td>
 <td>Float <span class="math inline">\(\ge 0.0\)</span></td>
 <td><code>0.003</code></td>
 <td>The baseline mutation velocity (substitutions per site per year). For Influenza A MP, the slow rate of <span class="math inline">\(1.87 \times 10^{-3}\)</span> fits within this prior distribution. If designing for a hyper-variable virus like HIV or SARS-CoV-2, this should be increased (e.g.&nbsp;<code>0.006</code> or <code>0.008</code>).</td>
 </tr>
 <tr class="even">
-<td><code>phylodynamics.clock_std_dev</code></td>
+<td><code>timetree.clock_std_dev</code></td>
 <td>Float <span class="math inline">\(\ge 0.0\)</span></td>
 <td><code>0.0015</code></td>
 <td>The margin of flexibility allowed for the clock model to deviate across branches (relaxed molecular clock). A higher value allows TreeTime to accommodate localized outbreaks with accelerated mutation rates without crashing.</td>

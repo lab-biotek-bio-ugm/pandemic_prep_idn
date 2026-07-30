@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.38">
+<meta name="generator" content="quarto-1.10.18">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -12,10 +12,13 @@
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
 */
-code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
-div.columns{display: flex; gap: min(4vw, 1.5em);}
-div.column{flex: auto; overflow-x: auto;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 ul.task-list{list-style: none;}
 ul.task-list li input[type="checkbox"] {
@@ -59,10 +62,10 @@ div.csl-indent {
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-c875dbb4c9335aca9cc352e974a4ec92.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-aced932c6eb97d642153b8e218288f9f.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-e387a93838f0ba57bdbac1fd43bacd8e.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-cc5790236e901248797d046d1cce2c80.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -110,7 +113,7 @@ div.csl-indent {
 </script>
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
-  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
 
 <script type="text/javascript">
 const typesetMath = (el) => {
@@ -382,6 +385,12 @@ window.Quarto = {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./results_design_comparison.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Design DB Comparison</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./results_multiplex.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Multiplex Compatibility</span></a>
   </div>
@@ -542,15 +551,16 @@ window.Quarto = {
   <!-- Real FUBAR M2 Data Path -->
   <path d="M 60.0,61.0 L 65.2,40.0 L 70.3,103.0 L 75.5,47.1 L 80.6,44.8 L 85.8,126.7 L 90.9,113.0 L 96.1,131.3 L 101.2,57.1 L 106.4,167.6 L 111.5,175.0 L 116.7,171.8 L 121.9,179.7 L 127.0,172.7 L 132.2,75.9 L 137.3,156.4 L 142.5,161.8 L 147.6,179.6 L 152.8,167.7 L 157.9,166.7 L 163.1,146.9 L 168.2,139.6 L 173.4,173.7 L 178.6,40.3 L 183.7,47.7 L 188.9,41.2 L 194.0,179.8 L 199.2,173.0 L 204.3,40.1 L 209.5,42.4 L 214.6,164.7 L 219.8,135.4 L 224.9,145.8 L 230.1,41.4 L 235.3,68.1 L 240.4,173.4 L 245.6,101.8 L 250.7,73.1 L 255.9,117.1 L 261.0,43.9 L 266.2,75.9 L 271.3,145.7 L 276.5,176.0 L 281.6,93.4 L 286.8,40.6 L 292.0,152.1 L 297.1,97.0 L 302.3,170.4 L 307.4,57.7 L 312.6,113.1 L 317.7,46.6 L 322.9,43.1 L 328.0,70.3 L 333.2,163.6 L 338.4,179.7 L 343.5,127.6 L 348.7,116.9 L 353.8,47.5 L 359.0,179.9 L 364.1,144.2 L 369.3,138.7 L 374.4,48.4 L 379.6,155.1 L 384.7,150.0 L 389.9,140.2 L 395.1,160.8 L 400.2,40.0 L 405.4,43.3 L 410.5,43.1 L 415.7,112.7 L 420.8,40.2 L 426.0,81.8 L 431.1,92.8 L 436.3,60.5 L 441.4,40.0 L 446.6,40.0 L 451.8,55.3 L 456.9,173.4 L 462.1,40.0 L 467.2,105.9 L 472.4,102.0 L 477.5,179.9 L 482.7,65.2 L 487.8,49.6 L 493.0,86.4 L 498.1,144.9 L 503.3,102.0 L 508.5,62.6 L 513.6,179.9 L 518.8,143.7 L 523.9,134.1 L 529.1,159.4 L 534.2,175.6 L 539.4,140.9 L 544.5,40.0 L 549.7,40.0 L 554.8,62.1 L 560.0,98.7" fill="none" stroke="#059669" stroke-width="1.5"></path>
 
-  <!-- Episodic Diversifying Sites (MEME) at codons 11, 13, 18, 36, 59, 93 -->
+  <!-- Episodic Diversifying Sites (MEME) at codons 11, 13, 18, 19, 36, 59, 93 -->
   <polygon points="111.5,168 106.5,180 116.5,180" fill="#f97316"></polygon>
   <polygon points="121.9,168 116.9,180 126.9,180" fill="#f97316"></polygon>
   <polygon points="147.6,168 142.6,180 152.6,180" fill="#f97316"></polygon>
+  <polygon points="152.8,168 147.8,180 157.8,180" fill="#f97316"></polygon>
   <polygon points="240.4,168 235.4,180 245.4,180" fill="#f97316"></polygon>
   <polygon points="359.0,168 354.0,180 364.0,180" fill="#f97316"></polygon>
   <polygon points="534.2,168 529.2,180 539.2,180" fill="#f97316"></polygon>
-  
-  <text x="127" y="163" text-anchor="middle" font-size="9" fill="#c2410c" font-weight="700">Codons 11, 13, 18</text>
+
+  <text x="127" y="163" text-anchor="middle" font-size="9" fill="#c2410c" font-weight="700">Codons 11, 13, 18, 19</text>
   <text x="240" y="163" text-anchor="middle" font-size="9" fill="#c2410c" font-weight="700">36</text>
   <text x="359" y="163" text-anchor="middle" font-size="9" fill="#c2410c" font-weight="700">59</text>
   <text x="534" y="163" text-anchor="middle" font-size="9" fill="#c2410c" font-weight="700">93</text>
@@ -571,12 +581,12 @@ window.Quarto = {
 <ul>
 <li><strong>Matrix Protein 1 (M1) Conservation</strong>:
 <ul>
-<li>Out of 253 codons, <strong>192 sites (75.9%)</strong> were identified under strong pervasive purifying selection with a posterior probability <span class="math inline">\(\ge 0.90\)</span>.</li>
-<li>This extreme conservation explains why the regional designs (Indo-only and SEA-only) were able to place highly sensitive primers in the forward block (codons 63 to 117, corresponding to nucleotide positions 187–352 bp).</li>
+<li>Out of 253 codons, <strong>191 sites (75.5%)</strong> were identified under strong pervasive purifying selection with a posterior probability <span class="math inline">\(\ge 0.90\)</span>.</li>
+<li>This extreme conservation explains why the design was able to place highly sensitive primers in the conserved forward block. The <code>indo-only</code> amplicon spans nucleotide positions <strong>187–341 bp</strong> (155 bp).</li>
 </ul></li>
 <li><strong>Matrix Protein 2 (M2) Conservation</strong>:
 <ul>
-<li>Out of 98 codons, only <strong>25 sites (25.5%)</strong> were identified under purifying selection. M2 exhibits higher sequence entropy than M1, particularly in its extracellular domain (ectodomain), making it less suitable for diagnostic design.</li>
+<li>Out of 98 codons, only <strong>26 sites (26.5%)</strong> were identified under purifying selection. M2 exhibits higher sequence entropy than M1, particularly in its extracellular domain (ectodomain), making it less suitable for diagnostic design.</li>
 </ul></li>
 </ul>
 <hr>
@@ -588,11 +598,11 @@ window.Quarto = {
 <li><strong>Identified Episodic Sites in M1</strong>:
 <ul>
 <li>Only <strong>2 codons</strong> (Codons 30 and 235) exhibited evidence of episodic positive selection with a p-value <span class="math inline">\(\le 0.05\)</span>.</li>
-<li><em>Diagnostic Veto</em>: Codon 30 is located upstream of the primary forward primer target (which starts at nucleotide position 187). The <strong>Bridge Scoring Engine (Module 07)</strong> successfully detected this selection marker and applied a spatial penalty, ensuring that primer annealing coordinates remain downstream of codon 30.</li>
+<li><em>Diagnostic Veto</em>: Codon 30 lies well upstream of the forward primer target (which starts at nucleotide position 187), so the selected amplicon sits clear of this episodic site. Note that in this run the exported full-segment candidate region carried <strong>no MEME penalty multiplier</strong> (<code>mult_meme = 1.0</code>, <code>meme_episodic_sites = 0</code> in the Bridge report): the placement downstream of codon 30 is a consequence of where the stable primer coordinates fell, not of an explicit spatial penalty on the exported region.</li>
 </ul></li>
 <li><strong>Identified Episodic Sites in M2</strong>:
 <ul>
-<li><strong>6 codons</strong> (Codons 11, 13, 18, 36, 59, and 93) exhibited episodic selection. The clustering of these positive selection sites in the M2 segment highlights the risks of placing diagnostic primers in this gene region.</li>
+<li><strong>7 codons</strong> (Codons 11, 13, 18, 19, 36, 59, and 93) exhibited episodic selection. The clustering of these positive selection sites in the M2 segment highlights the risks of placing diagnostic primers in this gene region.</li>
 </ul></li>
 </ul>
 <hr>
@@ -601,28 +611,23 @@ window.Quarto = {
 <h2 class="anchored" data-anchor-id="m1-vs.-m2-selection-pressure-divergence">3. M1 vs.&nbsp;M2 Selection Pressure Divergence</h2>
 <p>The stark contrast in selection pressure between the two matrix proteins highlights their differing biological constraints:</p>
 <ul>
-<li><strong>Structural Constraint (M1)</strong>: The M1 protein is a structural matrix shell that must interact closely with the viral envelope, the ribonucleoprotein (RNP) complexes, and the cytoplasmic tail of the M2 protein. This complex web of physical interactions severely constrains the protein’s sequence space, meaning almost any amino acid change impairs viral assembly and budding. This translates to the <strong>75.9%</strong> pervasive purifying selection rate observed, consistent with the high sequence conservation of the M1 gene documented in global surveillance data <span class="citation" data-cites="bhatt2011">(<a href="#ref-bhatt2011" role="doc-biblioref">Bhatt et al. 2011</a>)</span>.</li>
-<li><strong>Immune &amp; Drug Selection (M2)</strong>: The M2 protein is a proton-selective ion channel essential for viral uncoating <span class="citation" data-cites="pinto2006">(<a href="#ref-pinto2006" role="doc-biblioref">Pinto and Lamb 2006</a>)</span>. Its extracellular ectodomain is exposed to host antibodies, driving immune escape selection pressure. Simultaneously, its transmembrane pore domain is under strong drug-mediated selection from adamantane antivirals (amantadine and rimantadine), which directly drove the global fixation of the S31N substitution in the pore region <span class="citation" data-cites="hayden2006 deyde2007">(<a href="#ref-hayden2006" role="doc-biblioref">Hayden 2006</a>; <a href="#ref-deyde2007" role="doc-biblioref"><span class="nocase">Deyde et al.</span> 2007</a>)</span>. Consequently, the purifying selection rate drops to <strong>25.5%</strong>, reflecting the high evolutionary plasticity of this gene and rendering it an unreliable target for long-term diagnostic assay stability.</li>
+<li><strong>Structural Constraint (M1)</strong>: The M1 protein is a structural matrix shell that must interact closely with the viral envelope, the ribonucleoprotein (RNP) complexes, and the cytoplasmic tail of the M2 protein. This complex web of physical interactions severely constrains the protein’s sequence space, meaning almost any amino acid change impairs viral assembly and budding. This translates to the <strong>75.5%</strong> pervasive purifying selection rate observed, consistent with the high sequence conservation of the M1 gene documented in global surveillance data <span class="citation" data-cites="bhatt2011">(<a href="#ref-bhatt2011" role="doc-biblioref">Bhatt et al. 2011</a>)</span>.</li>
+<li><strong>Immune &amp; Drug Selection (M2)</strong>: The M2 protein is a proton-selective ion channel essential for viral uncoating <span class="citation" data-cites="pinto2006">(<a href="#ref-pinto2006" role="doc-biblioref">Pinto and Lamb 2006</a>)</span>. Its extracellular ectodomain is exposed to host antibodies, driving immune escape selection pressure. Simultaneously, its transmembrane pore domain is under strong drug-mediated selection from adamantane antivirals (amantadine and rimantadine), which directly drove the global fixation of the S31N substitution in the pore region <span class="citation" data-cites="hayden2006 deyde2007">(<a href="#ref-hayden2006" role="doc-biblioref">Hayden 2006</a>; <a href="#ref-deyde2007" role="doc-biblioref"><span class="nocase">Deyde et al.</span> 2007</a>)</span>. Consequently, the purifying selection rate drops to <strong>26.5%</strong>, reflecting the high evolutionary plasticity of this gene and rendering it an unreliable target for long-term diagnostic assay stability.</li>
 </ul>
 <hr>
 </section>
 <section id="bridge-scoring-profile-physical-target-selection" class="level2">
 <h2 class="anchored" data-anchor-id="bridge-scoring-profile-physical-target-selection">4. Bridge Scoring Profile &amp; Physical Target Selection</h2>
-<p>The <strong>Bridge Scoring Engine (Module 07)</strong> integrated site-specific conservation (Shannon Entropy) with HyPhy FUBAR purifying selection probabilities using a weighted core scoring formula:</p>
-<p><span class="math display">\[\text{Core Score} = 0.66 \times (1 - \text{Entropy}) + 0.34 \times \text{Prob(dN &lt; dS)}\]</span></p>
-<p>This core score was computed across the entire segment. Because the engine was configured with the <code>full_segment</code> strategy for the Influenza A MP segment, it evaluated the segment from <strong>0 to 1027 bp</strong> as a single candidate region (<code>segment-MP_region_1</code>). The resulting overall scores and grades for this target region are:</p>
+<p>The <strong>Bridge Scoring Engine (Module 07)</strong> integrated site-specific conservation (Shannon entropy) with HyPhy FUBAR purifying-selection probability into a weighted core score, favouring regions that are both low-entropy and under purifying selection.</p>
+<p>This core score was computed across the entire segment. Because the engine was configured with the <code>full_segment</code> strategy for the Influenza A MP segment, it evaluated the segment from <strong>0 to 1027 bp</strong> as a single candidate region (<code>segment-MP_region_1</code>). For this exported full-segment region the FUBAR term was not populated (<code>has_hyphy_data = false</code> in the Bridge report), so the composite is driven by the conservation/entropy term. The resulting overall score and grade are:</p>
 <ul>
-<li><strong>Indonesia Only</strong>: Core composite score of <strong>0.4071</strong> (Grade <strong>D</strong>, mean entropy: <strong>0.2146</strong>, conservation: <strong>89.27%</strong>).</li>
-<li><strong>Southeast Asia Only</strong>: Core composite score of <strong>0.4098</strong> (Grade <strong>D</strong>, mean entropy: <strong>0.2025</strong>, conservation: <strong>89.87%</strong>).</li>
-<li><strong>All-Partial Database</strong>: Core composite score of <strong>0.4022</strong> (Grade <strong>D</strong>, mean entropy: <strong>0.2359</strong>, conservation: <strong>88.20%</strong>).</li>
+<li><strong>Indonesia Only</strong>: Core composite score of <strong>0.4022</strong> (Grade <strong>D</strong>, mean entropy: <strong>0.2741</strong>, conservation: <strong>88.19%</strong>).</li>
 </ul>
 <section id="downstream-primer-coordinate-selection-module-08-09" class="level3">
 <h3 class="anchored" data-anchor-id="downstream-primer-coordinate-selection-module-08-09">Downstream Primer Coordinate Selection (Module 08 &amp; 09)</h3>
-<p>Although Module 07 exported the entire segment as a single candidate zone (due to the segment’s small size and overall conservation), the downstream primer design tool (<strong>Primer3/PrimerLab</strong> in Module 08 and 09) scanned this candidate region to select the most stable physical primer coordinates, demonstrating how local sequence variations alter target selection:</p>
+<p>Although Module 07 exported the entire segment as a single candidate zone (due to the segment’s small size and overall conservation), the downstream primer design tool (<strong>Primer3/PrimerLab</strong> in Module 08 and 09) scanned this candidate region to select the most stable physical primer coordinates:</p>
 <ul>
 <li><strong>Indonesia Only Design</strong>: The optimal primers were placed in the M1 gene at <strong>187–341 bp</strong> (Forward primer: <strong>187–218 bp</strong>, Reverse primer: <strong>310–341 bp</strong>), generating a <strong>155 bp</strong> amplicon.</li>
-<li><strong>Southeast Asia Only Design</strong>: The primers were placed at <strong>187–352 bp</strong> (Forward: <strong>187–216 bp</strong>, Reverse: <strong>321–352 bp</strong>), generating a <strong>166 bp</strong> amplicon.</li>
-<li><strong>All-Partial Database Design</strong>: When global database variations were introduced, increased sequence entropy in the M1 gene (including at codon 30) forced the primer design tool to shift coordinates to the 3’ end of the segment in the M2 gene at <strong>858–1008 bp</strong> (Forward: <strong>858–889 bp</strong>, Reverse: <strong>978–1008 bp</strong>), generating a <strong>151 bp</strong> amplicon.</li>
 </ul>
 
 

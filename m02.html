@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.38">
+<meta name="generator" content="quarto-1.10.18">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -12,10 +12,13 @@
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
 */
-code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
-div.columns{display: flex; gap: min(4vw, 1.5em);}
-div.column{flex: auto; overflow-x: auto;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 ul.task-list{list-style: none;}
 ul.task-list li input[type="checkbox"] {
@@ -94,10 +97,10 @@ div.csl-indent {
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-c875dbb4c9335aca9cc352e974a4ec92.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-aced932c6eb97d642153b8e218288f9f.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-e387a93838f0ba57bdbac1fd43bacd8e.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-cc5790236e901248797d046d1cce2c80.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -145,7 +148,7 @@ div.csl-indent {
 </script>
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
-  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
 
 <script type="text/javascript">
 const typesetMath = (el) => {
@@ -417,6 +420,12 @@ window.Quarto = {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./results_design_comparison.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Design DB Comparison</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./results_multiplex.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Multiplex Compatibility</span></a>
   </div>
@@ -643,8 +652,10 @@ window.Quarto = {
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">qc</span><span class="kw">:</span></span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">max_n_content</span><span class="kw">:</span><span class="at"> </span><span class="fl">5.0</span><span class="co">              # Toleransi maksimal % base N (ambiguitas)</span></span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">dedup</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">                     # Hapus sekuens duplikat identik</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">min_length</span><span class="kw">:</span><span class="at"> </span><span class="dv">800</span><span class="co">                 # Panjang sekuens minimal (bp)</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">query</span><span class="kw">:</span><span class="at"> </span><span class="st">"country in ['Indonesia', 'Singapore', 'Malaysia', 'Thailand', 'Vietnam', 'Philippines', 'Myanmar', 'Cambodia', 'Laos', 'Brunei']"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">subsampling</span><span class="kw">:</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">min_length</span><span class="kw">:</span><span class="at"> </span><span class="dv">800</span><span class="co">                 # Panjang sekuens minimal (bp)</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">query</span><span class="kw">:</span><span class="at"> </span><span class="st">"country in ['Indonesia', 'Singapore', 'Malaysia', 'Thailand', 'Vietnam', 'Philippines', 'Myanmar', 'Cambodia', 'Laos', 'Brunei']"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Note the split: <code>max_n_content</code> and <code>dedup</code> live under <code>qc:</code>, while <code>min_length</code> and <code>query</code> (the geographic/length boundary of the subsample pool) live under <code>subsampling:</code>.</p>
 <section id="parameter-tuning-dictionary" class="level3">
 <h3 class="anchored" data-anchor-id="parameter-tuning-dictionary">3.1. Parameter Tuning Dictionary</h3>
 <table class="caption-top table">
@@ -676,13 +687,13 @@ window.Quarto = {
 <td>When enabled, identical sequences (sharing 100% identity and same length) are collapsed into a single representative sequence. This significantly reduces downstream computational overhead for multiple sequence alignment and phylogenetic building without losing epidemiological diversity.</td>
 </tr>
 <tr class="odd">
-<td><code>qc.min_length</code></td>
+<td><code>subsampling.min_length</code></td>
 <td>Integer <span class="math inline">\(\ge 0\)</span></td>
 <td><code>800</code></td>
 <td>Excludes short or partial sequence fragments. For the Influenza MP segment (~1024 bp), setting this to 800 bp ensures that only near-full-length records are processed, preserving structural integrity for primer design.</td>
 </tr>
 <tr class="even">
-<td><code>qc.query</code></td>
+<td><code>subsampling.query</code></td>
 <td>Pandas query string</td>
 <td>SEA Countries</td>
 <td>Defines the geographic and metadata boundary of your dataset. Only sequences matching this query are retained for the subsampling pool. Changing this is how you switch between regional designs (e.g.&nbsp;<code>indo-only</code> vs <code>sea-only</code>).</td>

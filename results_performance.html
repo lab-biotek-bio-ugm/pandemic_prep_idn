@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.38">
+<meta name="generator" content="quarto-1.10.18">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -12,10 +12,13 @@
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
 */
-code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
-div.columns{display: flex; gap: min(4vw, 1.5em);}
-div.column{flex: auto; overflow-x: auto;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 ul.task-list{list-style: none;}
 ul.task-list li input[type="checkbox"] {
@@ -59,10 +62,10 @@ div.csl-indent {
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-c875dbb4c9335aca9cc352e974a4ec92.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-aced932c6eb97d642153b8e218288f9f.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-e387a93838f0ba57bdbac1fd43bacd8e.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-cc5790236e901248797d046d1cce2c80.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -110,7 +113,7 @@ div.csl-indent {
 </script>
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
-  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
 
 <script type="text/javascript">
 const typesetMath = (el) => {
@@ -382,6 +385,12 @@ window.Quarto = {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./results_design_comparison.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Design DB Comparison</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./results_multiplex.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Multiplex Compatibility</span></a>
   </div>
@@ -442,7 +451,7 @@ window.Quarto = {
 </header>
 
 
-<p>This section details the final in-silico validation of the designed primer and probe candidates against a global database of <strong>50,750 Influenza A sequences</strong>. We compare the diagnostic sensitivity of the three design scenarios, analyze the impact of degenerate bases on sequence coverage, and provide direct access to the validation heatmaps and report files.</p>
+<p>This section details the final in-silico validation of the designed primer and probe candidates against a global database of <strong>50,750 Influenza A sequences</strong>. We evaluate the diagnostic sensitivity of the <code>indo-only</code> design, analyze the impact of degenerate bases on sequence coverage, and provide direct access to the validation heatmaps and report files.</p>
 <hr>
 <section id="overall-in-silico-coverage-and-degeneracy-uplift" class="level2">
 <h2 class="anchored" data-anchor-id="overall-in-silico-coverage-and-degeneracy-uplift">1. Overall In-Silico Coverage and Degeneracy Uplift</h2>
@@ -475,42 +484,36 @@ window.Quarto = {
 <td>18.61%</td>
 <td><strong>91.20%</strong></td>
 <td><span style="color: #10b981; font-weight: bold;">+72.59%</span></td>
-<td>18.33%</td>
-<td><strong>88.83%</strong></td>
-<td><span style="color: #10b981; font-weight: bold;">+70.50%</span></td>
-</tr>
-<tr class="even">
-<td><strong>Southeast Asia</strong> <br> <em>(<code>sea-only</code>)</em></td>
-<td>33.87%</td>
-<td><strong>34.53%</strong></td>
-<td><span style="color: #10b981; font-weight: bold;">+0.66%</span></td>
-<td>33.87%</td>
-<td><strong>34.53%</strong></td>
-<td><span style="color: #10b981; font-weight: bold;">+0.66%</span></td>
-</tr>
-<tr class="odd">
-<td><strong>All-Partial</strong> <br> <em>(<code>all-partial</code>)</em></td>
-<td>17.24%</td>
-<td><strong>17.56%</strong></td>
-<td><span style="color: #10b981; font-weight: bold;">+0.32%</span></td>
-<td>17.14%</td>
-<td><strong>17.52%</strong></td>
-<td><span style="color: #10b981; font-weight: bold;">+0.38%</span></td>
+<td>18.61%</td>
+<td><strong>91.16%</strong></td>
+<td><span style="color: #10b981; font-weight: bold;">+72.55%</span></td>
 </tr>
 </tbody>
 </table>
+<div class="callout callout-style-default callout-important callout-titled" title="Read RAA vs PCR carefully: the RAA column is currently PCR-capped">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Read RAA vs PCR carefully: the RAA column is currently PCR-capped
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>For <code>indo-only</code>, degenerate RAA (<strong>91.16%</strong>) sits just <em>below</em> degenerate PCR (<strong>91.20%</strong>) overall — and for divergent subtypes the gap is large and backwards (global A/H5N1 RAA reads 31.84%). That ordering is wrong for the chemistry — RAA tolerates <em>more</em> mismatches than PCR — and it is a <strong>modelling artifact, not biology</strong>: M10 uses the PCR <code>seqkit -m 3</code> result as the amplification gate and only then applies the RAA tolerance, so the RAA figure is a subset of PCR and cannot exceed it (global A/H5N1 is ~94% RAA-viable, not 31.84%). See the Module 10 page (§1.3) and the coverage-failure attribution (M12; output in <code>results/&lt;build&gt;/m12/</code> and surfaced in the QC dossier) for the corrected two-lens view. A fix (running <code>seqkit</code> at the RAA mismatch budget) is prepared; the numbers here are what the current pipeline produced and are PCR-conservative for an RAA assay.</p>
+</div>
+</div>
 <section id="key-findings" class="level3">
 <h3 class="anchored" data-anchor-id="key-findings">Key Findings:</h3>
 <ul>
 <li><strong>The Degeneracy Necessity</strong>: For the <code>indo-only</code> design, removing degenerate bases collapses the coverage from <strong>91.20%</strong> down to <strong>18.61%</strong> (a drop of over 70 percentage points). This demonstrates mathematically that IUPAC degenerate bases are essential to accommodate the natural genomic variation in circulating Influenza A strains <span class="citation" data-cites="elnifro2000">(<a href="#ref-elnifro2000" role="doc-biblioref"><span class="nocase">Elnifro et al.</span> 2000</a>)</span>. Non-degenerate primers carrying a consensus-only sequence are systematically excluded from large fractions of the viral sequence space, consistent with documented primer mismatch failures in diagnostic assays <span class="citation" data-cites="khan2020">(<a href="#ref-khan2020" role="doc-biblioref">Khan and Cheung 2020</a>)</span>.</li>
-<li><strong>Regional Design Limitation</strong>: The regional <code>sea-only</code> and global <code>all-partial</code> candidates achieved very low global coverage (~34% and ~17% respectively). This is due to sequence entropy at the design target and the fact that their degenerate slots were spent accommodating rare regional sequencing artifacts rather than high-frequency global consensus transitions.</li>
 </ul>
 <hr>
 </section>
 </section>
 <section id="in-silico-validation-report-dashboard" class="level2">
 <h2 class="anchored" data-anchor-id="in-silico-validation-report-dashboard">2. In-Silico Validation Report Dashboard</h2>
-<p>For transparency and verification, the pipeline generated interactive HTML reports for each scenario under Module 10 (M10). You can click the links below to open the real data tables and coverage heatmaps directly in your browser:</p>
+<p>For transparency and verification, the pipeline generated interactive HTML reports under Module 10 (M10). You can click the links below to open the real data tables and coverage heatmaps directly in your browser:</p>
 <style>
   .report-table th {
     background-color: #f8fafc;
@@ -576,99 +579,61 @@ Indonesia Only (indo-only)
 <a class="btn-report" href="results/influenza-a-mp-indo-only/m10/non_degenerate/coverage_heatmap.html">Non-Degenerate</a>
 </td>
 </tr>
-<tr>
-<td style="border: 1px solid #e2e8f0; padding: 12px; font-weight: bold; color: #334155;">
-Southeast Asia (sea-only)
-</td>
-<td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
-<a class="btn-report" href="results/influenza-a-mp-sea-only/m10/comparison_report.html">Comparison Report</a>
-</td>
-<td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
-<a class="btn-report" href="results/influenza-a-mp-sea-only/m10/degenerate/coverage_heatmap.html">Degenerate Heatmap</a>
-</td>
-<td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
-<a class="btn-report" href="results/influenza-a-mp-sea-only/m10/non_degenerate/coverage_heatmap.html">Non-Degenerate</a>
-</td>
-</tr>
-<tr>
-<td style="border: 1px solid #e2e8f0; padding: 12px; font-weight: bold; color: #334155;">
-All-Partial Database
-</td>
-<td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
-<a class="btn-report" href="results/influenza-a-mp-all-partial/m10/comparison_report.html">Comparison Report</a>
-</td>
-<td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
-<a class="btn-report" href="results/influenza-a-mp-all-partial/m10/degenerate/coverage_heatmap.html">Degenerate Heatmap</a>
-</td>
-<td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
-<a class="btn-report" href="results/influenza-a-mp-all-partial/m10/non_degenerate/coverage_heatmap.html">Non-Degenerate</a>
-</td>
-</tr>
 </tbody>
 </table>
 <hr>
 </section>
 <section id="subtype-specific-performance-analysis" class="level2">
 <h2 class="anchored" data-anchor-id="subtype-specific-performance-analysis">3. Subtype-Specific Performance Analysis</h2>
-<p>To ensure that the designs are effective across different lineages, coverage was analyzed across major Influenza A subtypes:</p>
+<p>Coverage was analyzed across major Influenza A subtypes. <strong>Read the database carefully:</strong> the table below is coverage against the <strong>design / focal DB</strong> (the sequences each design was built on), which is why the numbers are high. It is NOT the global figure — see the global callout beneath it.</p>
+<p><strong>Design / focal-DB coverage</strong> (RAA detected %; N = design-DB sequences of that subtype):</p>
 <table class="caption-top table">
-<colgroup>
-<col style="width: 20%">
-<col style="width: 20%">
-<col style="width: 20%">
-<col style="width: 20%">
-<col style="width: 20%">
-</colgroup>
 <thead>
 <tr class="header">
 <th>Subtype</th>
-<th>Metric</th>
-<th>Indo-Only Coverage</th>
-<th>SEA-Only Coverage</th>
-<th>All-Partial Coverage</th>
+<th>Indo-Only (focal)</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td><strong>A / H5N1</strong> <br> <em>(N=253)</em></td>
-<td>PCR <br> RAA (Amp) <br> RAA (Det)</td>
-<td><strong>98.42%</strong> <br> <strong>98.42%</strong> <br> <strong>98.02%</strong></td>
-<td>0.00% <br> 0.00% <br> 0.00%</td>
-<td>47.37% <br> 47.19% <br> 34.91%</td>
+<td><strong>A / H5N1</strong></td>
+<td><strong>98.72%</strong> <em>(N=312)</em></td>
 </tr>
 <tr class="even">
-<td><strong>A / H3N2</strong> <br> <em>(N=187)</em></td>
-<td>PCR <br> RAA (Amp) <br> RAA (Det)</td>
-<td><strong>99.47%</strong> <br> <strong>99.47%</strong> <br> <strong>99.47%</strong></td>
-<td><strong>86.67%</strong> <br> <strong>86.67%</strong> <br> <strong>86.67%</strong></td>
-<td>3.17% <br> 3.17% <br> 3.17%</td>
+<td><strong>A / H3N2</strong></td>
+<td><strong>99.58%</strong> <em>(N=238)</em></td>
 </tr>
 <tr class="odd">
-<td><strong>A / H1N1</strong> <br> <em>(N=154)</em></td>
-<td>PCR <br> RAA (Amp) <br> RAA (Det)</td>
-<td><strong>96.10%</strong> <br> 81.82% <br> 81.82%</td>
-<td>0.53% <br> 0.53% <br> 0.53%</td>
-<td>35.17% <br> 35.17% <br> 35.11%</td>
+<td><strong>A / H1N1</strong></td>
+<td><strong>96.25%</strong> <em>(N=160)</em></td>
 </tr>
 </tbody>
 </table>
+<div class="callout callout-style-default callout-important callout-titled" title="The same subtypes on the GLOBAL surveillance set (indo-only design) tell a different story">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>The same subtypes on the GLOBAL surveillance set (indo-only design) tell a different story
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Against the 50,750-sequence global set, indo-only per-subtype RAA-detected coverage is <strong>H5N1 31.84%</strong>, H3N2 ~99.0%, H1N1 ~96.9%. The H5N1 drop is <strong>not</strong> a design failure on the target population (focal = 98.7%): it is the strict-PCR gate artifact of §1.3 (M10) — under RAA tolerance ~94% of global H5N1 is still detected, and only ~6% (clade 2.3.4.4b / Japan) truly fails. The design covers what circulates in Indonesia; the global H5N1 gap is an importation/preparedness signal, not a routine-use hole.</p>
+</div>
+</div>
 <ul>
-<li><strong>Subtype Inclusivity</strong>:
-<ul>
-<li>The <code>indo-only</code> design is highly effective across all major subtypes, achieving <span class="math inline">\(&gt;96\%\)</span> PCR coverage for H5N1, H3N2, and H1N1.</li>
-<li>The <code>sea-only</code> design is heavily biased toward H3N2 (<span class="math inline">\(86.67\%\)</span>), failing to detect H5N1 and H1N1 due to regional sequence mismatches.</li>
-<li>The <code>all-partial</code> design shows moderate coverage for H5N1 (<span class="math inline">\(47.37\%\)</span>) and H1N1 (<span class="math inline">\(35.17\%\)</span>), but fails to detect H3N2 (<span class="math inline">\(3.17\%\)</span>), indicating a significant design bias.</li>
-</ul></li>
+<li><strong>Subtype Inclusivity (focal / target population)</strong>: the <code>indo-only</code> design is highly effective across all major subtypes it was built on, achieving <span class="math inline">\(&gt;96\%\)</span> on H5N1, H3N2, and H1N1.</li>
 </ul>
 <hr>
 </section>
 <section id="temporal-robustness-antigenic-drift" class="level2">
 <h2 class="anchored" data-anchor-id="temporal-robustness-antigenic-drift">4. Temporal Robustness &amp; Antigenic Drift</h2>
-<p>Aggregating simulated detection rates over time shows how well each design resists viral evolution (antigenic drift) from 2015 to 2025:</p>
+<p>Breaking the <code>indo-only</code> degenerate coverage down by collection year (from the M10 <code>breakdowns.year</code> table) shows how the assay tracks viral evolution over the past decade against the global set:</p>
 <ul>
-<li><strong>Indo-Only</strong>: Maintains stable coverage above 90% across the 10-year span, confirming that the <strong>187–341 bp</strong> target region remains highly conserved.</li>
-<li><strong>SEA-Only</strong>: Shows significant annual fluctuations, indicating vulnerability to seasonal mutations.</li>
-<li><strong>All-Partial</strong>: Exhibits a steady decline in coverage in recent years, indicating that its target region is undergoing evolutionary drift in modern global lineages.</li>
+<li>Coverage is <strong>not flat</strong>: it holds in the high-80s to low-90s for most years (2015 87.4%, 2016 89.0%, 2017 88.8%, 2018 88.1%, 2019 93.7%), dips to a low of <strong>74.4% in 2020</strong>, and then recovers strongly through the most recent seasons (2023 92.8%, 2024 93.4%, <strong>2025 96.7%</strong>).</li>
+<li>The 2020 trough coincides with the pandemic-era collapse in influenza sampling (only 1,393 sequences that year) and a shift in circulating lineages; the subsequent recovery to &gt;93% indicates the <strong>187–341 bp</strong> target region remains well matched to the strains dominating 2023–2025.</li>
+<li>Because RAA detection is currently PCR-capped (§1), these per-year figures are the PCR-conservative floor; the RAA-viable coverage in the divergent years is higher (see M12).</li>
 </ul>
 
 

@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.38">
+<meta name="generator" content="quarto-1.10.18">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -12,10 +12,13 @@
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
 */
-code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
-div.columns{display: flex; gap: min(4vw, 1.5em);}
-div.column{flex: auto; overflow-x: auto;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 ul.task-list{list-style: none;}
 ul.task-list li input[type="checkbox"] {
@@ -40,10 +43,10 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-c875dbb4c9335aca9cc352e974a4ec92.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-aced932c6eb97d642153b8e218288f9f.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-e387a93838f0ba57bdbac1fd43bacd8e.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-cc5790236e901248797d046d1cce2c80.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -91,7 +94,7 @@ ul.task-list li input[type="checkbox"] {
 </script>
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
-  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
 
 <script type="text/javascript">
 const typesetMath = (el) => {
@@ -363,6 +366,12 @@ window.Quarto = {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./results_design_comparison.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Design DB Comparison</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./results_multiplex.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">Multiplex Compatibility</span></a>
   </div>
@@ -396,18 +405,13 @@ window.Quarto = {
   <ul class="collapse">
   <li><a href="#key-biophysical-observations" id="toc-key-biophysical-observations" class="nav-link" data-scroll-target="#key-biophysical-observations">Key Biophysical Observations:</a></li>
   </ul></li>
-  <li><a href="#oligo-synthesis-specifications-rank-1-recommended-pair-flua_rank7_x_flub_rank6" id="toc-oligo-synthesis-specifications-rank-1-recommended-pair-flua_rank7_x_flub_rank6" class="nav-link" data-scroll-target="#oligo-synthesis-specifications-rank-1-recommended-pair-flua_rank7_x_flub_rank6">3. Oligo Synthesis Specifications (Rank 1 Recommended Pair: <code>FluA_Rank7_x_FluB_Rank6</code>)</a>
+  <li><a href="#oligo-synthesis-specifications-rank-1-recommended-pair-flua_rank10_x_flub_rank12" id="toc-oligo-synthesis-specifications-rank-1-recommended-pair-flua_rank10_x_flub_rank12" class="nav-link" data-scroll-target="#oligo-synthesis-specifications-rank-1-recommended-pair-flua_rank10_x_flub_rank12">3. Oligo Synthesis Specifications (Rank 1 Recommended Pair: <code>FluA_Rank10_x_FluB_Rank12</code>)</a>
   <ul class="collapse">
   <li><a href="#target-a-influenza-a-mp-fam-channel" id="toc-target-a-influenza-a-mp-fam-channel" class="nav-link" data-scroll-target="#target-a-influenza-a-mp-fam-channel">🟩 Target A: Influenza A MP (FAM Channel)</a></li>
   <li><a href="#target-b-influenza-b-mp-hex-channel" id="toc-target-b-influenza-b-mp-hex-channel" class="nav-link" data-scroll-target="#target-b-influenza-b-mp-hex-channel">🟨 Target B: Influenza B MP (HEX Channel)</a></li>
   </ul></li>
-  <li><a href="#oligo-cross-dimer-interactions-rank-1-assay" id="toc-oligo-cross-dimer-interactions-rank-1-assay" class="nav-link" data-scroll-target="#oligo-cross-dimer-interactions-rank-1-assay">4. Oligo Cross-Dimer Interactions (Rank 1 Assay)</a></li>
-  <li><a href="#pairwise-10x10-compatibility-score-matrix" id="toc-pairwise-10x10-compatibility-score-matrix" class="nav-link" data-scroll-target="#pairwise-10x10-compatibility-score-matrix">4. Pairwise 10x10 Compatibility Score Matrix</a></li>
-  <li><a href="#triplex-multiplex-compatibility-results-3-virus-assay" id="toc-triplex-multiplex-compatibility-results-3-virus-assay" class="nav-link" data-scroll-target="#triplex-multiplex-compatibility-results-3-virus-assay">5. Triplex Multiplex Compatibility Results (3-Virus Assay)</a>
-  <ul class="collapse">
-  <li><a href="#top-5-recommended-triplex-combinations" id="toc-top-5-recommended-triplex-combinations" class="nav-link" data-scroll-target="#top-5-recommended-triplex-combinations">Top 5 Recommended Triplex Combinations</a></li>
-  <li><a href="#rank-1-triplex-specifications-flua_r9_flub_r14_measles_r1" id="toc-rank-1-triplex-specifications-flua_r9_flub_r14_measles_r1" class="nav-link" data-scroll-target="#rank-1-triplex-specifications-flua_r9_flub_r14_measles_r1">Rank 1 Triplex Specifications (<code>FluA_R9_FluB_R14_Measles_R1</code>)</a></li>
-  </ul></li>
+  <li><a href="#oligo-cross-dimer-interactions-rank-1-assay-flua_rank10_x_flub_rank12" id="toc-oligo-cross-dimer-interactions-rank-1-assay-flua_rank10_x_flub_rank12" class="nav-link" data-scroll-target="#oligo-cross-dimer-interactions-rank-1-assay-flua_rank10_x_flub_rank12">4. Oligo Cross-Dimer Interactions (Rank 1 Assay: <code>FluA_Rank10_x_FluB_Rank12</code>)</a></li>
+  <li><a href="#n-plex-capability" id="toc-n-plex-capability" class="nav-link" data-scroll-target="#n-plex-capability">5. N-Plex Capability</a></li>
   </ul>
 </nav>
     </div>
@@ -438,7 +442,7 @@ window.Quarto = {
 <hr>
 <section id="dual-temperature-screening-regimes" class="level2">
 <h2 class="anchored" data-anchor-id="dual-temperature-screening-regimes">1. Dual-Temperature Screening Regimes</h2>
-<p>To guarantee assay robustness, <strong>100 candidate combinations</strong> (<span class="math inline">\(10 \times 10\)</span> matrix of top Influenza A MP and Influenza B MP candidates) were evaluated across two temperature regimes:</p>
+<p>To guarantee assay robustness, the top Influenza A MP and Influenza B MP candidates were paired across their leading ranks and screened; <strong>15 combinations survived the pre-pairing selection gates</strong> and were evaluated across two temperature regimes:</p>
 <ol type="1">
 <li><strong>Isothermal RT-RAA Mode (<span class="math inline">\(39.0^\circ\text{C}\)</span>)</strong>: Primary operational temperature for point-of-care recombinase-mediated amplification.</li>
 <li><strong>qPCR Comparative Benchmark (<span class="math inline">\(55.0^\circ\text{C}\)</span>)</strong>: Gold-standard laboratory thermal cycling benchmark.</li>
@@ -447,7 +451,7 @@ window.Quarto = {
 </section>
 <section id="top-recommended-multiplex-assay-combinations" class="level2">
 <h2 class="anchored" data-anchor-id="top-recommended-multiplex-assay-combinations">2. Top Recommended Multiplex Assay Combinations</h2>
-<p>The table below highlights the top 5 multiplex combinations ranked by overall compatibility score (<span class="math inline">\(0 - 100\%\)</span>), accounting for cross-dimer penalties and kinetic alignment:</p>
+<p>The table below highlights the top 5 multiplex combinations ranked by candidate selection gates (combining coverage, specificity, and multiplex compatibility scores), accounting for cross-dimer penalties, 3’-end anchoring, and kinetic alignment:</p>
 <table class="caption-top table">
 <colgroup>
 <col style="width: 12%">
@@ -465,61 +469,61 @@ window.Quarto = {
 <th>Candidate Pair</th>
 <th>Compatibility Score</th>
 <th>RAA ΔG (39°C)</th>
+<th>3’ Anchor</th>
 <th>qPCR ΔG (55°C)</th>
 <th>ΔTm (°C)</th>
-<th>Channel Separation</th>
 <th>Status (39°C)</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
 <td><strong>1</strong></td>
-<td><strong><code>FluA_Rank7_x_FluB_Rank6</code></strong></td>
-<td><strong>73.9%</strong></td>
-<td><strong>-7.13 kcal/mol</strong></td>
-<td><strong>-5.01 kcal/mol</strong></td>
-<td><strong>0.29°C</strong></td>
-<td>FAM / HEX</td>
+<td><strong><code>FluA_Rank10_x_FluB_Rank12</code></strong></td>
+<td><strong>64.5</strong></td>
+<td><strong>-7.19 kcal/mol</strong></td>
+<td><strong>5 bp</strong></td>
+<td><strong>-3.49 kcal/mol</strong></td>
+<td><strong>2.23°C</strong></td>
 <td><span style="color: #10b981; font-weight: bold;">PASS</span></td>
 </tr>
 <tr class="even">
 <td><strong>2</strong></td>
-<td><strong><code>FluA_Rank7_x_FluB_Rank11</code></strong></td>
-<td><strong>73.8%</strong></td>
-<td><strong>-7.13 kcal/mol</strong></td>
-<td><strong>-5.01 kcal/mol</strong></td>
-<td><strong>0.31°C</strong></td>
-<td>FAM / HEX</td>
+<td><strong><code>FluA_Rank1_x_FluB_Rank12</code></strong></td>
+<td><strong>64.0</strong></td>
+<td><strong>-7.19 kcal/mol</strong></td>
+<td><strong>5 bp</strong></td>
+<td><strong>-3.49 kcal/mol</strong></td>
+<td><strong>2.42°C</strong></td>
 <td><span style="color: #10b981; font-weight: bold;">PASS</span></td>
 </tr>
 <tr class="odd">
 <td><strong>3</strong></td>
-<td><strong><code>FluA_Rank7_x_FluB_Rank5</code></strong></td>
-<td><strong>73.2%</strong></td>
-<td><strong>-7.13 kcal/mol</strong></td>
-<td><strong>-5.01 kcal/mol</strong></td>
-<td><strong>0.45°C</strong></td>
-<td>FAM / HEX</td>
+<td><strong><code>FluA_Rank4_x_FluB_Rank12</code></strong></td>
+<td><strong>66.5</strong></td>
+<td><strong>-7.19 kcal/mol</strong></td>
+<td><strong>5 bp</strong></td>
+<td><strong>-3.49 kcal/mol</strong></td>
+<td><strong>1.59°C</strong></td>
 <td><span style="color: #10b981; font-weight: bold;">PASS</span></td>
 </tr>
 <tr class="even">
 <td><strong>4</strong></td>
-<td><strong><code>FluA_Rank4_x_FluB_Rank6</code></strong></td>
-<td><strong>72.1%</strong></td>
-<td><strong>-7.13 kcal/mol</strong></td>
-<td><strong>-5.01 kcal/mol</strong></td>
-<td><strong>0.74°C</strong></td>
-<td>FAM / HEX</td>
+<td><strong><code>FluA_Rank4_x_FluB_Rank8</code></strong></td>
+<td><strong>66.3</strong></td>
+<td><strong>-7.19 kcal/mol</strong></td>
+<td><strong>5 bp</strong></td>
+<td><strong>-3.89 kcal/mol</strong></td>
+<td><strong>1.63°C</strong></td>
 <td><span style="color: #10b981; font-weight: bold;">PASS</span></td>
 </tr>
 <tr class="odd">
 <td><strong>5</strong></td>
-<td><strong><code>FluA_Rank6_x_FluB_Rank6</code></strong></td>
-<td><strong>72.1%</strong></td>
-<td><strong>-7.13 kcal/mol</strong></td>
-<td><strong>-5.01 kcal/mol</strong></td>
-<td><strong>0.74°C</strong></td>
-<td>FAM / HEX</td>
+<td><strong><code>FluA_Rank10_x_FluB_Rank8</code></strong></td>
+<td><strong>64.4</strong></td>
+<td><strong>-7.19 kcal/mol</strong></td>
+<td><strong>5 bp</strong></td>
+<td><strong>-3.89 kcal/mol</strong></td>
+<td><strong>2.27°C</strong></td>
 <td><span style="color: #10b981; font-weight: bold;">PASS</span></td>
 </tr>
 </tbody>
@@ -527,16 +531,17 @@ window.Quarto = {
 <section id="key-biophysical-observations" class="level3">
 <h3 class="anchored" data-anchor-id="key-biophysical-observations">Key Biophysical Observations:</h3>
 <ul>
-<li><strong>Zero Veto Violations</strong>: All top combinations exhibit a worst-case cross-dimer binding energy <span class="math inline">\(\Delta G &gt; -9.0\text{ kcal/mol}\)</span>, preventing spontaneous primer-dimer formation or competition during strand exchange.</li>
-<li><strong>Kinetic Balance</strong>: The rank 1 combination (<code>FluA_Rank7_x_FluB_Rank6</code>) achieves an exceptionally tight <span class="math inline">\(T_m\)</span> delta of <strong><span class="math inline">\(0.29^\circ\text{C}\)</span></strong> across all four primers, ensuring synchronized amplification rates.</li>
+<li><strong>Zero Veto Violations</strong>: All top combinations exhibit a worst-case cross-dimer binding energy <span class="math inline">\(\Delta G &gt; -12.0\text{ kcal/mol}\)</span> (worst observed <span class="math inline">\(\Delta G = -7.19\text{ kcal/mol}\)</span>), preventing spontaneous primer-dimer formation or competition during strand exchange.</li>
+<li><strong>3’-End Safety</strong>: All 3’ complementarity runs remain <span class="math inline">\(\le 5\text{ bp}\)</span>, well below the threshold for priming non-specific noise.</li>
+<li><strong>Kinetic Balance</strong>: <span class="math inline">\(T_m\)</span> differences across all primers in the multiplex mixture stay within acceptable bounds for isothermal and thermal cycling regimes.</li>
 <li><strong>Fluorophore Independence</strong>: Influenza A probe uses FAM (<span class="math inline">\(\lambda_{\text{em}} = 520\text{ nm}\)</span>) and Influenza B probe uses HEX (<span class="math inline">\(\lambda_{\text{em}} = 556\text{ nm}\)</span>), eliminating optical crosstalk.</li>
 </ul>
 <hr>
 </section>
 </section>
-<section id="oligo-synthesis-specifications-rank-1-recommended-pair-flua_rank7_x_flub_rank6" class="level2">
-<h2 class="anchored" data-anchor-id="oligo-synthesis-specifications-rank-1-recommended-pair-flua_rank7_x_flub_rank6">3. Oligo Synthesis Specifications (Rank 1 Recommended Pair: <code>FluA_Rank7_x_FluB_Rank6</code>)</h2>
-<p>To ensure full transparency and laboratory synthesis readiness, the complete sequence strings, lengths, melting temperatures (<span class="math inline">\(T_m\)</span>), GC percentages, and fluorophore dye modifications for all 6 oligos in the primary recommended multiplex set are listed below:</p>
+<section id="oligo-synthesis-specifications-rank-1-recommended-pair-flua_rank10_x_flub_rank12" class="level2">
+<h2 class="anchored" data-anchor-id="oligo-synthesis-specifications-rank-1-recommended-pair-flua_rank10_x_flub_rank12">3. Oligo Synthesis Specifications (Rank 1 Recommended Pair: <code>FluA_Rank10_x_FluB_Rank12</code>)</h2>
+<p>To ensure full transparency and laboratory synthesis readiness, the complete sequence strings, lengths, melting temperatures (<span class="math inline">\(T_m\)</span>), GC percentages, and fluorophore dye modifications for all 6 oligos in the primary recommended multiplex set are listed below. The <strong>primers</strong> are shown as their <strong>IUPAC-degenerate</strong> sequences (e.g.&nbsp;<code>R</code> = A/G); the <strong>probe</strong> is shown as its <strong>labeled order sequence</strong> — the single majority-base sequence actually synthesised, carrying the internal FAM/HEX-dT, THF abasic site and BHQ1-dT quencher plus the 3′-C3 spacer. (The probe’s degenerate form, with the <code>R</code>/<code>Y</code> positions, is listed on the <a href="./results_candidates.html">Candidate Diagnostics</a> page.)</p>
 <section id="target-a-influenza-a-mp-fam-channel" class="level3">
 <h3 class="anchored" data-anchor-id="target-a-influenza-a-mp-fam-channel">🟩 Target A: Influenza A MP (FAM Channel)</h3>
 <table class="caption-top table">
@@ -553,7 +558,7 @@ window.Quarto = {
 <tr class="header">
 <th>Oligo Name</th>
 <th>Type</th>
-<th>IUPAC Degenerate Sequence (5’ <span class="math inline">\(\rightarrow\)</span> 3’)</th>
+<th>Sequence (5’ <span class="math inline">\(\rightarrow\)</span> 3’)</th>
 <th>Length</th>
 <th>Tm (°C)</th>
 <th>GC (%)</th>
@@ -564,29 +569,29 @@ window.Quarto = {
 <tr class="odd">
 <td><strong>FluA_Fwd</strong></td>
 <td>Forward Primer</td>
-<td><code>CTGACTAARGGRATTTTRGGRTTTGTATT</code></td>
-<td>29 nt</td>
-<td>60.1°C</td>
-<td>27.6%</td>
+<td><code>TCTGACTAARGGRATTTTRGGRTTTGTATTC</code></td>
+<td>31 nt</td>
+<td>61.8°C</td>
+<td>35.5%</td>
 <td>Unlabeled</td>
 </tr>
 <tr class="even">
 <td><strong>FluA_Rev</strong></td>
 <td>Reverse Primer</td>
-<td><code>AGCAGTTAAACTATATARGAARCTGAARAGR</code></td>
+<td><code>GCAGTTAAACTATATARGAARCTGAARAGRG</code></td>
 <td>31 nt</td>
-<td>60.4°C</td>
-<td>25.8%</td>
+<td>60.6°C</td>
+<td>35.5%</td>
 <td>Unlabeled</td>
 </tr>
 <tr class="odd">
 <td><strong>FluA_Probe</strong></td>
 <td>Exo-Probe</td>
-<td><code>ACCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCARAATGCC</code></td>
+<td><code>CCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGC[FAM-dT][THF][BHQ1-dT]GTCCAAAATGCCCT[C3-spacer]</code></td>
 <td>51 nt</td>
-<td>81.6°C</td>
-<td>56.9%</td>
-<td><code>5'-FAM</code> / <code>3'-BHQ1</code> / <code>Internal-THF</code></td>
+<td>82.3°C</td>
+<td>61.8%</td>
+<td>Internal <code>FAM-dT</code>/<code>THF</code>/<code>BHQ1-dT</code> sandwich, <code>3'-C3-spacer</code></td>
 </tr>
 </tbody>
 </table>
@@ -607,7 +612,7 @@ window.Quarto = {
 <tr class="header">
 <th>Oligo Name</th>
 <th>Type</th>
-<th>IUPAC Degenerate Sequence (5’ <span class="math inline">\(\rightarrow\)</span> 3’)</th>
+<th>Sequence (5’ <span class="math inline">\(\rightarrow\)</span> 3’)</th>
 <th>Length</th>
 <th>Tm (°C)</th>
 <th>GC (%)</th>
@@ -618,49 +623,53 @@ window.Quarto = {
 <tr class="odd">
 <td><strong>FluB_Fwd</strong></td>
 <td>Forward Primer</td>
-<td><code>GAAATAYCTATAATGYTYGAACCATTYCAGA</code></td>
+<td><code>CTCTTGTGAAGAAATAYCTATAATGYTYGAA</code></td>
 <td>31 nt</td>
-<td>60.4°C</td>
-<td>25.8%</td>
+<td>59.5°C</td>
+<td>30.6%</td>
 <td>Unlabeled</td>
 </tr>
 <tr class="even">
 <td><strong>FluB_Rev</strong></td>
 <td>Reverse Primer</td>
-<td><code>TTTATTGTCTCTTTRTTTGGMCCYTTTATTC</code></td>
+<td><code>AAGAGACAATAAACAGAGAGGTATCAATTTT</code></td>
 <td>31 nt</td>
-<td>60.4°C</td>
-<td>25.8%</td>
+<td>59.9°C</td>
+<td>29.0%</td>
 <td>Unlabeled</td>
 </tr>
 <tr class="odd">
 <td><strong>FluB_Probe</strong></td>
 <td>Exo-Probe</td>
-<td><code>TYTTATCAGCTCTCCATTTCATGGCTTGGACAATAGGRCATTTRAATC</code></td>
-<td>48 nt</td>
-<td>71.3°C</td>
-<td>35.4%</td>
-<td><code>5'-HEX</code> / <code>3'-BHQ1</code> / <code>Internal-THF</code></td>
+<td><code>TGTTCTTTTATCTTATCAGCTCTCCATT[HEX-dT]C[THF][BHQ1-dT]GGCTTGGACAATAGGGCA[C3-spacer]</code></td>
+<td>49 nt</td>
+<td>71.5°C</td>
+<td>38.8%</td>
+<td>Internal <code>HEX-dT</code>/<code>THF</code>/<code>BHQ1-dT</code> sandwich, <code>3'-C3-spacer</code></td>
 </tr>
 </tbody>
 </table>
 <hr>
 </section>
 </section>
-<section id="oligo-cross-dimer-interactions-rank-1-assay" class="level2">
-<h2 class="anchored" data-anchor-id="oligo-cross-dimer-interactions-rank-1-assay">4. Oligo Cross-Dimer Interactions (Rank 1 Assay)</h2>
-<p>Below is the complete 9-pair inter-assay cross-dimer thermodynamic breakdown for the primary recommended multiplex set (<code>FluA_Rank7_x_FluB_Rank6</code>):</p>
+<section id="oligo-cross-dimer-interactions-rank-1-assay-flua_rank10_x_flub_rank12" class="level2">
+<h2 class="anchored" data-anchor-id="oligo-cross-dimer-interactions-rank-1-assay-flua_rank10_x_flub_rank12">4. Oligo Cross-Dimer Interactions (Rank 1 Assay: <code>FluA_Rank10_x_FluB_Rank12</code>)</h2>
+<p>Below is the complete 9-pair inter-assay cross-dimer thermodynamic breakdown for the primary recommended multiplex set:</p>
 <table class="caption-top table">
 <colgroup>
-<col style="width: 25%">
-<col style="width: 25%">
-<col style="width: 25%">
-<col style="width: 25%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
 </colgroup>
 <thead>
 <tr class="header">
 <th>Oligo Pair Combination</th>
 <th>Cross-Dimer ΔG (39°C RT-RAA)</th>
+<th>3’ Anchor Run</th>
+<th>3’-End ΔG (39°C)</th>
 <th>Cross-Dimer ΔG (55°C qPCR)</th>
 <th>Risk Assessment</th>
 </tr>
@@ -668,548 +677,85 @@ window.Quarto = {
 <tbody>
 <tr class="odd">
 <td><strong>Forward A vs.&nbsp;Forward B</strong></td>
-<td>-4.14 kcal/mol</td>
-<td>-2.05 kcal/mol</td>
+<td>-4.07 kcal/mol</td>
+<td>3 bp</td>
+<td>-2.30 kcal/mol</td>
+<td>-1.88 kcal/mol</td>
 <td><span style="color: #10b981; font-weight: bold;">Negligible</span></td>
 </tr>
 <tr class="even">
 <td><strong>Forward A vs.&nbsp;Reverse B</strong></td>
-<td>-7.13 kcal/mol</td>
-<td>-5.01 kcal/mol</td>
-<td><span style="color: #10b981; font-weight: bold;">Low / Safe</span></td>
+<td>-3.13 kcal/mol</td>
+<td>3 bp</td>
+<td>-1.63 kcal/mol</td>
+<td>-1.72 kcal/mol</td>
+<td><span style="color: #10b981; font-weight: bold;">Negligible</span></td>
 </tr>
 <tr class="odd">
 <td><strong>Forward A vs.&nbsp;Probe B</strong></td>
 <td>-3.09 kcal/mol</td>
+<td>2 bp</td>
+<td>-1.63 kcal/mol</td>
 <td>-1.53 kcal/mol</td>
 <td><span style="color: #10b981; font-weight: bold;">Negligible</span></td>
 </tr>
 <tr class="even">
 <td><strong>Reverse A vs.&nbsp;Forward B</strong></td>
-<td>-5.95 kcal/mol</td>
-<td>-3.06 kcal/mol</td>
+<td>-5.27 kcal/mol</td>
+<td>5 bp</td>
+<td>-3.94 kcal/mol</td>
+<td>-2.30 kcal/mol</td>
 <td><span style="color: #10b981; font-weight: bold;">Low / Safe</span></td>
 </tr>
 <tr class="odd">
 <td><strong>Reverse A vs.&nbsp;Reverse B</strong></td>
-<td>-4.37 kcal/mol</td>
-<td>-2.27 kcal/mol</td>
+<td>-3.95 kcal/mol</td>
+<td>4 bp</td>
+<td>-1.35 kcal/mol</td>
+<td>-2.47 kcal/mol</td>
 <td><span style="color: #10b981; font-weight: bold;">Negligible</span></td>
 </tr>
 <tr class="even">
 <td><strong>Reverse A vs.&nbsp;Probe B</strong></td>
 <td>-5.69 kcal/mol</td>
+<td>5 bp</td>
+<td>-3.82 kcal/mol</td>
 <td>-3.49 kcal/mol</td>
 <td><span style="color: #10b981; font-weight: bold;">Low / Safe</span></td>
 </tr>
 <tr class="odd">
 <td><strong>Probe A vs.&nbsp;Forward B</strong></td>
 <td>-4.77 kcal/mol</td>
+<td>2 bp</td>
+<td>-4.77 kcal/mol</td>
 <td>-2.83 kcal/mol</td>
 <td><span style="color: #10b981; font-weight: bold;">Negligible</span></td>
 </tr>
 <tr class="even">
 <td><strong>Probe A vs.&nbsp;Reverse B</strong></td>
-<td>-6.12 kcal/mol</td>
-<td>-3.49 kcal/mol</td>
-<td><span style="color: #10b981; font-weight: bold;">Low / Safe</span></td>
+<td>-3.45 kcal/mol</td>
+<td>5 bp</td>
+<td>-1.49 kcal/mol</td>
+<td>-1.82 kcal/mol</td>
+<td><span style="color: #10b981; font-weight: bold;">Negligible</span></td>
 </tr>
 <tr class="odd">
 <td><strong>Probe A vs.&nbsp;Probe B</strong></td>
-<td>-6.90 kcal/mol</td>
-<td>-4.22 kcal/mol</td>
+<td>-7.19 kcal/mol</td>
+<td>4 bp</td>
+<td>-5.08 kcal/mol</td>
+<td>-3.44 kcal/mol</td>
 <td><span style="color: #10b981; font-weight: bold;">Low / Safe</span></td>
 </tr>
 </tbody>
 </table>
 <hr>
 </section>
-<section id="pairwise-10x10-compatibility-score-matrix" class="level2">
-<h2 class="anchored" data-anchor-id="pairwise-10x10-compatibility-score-matrix">4. Pairwise 10x10 Compatibility Score Matrix</h2>
-<p>Below is the complete <span class="math inline">\(10 \times 10\)</span> candidate matrix showing compatibility scores (%) and worst-case cross-dimer binding energies (<span class="math inline">\(\Delta G\)</span>) for all combinations of Top 10 Influenza A MP vs Top 10 Influenza B MP candidates:</p>
-<div style="overflow-x: auto; margin: 25px 0;">
-  
-<table class="table table-bordered table-hover caption-top">
-<colgroup>
-<col style="width: 9%">
-<col style="width: 9%">
-<col style="width: 9%">
-<col style="width: 9%">
-<col style="width: 9%">
-<col style="width: 9%">
-<col style="width: 9%">
-<col style="width: 9%">
-<col style="width: 9%">
-<col style="width: 9%">
-<col style="width: 9%">
-</colgroup>
-<thead class="table-dark">
-<tr class="header">
-<th data-quarto-table-cell-role="th" style="vertical-align: middle">Flu A \ Flu B</th>
-<th data-quarto-table-cell-role="th">Rank 1</th>
-<th data-quarto-table-cell-role="th">Rank 2</th>
-<th data-quarto-table-cell-role="th">Rank 3</th>
-<th data-quarto-table-cell-role="th">Rank 4</th>
-<th data-quarto-table-cell-role="th">Rank 5</th>
-<th data-quarto-table-cell-role="th">Rank 6</th>
-<th data-quarto-table-cell-role="th">Rank 7</th>
-<th data-quarto-table-cell-role="th">Rank 8</th>
-<th data-quarto-table-cell-role="th">Rank 9</th>
-<th data-quarto-table-cell-role="th">Rank 10</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<th class="table-dark" data-quarto-table-cell-role="th" style="vertical-align: middle">Rank 1</th>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">59.7%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">55.5%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">61.6%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">63.3%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">59.9%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">60.3%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">60.2%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-</tr>
-<tr class="even">
-<th class="table-dark" data-quarto-table-cell-role="th" style="vertical-align: middle">Rank 2</th>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">59.7%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">55.5%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">61.6%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">63.3%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">59.9%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">60.3%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">60.2%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-</tr>
-<tr class="odd">
-<th class="table-dark" data-quarto-table-cell-role="th" style="vertical-align: middle">Rank 3</th>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">59.3%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">55.5%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">59.3%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">59.3%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">59.3%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">59.3%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">59.3%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-8.7 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-</tr>
-<tr class="even">
-<th class="table-dark" data-quarto-table-cell-role="th" style="vertical-align: middle">Rank 4</th>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">68.5%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">64.3%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fef3c7; color: #92400e; font-weight: 600; padding: 8px 4px">70.4%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fef3c7; color: #92400e; font-weight: 600; padding: 8px 4px">72.1%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">68.7%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">69.1%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">69.1%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-</tr>
-<tr class="odd">
-<th class="table-dark" data-quarto-table-cell-role="th" style="vertical-align: middle">Rank 5</th>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-</tr>
-<tr class="even">
-<th class="table-dark" data-quarto-table-cell-role="th" style="vertical-align: middle">Rank 6</th>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">68.5%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">64.3%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fef3c7; color: #92400e; font-weight: 600; padding: 8px 4px">70.4%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fef3c7; color: #92400e; font-weight: 600; padding: 8px 4px">72.1%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">68.7%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">69.1%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">69.1%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-</tr>
-<tr class="odd">
-<th class="table-dark" data-quarto-table-cell-role="th" style="vertical-align: middle">Rank 7</th>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">70.3%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">66.1%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fef3c7; color: #92400e; font-weight: 600; padding: 8px 4px">73.2%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #d1fae5; color: #065f46; font-weight: 600; padding: 8px 4px">73.9%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fef3c7; color: #92400e; font-weight: 600; padding: 8px 4px">70.5%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fef3c7; color: #92400e; font-weight: 600; padding: 8px 4px">70.9%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fef3c7; color: #92400e; font-weight: 600; padding: 8px 4px">70.9%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-</tr>
-<tr class="even">
-<th class="table-dark" data-quarto-table-cell-role="th" style="vertical-align: middle">Rank 8</th>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">67.5%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">63.3%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">69.4%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fef3c7; color: #92400e; font-weight: 600; padding: 8px 4px">71.1%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">67.7%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">68.1%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">68.1%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-</tr>
-<tr class="odd">
-<th class="table-dark" data-quarto-table-cell-role="th" style="vertical-align: middle">Rank 9</th>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">67.5%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">63.3%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">69.4%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fef3c7; color: #92400e; font-weight: 600; padding: 8px 4px">71.1%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">67.7%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">68.1%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">68.1%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-</tr>
-<tr class="even">
-<th class="table-dark" data-quarto-table-cell-role="th" style="vertical-align: middle">Rank 10</th>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">67.5%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">63.3%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">69.4%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fef3c7; color: #92400e; font-weight: 600; padding: 8px 4px">71.1%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">67.7%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">68.1%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">68.1%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">-7.13 kcal</span></td>
-<td style="background-color: #fee2e2; color: #991b1b; font-weight: 600; padding: 8px 4px">0%<br>
-<span style="font-size: 0.72rem; opacity: 0.85;">0 kcal</span></td>
-</tr>
-</tbody>
-</table>
-
-</div>
-<hr>
-</section>
-<section id="triplex-multiplex-compatibility-results-3-virus-assay" class="level2">
-<h2 class="anchored" data-anchor-id="triplex-multiplex-compatibility-results-3-virus-assay">5. Triplex Multiplex Compatibility Results (3-Virus Assay)</h2>
-<p>To enable single-reaction surveillance of all three targets (<strong>Influenza A</strong>, <strong>Influenza B</strong>, and <strong>Measles</strong>), the top candidates from each virus cohort were evaluated across a <strong>9-oligo mixture</strong> (6 primers + 3 probes).</p>
-<section id="top-5-recommended-triplex-combinations" class="level3">
-<h3 class="anchored" data-anchor-id="top-5-recommended-triplex-combinations">Top 5 Recommended Triplex Combinations</h3>
-<table class="caption-top table">
-<colgroup>
-<col style="width: 14%">
-<col style="width: 14%">
-<col style="width: 14%">
-<col style="width: 14%">
-<col style="width: 14%">
-<col style="width: 14%">
-<col style="width: 14%">
-</colgroup>
-<thead>
-<tr class="header">
-<th>Rank</th>
-<th>Triplex Candidate Set</th>
-<th>Compatibility Score</th>
-<th>Worst RAA ΔG (39°C)</th>
-<th>Worst qPCR ΔG (55°C)</th>
-<th>Max ΔTm (°C)</th>
-<th>Status (39°C)</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><strong>1</strong></td>
-<td><strong><code>FluA_R9_FluB_R14_Measles_R1</code></strong></td>
-<td><strong>66.7%</strong></td>
-<td><strong>-6.90 kcal/mol</strong></td>
-<td><strong>-4.98 kcal/mol</strong></td>
-<td><strong>1.88°C</strong></td>
-<td><span style="color: #10b981; font-weight: bold;">PASS</span></td>
-</tr>
-<tr class="even">
-<td><strong>2</strong></td>
-<td><strong><code>FluA_R9_FluB_R14_Measles_R2</code></strong></td>
-<td><strong>66.7%</strong></td>
-<td><strong>-6.90 kcal/mol</strong></td>
-<td><strong>-4.98 kcal/mol</strong></td>
-<td><strong>1.88°C</strong></td>
-<td><span style="color: #10b981; font-weight: bold;">PASS</span></td>
-</tr>
-<tr class="odd">
-<td><strong>3</strong></td>
-<td><strong><code>FluA_R9_FluB_R14_Measles_R3</code></strong></td>
-<td><strong>66.7%</strong></td>
-<td><strong>-6.90 kcal/mol</strong></td>
-<td><strong>-4.98 kcal/mol</strong></td>
-<td><strong>1.88°C</strong></td>
-<td><span style="color: #10b981; font-weight: bold;">PASS</span></td>
-</tr>
-<tr class="even">
-<td><strong>4</strong></td>
-<td><strong><code>FluA_R9_FluB_R14_Measles_R5</code></strong></td>
-<td><strong>66.7%</strong></td>
-<td><strong>-6.90 kcal/mol</strong></td>
-<td><strong>-4.98 kcal/mol</strong></td>
-<td><strong>1.88°C</strong></td>
-<td><span style="color: #10b981; font-weight: bold;">PASS</span></td>
-</tr>
-<tr class="odd">
-<td><strong>5</strong></td>
-<td><strong><code>FluA_R9_FluB_R14_Measles_R6</code></strong></td>
-<td><strong>66.7%</strong></td>
-<td><strong>-6.90 kcal/mol</strong></td>
-<td><strong>-4.98 kcal/mol</strong></td>
-<td><strong>1.88°C</strong></td>
-<td><span style="color: #10b981; font-weight: bold;">PASS</span></td>
-</tr>
-</tbody>
-</table>
-<blockquote class="blockquote">
-<p>[!NOTE] <strong>Interpreting the Two Temperature Columns</strong>: Both thresholds use the same VETO criterion of <span class="math inline">\(\Delta G \le -12.0\)</span> kcal/mol, but RAA operates at 39°C where dimers are more thermodynamically stable. The qPCR column at 55°C confirms that the same combinations remain safe even at higher thermal cycling temperatures, validating cross-platform compatibility.</p>
-</blockquote>
-</section>
-<section id="rank-1-triplex-specifications-flua_r9_flub_r14_measles_r1" class="level3">
-<h3 class="anchored" data-anchor-id="rank-1-triplex-specifications-flua_r9_flub_r14_measles_r1">Rank 1 Triplex Specifications (<code>FluA_R9_FluB_R14_Measles_R1</code>)</h3>
-<section id="target-a-influenza-a-mp-fam-channel-1" class="level4">
-<h4 class="anchored" data-anchor-id="target-a-influenza-a-mp-fam-channel-1">🟩 Target A: Influenza A MP (FAM Channel)</h4>
-<table class="caption-top table">
-<colgroup>
-<col style="width: 20%">
-<col style="width: 20%">
-<col style="width: 20%">
-<col style="width: 20%">
-<col style="width: 20%">
-</colgroup>
-<thead>
-<tr class="header">
-<th>Oligo Name</th>
-<th>Type</th>
-<th>Sequence (5’ -&gt; 3’)</th>
-<th>Tm (°C)</th>
-<th>Modification / Label</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><strong>FluA_Fwd</strong></td>
-<td>Fwd Primer</td>
-<td><code>CTGACTAARGGRATTTTRGGRTTTGTATT</code></td>
-<td>60.1°C</td>
-<td>Unlabeled</td>
-</tr>
-<tr class="even">
-<td><strong>FluA_Rev</strong></td>
-<td>Rev Primer</td>
-<td><code>GCAGTTAAACTATATARGAARCTGAARAGR</code></td>
-<td>59.4°C</td>
-<td>Unlabeled</td>
-</tr>
-<tr class="odd">
-<td><strong>FluA_Probe</strong></td>
-<td>Exo-Probe</td>
-<td><code>ACCGTGCCCAGTGAGCGRGGACTGCAGCGTAGACGCTTTRTCCARAATGCC</code></td>
-<td>82.1°C</td>
-<td><code>5'-FAM</code> / <code>3'-BHQ1</code> / <code>Internal-THF</code></td>
-</tr>
-</tbody>
-</table>
-</section>
-<section id="target-b-influenza-b-mp-hex-channel-1" class="level4">
-<h4 class="anchored" data-anchor-id="target-b-influenza-b-mp-hex-channel-1">🟨 Target B: Influenza B MP (HEX Channel)</h4>
-<table class="caption-top table">
-<colgroup>
-<col style="width: 20%">
-<col style="width: 20%">
-<col style="width: 20%">
-<col style="width: 20%">
-<col style="width: 20%">
-</colgroup>
-<thead>
-<tr class="header">
-<th>Oligo Name</th>
-<th>Type</th>
-<th>Sequence (5’ -&gt; 3’)</th>
-<th>Tm (°C)</th>
-<th>Modification / Label</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><strong>FluB_Fwd</strong></td>
-<td>Fwd Primer</td>
-<td><code>TTCAGCTCTTGTGAAGAAATAYCTATAAT</code></td>
-<td>58.2°C</td>
-<td>Unlabeled</td>
-</tr>
-<tr class="even">
-<td><strong>FluB_Rev</strong></td>
-<td>Rev Primer</td>
-<td><code>AAGAGACAATAAACAGAGAGGTATCAATTTT</code></td>
-<td>59.9°C</td>
-<td>Unlabeled</td>
-</tr>
-<tr class="odd">
-<td><strong>FluB_Probe</strong></td>
-<td>Exo-Probe</td>
-<td><code>TYTTATCAGCTCTCCATTTCATGGCTTGGACAATAGGRCATTTRAATC</code></td>
-<td>71.3°C</td>
-<td><code>5'-HEX</code> / <code>3'-BHQ1</code> / <code>Internal-THF</code></td>
-</tr>
-</tbody>
-</table>
-</section>
-<section id="target-c-measles-virus-cy5-channel" class="level4">
-<h4 class="anchored" data-anchor-id="target-c-measles-virus-cy5-channel">🟦 Target C: Measles Virus (Cy5 Channel)</h4>
-<table class="caption-top table">
-<colgroup>
-<col style="width: 20%">
-<col style="width: 20%">
-<col style="width: 20%">
-<col style="width: 20%">
-<col style="width: 20%">
-</colgroup>
-<thead>
-<tr class="header">
-<th>Oligo Name</th>
-<th>Type</th>
-<th>Sequence (5’ -&gt; 3’)</th>
-<th>Tm (°C)</th>
-<th>Modification / Label</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><strong>Measles_Fwd</strong></td>
-<td>Fwd Primer</td>
-<td><code>GATATAGAGACCTTACCTAACAAAGATACTAT</code></td>
-<td>58.4°C</td>
-<td>Unlabeled</td>
-</tr>
-<tr class="even">
-<td><strong>Measles_Rev</strong></td>
-<td>Rev Primer</td>
-<td><code>GAGATCTGTCATAACTAAATAAGATTCAGTAG</code></td>
-<td>58.4°C</td>
-<td>Unlabeled</td>
-</tr>
-<tr class="odd">
-<td><strong>Measles_Probe</strong></td>
-<td>Exo-Probe</td>
-<td><code>AGCTAGAGGAATTGGCAGCCATCTTATCGATGGCTCTGCTCCTTGGCA</code></td>
-<td>77.9°C</td>
-<td><code>5'-Cy5</code> / <code>3'-BHQ2</code> / <code>Internal-THF</code></td>
-</tr>
-</tbody>
-</table>
+<section id="n-plex-capability" class="level2">
+<h2 class="anchored" data-anchor-id="n-plex-capability">5. N-Plex Capability</h2>
+<p>The multiplex engine is <strong>N-plex capable</strong> — it filters and computes cross-dimer thermodynamics for any requested target subset. This release targets the <strong>Influenza A + Influenza B duplex only</strong> (§1–§4 above), matching the project’s scope of the Orthomyxoviridae family. Because the engine is generic, extending it to a further target requires only a new per-target build config — no change to the multiplex logic.</p>
 
 
-</section>
-</section>
 </section>
 
 </main> <!-- /main -->

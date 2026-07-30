@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.38">
+<meta name="generator" content="quarto-1.10.18">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -12,10 +12,13 @@
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
 */
-code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
-div.columns{display: flex; gap: min(4vw, 1.5em);}
-div.column{flex: auto; overflow-x: auto;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 ul.task-list{list-style: none;}
 ul.task-list li input[type="checkbox"] {
@@ -94,10 +97,10 @@ div.csl-indent {
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-c875dbb4c9335aca9cc352e974a4ec92.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-aced932c6eb97d642153b8e218288f9f.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-e387a93838f0ba57bdbac1fd43bacd8e.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-cc5790236e901248797d046d1cce2c80.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -145,7 +148,7 @@ div.csl-indent {
 </script>
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
-  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
 
 <script type="text/javascript">
 const typesetMath = (el) => {
@@ -417,6 +420,12 @@ window.Quarto = {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./results_design_comparison.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Design DB Comparison</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./results_multiplex.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Multiplex Compatibility</span></a>
   </div>
@@ -607,11 +616,19 @@ window.Quarto = {
 <p>The selection pressure modeling is constrained by sequence limits and statistical cutoffs defined in <code>config.yaml</code>:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M05] Selection Pressure (HyPhy)</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">hyphy</span><span class="kw">:</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">max_sequences</span><span class="kw">:</span><span class="at"> </span><span class="dv">300</span><span class="co">              # Limit of sequences to run in HyPhy to prevent time explosion</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">min_sequences</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span><span class="co">               # Minimum sequences required to run HyPhy</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">seed</span><span class="kw">:</span><span class="at"> </span><span class="dv">42</span><span class="co">                        # Subsample seed for selection pressure</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">fubar_threshold</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.90</span><span class="co">           # Posterior probability cutoff for purifying selection (dN &lt; dS)</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">meme_threshold</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.05</span><span class="co">            # P-value cutoff for episodic selection (dN &gt; dS)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">threads</span><span class="kw">:</span><span class="at"> </span><span class="dv">8</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">p_value_threshold</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.1</span><span class="co">           # MEME episodic-selection significance (consumed by M07)</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">min_sequences_for_selection</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span><span class="co">  # skip a gene below this many sequences</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">methods</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">"FUBAR"</span><span class="kw">,</span><span class="at"> </span><span class="st">"MEME"</span><span class="kw">]</span><span class="co">       # GARD (recombination) is available but off by default</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">target_genes</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">"ALL"</span><span class="kw">]</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">subsample</span><span class="kw">:</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">max_sequences</span><span class="kw">:</span><span class="at"> </span><span class="dv">2000</span><span class="co">            # cap per gene to bound HyPhy runtime</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">min_sequences</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">strategy</span><span class="kw">:</span><span class="at"> </span><span class="st">"balanced"</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">group_by</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">subtype</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="kw">,</span><span class="at"> </span><span class="fu">country</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="kw">,</span><span class="at"> </span><span class="fu">year</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="kw">}</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">seed</span><span class="kw">:</span><span class="at"> </span><span class="dv">42</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The FUBAR purifying-selection cutoff is not a <code>hyphy</code> key — it lives in the Bridge (M07) tiers as <code>bridge.tiers.strict.min_purifying_prob: 0.9</code>.</p>
 <section id="parameter-tuning-dictionary" class="level3">
 <h3 class="anchored" data-anchor-id="parameter-tuning-dictionary">3.1. Parameter Tuning Dictionary</h3>
 <table class="caption-top table">
@@ -631,28 +648,34 @@ window.Quarto = {
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>hyphy.max_sequences</code></td>
+<td><code>hyphy.subsample.max_sequences</code></td>
 <td>Integer <code>50</code> to <code>2000</code></td>
-<td><code>300</code></td>
-<td>HyPhy’s FUBAR and MEME computations scale non-linearly with sequence count. Setting a limit of 300 sequences balances statistical accuracy and execution speed (averaging ~10 minutes per run). Increasing this beyond 1000 can lead to days of computation on standard CPUs.</td>
+<td><code>2000</code></td>
+<td>HyPhy’s FUBAR/MEME computations scale non-linearly with sequence count. The run subsamples per gene up to this cap to bound execution time.</td>
 </tr>
 <tr class="even">
-<td><code>hyphy.min_sequences</code></td>
+<td><code>hyphy.subsample.min_sequences</code></td>
 <td>Integer <span class="math inline">\(\ge 10\)</span></td>
 <td><code>50</code></td>
-<td>The minimum sample size. Below 50 sequences, the statistical power of FUBAR is insufficient to resolve site-by-site selection patterns safely.</td>
+<td>Minimum sample size for the subsample; below ~50 the statistical power of FUBAR is insufficient to resolve site-by-site selection safely.</td>
 </tr>
 <tr class="odd">
-<td><code>hyphy.fubar_threshold</code></td>
-<td>Float <code>0.5</code> to <code>1.0</code></td>
-<td><code>0.90</code></td>
-<td>The posterior probability cutoff. Codons with a FUBAR probability <span class="math inline">\(\ge 0.90\)</span> for <span class="math inline">\(\text{dN} &lt; \text{dS}\)</span> are flagged as highly conserved and under strong purifying selection.</td>
+<td><code>hyphy.min_sequences_for_selection</code></td>
+<td>Integer <span class="math inline">\(\ge 1\)</span></td>
+<td><code>10</code></td>
+<td>A gene with fewer sequences than this is skipped entirely (no selection call attempted).</td>
 </tr>
 <tr class="even">
-<td><code>hyphy.meme_threshold</code></td>
+<td><code>bridge.tiers.strict.min_purifying_prob</code></td>
+<td>Float <code>0.5</code> to <code>1.0</code></td>
+<td><code>0.90</code></td>
+<td>FUBAR posterior cutoff: codons with <span class="math inline">\(P(\text{dN} &lt; \text{dS}) \ge 0.90\)</span> are flagged as conserved / under strong purifying selection.</td>
+</tr>
+<tr class="odd">
+<td><code>hyphy.p_value_threshold</code></td>
 <td>Float <code>0.0</code> to <code>1.0</code></td>
-<td><code>0.05</code></td>
-<td>The significance level (p-value). Codons with a MEME p-value <span class="math inline">\(\le 0.05\)</span> are flagged as undergoing episodic positive selection (mutational hot-spots).</td>
+<td><code>0.1</code></td>
+<td>MEME episodic-selection significance. Set to 0.1 (not 0.05) following hyphy.org guidance, since MEME is conservative on short alignments.</td>
 </tr>
 </tbody>
 </table>

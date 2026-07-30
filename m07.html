@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.38">
+<meta name="generator" content="quarto-1.10.18">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -12,10 +12,13 @@
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
 */
-code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
-div.columns{display: flex; gap: min(4vw, 1.5em);}
-div.column{flex: auto; overflow-x: auto;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 ul.task-list{list-style: none;}
 ul.task-list li input[type="checkbox"] {
@@ -75,10 +78,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-c875dbb4c9335aca9cc352e974a4ec92.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-aced932c6eb97d642153b8e218288f9f.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-e387a93838f0ba57bdbac1fd43bacd8e.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-cc5790236e901248797d046d1cce2c80.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -126,7 +129,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </script>
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
-  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
 
 <script type="text/javascript">
 const typesetMath = (el) => {
@@ -398,6 +401,12 @@ window.Quarto = {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./results_design_comparison.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Design DB Comparison</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./results_multiplex.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Multiplex Compatibility</span></a>
   </div>
@@ -572,22 +581,22 @@ window.Quarto = {
 <p>To evaluate target regions, the engine implements a multi-parametric <strong>Core <span class="math inline">\(\times\)</span> Multipliers</strong> scoring function.</p>
 <section id="core-score-calculation" class="level3">
 <h3 class="anchored" data-anchor-id="core-score-calculation">4.1. Core Score Calculation</h3>
-<p>The base core score is calculated by weighting normalized nucleotide conservation (<span class="math inline">\(Cons_{norm}\)</span>) and FUBAR codon purifying selection probability (<span class="math inline">\(FUBAR_{prob}\)</span>):</p>
+<p>The core score is <strong>conservation only</strong>. Selection evidence (FUBAR) does <em>not</em> enter the core additively — the 1.1.0 correctness audit removed the additive <code>0.66×Cons + 0.34×FUBAR</code> model, because a good FUBAR probability could otherwise overturn a large conservation gap. Durability (how fast a codon substitutes) is now a <em>multiplier</em>, not a core term.</p>
 <ul>
-<li><p><strong>Normalized Conservation</strong>: Shannon Entropy (<span class="math inline">\(H\)</span>) is normalized to a <span class="math inline">\([0, 1]\)</span> scale: <span class="math display">\[Cons_{norm} = 1.0 - \frac{\text{Mean Entropy}}{2.0}\]</span></p></li>
-<li><p><strong>Coding regions (CDS)</strong>: <span class="math display">\[\text{Core Score} = (w_{cons} \times Cons_{norm}) + (w_{fub} \times FUBAR_{prob})\]</span> <em>(Default weights: <span class="math inline">\(w_{cons} = 0.66\)</span> and <span class="math inline">\(w_{fub} = 0.34\)</span>)</em></p></li>
-<li><p><strong>Non-coding regions (UTRs)</strong>: <span class="math display">\[\text{Core Score} = Cons_{norm} \times 0.95\]</span></p></li>
+<li><p><strong>Normalized Conservation</strong>: Shannon Entropy (<span class="math inline">\(H\)</span>) is normalized to a <span class="math inline">\([0, 1]\)</span> scale using the maximum entropy of the 5-symbol alphabet (A/C/G/T/gap): <span class="math display">\[Cons_{norm} = 1.0 - \frac{\text{Mean Entropy}}{\log_2 5} \quad (\log_2 5 \approx 2.322)\]</span></p></li>
+<li><p><strong>Coding regions (CDS)</strong> and <strong>UTRs</strong>: <span class="math display">\[\text{Core Score} = Cons_{norm}\]</span> (UTRs receive no separate core formula; they simply carry the <code>durability.no_evidence</code> multiplier of <span class="math inline">\(0.95\)</span> in §4.2 since no codon-level selection signal exists for them.)</p></li>
 </ul>
 </section>
 <section id="biomechanical-multipliers-penalties" class="level3">
 <h3 class="anchored" data-anchor-id="biomechanical-multipliers-penalties">4.2. Biomechanical Multipliers (Penalties)</h3>
-<p>The Core Score is multiplied by penalty multipliers (values <span class="math inline">\(\le 1.0\)</span>) to discount regions with undesirable thermodynamic or mechanical traits: <span class="math display">\[\text{Final Score} = \text{Core Score} \times M_{MEME} \times M_{recomb} \times M_{GC} \times M_{block} \times M_{homo}\]</span></p>
+<p>The Core Score is multiplied by penalty multipliers (values <span class="math inline">\(\le 1.0\)</span>) to discount regions with undesirable evolutionary or thermodynamic traits: <span class="math display">\[\text{Final Score} = \text{Core Score} \times M_{dur} \times M_{MEME} \times M_{recomb} \times M_{GC} \times M_{block} \times M_{homo}\]</span></p>
 <ul>
+<li><strong>Durability (<span class="math inline">\(M_{dur}\)</span>)</strong>: Discounts codons that substitute quickly (from the FUBAR <span class="math inline">\(\alpha/\beta\)</span> rates); <span class="math inline">\(0.95\)</span> where there is no codon-level evidence (e.g.&nbsp;UTRs). This is where selection now enters — as a bounded multiplier, not an additive term.</li>
 <li><strong>Episodic Selection (<span class="math inline">\(M_{MEME}\)</span>)</strong>: Penalizes regions with sites undergoing transient positive selection (episodic escape hotspots).</li>
-<li><strong>Recombination (<span class="math inline">\(M_{recomb}\)</span>)</strong>: Multiplies by <span class="math inline">\(0.5\)</span> if the region is close to recombination breakpoints.</li>
-<li><strong>GC-Content (<span class="math inline">\(M_{GC}\)</span>)</strong>: Lowers the score if the GC content falls outside the thermodynamically optimal range (<span class="math inline">\(40\% - 60\%\)</span>).</li>
+<li><strong>Recombination (<span class="math inline">\(M_{recomb}\)</span>)</strong>: Multiplies by <span class="math inline">\(0.5\)</span> near recombination breakpoints (from GARD, when enabled).</li>
+<li><strong>GC-Content (<span class="math inline">\(M_{GC}\)</span>)</strong>: Lowers the score if GC falls outside the optimal range (<code>ideal_min: 35</code>, <code>ideal_max: 60</code>).</li>
 <li><strong>Conserved Block (<span class="math inline">\(M_{block}\)</span>)</strong>: Penalizes windows lacking long contiguous conserved blocks.</li>
-<li><strong>Homopolymer (<span class="math inline">\(M_{homo}\)</span>)</strong>: Applies a penalty if the sequence contains homopolymer repeats (e.g., <span class="math inline">\(\ge 5\)</span> identical nucleotides).</li>
+<li><strong>Homopolymer (<span class="math inline">\(M_{homo}\)</span>)</strong>: Applies a penalty for homopolymer repeats (<span class="math inline">\(\ge 5\)</span> identical nucleotides).</li>
 </ul>
 </section>
 <section id="target-grade-classification" class="level3">
@@ -657,15 +666,19 @@ window.Quarto = {
 <p>The Bridge Scoring Engine is configured in <code>config.yaml</code> to define search strategies and weights for evolutionary conservation versus selection pressure:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M07] Bridge scoring and window definitions</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">bridge</span><span class="kw">:</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">strategy</span><span class="kw">:</span><span class="at"> </span><span class="st">"full_segment"</span><span class="co">        # Treat whole segment as target (options: sliding_window, full_segment)</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">strategy</span><span class="kw">:</span><span class="at"> </span><span class="st">"full_segment"</span><span class="co">        # Treat whole segment as target (options: windowed, full_segment)</span></span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">design_regions</span><span class="kw">:</span></span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">"segment-MP"</span></span>
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">include_utr</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">min_region_length</span><span class="kw">:</span><span class="at"> </span><span class="dv">150</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">entropy_threshold</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.020</span><span class="co">        # mean Shannon entropy (bits) below which a window is conserved</span></span>
 <span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">scoring</span><span class="kw">:</span></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">core</span><span class="kw">:</span></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">conservation_weight</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.66</span><span class="co">   # Weight for Shannon Entropy conservation score (0.0 to 1.0)</span></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">purifying_weight</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.34</span><span class="co">      # Weight for HyPhy FUBAR negative selection probability (0.0 to 1.0)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co">    # </span><span class="al">NOTE</span><span class="co">: the additive core (conservation_weight/purifying_weight) was REMOVED in</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="co">    # the 1.1.0 audit. Core = conservation only; selection enters as a durability</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co">    # multiplier (see §4). The keys below are the multiplier settings.</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">multipliers</span><span class="kw">:</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">gc_content</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">ideal_min</span><span class="kw">:</span><span class="at"> </span><span class="dv">35</span><span class="kw">,</span><span class="at"> </span><span class="fu">ideal_max</span><span class="kw">:</span><span class="at"> </span><span class="dv">60</span><span class="kw">}</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">recombination</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">near_penalty</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.5</span><span class="kw">}</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">homopolymer</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">max_repeats</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span><span class="kw">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section id="parameter-tuning-dictionary" class="level3">
 <h3 class="anchored" data-anchor-id="parameter-tuning-dictionary">5.1. Parameter Tuning Dictionary</h3>
 <table class="caption-top table">
@@ -686,21 +699,21 @@ window.Quarto = {
 <tbody>
 <tr class="odd">
 <td><code>bridge.strategy</code></td>
-<td><code>"sliding_window"</code>, <code>"full_segment"</code></td>
+<td><code>"windowed"</code>, <code>"full_segment"</code></td>
 <td><code>"full_segment"</code></td>
-<td>Defines how target regions are carved. <code>"sliding_window"</code> divides the genome into slices, which is ideal for long genomes (like Coronaviruses). <code>"full_segment"</code> passes the entire segment, which is ideal for short segments (like Influenza MP) so PrimerLab can scan the whole region.</td>
+<td>Defines how target regions are carved. <code>"windowed"</code> divides the genome into slices (ideal for long genomes like Coronaviruses). <code>"full_segment"</code> passes the entire segment (ideal for short segments like Influenza MP) so PrimerLab can scan the whole region.</td>
 </tr>
 <tr class="even">
-<td><code>bridge.scoring.core.conservation_weight</code></td>
-<td>Float <code>0.0</code> to <code>1.0</code></td>
-<td><code>0.66</code></td>
-<td>The weight given to sequence alignment conservation (Shannon Entropy). A high weight favors regions with high identity in current databases.</td>
+<td><code>bridge.entropy_threshold</code></td>
+<td>Float (bits)</td>
+<td><code>0.020</code></td>
+<td>Mean raw Shannon entropy below which a window is treated as conserved. (Conserved-block detection uses a separate <code>0.10</code>.)</td>
 </tr>
 <tr class="odd">
-<td><code>bridge.scoring.core.purifying_weight</code></td>
-<td>Float <code>0.0</code> to <code>1.0</code></td>
-<td><code>0.34</code></td>
-<td>The weight given to HyPhy FUBAR purifying selection probability. A high weight favors codons that are evolutionary forbidden to mutate, ensuring the diagnostic target will remain stable against future drift.</td>
+<td><code>bridge.scoring.multipliers.gc_content</code></td>
+<td><code>ideal_min</code> / <code>ideal_max</code></td>
+<td><code>35</code> / <code>60</code></td>
+<td>GC window outside this range is down-weighted; the optimal range is 35–60%.</td>
 </tr>
 </tbody>
 </table>
@@ -720,10 +733,8 @@ window.Quarto = {
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">bridge</span><span class="kw">:</span></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">strategy</span><span class="kw">:</span><span class="at"> </span><span class="st">"full_segment"</span></span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">include_utr</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">scoring</span><span class="kw">:</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">core</span><span class="kw">:</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">conservation_weight</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.66</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">purifying_weight</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.34</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">entropy_threshold</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.020</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co">  # core = conservation only; durability + biomechanical traits applied as multipliers</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Run the Bridge Engine Builder</span></span>

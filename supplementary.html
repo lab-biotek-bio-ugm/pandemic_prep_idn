@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.38">
+<meta name="generator" content="quarto-1.10.18">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -12,16 +12,54 @@
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
 */
-code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
-div.columns{display: flex; gap: min(4vw, 1.5em);}
-div.column{flex: auto; overflow-x: auto;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 ul.task-list{list-style: none;}
 ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 /* CSS for citations */
 div.csl-bib-body { }
@@ -59,10 +97,10 @@ div.csl-indent {
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-c875dbb4c9335aca9cc352e974a4ec92.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-aced932c6eb97d642153b8e218288f9f.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-e387a93838f0ba57bdbac1fd43bacd8e.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-cc5790236e901248797d046d1cce2c80.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -110,7 +148,7 @@ div.csl-indent {
 </script>
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
-  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
 
 <script type="text/javascript">
 const typesetMath = (el) => {
@@ -382,6 +420,12 @@ window.Quarto = {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./results_design_comparison.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Design DB Comparison</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./results_multiplex.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Multiplex Compatibility</span></a>
   </div>
@@ -417,6 +461,11 @@ window.Quarto = {
   <li><a href="#forward-primer-audit" id="toc-forward-primer-audit" class="nav-link" data-scroll-target="#forward-primer-audit">2. Forward Primer Audit</a></li>
   <li><a href="#reverse-primer-audit" id="toc-reverse-primer-audit" class="nav-link" data-scroll-target="#reverse-primer-audit">3. Reverse Primer Audit</a></li>
   <li><a href="#probe-audit" id="toc-probe-audit" class="nav-link" data-scroll-target="#probe-audit">4. Probe Audit</a></li>
+  <li><a href="#automated-supplementary-excel-exporter-tool" id="toc-automated-supplementary-excel-exporter-tool" class="nav-link" data-scroll-target="#automated-supplementary-excel-exporter-tool">5. Automated Supplementary Excel Exporter Tool</a>
+  <ul class="collapse">
+  <li><a href="#generated-workbooks-package" id="toc-generated-workbooks-package" class="nav-link" data-scroll-target="#generated-workbooks-package">Generated Workbooks Package</a></li>
+  </ul></li>
+  <li><a href="#per-assay-qc-decision-dossier" id="toc-per-assay-qc-decision-dossier" class="nav-link" data-scroll-target="#per-assay-qc-decision-dossier">6. Per-Assay QC Decision Dossier</a></li>
   </ul>
 </nav>
     </div>
@@ -482,6 +531,19 @@ window.Quarto = {
 </ul>
 <p>To balance universality (broad coverage) and sensitivity, the pipeline enforces a maximum degeneracy limit of <strong><span class="math inline">\(16\text{x}\)</span></strong> for RAA designs.</p>
 <hr>
+<div class="callout callout-style-default callout-note callout-titled" title="Per-position frequency tables (§2–§4) reflect the current run">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Per-position frequency tables (§2–§4) reflect the current run
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The base-frequency tables in §2–§4 were regenerated from the latest <code>indo-only</code> <code>entropy_profile.tsv</code>, so every value matches the current run. (One notable shift from the earlier draft: probe position 240 moved from ~14% to ~18% G, crossing the 15% MAF threshold, which raises the probe degeneracy from 4× to 8×.) The full profile is linked above; a future data-driven build will compute these tables at render time.</p>
+</div>
+</div>
 </section>
 </section>
 <section id="forward-primer-audit" class="level2">
@@ -526,10 +588,10 @@ window.Quarto = {
 <td style="text-align: center;">C</td>
 <td style="text-align: center;"><strong>Y</strong></td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">26.6%</td>
+<td style="text-align: center;">29.6%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">73.4%</td>
-<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>T</strong> (26.6%), <strong>C</strong> (73.4%)</td>
+<td style="text-align: center;">70.4%</td>
+<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>T</strong> (29.6%), <strong>C</strong> (70.4%)</td>
 </tr>
 <tr class="even">
 <td style="text-align: center;">1</td>
@@ -580,11 +642,11 @@ window.Quarto = {
 <td style="text-align: center;">192</td>
 <td style="text-align: center;">T</td>
 <td style="text-align: center;">T</td>
-<td style="text-align: center;">0.5%</td>
-<td style="text-align: center;">98.6%</td>
-<td style="text-align: center;">0.5%</td>
-<td style="text-align: center;">0.5%</td>
-<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: A (0.5%), G (0.5%), C (0.5%))</td>
+<td style="text-align: center;">0.4%</td>
+<td style="text-align: center;">98.8%</td>
+<td style="text-align: center;">0.4%</td>
+<td style="text-align: center;">0.4%</td>
+<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: A (0.4%), G (0.4%), C (0.4%))</td>
 </tr>
 <tr class="odd">
 <td style="text-align: center;">6</td>
@@ -613,11 +675,11 @@ window.Quarto = {
 <td style="text-align: center;">195</td>
 <td style="text-align: center;">G</td>
 <td style="text-align: center;"><strong>R</strong></td>
-<td style="text-align: center;">28.3%</td>
+<td style="text-align: center;">30.1%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">71.7%</td>
+<td style="text-align: center;">69.9%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>A</strong> (28.3%), <strong>G</strong> (71.7%)</td>
+<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>A</strong> (30.1%), <strong>G</strong> (69.9%)</td>
 </tr>
 <tr class="even">
 <td style="text-align: center;">9</td>
@@ -646,11 +708,11 @@ window.Quarto = {
 <td style="text-align: center;">198</td>
 <td style="text-align: center;">G</td>
 <td style="text-align: center;"><strong>R</strong></td>
-<td style="text-align: center;">22.3%</td>
+<td style="text-align: center;">19.9%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">77.7%</td>
+<td style="text-align: center;">80.1%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>A</strong> (22.3%), <strong>G</strong> (77.7%)</td>
+<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>A</strong> (19.9%), <strong>G</strong> (80.1%)</td>
 </tr>
 <tr class="odd">
 <td style="text-align: center;">12</td>
@@ -680,10 +742,10 @@ window.Quarto = {
 <td style="text-align: center;">T</td>
 <td style="text-align: center;">T</td>
 <td style="text-align: center;">0.3%</td>
-<td style="text-align: center;">90.4%</td>
+<td style="text-align: center;">88.9%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">9.3%</td>
-<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: A (0.3%), C (9.3%))</td>
+<td style="text-align: center;">10.8%</td>
+<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: A (0.3%), C (10.8%))</td>
 </tr>
 <tr class="even">
 <td style="text-align: center;">15</td>
@@ -691,10 +753,10 @@ window.Quarto = {
 <td style="text-align: center;">T</td>
 <td style="text-align: center;">T</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">99.2%</td>
+<td style="text-align: center;">99.3%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">0.8%</td>
-<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: C (0.8%))</td>
+<td style="text-align: center;">0.7%</td>
+<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: C (0.7%))</td>
 </tr>
 <tr class="odd">
 <td style="text-align: center;">16</td>
@@ -712,11 +774,11 @@ window.Quarto = {
 <td style="text-align: center;">204</td>
 <td style="text-align: center;">A</td>
 <td style="text-align: center;"><strong>R</strong></td>
-<td style="text-align: center;">58.7%</td>
+<td style="text-align: center;">57.4%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">41.3%</td>
+<td style="text-align: center;">42.6%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>A</strong> (58.7%), <strong>G</strong> (41.3%)</td>
+<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>A</strong> (57.4%), <strong>G</strong> (42.6%)</td>
 </tr>
 <tr class="odd">
 <td style="text-align: center;">18</td>
@@ -745,11 +807,11 @@ window.Quarto = {
 <td style="text-align: center;">207</td>
 <td style="text-align: center;">A</td>
 <td style="text-align: center;"><strong>R</strong></td>
-<td style="text-align: center;">60.7%</td>
-<td style="text-align: center;">0.6%</td>
-<td style="text-align: center;">38.7%</td>
+<td style="text-align: center;">60.5%</td>
+<td style="text-align: center;">0.5%</td>
+<td style="text-align: center;">39.0%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>A</strong> (60.7%), <strong>G</strong> (38.7%)</td>
+<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>A</strong> (60.5%), <strong>G</strong> (39.0%)</td>
 </tr>
 <tr class="even">
 <td style="text-align: center;">21</td>
@@ -811,11 +873,11 @@ window.Quarto = {
 <td style="text-align: center;">213</td>
 <td style="text-align: center;">A</td>
 <td style="text-align: center;"><strong>D</strong></td>
-<td style="text-align: center;">39.6%</td>
-<td style="text-align: center;">25.7%</td>
-<td style="text-align: center;">34.2%</td>
+<td style="text-align: center;">41.3%</td>
+<td style="text-align: center;">28.7%</td>
+<td style="text-align: center;">29.5%</td>
 <td style="text-align: center;">0.5%</td>
-<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>A</strong> (39.6%), <strong>T</strong> (25.7%), <strong>G</strong> (34.2%)</td>
+<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>A</strong> (41.3%), <strong>T</strong> (28.7%), <strong>G</strong> (29.5%)</td>
 </tr>
 <tr class="even">
 <td style="text-align: center;">27</td>
@@ -845,10 +907,10 @@ window.Quarto = {
 <td style="text-align: center;">C</td>
 <td style="text-align: center;">C</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">3.6%</td>
+<td style="text-align: center;">2.6%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">96.4%</td>
-<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: T (3.6%))</td>
+<td style="text-align: center;">97.4%</td>
+<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: T (2.6%))</td>
 </tr>
 <tr class="odd">
 <td style="text-align: center;">30</td>
@@ -918,11 +980,11 @@ window.Quarto = {
 <td style="text-align: center;">339</td>
 <td style="text-align: center;">A</td>
 <td style="text-align: center;"><strong>R</strong></td>
-<td style="text-align: center;">67.2%</td>
+<td style="text-align: center;">65.3%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">32.8%</td>
+<td style="text-align: center;">34.7%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>A</strong> (67.2%), <strong>G</strong> (32.8%)</td>
+<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>A</strong> (65.3%), <strong>G</strong> (34.7%)</td>
 </tr>
 <tr class="odd">
 <td style="text-align: center;">2</td>
@@ -951,11 +1013,11 @@ window.Quarto = {
 <td style="text-align: center;">336</td>
 <td style="text-align: center;">A</td>
 <td style="text-align: center;"><strong>R</strong></td>
-<td style="text-align: center;">66.2%</td>
+<td style="text-align: center;">65.0%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">33.8%</td>
+<td style="text-align: center;">35.0%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>A</strong> (66.2%), <strong>G</strong> (33.8%)</td>
+<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>A</strong> (65.0%), <strong>G</strong> (35.0%)</td>
 </tr>
 <tr class="even">
 <td style="text-align: center;">5</td>
@@ -984,11 +1046,11 @@ window.Quarto = {
 <td style="text-align: center;">333</td>
 <td style="text-align: center;">G</td>
 <td style="text-align: center;"><strong>B</strong></td>
-<td style="text-align: center;">2.2%</td>
-<td style="text-align: center;">26.0%</td>
-<td style="text-align: center;">46.9%</td>
-<td style="text-align: center;">24.9%</td>
-<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>T</strong> (26.0%), <strong>G</strong> (46.9%), <strong>C</strong> (24.9%)</td>
+<td style="text-align: center;">2.0%</td>
+<td style="text-align: center;">28.5%</td>
+<td style="text-align: center;">47.2%</td>
+<td style="text-align: center;">22.2%</td>
+<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>T</strong> (28.5%), <strong>G</strong> (47.2%), <strong>C</strong> (22.2%)</td>
 </tr>
 <tr class="odd">
 <td style="text-align: center;">8</td>
@@ -1007,21 +1069,21 @@ window.Quarto = {
 <td style="text-align: center;">C</td>
 <td style="text-align: center;">C</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">0.6%</td>
+<td style="text-align: center;">0.5%</td>
 <td style="text-align: center;">0.1%</td>
-<td style="text-align: center;">99.2%</td>
-<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: T (0.6%), G (0.1%))</td>
+<td style="text-align: center;">99.3%</td>
+<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: T (0.5%), G (0.1%))</td>
 </tr>
 <tr class="odd">
 <td style="text-align: center;">10</td>
 <td style="text-align: center;">330</td>
 <td style="text-align: center;">G</td>
 <td style="text-align: center;"><strong>R</strong></td>
-<td style="text-align: center;">49.4%</td>
+<td style="text-align: center;">49.5%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">50.6%</td>
+<td style="text-align: center;">50.5%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>A</strong> (49.4%), <strong>G</strong> (50.6%)</td>
+<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>A</strong> (49.5%), <strong>G</strong> (50.5%)</td>
 </tr>
 <tr class="even">
 <td style="text-align: center;">11</td>
@@ -1061,11 +1123,11 @@ window.Quarto = {
 <td style="text-align: center;">326</td>
 <td style="text-align: center;">A</td>
 <td style="text-align: center;"><strong>R</strong></td>
-<td style="text-align: center;">66.1%</td>
+<td style="text-align: center;">64.7%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">33.9%</td>
+<td style="text-align: center;">35.3%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>A</strong> (66.1%), <strong>G</strong> (33.9%)</td>
+<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>A</strong> (64.7%), <strong>G</strong> (35.3%)</td>
 </tr>
 <tr class="even">
 <td style="text-align: center;">15</td>
@@ -1084,10 +1146,10 @@ window.Quarto = {
 <td style="text-align: center;">T</td>
 <td style="text-align: center;"><strong>Y</strong></td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">67.3%</td>
+<td style="text-align: center;">71.6%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">32.7%</td>
-<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>T</strong> (67.3%), <strong>C</strong> (32.7%)</td>
+<td style="text-align: center;">28.4%</td>
+<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>T</strong> (71.6%), <strong>C</strong> (28.4%)</td>
 </tr>
 <tr class="even">
 <td style="text-align: center;">17</td>
@@ -1116,11 +1178,11 @@ window.Quarto = {
 <td style="text-align: center;">321</td>
 <td style="text-align: center;">A</td>
 <td style="text-align: center;"><strong>R</strong></td>
-<td style="text-align: center;">64.7%</td>
+<td style="text-align: center;">63.9%</td>
 <td style="text-align: center;">0.3%</td>
-<td style="text-align: center;">35.0%</td>
+<td style="text-align: center;">35.8%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>A</strong> (64.7%), <strong>G</strong> (35.0%)</td>
+<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>A</strong> (63.9%), <strong>G</strong> (35.8%)</td>
 </tr>
 <tr class="odd">
 <td style="text-align: center;">20</td>
@@ -1138,33 +1200,33 @@ window.Quarto = {
 <td style="text-align: center;">319</td>
 <td style="text-align: center;">C</td>
 <td style="text-align: center;">C</td>
-<td style="text-align: center;">0.5%</td>
-<td style="text-align: center;">3.9%</td>
+<td style="text-align: center;">0.4%</td>
+<td style="text-align: center;">3.4%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">95.7%</td>
-<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: A (0.5%), T (3.9%))</td>
+<td style="text-align: center;">96.2%</td>
+<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: A (0.4%), T (3.4%))</td>
 </tr>
 <tr class="odd">
 <td style="text-align: center;">22</td>
 <td style="text-align: center;">318</td>
 <td style="text-align: center;">A</td>
 <td style="text-align: center;"><strong>R</strong></td>
-<td style="text-align: center;">57.9%</td>
+<td style="text-align: center;">56.5%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">42.1%</td>
+<td style="text-align: center;">43.5%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>A</strong> (57.9%), <strong>G</strong> (42.1%)</td>
+<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>A</strong> (56.5%), <strong>G</strong> (43.5%)</td>
 </tr>
 <tr class="even">
 <td style="text-align: center;">23</td>
 <td style="text-align: center;">317</td>
 <td style="text-align: center;">A</td>
 <td style="text-align: center;">A</td>
-<td style="text-align: center;">90.6%</td>
+<td style="text-align: center;">90.4%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">9.4%</td>
+<td style="text-align: center;">9.6%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: G (9.4%))</td>
+<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: G (9.6%))</td>
 </tr>
 <tr class="odd">
 <td style="text-align: center;">24</td>
@@ -1183,10 +1245,10 @@ window.Quarto = {
 <td style="text-align: center;">T</td>
 <td style="text-align: center;"><strong>Y</strong></td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">79.4%</td>
+<td style="text-align: center;">79.5%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">20.6%</td>
-<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>T</strong> (79.4%), <strong>C</strong> (20.6%)</td>
+<td style="text-align: center;">20.5%</td>
+<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>T</strong> (79.5%), <strong>C</strong> (20.5%)</td>
 </tr>
 <tr class="odd">
 <td style="text-align: center;">26</td>
@@ -1218,8 +1280,8 @@ window.Quarto = {
 <td style="text-align: center;">98.8%</td>
 <td style="text-align: center;">0.5%</td>
 <td style="text-align: center;">0.1%</td>
-<td style="text-align: center;">0.6%</td>
-<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: T (0.5%), G (0.1%), C (0.6%))</td>
+<td style="text-align: center;">0.5%</td>
+<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: T (0.5%), G (0.1%), C (0.5%))</td>
 </tr>
 <tr class="even">
 <td style="text-align: center;">29</td>
@@ -1253,8 +1315,8 @@ window.Quarto = {
 <ul>
 <li><strong>ID</strong>: <code>manual_probe</code></li>
 <li><strong>Position on Segment</strong>: <code>224 - 275 bp</code> (0-based)</li>
-<li><strong>Degenerate Sequence (5’ → 3’)</strong>: <code>CCGTGCCCAGTGAGCGAGGACTGCAGCGTAGACGCTTTRTCCARAATGCCC</code></li>
-<li><strong>Degeneracy Multiplier</strong>: <code>4x</code></li>
+<li><strong>Degenerate Sequence (5’ → 3’)</strong>: <code>CCGTGCCCAGTGAGCGRGGACTGCAGCGTAGACGCTTTRTCCARAATGCCC</code></li>
+<li><strong>Degeneracy Multiplier</strong>: <code>8x</code></li>
 </ul>
 <div class="small-table">
 <table class="caption-top table">
@@ -1365,11 +1427,11 @@ window.Quarto = {
 <td style="text-align: center;">231</td>
 <td style="text-align: center;">C</td>
 <td style="text-align: center;">C</td>
-<td style="text-align: center;">0.1%</td>
 <td style="text-align: center;">0.0%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">99.9%</td>
-<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: A (0.1%))</td>
+<td style="text-align: center;">0.0%</td>
+<td style="text-align: center;">100.0%</td>
+<td style="text-align: left;">100% Conserved</td>
 </tr>
 <tr class="odd">
 <td style="text-align: center;">8</td>
@@ -1463,12 +1525,12 @@ window.Quarto = {
 <td style="text-align: center;">16</td>
 <td style="text-align: center;">240</td>
 <td style="text-align: center;">A</td>
-<td style="text-align: center;">A</td>
-<td style="text-align: center;">85.9%</td>
+<td style="text-align: center;"><strong>R</strong></td>
+<td style="text-align: center;">81.6%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">14.1%</td>
+<td style="text-align: center;">18.4%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: G (14.1%))</td>
+<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>A</strong> (81.6%), <strong>G</strong> (18.4%)</td>
 </tr>
 <tr class="even">
 <td style="text-align: center;">17</td>
@@ -1563,11 +1625,11 @@ window.Quarto = {
 <td style="text-align: center;">249</td>
 <td style="text-align: center;">G</td>
 <td style="text-align: center;">G</td>
-<td style="text-align: center;">0.1%</td>
+<td style="text-align: center;">0.5%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">99.9%</td>
+<td style="text-align: center;">99.5%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: A (0.1%))</td>
+<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: A (0.5%))</td>
 </tr>
 <tr class="odd">
 <td style="text-align: center;">26</td>
@@ -1662,11 +1724,11 @@ window.Quarto = {
 <td style="text-align: center;">258</td>
 <td style="text-align: center;">C</td>
 <td style="text-align: center;">C</td>
-<td style="text-align: center;">2.2%</td>
-<td style="text-align: center;">12.2%</td>
+<td style="text-align: center;">1.8%</td>
+<td style="text-align: center;">13.2%</td>
 <td style="text-align: center;">0.1%</td>
-<td style="text-align: center;">85.5%</td>
-<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: A (2.2%), T (12.2%), G (0.1%))</td>
+<td style="text-align: center;">84.9%</td>
+<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: A (1.8%), T (13.2%), G (0.1%))</td>
 </tr>
 <tr class="even">
 <td style="text-align: center;">35</td>
@@ -1706,11 +1768,11 @@ window.Quarto = {
 <td style="text-align: center;">262</td>
 <td style="text-align: center;">G</td>
 <td style="text-align: center;"><strong>R</strong></td>
-<td style="text-align: center;">22.1%</td>
+<td style="text-align: center;">19.5%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">77.9%</td>
+<td style="text-align: center;">80.5%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>A</strong> (22.1%), <strong>G</strong> (77.9%)</td>
+<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>A</strong> (19.5%), <strong>G</strong> (80.5%)</td>
 </tr>
 <tr class="even">
 <td style="text-align: center;">39</td>
@@ -1729,10 +1791,10 @@ window.Quarto = {
 <td style="text-align: center;">C</td>
 <td style="text-align: center;">C</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">1.4%</td>
+<td style="text-align: center;">2.2%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">98.6%</td>
-<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: T (1.4%))</td>
+<td style="text-align: center;">97.8%</td>
+<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: T (2.2%))</td>
 </tr>
 <tr class="even">
 <td style="text-align: center;">41</td>
@@ -1761,11 +1823,11 @@ window.Quarto = {
 <td style="text-align: center;">267</td>
 <td style="text-align: center;">A</td>
 <td style="text-align: center;"><strong>R</strong></td>
-<td style="text-align: center;">57.1%</td>
+<td style="text-align: center;">56.2%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">42.7%</td>
+<td style="text-align: center;">43.7%</td>
 <td style="text-align: center;">0.1%</td>
-<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>A</strong> (57.1%), <strong>G</strong> (42.7%)</td>
+<td style="text-align: left;"><strong>Degenerate</strong>: Cleared ≥15% MAF threshold: <strong>A</strong> (56.2%), <strong>G</strong> (43.7%)</td>
 </tr>
 <tr class="odd">
 <td style="text-align: center;">44</td>
@@ -1783,11 +1845,11 @@ window.Quarto = {
 <td style="text-align: center;">269</td>
 <td style="text-align: center;">A</td>
 <td style="text-align: center;">A</td>
-<td style="text-align: center;">99.9%</td>
+<td style="text-align: center;">99.7%</td>
 <td style="text-align: center;">0.0%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">0.1%</td>
-<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: C (0.1%))</td>
+<td style="text-align: center;">0.3%</td>
+<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: C (0.3%))</td>
 </tr>
 <tr class="odd">
 <td style="text-align: center;">46</td>
@@ -1795,10 +1857,10 @@ window.Quarto = {
 <td style="text-align: center;">T</td>
 <td style="text-align: center;">T</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">96.8%</td>
+<td style="text-align: center;">97.1%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">3.2%</td>
-<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: C (3.2%))</td>
+<td style="text-align: center;">2.9%</td>
+<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: C (2.9%))</td>
 </tr>
 <tr class="even">
 <td style="text-align: center;">47</td>
@@ -1828,10 +1890,10 @@ window.Quarto = {
 <td style="text-align: center;">C</td>
 <td style="text-align: center;">C</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">12.8%</td>
+<td style="text-align: center;">13.2%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">87.2%</td>
-<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: T (12.8%))</td>
+<td style="text-align: center;">86.8%</td>
+<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: T (13.2%))</td>
 </tr>
 <tr class="odd">
 <td style="text-align: center;">50</td>
@@ -1839,14 +1901,79 @@ window.Quarto = {
 <td style="text-align: center;">C</td>
 <td style="text-align: center;">C</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">0.5%</td>
+<td style="text-align: center;">0.3%</td>
 <td style="text-align: center;">0.0%</td>
-<td style="text-align: center;">99.5%</td>
-<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: T (0.5%))</td>
+<td style="text-align: center;">99.7%</td>
+<td style="text-align: left;">Conserved (minor variation &lt;15% ignored: T (0.3%))</td>
 </tr>
 </tbody>
 </table>
 </div>
+<hr>
+</section>
+<section id="automated-supplementary-excel-exporter-tool" class="level2">
+<h2 class="anchored" data-anchor-id="automated-supplementary-excel-exporter-tool">5. Automated Supplementary Excel Exporter Tool</h2>
+<p>To export full executive and detailed supporting workbooks for laboratory synthesis and supplementary submission, use <code>scripts/export_supplementary.py</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Export all active target builds (auto-detected from results/):</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> scripts/export_supplementary.py <span class="dt">\</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--results-dir</span> results <span class="dt">\</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--outdir</span> supplementary <span class="dt">\</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">--only-degenerate</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Export a specific subset (e.g. exclude a build by its target token):</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> scripts/export_supplementary.py <span class="dt">\</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">--results-dir</span> results <span class="dt">\</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">--outdir</span> supplementary <span class="dt">\</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">--only-degenerate</span> <span class="dt">\</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">--exclude-targets</span> influenza-b</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Alternatively, restrict to specific target YAML config files:</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> scripts/export_supplementary.py <span class="dt">\</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">--results-dir</span> results <span class="dt">\</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">--outdir</span> supplementary <span class="dt">\</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">--only-degenerate</span> <span class="dt">\</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>  config/config_influenza_a_mp.yaml config/config_influenza_b_mp.yaml</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="generated-workbooks-package" class="level3">
+<h3 class="anchored" data-anchor-id="generated-workbooks-package">Generated Workbooks Package</h3>
+<ol type="1">
+<li><strong><code>Executive_Summary_Diagnostic_Assays.xlsx</code></strong>: Overview, Oligo Synthesis Orders (Best + 3 Alternatives), Pairwise/N-Plex compatibility, BLAST summary, the per-hit <strong>Human Off-Target Risk Audit</strong> (sheet 05), and the cited <strong>QC Decision Audit</strong> (sheet 06).</li>
+</ol>
+<div class="callout callout-style-default callout-note callout-titled" title="How 'BEST RECOMMENDED' is assigned">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>How ‘BEST RECOMMENDED’ is assigned
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The recommendation label on the ordering sheet comes from the <strong>selection verdict</strong>, not from list position. A combination that failed the selection gates is labelled <em>NOT RECOMMENDED</em> even if it sorted first — it is never shown as BEST just because it is rank 1. (Implemented by <code>recommendation_category()</code> in <code>scripts/export_supplementary.py</code>; if the quality floors had to be relaxed to find any candidate, the label says so, e.g.&nbsp;“relaxed to L1”.)</p>
+</div>
+</div>
+<ol start="2" type="1">
+<li><strong><code>S1_Primer_Candidates.xlsx</code></strong>: Granular candidate metrics for each target build.</li>
+<li><strong><code>S2_BLAST_Specificity.xlsx</code></strong>: Off-target BLAST specificity details.</li>
+<li><strong><code>S3_Multiplex_Compatibility.xlsx</code></strong>: N-Plex thermodynamic cross-dimer screening.</li>
+<li><strong><code>S4_QC_Summary.xlsx</code></strong>: Sequence retention &amp; QC stats.</li>
+<li><strong><code>S5_Conservation_Scoring.xlsx</code></strong>: Entropy and conservation grades.</li>
+</ol>
+</section>
+</section>
+<section id="per-assay-qc-decision-dossier" class="level2">
+<h2 class="anchored" data-anchor-id="per-assay-qc-decision-dossier">6. Per-Assay QC Decision Dossier</h2>
+<p>For surveillance use, each recommended assay carries a standalone, auditable dossier. It is generated from the same run artifacts (nothing is recomputed) and is emitted alongside the workbooks, into <code>supplementary/qc_dossier/</code> (or, in the batch orchestrator, <code>--outdir/qc_dossier/</code>):</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> scripts/qc_dossier.py <span class="dt">\</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--results-dir</span> results <span class="dt">\</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--out</span> supplementary/qc_dossier <span class="dt">\</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--top-n</span> 5</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Open <code>qc_dossier/index.html</code> for the list of assays. Each dossier is a self-contained HTML page (plus a markdown mirror) covering, per assay:</p>
+<ul>
+<li><strong>Coverage audit</strong> — the design/focal figure <em>and</em> the surveillance/global figure side by side, with a per-subtype breakdown so a lineage-specific hole is visible rather than hidden in the average. The selection gate judges the global figure; both are shown so the distinction is explicit.</li>
+<li><strong>Human off-target audit</strong> — every human hit spelled out (accession, organism, identity, mismatch, 3’-overhang, % bound), each classified against the never-relaxed <code>FATAL_HIT</code> gate with the specific reason it is tolerated, plus the pair-level amplicon count — i.e.&nbsp;exactly why a “grade A” candidate that still matches human sequence is safe.</li>
+<li><strong>Decision tree</strong> — every go/no-go gate: value → threshold → verdict → rationale → literature citation, from <code>qc/decision_criteria.yaml</code> (the single, cited source of truth, kept in lock-step with the code by <code>tests/contracts/test_decision_registry.py</code>).</li>
+</ul>
+<p>The dossier is a generated artifact and is not committed; regenerate it from a run’s <code>results/</code> with the command above.</p>
 
 
 

@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.38">
+<meta name="generator" content="quarto-1.10.18">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -12,10 +12,13 @@
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
 */
-code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
-div.columns{display: flex; gap: min(4vw, 1.5em);}
-div.column{flex: auto; overflow-x: auto;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 ul.task-list{list-style: none;}
 ul.task-list li input[type="checkbox"] {
@@ -75,10 +78,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-c875dbb4c9335aca9cc352e974a4ec92.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-aced932c6eb97d642153b8e218288f9f.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-e387a93838f0ba57bdbac1fd43bacd8e.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-cc5790236e901248797d046d1cce2c80.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -126,7 +129,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </script>
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
-  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
 
 <script type="text/javascript">
 const typesetMath = (el) => {
@@ -398,6 +401,12 @@ window.Quarto = {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./results_design_comparison.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Design DB Comparison</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./results_multiplex.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Multiplex Compatibility</span></a>
   </div>
@@ -457,23 +466,24 @@ window.Quarto = {
 </header>
 
 
-<p>Module 11 (<code>scripts/m11_multiplex_checker.py</code>, <code>scripts/m11_triplex_checker.py</code>, and <code>rules/m11_multiplex.smk</code>) is the final verification stage of the pipeline. It evaluates the physical and thermodynamic feasibility of mixing candidate diagnostic assays for multiple distinct pathogens (e.g.&nbsp;<strong>Influenza A MP</strong> + <strong>Influenza B MP</strong> + <strong>Measles</strong>) into a single multiplex reaction vessel (Dual or Triplex RT-RAA/qPCR).</p>
+<p>Module 11 (<code>scripts/m11_multiplex_checker.py</code>, <code>scripts/m11_triplex_checker.py</code>, and <code>rules/m11_multiplex.smk</code>) is the final verification stage of the pipeline. It evaluates the physical and thermodynamic feasibility of mixing candidate diagnostic assays for multiple distinct pathogens into a single multiplex reaction vessel (Duplex, Triplex, Quadruplex, or generic N-Plex RT-RAA/qPCR panels).</p>
 <hr>
 <section id="core-screening-capabilities" class="level2">
 <h2 class="anchored" data-anchor-id="core-screening-capabilities">🔬 Core Screening Capabilities</h2>
 <ol type="1">
-<li><strong>Pairwise &amp; Triplex Cross-Dimer Thermodynamics (<span class="math inline">\(\Delta G\)</span>)</strong>: Evaluates all inter-assay combinations (up to 9 oligos in a triplex mixture: 6 primers + 3 probes). Uses IUPAC base expansion to test worst-case secondary structure binding energies across all degenerate variants.</li>
+<li><strong>Dynamic N-Plex Cross-Dimer Thermodynamics (<span class="math inline">\(\Delta G\)</span>)</strong>: Evaluates all inter-assay combinations across any number of targets (e.g.&nbsp;6 oligos for Duplex, 9 oligos for Triplex, 12 oligos for Quadruplex: primers + probes). Uses IUPAC base expansion to test worst-case secondary structure binding energies across all degenerate variants.</li>
 <li><strong>Dual Temperature Regimes</strong>:
 <ul>
 <li><strong><span class="math inline">\(39.0^\circ\text{C}\)</span> (RT-RAA Isothermal)</strong>: Reaction temperature for isothermal recombinase-mediated amplification.</li>
 <li><strong><span class="math inline">\(55.0^\circ\text{C}\)</span> (qPCR Benchmark)</strong>: Thermal cycling annealing benchmark.</li>
 </ul></li>
 <li><strong>Kinetic Melting Temperature Alignment (<span class="math inline">\(\Delta T_m\)</span>)</strong>: Verifies that the <span class="math inline">\(T_m\)</span> delta across all primers in the reaction is <span class="math inline">\(\le 4.0^\circ\text{C}\)</span> to maintain balanced amplification rates.</li>
-<li><strong>Spectral Dye Separation</strong>: Verifies probe channel independence:
+<li><strong>Flexible Multi-Channel Fluorophore Palette</strong>: Verifies probe channel independence across target channels dynamically:
 <ul>
-<li>Target A: <code>5'-FAM / 3'-BHQ1</code> (emission ~520 nm)</li>
-<li>Target B: <code>5'-HEX / 3'-BHQ1</code> (emission ~556 nm)</li>
-<li>Target C: <code>5'-Cy5 / 3'-BHQ2</code> (emission ~670 nm)</li>
+<li>Target 1: <code>5'-FAM / 3'-BHQ1</code> (emission ~520 nm)</li>
+<li>Target 2: <code>5'-HEX / 3'-BHQ1</code> (emission ~556 nm)</li>
+<li>Target 3: <code>5'-Cy5 / 3'-BHQ2</code> (emission ~670 nm)</li>
+<li>Target 4+: <code>5'-Cy3 / ROX / Texas Red / Atto 647N</code> (dynamic palette extension)</li>
 </ul></li>
 </ol>
 <hr>

@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.38">
+<meta name="generator" content="quarto-1.10.18">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -12,10 +12,13 @@
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
 */
-code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
-div.columns{display: flex; gap: min(4vw, 1.5em);}
-div.column{flex: auto; overflow-x: auto;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 ul.task-list{list-style: none;}
 ul.task-list li input[type="checkbox"] {
@@ -94,10 +97,10 @@ div.csl-indent {
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-c875dbb4c9335aca9cc352e974a4ec92.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-aced932c6eb97d642153b8e218288f9f.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-e387a93838f0ba57bdbac1fd43bacd8e.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-cc5790236e901248797d046d1cce2c80.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -388,6 +391,12 @@ div.csl-indent {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./results_design_comparison.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Design DB Comparison</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./results_multiplex.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Multiplex Compatibility</span></a>
   </div>
@@ -596,8 +605,8 @@ div.csl-indent {
 <p>The export process in Module 06 is controlled by the Nextstrain metadata mapping and Nextclade classifier toggles in <code>config.yaml</code>:</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M06] Nextstrain Visualization Export</span></span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">nextclade</span><span class="kw">:</span></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co">                   # Set to true to run nextclade classifier on the dataset</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">dataset_name</span><span class="kw">:</span><span class="at"> </span><span class="st">"nextstrain/flu/h3n2/ha/3y"</span><span class="co">  # Nextclade dataset to fetch (e.g. flu_a_mp)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span><span class="co">                  # Off in the shipped config; clade comes from input metadata</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">dataset_name</span><span class="kw">:</span><span class="at"> </span><span class="st">"nextstrain/flu/h1n1pdm/ha/MW626062"</span><span class="co">  # Nextclade dataset (used only if enabled)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section id="parameter-tuning-dictionary" class="level3">
 <h3 class="anchored" data-anchor-id="parameter-tuning-dictionary">4.1. Parameter Tuning Dictionary</h3>
 <table class="caption-top table">
@@ -619,14 +628,14 @@ div.csl-indent {
 <tr class="odd">
 <td><code>nextclade.enabled</code></td>
 <td><code>true</code>, <code>false</code></td>
-<td><code>true</code></td>
-<td>Controls whether Nextclade is invoked. If enabled, the pipeline queries Nextclade to assign lineage and clade designations to the metadata, which are then rendered on the Nextstrain tree. If disabled, the pipeline will fall back to using pre-existing clade annotations from the input metadata.</td>
+<td><code>false</code></td>
+<td>Controls whether Nextclade is invoked. <strong>Off by default</strong> in the shipped config: the pipeline uses pre-existing clade annotations from the input metadata (the <code>clade</code> column). Enable it to re-assign lineage/clade designations, which are then rendered on the Nextstrain tree.</td>
 </tr>
 <tr class="even">
 <td><code>nextclade.dataset_name</code></td>
 <td>Nextclade dataset key</td>
-<td><code>"nextstrain/flu/h3n2/ha/3y"</code></td>
-<td>Defines the reference database to download for classification. Ensure that the dataset matches the target species (e.g.&nbsp;using Influenza A datasets for flu runs).</td>
+<td><code>"nextstrain/flu/h1n1pdm/ha/MW626062"</code></td>
+<td>Reference dataset to download for classification (used only when <code>enabled: true</code>). Match the dataset to the target species.</td>
 </tr>
 </tbody>
 </table>

@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Results: Design Database Comparison – Pandemic Preparedness Report</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./assets/images/UGM-logo-blue.png" rel="icon" type="image/png">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-aced932c6eb97d642153b8e218288f9f.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-cc5790236e901248797d046d1cce2c80.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script>
+  (function() {
+    const dm = window.matchMedia('(prefers-color-scheme: dark)');
+    function update() {
+      const fav = document.querySelector('link[rel="icon"]');
+      if (!fav) return;
+      const base = fav.getAttribute('href');
+      const target = dm.matches ? 'UGM-logo-white.png' : 'UGM-logo-blue.png';
+      if (base.indexOf(target) === -1) {
+        fav.setAttribute('href', base.replace(/UGM-logo-.*\.png/, target));
+      }
+    }
+    update();
+    document.addEventListener("DOMContentLoaded", update);
+    try { dm.addEventListener('change', update); } catch (e) { dm.addListener(update); }
+  })();
+</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">Pandemic Preparedness Report</span>
+    </a>
+  </div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="https://biologi.ugm.ac.id"> 
+<span class="menu-text"><img src="assets/images/faculty_biology_ugm.png" style="height: 38px; width: auto; padding: 2px 0;"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./results_phylodynamics.html">Results &amp; Biological Insights</a></li><li class="breadcrumb-item"><a href="./results_design_comparison.html">Design DB Comparison</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Home</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./literature.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Scientific Literature</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false">
+ <span class="menu-text">Genomic Surveillance</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./eda_justifikasi.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Data Justification</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./eda_statistik.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Sequence Statistics</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false">
+ <span class="menu-text">Technical Architecture</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false">
+ <span class="menu-text">Data Processing &amp; Phylodynamics</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth2 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./config_global.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Global Pipeline Configuration</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m01.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 01: Data Acquisition</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m02.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 02: Quality Control</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m03.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 03: Alignment</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m04.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 04: Phylodynamic Reconstruction</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false">
+ <span class="menu-text">Selection &amp; Conservation</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth2 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m05.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 05: Selection Pressure</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m06.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 06: Clade Annotation</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m07.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 07: Bridge Scoring Engine</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false">
+ <span class="menu-text">Design &amp; Specificity</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth2 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m08.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 08: PrimerLab RAA Design</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m09.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 09: BLAST Specificity</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="false">
+ <span class="menu-text">Multi-Metric In-Silico</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth2 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m10.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 10: In-silico Verification</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./m11.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Module 11: Multiplex Compatibility</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">Results &amp; Biological Insights</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./results_phylodynamics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Phylodynamics &amp; History</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./results_selection.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Selection &amp; Conservation</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./results_candidates.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Candidate Diagnostics</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./results_performance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">In-silico Evaluation</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./results_design_comparison.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Design DB Comparison</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./results_multiplex.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Multiplex Compatibility</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./supplementary.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Supplementary: IUPAC Audit</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active" data-toc-expanded="99">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#overall-in-silico-coverage-global-set" id="toc-overall-in-silico-coverage-global-set" class="nav-link active" data-scroll-target="#overall-in-silico-coverage-global-set">1. Overall In-Silico Coverage (global set)</a></li>
+  <li><a href="#the-sea-only-raa-blind-spot-probe-vs-global-h3n2" id="toc-the-sea-only-raa-blind-spot-probe-vs-global-h3n2" class="nav-link" data-scroll-target="#the-sea-only-raa-blind-spot-probe-vs-global-h3n2">2. The <code>sea-only</code> RAA Blind Spot (probe vs global H3N2)</a></li>
+  <li><a href="#safety-off-target-amplicon-on-human-dna-the-decisive-gate" id="toc-safety-off-target-amplicon-on-human-dna-the-decisive-gate" class="nav-link" data-scroll-target="#safety-off-target-amplicon-on-human-dna-the-decisive-gate">3. Safety: Off-Target Amplicon on Human DNA (the decisive gate)</a></li>
+  <li><a href="#multiplex-outcome-per-scenario" id="toc-multiplex-outcome-per-scenario" class="nav-link" data-scroll-target="#multiplex-outcome-per-scenario">4. Multiplex Outcome per Scenario</a></li>
+  <li><a href="#singleplex-view-the-database-scope-divergence" id="toc-singleplex-view-the-database-scope-divergence" class="nav-link" data-scroll-target="#singleplex-view-the-database-scope-divergence">5. Singleplex View &amp; the Database-Scope Divergence</a></li>
+  <li><a href="#why-the-all-partial-rescue-is-not-worth-it" id="toc-why-the-all-partial-rescue-is-not-worth-it" class="nav-link" data-scroll-target="#why-the-all-partial-rescue-is-not-worth-it">6. Why the <code>all-partial</code> “Rescue” Is Not Worth It</a></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">7. Conclusion</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./results_phylodynamics.html">Results &amp; Biological Insights</a></li><li class="breadcrumb-item"><a href="./results_design_comparison.html">Design DB Comparison</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Results: Design Database Comparison</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>The primer/probe sets were designed three times, each against a different sequence database, to test how the choice of design cohort shapes the final assay:</p>
+<ol type="1">
+<li><strong>Indonesia Only (<code>indo-only</code>)</strong> — local Indonesian strains only.</li>
+<li><strong>Southeast Asia (<code>sea-only</code>)</strong> — Indonesia + Malaysia + Singapore (the SEA countries actually represented in the MP dataset; Singapore is the largest cohort).</li>
+<li><strong>All-Partial (<code>all-partial</code>)</strong> — dense focal Indonesian strains <strong>plus</strong> a sparse global contextual background (every other country).</li>
+</ol>
+<p>All three were then evaluated on the <strong>same</strong> global surveillance set. The headline is counter-intuitive and is the point of this page: <strong>the design with the highest raw coverage is not the best assay.</strong> <code>indo-only</code> is the practical winner — the only design that is simultaneously high-coverage on both detection lenses, safe against human DNA, and able to produce a multiplex assay that passes the non-negotiable safety gates.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Figures on this page are transcribed from the July 2026 runs of the three builds (Flu A MP + Flu B MP). They will become render-time computed values once the results pages are made data-driven (see <code>docs/development/report-data-driven-plan.md</code>).</p>
+</div>
+</div>
+<hr>
+<section id="overall-in-silico-coverage-global-set" class="level2">
+<h2 class="anchored" data-anchor-id="overall-in-silico-coverage-global-set">1. Overall In-Silico Coverage (global set)</h2>
+<p>Rank-1 candidate of each build, measured on the global surveillance set (Flu A: <span class="math inline">\(N=50{,}750\)</span>; Flu B: <span class="math inline">\(N=7{,}248\)</span>):</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Target</th>
+<th>Design DB</th>
+<th>PCR amplified %</th>
+<th>RAA detected %</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Flu A MP</strong></td>
+<td><code>indo-only</code></td>
+<td>91.20</td>
+<td><strong>91.16</strong></td>
+</tr>
+<tr class="even">
+<td></td>
+<td><code>sea-only</code></td>
+<td><strong>95.68</strong></td>
+<td>62.07</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td><code>all-partial</code></td>
+<td>93.88</td>
+<td><strong>95.12</strong></td>
+</tr>
+<tr class="even">
+<td><strong>Flu B MP</strong></td>
+<td><code>indo-only</code></td>
+<td>83.22</td>
+<td>83.22</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td><code>sea-only</code></td>
+<td><strong>99.68</strong></td>
+<td><strong>99.81</strong></td>
+</tr>
+<tr class="even">
+<td></td>
+<td><code>all-partial</code></td>
+<td><strong>99.68</strong></td>
+<td><strong>99.81</strong></td>
+</tr>
+</tbody>
+</table>
+<div class="callout callout-style-default callout-important callout-titled" title="Read the bold numbers carefully">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>Read the bold numbers carefully
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>For Flu A, the highest PCR (<code>sea-only</code>, 95.68%) and the highest RAA (<code>all-partial</code>, 95.12%) each belong to a design that <strong>fails elsewhere</strong> — <code>sea-only</code>’s RAA assay is globally broken (§2) and <code>all-partial</code>’s primers amplify human DNA (§3). <code>indo-only</code>’s 91.16% is the only figure that holds up on both lenses <strong>and</strong> survives the safety gates.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="the-sea-only-raa-blind-spot-probe-vs-global-h3n2" class="level2">
+<h2 class="anchored" data-anchor-id="the-sea-only-raa-blind-spot-probe-vs-global-h3n2">2. The <code>sea-only</code> RAA Blind Spot (probe vs global H3N2)</h2>
+<p><code>sea-only</code> Flu A shows PCR 95.68% but RAA-detected only 62.07% — a large, biologically backwards gap. Breaking it down by subtype shows the cause is the <strong>probe</strong>, concentrated in one subtype:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Subtype</th>
+<th>N</th>
+<th>PCR amplified %</th>
+<th>RAA amplified %</th>
+<th><strong>RAA detected %</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>A / H3N2</strong></td>
+<td>19,258</td>
+<td>97.87</td>
+<td>97.87</td>
+<td><strong>2.66</strong></td>
+</tr>
+<tr class="even">
+<td>A / H1N1</td>
+<td>18,468</td>
+<td>99.15</td>
+<td>99.53</td>
+<td>99.12</td>
+</tr>
+<tr class="odd">
+<td>A / H9N2</td>
+<td>4,315</td>
+<td>77.87</td>
+<td>97.40</td>
+<td>97.40</td>
+</tr>
+<tr class="even">
+<td>A / H5N1</td>
+<td>1,784</td>
+<td>96.69</td>
+<td>99.61</td>
+<td>99.61</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>sea-only</code> primers <strong>amplify</strong> H3N2 fine (97.87%), but the <strong>probe detects only 2.66%</strong> of it. Because H3N2 is the single largest subtype globally (~38% of the set), that one probe failure drags the whole RAA-detected figure to 62%. The design DB (Singapore-heavy) steered the amplicon+probe to a region that is conserved regionally but divergent in global H3N2 — a classic <em>regional design, globally biased</em> outcome <span class="citation" data-cites="khan2020">(<a href="#ref-khan2020" role="doc-biblioref">Khan and Cheung 2020</a>)</span>. Notably <code>indo-only</code>, designed on Indonesian data alone, happened to pick a <strong>better-conserved</strong> probe region that works across all major subtypes globally (RAA 91%).</p>
+<hr>
+</section>
+<section id="safety-off-target-amplicon-on-human-dna-the-decisive-gate" class="level2">
+<h2 class="anchored" data-anchor-id="safety-off-target-amplicon-on-human-dna-the-decisive-gate">3. Safety: Off-Target Amplicon on Human DNA (the decisive gate)</h2>
+<p>The selection engine (<code>scripts/tools/candidate_selection.py</code>) applies <strong>Class-1 safety gates</strong> that are <em>never relaxed</em>, because violating them makes the assay <strong>wrong</strong> rather than merely worse: an off-target amplicon on human DNA, an off-target against another virus, a human binding site with the 3′ end fully anchored, a dye-channel collision, or a cross-dimer past the veto. A last-resort selection level (L5) waives every <em>quality</em> floor (coverage, grade, WARNING) — but it keeps these Class-1 gates.</p>
+<p><code>human_products</code> counts predicted amplicons on the human genome (both primers producing a product) — a direct false-positive mechanism. For the top-10 Flu A candidates of each build:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Design (Flu A)</th>
+<th>top-10 with a human amplicon</th>
+<th>human-safe candidates (all ranks)</th>
+<th>first safe rank</th>
+<th>rank-1 human grade</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>indo-only</code></td>
+<td>0 / 10</td>
+<td>75 / 78</td>
+<td>1</td>
+<td>A</td>
+</tr>
+<tr class="even">
+<td><code>sea-only</code></td>
+<td>0 / 10</td>
+<td>47 / 98</td>
+<td>1</td>
+<td>A</td>
+</tr>
+<tr class="odd">
+<td><strong><code>all-partial</code></strong></td>
+<td><strong>10 / 10</strong></td>
+<td>22 / 98</td>
+<td><strong>11</strong></td>
+<td>C</td>
+</tr>
+</tbody>
+</table>
+<p>Every one of <code>all-partial</code>’s top-10 Flu A candidates can amplify human DNA. Its rank-1 worst hit binds <em>Homo sapiens</em> T2T-CHM13 chromosome 4 with the <strong>3′ end fully anchored (0 overhang), 1 mismatch, 68.8% of the primer bound</strong>. Since any patient sample contains human DNA, such an assay would false-positive — so the gate correctly refuses it, and this is exactly why <code>all-partial</code> returns no recommended multiplex (§4).</p>
+<hr>
+</section>
+<section id="multiplex-outcome-per-scenario" class="level2">
+<h2 class="anchored" data-anchor-id="multiplex-outcome-per-scenario">4. Multiplex Outcome per Scenario</h2>
+<p>Pairing each build’s Flu A and Flu B candidates (FAM × HEX) and applying the selection ladder:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Design</th>
+<th>pairs screened</th>
+<th>passed (level)</th>
+<th>Rank-1 recommended pair</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>indo-only</code></td>
+<td>15</td>
+<td><strong>6</strong> (L1)</td>
+<td><code>FluA_Rank10_x_FluB_Rank12</code></td>
+</tr>
+<tr class="even">
+<td><code>sea-only</code></td>
+<td>90</td>
+<td><strong>14</strong> (L1)</td>
+<td><code>FluA_Rank3_x_FluB_Rank8</code></td>
+</tr>
+<tr class="odd">
+<td><strong><code>all-partial</code></strong></td>
+<td>0</td>
+<td><strong>0</strong></td>
+<td><strong>None — no combination passed</strong></td>
+</tr>
+</tbody>
+</table>
+<p><code>all-partial</code> returns <em>“No Recommended Combination”</em> not because the ladder failed to relax, but because every top Flu A candidate trips the Class-1 human-amplicon gate (§3) — an outcome the pipeline reports rather than hides.</p>
+<hr>
+</section>
+<section id="singleplex-view-the-database-scope-divergence" class="level2">
+<h2 class="anchored" data-anchor-id="singleplex-view-the-database-scope-divergence">5. Singleplex View &amp; the Database-Scope Divergence</h2>
+<p>Dropping multiplex does not rescue <code>all-partial</code>: the human-amplicon problem is a property of the Flu A primers themselves, not of pairing. Per-target, rank-1 candidate:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Target</th>
+<th>Design</th>
+<th>rank-1 human-safe</th>
+<th>grade</th>
+<th>PCR %</th>
+<th>RAA det %</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Flu A</td>
+<td><code>indo-only</code></td>
+<td>yes</td>
+<td>A</td>
+<td>91.20</td>
+<td>91.16</td>
+</tr>
+<tr class="even">
+<td></td>
+<td><code>sea-only</code></td>
+<td>yes</td>
+<td>A</td>
+<td>95.68</td>
+<td>62.07</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td><code>all-partial</code></td>
+<td><strong>no</strong></td>
+<td>C</td>
+<td>93.88</td>
+<td>95.12</td>
+</tr>
+<tr class="even">
+<td>Flu B</td>
+<td><code>indo-only</code></td>
+<td>yes</td>
+<td>B</td>
+<td>83.22</td>
+<td>83.22</td>
+</tr>
+<tr class="odd">
+<td></td>
+<td><code>sea-only</code></td>
+<td>yes</td>
+<td>B</td>
+<td>99.68</td>
+<td>99.81</td>
+</tr>
+<tr class="even">
+<td></td>
+<td><code>all-partial</code></td>
+<td>yes</td>
+<td>B</td>
+<td>99.68</td>
+<td>99.81</td>
+</tr>
+</tbody>
+</table>
+<div class="callout callout-style-default callout-important callout-titled" title="A broader database helps Flu B but hurts Flu A">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Important</span>A broader database helps Flu B but hurts Flu A
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The effect of widening the design database is <strong>opposite for the two targets</strong>:</p>
+<ul>
+<li><strong>Flu A</strong> — a broader DB is worse. <code>indo-only</code> is best; <code>sea-only</code> becomes probe-blind to H3N2; <code>all-partial</code> drifts into a region whose primers amplify human DNA.</li>
+<li><strong>Flu B</strong> — a broader DB is markedly better. Coverage jumps from <strong>83.22%</strong> (<code>indo-only</code>) to <strong>99.68% / 99.81%</strong> (<code>sea-only</code> and <code>all-partial</code>), and all remain human-safe.</li>
+</ul>
+<p>So the <code>all-partial</code> multiplex failure is entirely the <strong>Flu A</strong> side; <code>all-partial</code> Flu B on its own is excellent. A mixed-database design (local Flu A + broad Flu B) is a plausible future direction, but is out of scope here.</p>
+</div>
+</div>
+<hr>
+</section>
+<section id="why-the-all-partial-rescue-is-not-worth-it" class="level2">
+<h2 class="anchored" data-anchor-id="why-the-all-partial-rescue-is-not-worth-it">6. Why the <code>all-partial</code> “Rescue” Is Not Worth It</h2>
+<p><code>all-partial</code> Flu A does have 22 human-safe candidates — but the first appears only at <strong>rank 11</strong>, and they are thermodynamically weak. Lower penalty scores are better:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Flu A candidate set</th>
+<th>p3_penalty</th>
+<th>vienna_penalty (secondary structure)</th>
+<th>final_score</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>indo-only</code> rank-1 (reference)</td>
+<td><strong>8.3</strong></td>
+<td><strong>0</strong></td>
+<td><strong>6</strong></td>
+</tr>
+<tr class="even">
+<td><code>all-partial</code> top-10 (human-unsafe)</td>
+<td>10.7 – 11.0</td>
+<td>40 – 44</td>
+<td>43 – 52</td>
+</tr>
+<tr class="odd">
+<td><code>all-partial</code> human-safe (rank 11+)</td>
+<td>10.9 – 12.2</td>
+<td>39 – 44</td>
+<td>53 – 140</td>
+</tr>
+</tbody>
+</table>
+<p>The distinguishing metric is the <strong>ViennaRNA secondary-structure penalty</strong>: ~42 for every <code>all-partial</code> primer versus <strong>0</strong> for <code>indo-only</code> — the <code>all-partial</code> amplicon region self-folds, which can depress amplification efficiency. The human-safe <code>all-partial</code> candidates are worse-ranked than even its own unsafe top-10. Recovering a safe <code>all-partial</code> Flu A assay therefore means accepting a self-folding primer far below the <code>indo-only</code> design.</p>
+<hr>
+</section>
+<section id="conclusion" class="level2">
+<h2 class="anchored" data-anchor-id="conclusion">7. Conclusion</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Design</th>
+<th>Coverage</th>
+<th>Human-safe (Flu A)</th>
+<th>Multiplex</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong><code>indo-only</code></strong></td>
+<td>balanced (~91% both lenses)</td>
+<td>yes</td>
+<td>6 pairs pass</td>
+<td>✅ <strong>recommended</strong></td>
+</tr>
+<tr class="even">
+<td><code>sea-only</code></td>
+<td>PCR high, RAA broken (H3N2)</td>
+<td>yes</td>
+<td>14 pairs pass</td>
+<td>⚠️ globally probe-blind</td>
+</tr>
+<tr class="odd">
+<td><code>all-partial</code></td>
+<td>highest raw coverage</td>
+<td><strong>no</strong> (top candidates)</td>
+<td>none</td>
+<td>❌ amplifies human DNA</td>
+</tr>
+</tbody>
+</table>
+<p><code>indo-only</code> is the recommended design: human-safe, balanced on both PCR and RAA, structurally clean (ViennaRNA penalty 0), consistent across all major subtypes, and the source of a multiplex assay that passes the non-negotiable safety gates. The <code>sea-only</code> and <code>all-partial</code> builds are valuable as <strong>contrast cases</strong> — they show that adding regional or global data pushes the <em>universal Flu A</em> design into worse territory (a probe blind spot, or human cross-amplification), confirming that the <code>indo-only</code> choice is robust rather than incidental. The one exception worth remembering is Flu B, where a broader database genuinely raises coverage without a safety cost.</p>
+
+
+
+</section>
+
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" role="list">
+<div id="ref-khan2020" class="csl-entry" role="listitem">
+Khan, Kashif Aziz, and Peter Cheung. 2020. <span>“Presence of Mismatches Between Diagnostic PCR Assays and Coronavirus SARS-CoV-2 Genome.”</span> <em>Royal Society Open Science</em> 7 (6): 200636. <a href="https://doi.org/10.1098/rsos.200636">https://doi.org/10.1098/rsos.200636</a>.
+</div>
+</div></section></div></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<div style="display: flex; flex-direction: column; gap: 8px;">
+<div style="display: flex; flex-direction: row; align-items: center; gap: 15px; flex-wrap: nowrap;">
+<img src="assets/images/faculty_biology_ugm.png" style="height: 32px; width: auto; vertical-align: middle;" class="img-fluid"><img src="img/Alt_Logo_BRIN.png" style="height: 28px; width: auto; vertical-align: middle;" class="img-fluid"><img src="img/kemenkes.png" style="height: 38px; width: auto; vertical-align: middle;" class="img-fluid"><img src="img/WHO (World Health Organization) Logo (PNG720p) - Vector69Com.png" style="height: 26px; width: auto; vertical-align: middle;" class="img-fluid">
+</div>
+<div style="font-size: 0.82rem; color: #475569; margin-top: 2px; white-space: nowrap; vertical-align: middle;">
+Supported by Badan Riset dan Inovasi Nasional (BRIN) FY 2026
+</div>
+</div>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p><a href="https://github.com/lab-biotek-bio-ugm/pandemic_prep_idn.git" target="_blank"><img src="img/GitHub.png" style="max-height: 18px; vertical-align: middle;" class="img-fluid"></a></p>
+</div>
+  </div>
+</footer>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const citations = document.querySelectorAll('a[href^="#ref-"]');
+  citations.forEach(a => {
+    const refId = a.getAttribute('href');
+    if (!window.location.pathname.endsWith('references.html')) {
+      a.setAttribute('href', 'references.html' + refId);
+    }
+  });
+
+  var tables = document.querySelectorAll("main table");
+  tables.forEach(function(table) {
+    var firstTh = table.querySelector("thead th");
+    if (firstTh) {
+      var text = firstTh.textContent.trim().toLowerCase();
+      if (text.includes("parameter name")) {
+        table.classList.add("parameter-table");
+      } else if (text.includes("file role")) {
+        table.classList.add("files-table");
+      }
+    }
+    if (!table.parentNode.classList.contains("table-responsive")) {
+      var wrapper = document.createElement("div");
+      wrapper.className = "table-responsive";
+      table.parentNode.insertBefore(wrapper, table);
+      wrapper.appendChild(table);
+    }
+  });
+});
+</script>
+
+
+
+
+<script src="site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

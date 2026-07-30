@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.38">
+<meta name="generator" content="quarto-1.10.18">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -12,10 +12,13 @@
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
 */
-code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
-div.columns{display: flex; gap: min(4vw, 1.5em);}
-div.column{flex: auto; overflow-x: auto;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 ul.task-list{list-style: none;}
 ul.task-list li input[type="checkbox"] {
@@ -94,10 +97,10 @@ div.csl-indent {
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-c875dbb4c9335aca9cc352e974a4ec92.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-aced932c6eb97d642153b8e218288f9f.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-e387a93838f0ba57bdbac1fd43bacd8e.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-cc5790236e901248797d046d1cce2c80.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -145,7 +148,7 @@ div.csl-indent {
 </script>
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
-  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
 
 <script type="text/javascript">
 const typesetMath = (el) => {
@@ -417,6 +420,12 @@ window.Quarto = {
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./results_design_comparison.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Design DB Comparison</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./results_multiplex.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Multiplex Compatibility</span></a>
   </div>
@@ -449,6 +458,7 @@ window.Quarto = {
   <ul class="collapse">
   <li><a href="#pcr-simulation-seqkit-amplicon" id="toc-pcr-simulation-seqkit-amplicon" class="nav-link" data-scroll-target="#pcr-simulation-seqkit-amplicon">1.1. PCR Simulation (<code>seqkit amplicon</code>)</a></li>
   <li><a href="#raa-isothermal-binding-rules" id="toc-raa-isothermal-binding-rules" class="nav-link" data-scroll-target="#raa-isothermal-binding-rules">1.2. RAA Isothermal Binding Rules</a></li>
+  <li><a href="#why-the-reported-raa-coverage-is-currently-pcr-capped" id="toc-why-the-reported-raa-coverage-is-currently-pcr-capped" class="nav-link" data-scroll-target="#why-the-reported-raa-coverage-is-currently-pcr-capped">1.3. Why the reported RAA coverage is currently PCR-capped</a></li>
   </ul></li>
   <li><a href="#spatial-and-temporal-coverage-aggregation" id="toc-spatial-and-temporal-coverage-aggregation" class="nav-link" data-scroll-target="#spatial-and-temporal-coverage-aggregation">2. Spatial and Temporal Coverage Aggregation</a></li>
   <li><a href="#configuration-outputs-tabset-examples" id="toc-configuration-outputs-tabset-examples" class="nav-link" data-scroll-target="#configuration-outputs-tabset-examples">3. Configuration &amp; Outputs (Tabset Examples)</a></li>
@@ -528,12 +538,18 @@ window.Quarto = {
 </section>
 <section id="raa-isothermal-binding-rules" class="level3">
 <h3 class="anchored" data-anchor-id="raa-isothermal-binding-rules">1.2. RAA Isothermal Binding Rules</h3>
-<p>Because RAA operates at <span class="math inline">\(37^\circ\text{C}\)</span> with a recombinase complex, it is thermodynamically tolerant of minor internal mismatches but highly sensitive to 3’ terminal defects. The engine implements strict, multi-zone mismatch criteria:</p>
+<p>Because RAA operates at <span class="math inline">\(39^\circ\text{C}\)</span> with a recombinase complex, it is thermodynamically tolerant of minor internal mismatches but highly sensitive to 3’ terminal defects. The engine implements strict, multi-zone mismatch criteria:</p>
 <ul>
-<li><strong>3’ Critical Zone</strong>: Evaluates the last <strong>8 nucleotides of the 3’ end</strong> of both primers. It allows a maximum of <strong>1 mismatch</strong>; any more than 1 mismatch in this zone vetoes the binding.</li>
+<li><strong>3’ Critical Zone</strong>: Evaluates the last <strong>4 nucleotides of the 3’ end</strong> (the recombinase “anchor region”) of both primers, allowing a maximum of <strong>1 mismatch</strong>; more than 1 vetoes binding. The 4-nt window follows <span class="citation" data-cites="higgins2022">Higgins et al. (<a href="#ref-higgins2022" role="doc-biblioref">2022</a>)</span> — the only study to characterise primer–template mismatches specifically for RPA — which found single mismatches <em>outside</em> the terminal anchor do not significantly affect time-to-positivity. The earlier 8-nt value had no source and under-reported coverage.</li>
 <li><strong>Internal Body</strong>: Allows a maximum of <strong>4 mismatches</strong> across the rest of the 30–35 bp primer body.</li>
-<li><strong>Probe Binding</strong>: Probes (46–52 bp) allow a maximum of <strong>3 mismatches</strong> to maintain hybridization-induced exonuclease cleavage.</li>
+<li><strong>Probe Binding</strong>: Probes (46–52 bp) allow a maximum of <strong>5 total mismatches</strong> (not 3’-weighted — the probe’s 3’ terminus is C3-blocked and cannot be extended), following the TwistAmp Assay Design Manual §2.7, which reports RPA performance is unaffected by 5–9 mismatches on primers or probe.</li>
 </ul>
+</section>
+<section id="why-the-reported-raa-coverage-is-currently-pcr-capped" class="level3">
+<h3 class="anchored" data-anchor-id="why-the-reported-raa-coverage-is-currently-pcr-capped">1.3. Why the reported RAA coverage is currently PCR-capped</h3>
+<p>A modelling caveat that materially changes how the numbers below should be read. M10’s authoritative amplification call comes from <code>seqkit amplicon</code>, run at the <strong>PCR</strong> mismatch budget (<code>max_mismatch = 3</code>). The RAA binding rules in §1.2 are then applied <strong>only to sequences seqkit already amplified</strong>. Consequently <code>raa_detected_pct</code> is a <em>subset</em> of the PCR-amplified set and can never exceed it — the opposite of RAA biology, in which the recombinase tolerates <em>more</em> mismatches than PCR.</p>
+<p>The effect is large for divergent subtypes. Global A/H5N1 clusters at ~5 total primer mismatches — above the PCR <code>-m 3</code> cut, but within the RAA tolerance (1 in the 3’ anchor, 4 internal). The seqkit gate therefore drops them and the reported figure reads <strong>31.84%</strong>, whereas a seqkit-free RAA assessment puts the RAA-viable coverage at <strong>~94%</strong>. Only ~6% of global H5N1 fails even the RAA model, concentrated in clade <strong>2.3.4.4b / Japan</strong> and driven by a reverse-primer internal substitution. This per-position attribution is produced by the coverage-failure attribution step (<strong>M12</strong>, <code>scripts/m12_coverage_attribution.py</code>) — a generated artifact under <code>results/&lt;build&gt;/m12/</code> and surfaced in the per-assay QC dossier, not a separate report page.</p>
+<p>The figures on this page are therefore <strong>PCR-conservative for an RAA assay</strong>. A fix that runs <code>seqkit</code> at the RAA budget and derives the PCR and RAA metrics separately is prepared; until it is executed on HPC, treat <code>raa_detected_pct</code> as a lower bound and the Module 12 RAA-viable estimate as the biologically appropriate figure.</p>
 <hr>
 </section>
 </section>
@@ -556,12 +572,13 @@ window.Quarto = {
 <div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M10] In-silico validation settings</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">insilico_pcr</span><span class="kw">:</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">max_mismatch</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span><span class="co">                 # Maximum mismatches allowed for virtual PCR</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">max_mismatch</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span><span class="co">                 # Mismatch budget for the PCR (seqkit) amplification model</span></span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">num_candidates</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span><span class="co">              # Verify the top N candidates from Module 09</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">raa_3prime_bp</span><span class="kw">:</span><span class="at"> </span><span class="dv">8</span><span class="co">                # Critical 3' end zone size for RAA</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">raa_max_3prime_mm</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="co">            # Max mismatches allowed in 3' critical zone</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">raa_max_internal_mm</span><span class="kw">:</span><span class="at"> </span><span class="dv">4</span><span class="co">          # Max mismatches allowed in non-3' body</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">min_subtype_seqs</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span><span class="co">            # Minimum sequences to report subtype stats</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">raa_3prime_bp</span><span class="kw">:</span><span class="at"> </span><span class="dv">4</span><span class="co">                # Critical 3' anchor zone for RAA (Higgins et al. 2022)</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">raa_max_3prime_mm</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="co">            # Max mismatches allowed in the 3' critical zone</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">raa_max_internal_mm</span><span class="kw">:</span><span class="at"> </span><span class="dv">4</span><span class="co">          # Max mismatches allowed in the primer body</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">raa_probe_max_mm</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span><span class="co">             # Max total probe mismatches (TwistAmp manual 2.7)</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">min_subtype_seqs</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span><span class="co">            # Minimum sequences to report subtype stats</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Run the in-silico PCR and RAA validation engine</span></span>
@@ -574,14 +591,15 @@ window.Quarto = {
 <span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">--outdir</span> results/influenza-a-mp-sea/m10/degenerate <span class="dt">\</span></span>
 <span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">--max-mismatch</span> 3 <span class="dt">\</span></span>
 <span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">--num-candidates</span> 10 <span class="dt">\</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">--raa-3prime-bp</span> 8 <span class="dt">\</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">--raa-3prime-bp</span> 4 <span class="dt">\</span></span>
 <span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">--raa-max-3prime-mm</span> 1 <span class="dt">\</span></span>
 <span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">--raa-max-internal-mm</span> 4 <span class="dt">\</span></span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">--min-subtype-seqs</span> 30 <span class="dt">\</span></span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">--threads</span> 16</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">--raa-probe-max-mm</span> 5 <span class="dt">\</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">--min-subtype-seqs</span> 30 <span class="dt">\</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">--threads</span> 16</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div id="tabset-1-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-3-tab">
-<p>This file summarizes the simulated detection rates against 50,750 global sequences, breaking down performance by viral subtype (e.g., Candidate 1 achieves 98.42% coverage for A/H5N1 and 99.47% for A/H3N2):</p>
+<p>This file breaks performance down by subtype for <strong>two</strong> databases — the 50,750-sequence global surveillance set and the smaller design/focal set — and the two must not be conflated. The <strong>98.72%</strong> for A/H5N1 shown below is the <strong>design/focal DB</strong> (the Indonesian sequences the primers were built on, n=312). On the <strong>global</strong> set the same candidate reads only <strong>31.84%</strong> for A/H5N1 — but, per §1.3, that figure is capped by the PCR amplification gate; under RAA tolerance ~94% of global H5N1 would still be detected. A/H3N2 covers ~99% on both. (The <code>design_db_breakdowns</code> key below is the focal set; <code>breakdowns</code> is the global set.)</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ot">[</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">{</span></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"cand_id"</span><span class="fu">:</span> <span class="st">"segment-MP_region_1_Cand_1"</span><span class="fu">,</span></span>
@@ -596,30 +614,30 @@ window.Quarto = {
 <span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"total_seqs"</span><span class="fu">:</span> <span class="dv">50750</span><span class="fu">,</span></span>
 <span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"pcr_amplified_pct"</span><span class="fu">:</span> <span class="fl">91.20</span><span class="fu">,</span></span>
 <span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"pcr_detected_pct"</span><span class="fu">:</span> <span class="fl">91.06</span><span class="fu">,</span></span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"raa_amplified_pct"</span><span class="fu">:</span> <span class="fl">88.83</span><span class="fu">,</span></span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"raa_detected_pct"</span><span class="fu">:</span> <span class="fl">88.65</span><span class="fu">,</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"raa_amplified_pct"</span><span class="fu">:</span> <span class="fl">91.16</span><span class="fu">,</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"raa_detected_pct"</span><span class="fu">:</span> <span class="fl">91.16</span><span class="fu">,</span></span>
 <span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"design_db_breakdowns"</span><span class="fu">:</span> <span class="fu">{</span></span>
 <span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"subtype"</span><span class="fu">:</span> <span class="ot">[</span></span>
 <span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>        <span class="fu">{</span></span>
 <span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"subtype"</span><span class="fu">:</span> <span class="st">"A / H5N1"</span><span class="fu">,</span></span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"total"</span><span class="fu">:</span> <span class="dv">253</span><span class="fu">,</span></span>
-<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"pcr_amplified_pct"</span><span class="fu">:</span> <span class="fl">98.42</span><span class="fu">,</span></span>
-<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"raa_amplified_pct"</span><span class="fu">:</span> <span class="fl">98.42</span><span class="fu">,</span></span>
-<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"raa_detected_pct"</span><span class="fu">:</span> <span class="fl">98.02</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"total"</span><span class="fu">:</span> <span class="dv">312</span><span class="fu">,</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"pcr_amplified_pct"</span><span class="fu">:</span> <span class="fl">98.72</span><span class="fu">,</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"raa_amplified_pct"</span><span class="fu">:</span> <span class="fl">98.72</span><span class="fu">,</span></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"raa_detected_pct"</span><span class="fu">:</span> <span class="fl">98.72</span></span>
 <span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>        <span class="fu">}</span><span class="ot">,</span></span>
 <span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>        <span class="fu">{</span></span>
 <span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"subtype"</span><span class="fu">:</span> <span class="st">"A / H3N2"</span><span class="fu">,</span></span>
-<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"total"</span><span class="fu">:</span> <span class="dv">187</span><span class="fu">,</span></span>
-<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"pcr_amplified_pct"</span><span class="fu">:</span> <span class="fl">99.47</span><span class="fu">,</span></span>
-<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"raa_amplified_pct"</span><span class="fu">:</span> <span class="fl">99.47</span><span class="fu">,</span></span>
-<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"raa_detected_pct"</span><span class="fu">:</span> <span class="fl">99.47</span></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"total"</span><span class="fu">:</span> <span class="dv">238</span><span class="fu">,</span></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"pcr_amplified_pct"</span><span class="fu">:</span> <span class="fl">99.58</span><span class="fu">,</span></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"raa_amplified_pct"</span><span class="fu">:</span> <span class="fl">99.58</span><span class="fu">,</span></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"raa_detected_pct"</span><span class="fu">:</span> <span class="fl">99.58</span></span>
 <span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>        <span class="fu">}</span><span class="ot">,</span></span>
 <span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>        <span class="fu">{</span></span>
 <span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"subtype"</span><span class="fu">:</span> <span class="st">"A / H1N1"</span><span class="fu">,</span></span>
-<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"total"</span><span class="fu">:</span> <span class="dv">154</span><span class="fu">,</span></span>
-<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"pcr_amplified_pct"</span><span class="fu">:</span> <span class="fl">96.10</span><span class="fu">,</span></span>
-<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"raa_amplified_pct"</span><span class="fu">:</span> <span class="fl">81.82</span><span class="fu">,</span></span>
-<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"raa_detected_pct"</span><span class="fu">:</span> <span class="fl">81.82</span></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"total"</span><span class="fu">:</span> <span class="dv">160</span><span class="fu">,</span></span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"pcr_amplified_pct"</span><span class="fu">:</span> <span class="fl">96.25</span><span class="fu">,</span></span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"raa_amplified_pct"</span><span class="fu">:</span> <span class="fl">96.25</span><span class="fu">,</span></span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>          <span class="dt">"raa_detected_pct"</span><span class="fu">:</span> <span class="fl">96.25</span></span>
 <span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a>        <span class="fu">}</span></span>
 <span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a>      <span class="ot">]</span></span>
 <span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span></span>
@@ -633,12 +651,14 @@ window.Quarto = {
 <section id="configuration-parameterization" class="level2">
 <h2 class="anchored" data-anchor-id="configuration-parameterization">3. Configuration &amp; Parameterization</h2>
 <p>The virtual amplification evaluation is parameterized in <code>config.yaml</code> to control mismatch thresholds for both PCR and RAA:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M10] In-silico Validation Parameters</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">validation</span><span class="kw">:</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">pcr_mismatch</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span><span class="co">                 # Maximum mismatches allowed for PCR primers (0 to 4)</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">raa_3prime_bp</span><span class="kw">:</span><span class="at"> </span><span class="dv">8</span><span class="co">                # Length of the critical 3' end region for RAA (bp)</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">raa_max_3prime_mm</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="co">            # Maximum mismatches allowed in the RAA 3' critical zone</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">raa_max_internal_mm</span><span class="kw">:</span><span class="at"> </span><span class="dv">4</span><span class="co">          # Maximum mismatches allowed in the RAA internal zone</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># [M10] In-silico validation parameters (same block as §1.2/§1.3)</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">insilico_pcr</span><span class="kw">:</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">max_mismatch</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span><span class="co">                 # Mismatch budget for the PCR (seqkit) amplification model</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">num_candidates</span><span class="kw">:</span><span class="at"> </span><span class="dv">40</span><span class="co">             # Candidates measured for coverage per region</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">raa_3prime_bp</span><span class="kw">:</span><span class="at"> </span><span class="dv">4</span><span class="co">                # Critical 3' anchor zone for RAA (Higgins et al. 2022)</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">raa_max_3prime_mm</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="co">            # Max mismatches allowed in the RAA 3' critical zone</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">raa_max_internal_mm</span><span class="kw">:</span><span class="at"> </span><span class="dv">4</span><span class="co">          # Max mismatches allowed in the RAA internal body</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">raa_probe_max_mm</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span><span class="co">             # Max total probe mismatches (TwistAmp manual 2.7)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section id="parameter-tuning-dictionary" class="level3">
 <h3 class="anchored" data-anchor-id="parameter-tuning-dictionary">3.1. Parameter Tuning Dictionary</h3>
 <table class="caption-top table">
@@ -658,28 +678,34 @@ window.Quarto = {
 </thead>
 <tbody>
 <tr class="odd">
-<td><code>validation.pcr_mismatch</code></td>
+<td><code>insilico_pcr.max_mismatch</code></td>
 <td>Integer <code>0</code> to <code>5</code></td>
-<td><code>2</code></td>
-<td>The maximum mismatches allowed for standard PCR. If a primer has <span class="math inline">\(\le 2\)</span> mismatches against a sequence, the template is considered amplified. Set this to <code>0</code> for high-specificity screening (e.g.&nbsp;strain differentiation) or <code>3</code> to model relaxed PCR assays.</td>
+<td><code>3</code></td>
+<td>Mismatch budget for the PCR (seqkit) amplification model. NOTE: this currently also gates the RAA metric — see §1.3.</td>
 </tr>
 <tr class="even">
-<td><code>validation.raa_3prime_bp</code></td>
-<td>Integer <code>5</code> to <code>15</code></td>
-<td><code>8</code></td>
-<td>The length of the critical 3’ terminal anchoring block of RAA primers. Polymerase extension is highly sensitive to mismatched base pairing at this end.</td>
+<td><code>insilico_pcr.raa_3prime_bp</code></td>
+<td>Integer <code>3</code> to <code>8</code></td>
+<td><code>4</code></td>
+<td>Length of the critical 3’ anchor block for RAA. Extension is highly sensitive to mismatch here. The 4-nt value follows <span class="citation" data-cites="higgins2022">Higgins et al. (<a href="#ref-higgins2022" role="doc-biblioref">2022</a>)</span> (the earlier 8 had no source).</td>
 </tr>
 <tr class="odd">
-<td><code>validation.raa_max_3prime_mm</code></td>
+<td><code>insilico_pcr.raa_max_3prime_mm</code></td>
 <td>Integer <code>0</code> to <code>2</code></td>
 <td><code>1</code></td>
-<td>Maximum mismatches allowed in the 8-bp 3’ critical zone. Setting this to <code>0</code> represents strict, high-fidelity polymerase constraints.</td>
+<td>Max mismatches allowed in the 4-bp 3’ critical zone.</td>
 </tr>
 <tr class="even">
-<td><code>validation.raa_max_internal_mm</code></td>
+<td><code>insilico_pcr.raa_max_internal_mm</code></td>
 <td>Integer <code>0</code> to <code>6</code></td>
 <td><code>4</code></td>
-<td>Maximum mismatches allowed in the remaining internal/5’ body of the RAA primer. Isothermal recombinase-mediated strand invasion can tolerate up to 4 internal mismatches without aborting.</td>
+<td>Max mismatches in the internal/5’ body. Recombinase-mediated strand invasion tolerates up to 4 internal mismatches.</td>
+</tr>
+<tr class="odd">
+<td><code>insilico_pcr.raa_probe_max_mm</code></td>
+<td>Integer <code>0</code> to <code>9</code></td>
+<td><code>5</code></td>
+<td>Max total probe mismatches (probe judged on total load, not 3’ kinetics; TwistAmp 2.7).</td>
 </tr>
 </tbody>
 </table>
@@ -688,8 +714,8 @@ window.Quarto = {
 <h3 class="anchored" data-anchor-id="how-to-interpret-validation-heatmaps">3.2. How to Interpret Validation Heatmaps</h3>
 <p>Module 10 outputs an interactive report (<code>coverage_heatmap.html</code>):</p>
 <ul>
-<li><strong>PCR vs RAA Amplified</strong>: RAA coverage is almost always slightly lower than PCR coverage because RAA primers are longer (<span class="math inline">\(30-35\)</span> bp), which statistically increases the probability of encountering random mutations along the primer body.</li>
-<li><strong>Subtype Breakdown Table</strong>: Review this table to identify target bias. If a primer set has <span class="math inline">\(99\%\)</span> H3N2 coverage but <span class="math inline">\(0\%\)</span> H5N1 coverage, it indicates that the primer has a critical mismatch against the avian clade sequence.</li>
+<li><strong>PCR vs RAA Amplified</strong>: in the <em>current</em> model RAA reads at or below PCR because RAA detection is a subset of the PCR-<code>seqkit -m</code> amplified set (see §1.3) — a modelling artifact, not biology. Under the RAA tolerance itself, RAA coverage is expected to be <em>higher</em> than PCR.</li>
+<li><strong>Subtype Breakdown Table</strong>: Review this table to identify target bias. A primer set with <span class="math inline">\(99\%\)</span> H3N2 but a low H5N1 figure signals either a real mismatch against a divergent clade OR the PCR-cap artifact (§1.3) — the Module 12 attribution distinguishes the two.</li>
 </ul>
 <hr>
 </section>
@@ -758,9 +784,9 @@ window.Quarto = {
 <section id="low-raa-coverage-compared-to-pcr-coverage" class="level3">
 <h3 class="anchored" data-anchor-id="low-raa-coverage-compared-to-pcr-coverage">5.1. Low RAA Coverage compared to PCR Coverage</h3>
 <ul>
-<li><strong>Problem</strong>: The RAA amplified percentage is significantly lower than the PCR amplified percentage.</li>
-<li><strong>Cause</strong>: This occurs in target sets with high sequence variability. RAA primers are longer (30–35 bp) than PCR primers (20 bp), which statistically increases the probability of encountering mismatches along the primer body. In addition, the strict 3’ terminal zone limit (max 1 mismatch in 8 bp) penalizes binding much harder than standard PCR.</li>
-<li><strong>Solution</strong>: Turn on degenerate base rescue in Module 08 to introduce degenerate bases at variable sites, allowing the primer to match multiple variants and restore RAA coverage.</li>
+<li><strong>Problem</strong>: The RAA amplified percentage reads at or below the PCR amplified percentage.</li>
+<li><strong>Cause</strong>: This is a known modelling artifact, not biology (see §1.3). RAA is currently evaluated only on sequences the PCR <code>seqkit -m max_mismatch</code> pass already amplified, so the RAA figure is a <em>subset</em> of PCR and cannot exceed it — the opposite of RAA’s higher mismatch tolerance. For divergent subtypes (e.g.&nbsp;global H5N1) this understates true RAA coverage substantially (31.84% reported vs ~94% RAA-viable).</li>
+<li><strong>Solution</strong>: A fix that runs <code>seqkit</code> at the RAA mismatch budget and derives PCR and RAA separately is prepared (to be run on HPC). Meanwhile use the Module 12 coverage-failure attribution for the RAA-viable estimate, and degenerate base rescue (Module 08) to genuinely raise coverage at variable sites.</li>
 </ul>
 
 
@@ -769,6 +795,9 @@ window.Quarto = {
 </section>
 
 <div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" role="list">
+<div id="ref-higgins2022" class="csl-entry" role="listitem">
+Higgins, Matthew, Oliver W. Stringer, Daniel Ward, et al. 2022. <span>“Characterizing the Impact of Primer-Template Mismatches on Recombinase Polymerase Amplification.”</span> <em>The Journal of Molecular Diagnostics</em> 24 (11): 1207–16. <a href="https://doi.org/10.1016/j.jmoldx.2022.08.005">https://doi.org/10.1016/j.jmoldx.2022.08.005</a>.
+</div>
 <div id="ref-shen2016" class="csl-entry" role="listitem">
 <span class="nocase">Shen, Wei et al.</span> 2016. <span>“SeqKit: A Cross-Platform and Ultrafast Toolkit for FASTA/q File Manipulation.”</span> <em>PLoS ONE</em> 11 (10): e0163962. <a href="https://doi.org/10.1371/journal.pone.0163962">https://doi.org/10.1371/journal.pone.0163962</a>.
 </div>
