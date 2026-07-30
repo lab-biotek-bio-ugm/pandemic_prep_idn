@@ -404,6 +404,7 @@ window.Quarto = {
   <li><a href="#top-recommended-multiplex-assay-combinations" id="toc-top-recommended-multiplex-assay-combinations" class="nav-link" data-scroll-target="#top-recommended-multiplex-assay-combinations">2. Top Recommended Multiplex Assay Combinations</a>
   <ul class="collapse">
   <li><a href="#key-biophysical-observations" id="toc-key-biophysical-observations" class="nav-link" data-scroll-target="#key-biophysical-observations">Key Biophysical Observations:</a></li>
+  <li><a href="#multiplex-outcome-across-the-three-design-databases" id="toc-multiplex-outcome-across-the-three-design-databases" class="nav-link" data-scroll-target="#multiplex-outcome-across-the-three-design-databases">Multiplex outcome across the three design databases</a></li>
   </ul></li>
   <li><a href="#oligo-synthesis-specifications-rank-1-recommended-pair-flua_rank10_x_flub_rank12" id="toc-oligo-synthesis-specifications-rank-1-recommended-pair-flua_rank10_x_flub_rank12" class="nav-link" data-scroll-target="#oligo-synthesis-specifications-rank-1-recommended-pair-flua_rank10_x_flub_rank12">3. Oligo Synthesis Specifications (Rank 1 Recommended Pair: <code>FluA_Rank10_x_FluB_Rank12</code>)</a>
   <ul class="collapse">
@@ -437,7 +438,7 @@ window.Quarto = {
 </header>
 
 
-<p>To enable simultaneous point-of-care detection of <strong>Influenza A</strong> and <strong>Influenza B</strong> in a single reaction tube, candidate assays designed for the Indonesian cohort were evaluated using the <strong>Multiplex Compatibility Screening Engine</strong> (<code>scripts/m11_multiplex_checker.py</code>).</p>
+<p>To enable simultaneous point-of-care detection of <strong>Influenza A</strong> and <strong>Influenza B</strong> in a single reaction tube, candidate assays were evaluated using the <strong>Multiplex Compatibility Screening Engine</strong> (<code>scripts/m11_multiplex_checker.py</code>). All three design databases were screened — the outcome comparison is in §2 below — and the <strong><code>indo-only</code></strong> assay (the only one that is both usable and safe) is detailed in full.</p>
 <p>The screening engine evaluates all pairwise heterodimerization thermodynamics (<span class="math inline">\(\Delta G\)</span>), kinetic melting temperature alignment (<span class="math inline">\(\Delta T_m\)</span>), and fluorophore channel separation across a 6-oligo reaction mixture (<span class="math inline">\(\text{Fwd}_A, \text{Rev}_A, \text{Probe}_A, \text{Fwd}_B, \text{Rev}_B, \text{Probe}_B\)</span>).</p>
 <hr>
 <section id="dual-temperature-screening-regimes" class="level2">
@@ -535,6 +536,61 @@ window.Quarto = {
 <li><strong>3’-End Safety</strong>: All 3’ complementarity runs remain <span class="math inline">\(\le 5\text{ bp}\)</span>, well below the threshold for priming non-specific noise.</li>
 <li><strong>Kinetic Balance</strong>: <span class="math inline">\(T_m\)</span> differences across all primers in the multiplex mixture stay within acceptable bounds for isothermal and thermal cycling regimes.</li>
 <li><strong>Fluorophore Independence</strong>: Influenza A probe uses FAM (<span class="math inline">\(\lambda_{\text{em}} = 520\text{ nm}\)</span>) and Influenza B probe uses HEX (<span class="math inline">\(\lambda_{\text{em}} = 556\text{ nm}\)</span>), eliminating optical crosstalk.</li>
+</ul>
+</section>
+<section id="multiplex-outcome-across-the-three-design-databases" class="level3">
+<h3 class="anchored" data-anchor-id="multiplex-outcome-across-the-three-design-databases">Multiplex outcome across the three design databases</h3>
+<p>The same A×B pairing was run for each design database. The recommendation differs sharply — and not in favour of the design with the most passing pairs:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Design DB</th>
+<th>Pairs screened</th>
+<th>Passed (level)</th>
+<th>Rank-1 pair</th>
+<th>Score</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong><code>indo-only</code></strong></td>
+<td>15</td>
+<td><strong>6</strong> (L1)</td>
+<td><code>FluA_Rank10_x_FluB_Rank12</code></td>
+<td>64.5</td>
+<td>✅ recommended</td>
+</tr>
+<tr class="even">
+<td><code>sea-only</code></td>
+<td>90</td>
+<td>14 (L1)</td>
+<td><code>FluA_Rank3_x_FluB_Rank8</code></td>
+<td>60.8</td>
+<td>⚠️ passes, but Flu A probe is globally H3N2-blind</td>
+</tr>
+<tr class="odd">
+<td><code>all-partial</code></td>
+<td>0</td>
+<td>0</td>
+<td>— none —</td>
+<td>—</td>
+<td>❌ No Recommended Combination</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong><code>all-partial</code> yields nothing</strong>: every one of its top-10 Flu A candidates trips the non-negotiable Class-1 gate — a predicted off-target amplicon on human DNA — so no pair can be recommended (see <a href="./results_candidates.html">Candidate Diagnostics</a> and <a href="./results_design_comparison.html">Design DB Comparison §3</a>).</li>
+<li><strong><code>sea-only</code> passes more pairs (14) but is not usable</strong>: its Flu A probe detects only 2.66% of global H3N2 (the largest subtype), so the assay is globally blind to H3N2 (<a href="./results_performance.html">Performance §3</a>).</li>
+<li><strong><code>indo-only</code> is the recommended, usable multiplex</strong> — the assay detailed below.</li>
 </ul>
 <hr>
 </section>

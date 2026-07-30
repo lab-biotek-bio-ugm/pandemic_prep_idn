@@ -623,6 +623,54 @@ window.Quarto = {
 <ul>
 <li><strong>Indonesia Only</strong>: Core composite score of <strong>0.4022</strong> (Grade <strong>D</strong>, mean entropy: <strong>0.2741</strong>, conservation: <strong>88.19%</strong>).</li>
 </ul>
+<div class="callout callout-style-default callout-note callout-titled" title="The selection/conservation landscape is nearly database-independent">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>The selection/conservation landscape is nearly database-independent
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Running the same Bridge scoring on the other two design databases gives almost identical results — the MP segment’s conservation profile does not depend on which cohort was used to build the design:</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Design DB</th>
+<th>Composite</th>
+<th>Grade</th>
+<th>Conservation</th>
+<th>Mean entropy</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>indo-only</code></td>
+<td>0.4022</td>
+<td>D</td>
+<td>88.19%</td>
+<td>0.2741</td>
+</tr>
+<tr class="even">
+<td><code>sea-only</code></td>
+<td>0.4071</td>
+<td>D</td>
+<td>89.27%</td>
+<td>0.2492</td>
+</tr>
+<tr class="odd">
+<td><code>all-partial</code></td>
+<td>0.4005</td>
+<td>D</td>
+<td>87.83%</td>
+<td>0.2826</td>
+</tr>
+</tbody>
+</table>
+<p>The designs therefore differ <strong>not</strong> in the biology they see (selection, conservation) but in <strong>where</strong> the downstream primer tool places the primers on that shared landscape — which is what drives the coverage and safety differences on the other results pages.</p>
+</div>
+</div>
 <section id="downstream-primer-coordinate-selection-module-08-09" class="level3">
 <h3 class="anchored" data-anchor-id="downstream-primer-coordinate-selection-module-08-09">Downstream Primer Coordinate Selection (Module 08 &amp; 09)</h3>
 <p>Although Module 07 exported the entire segment as a single candidate zone (due to the segment’s small size and overall conservation), the downstream primer design tool (<strong>Primer3/PrimerLab</strong> in Module 08 and 09) scanned this candidate region to select the most stable physical primer coordinates:</p>
