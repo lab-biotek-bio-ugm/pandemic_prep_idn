@@ -171,6 +171,18 @@ This core score was computed across the entire segment. Because the engine was c
 
 *   **Indonesia Only**: Core composite score of **0.4022** (Grade **D**, mean entropy: **0.2741**, conservation: **88.19%**).
 
+::: {.callout-note title="The selection/conservation landscape is nearly database-independent"}
+Running the same Bridge scoring on the other two design databases gives almost identical results — the MP segment's conservation profile does not depend on which cohort was used to build the design:
+
+| Design DB | Composite | Grade | Conservation | Mean entropy |
+|---|---|---|---|---|
+| `indo-only` | 0.4022 | D | 88.19% | 0.2741 |
+| `sea-only` | 0.4071 | D | 89.27% | 0.2492 |
+| `all-partial` | 0.4005 | D | 87.83% | 0.2826 |
+
+The designs therefore differ **not** in the biology they see (selection, conservation) but in **where** the downstream primer tool places the primers on that shared landscape — which is what drives the coverage and safety differences on the other results pages.
+:::
+
 ### Downstream Primer Coordinate Selection (Module 08 & 09)
 
 Although Module 07 exported the entire segment as a single candidate zone (due to the segment's small size and overall conservation), the downstream primer design tool (**Primer3/PrimerLab** in Module 08 and 09) scanned this candidate region to select the most stable physical primer coordinates:

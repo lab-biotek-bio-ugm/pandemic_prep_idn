@@ -33,6 +33,10 @@ Rank-1 candidate of each build, measured on the global surveillance set (Flu A: 
 For Flu A, the highest PCR (`sea-only`, 95.68%) and the highest RAA (`all-partial`, 95.12%) each belong to a design that **fails elsewhere** — `sea-only`'s RAA assay is globally broken (§2) and `all-partial`'s primers amplify human DNA (§3). `indo-only`'s 91.16% is the only figure that holds up on both lenses **and** survives the safety gates.
 :::
 
+::: {.callout-warning title="RAA columns are not directly comparable across scenarios"}
+The `indo-only` run predates the M10 RAA decoupling fix, so its RAA is **PCR-capped** (RAA can never exceed PCR — global A/H5N1 reads 31.84%, its decoupled value is ≈94% from the M12 estimate). `sea-only` and `all-partial` were run with the **decoupled** model (RAA can exceed PCR). `indo-only` has not been re-run under the new model (HPC capacity). Therefore **cross-scenario comparison is made on PCR** (same seqkit model everywhere); RAA is shown per-scenario only. This does not change the verdict — it rests on PCR balance, human safety (§3), and multiplex viability (§4), not on the RAA ranking.
+:::
+
 ---
 
 ## 2. The `sea-only` RAA Blind Spot (probe vs global H3N2)

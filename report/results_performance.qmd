@@ -2,34 +2,46 @@
 title: "Results: In-silico Performance Validation"
 ---
 
-This section details the final in-silico validation of the designed primer and probe candidates against a global database of **50,750 Influenza A sequences**. We evaluate the diagnostic sensitivity of the `indo-only` design, analyze the impact of degenerate bases on sequence coverage, and provide direct access to the validation heatmaps and report files.
+This section validates the designed primer/probe sets in silico across the **three design databases** — `indo-only`, `sea-only`, and `all-partial` — evaluated on the same global surveillance set (Flu A MP: $N=50{,}750$; Flu B MP: $N=7{,}248$). `indo-only` remains the main design thread of this report; the other two are shown for comparison. The full head-to-head trade-off (safety, multiplex, thermodynamics) is on the [Design DB Comparison](results_design_comparison.qmd) page.
+
+::: {.callout-important title="Compare scenarios on PCR; read RAA per-scenario"}
+Cross-scenario numbers are only fair on the **PCR** lens — every build uses the same `seqkit -m 3` PCR model. The **RAA** figures are **not** directly comparable across scenarios: the `indo-only` run predates the M10 RAA decoupling fix, so its RAA is **PCR-capped** (it can never exceed PCR — e.g. global A/H5N1 reads 31.84%), whereas `sea-only` and `all-partial` were run with the decoupled model (RAA can exceed PCR). The decoupled RAA-viable estimate for `indo-only` comes from the seqkit-free M12 attribution (global A/H5N1 ≈ 94%). `indo-only` has not been re-run under the new model (HPC capacity). Rankings below are therefore made on PCR; RAA is shown per-scenario with this caveat.
+:::
 
 ---
 
 ## 1. Overall In-Silico Coverage and Degeneracy Uplift
 
-To verify the necessity of IUPAC degenerate bases, all candidate sets were evaluated in two forms:
-1.  **Degenerate**: Primers and probes containing degenerate bases (e.g., `R` for A/G, `Y` for C/T) as designed by the pipeline.
-2.  **Non-Degenerate**: Primers and probes where degenerate bases were replaced with their consensus base, simulating non-degenerate diagnostic design.
+IUPAC degenerate bases were verified by evaluating each candidate in two forms — **degenerate** (as designed) and **non-degenerate** (degenerate positions collapsed to consensus). Degenerate coverage of the rank-1 candidate on the global set:
 
-The table below summarizes the overall PCR and RAA amplification coverage achieved on the global dataset ($N=50,750$ sequences), demonstrating the **degeneracy uplift (gain)**:
+**Flu A MP** ($N=50{,}750$):
 
-| Scenario | PCR (Non-Degen) | PCR (Degenerate) | PCR Uplift | RAA (Non-Degen) | RAA (Degenerate) | RAA Uplift |
-|---|---|---|---|---|---|---|
-| **Indonesia Only** <br> *(`indo-only`)* | 18.61% | **91.20%** | <span style="color: #10b981; font-weight: bold;">+72.59%</span> | 18.61% | **91.16%** | <span style="color: #10b981; font-weight: bold;">+72.55%</span> |
+| Design DB | PCR non-degen | **PCR degenerate** | RAA detected (see caveat) |
+|---|---|---|---|
+| `indo-only` | 18.61% | **91.20%** | 91.16% † |
+| `sea-only` | 80.89% | **95.68%** | 62.07% |
+| `all-partial` | 19.22% | **93.88%** | 95.12% |
 
-::: {.callout-important title="Read RAA vs PCR carefully: the RAA column is currently PCR-capped"}
-For `indo-only`, degenerate RAA (**91.16%**) sits just *below* degenerate PCR (**91.20%**) overall — and for divergent subtypes the gap is large and backwards (global A/H5N1 RAA reads 31.84%). That ordering is wrong for the chemistry — RAA tolerates *more* mismatches than PCR — and it is a **modelling artifact, not biology**: M10 uses the PCR `seqkit -m 3` result as the amplification gate and only then applies the RAA tolerance, so the RAA figure is a subset of PCR and cannot exceed it (global A/H5N1 is ~94% RAA-viable, not 31.84%). See the Module 10 page (§1.3) and the coverage-failure attribution (M12; output in `results/<build>/m12/` and surfaced in the QC dossier) for the corrected two-lens view. A fix (running `seqkit` at the RAA mismatch budget) is prepared; the numbers here are what the current pipeline produced and are PCR-conservative for an RAA assay.
-:::
+**Flu B MP** ($N=7{,}248$):
 
-### Key Findings:
-*   **The Degeneracy Necessity**: For the `indo-only` design, removing degenerate bases collapses the coverage from **91.20%** down to **18.61%** (a drop of over 70 percentage points). This demonstrates mathematically that IUPAC degenerate bases are essential to accommodate the natural genomic variation in circulating Influenza A strains [@elnifro2000]. Non-degenerate primers carrying a consensus-only sequence are systematically excluded from large fractions of the viral sequence space, consistent with documented primer mismatch failures in diagnostic assays [@khan2020].
+| Design DB | PCR non-degen | **PCR degenerate** | RAA detected |
+|---|---|---|---|
+| `indo-only` | 83.22% | **83.22%** | 83.22% † |
+| `sea-only` | 83.29% | **99.68%** | 99.81% |
+| `all-partial` | 83.29% | **99.68%** | 99.81% |
+
+† `indo-only` RAA is PCR-capped (old M10) — not comparable to the decoupled sea/all-partial RAA; see the caveat above.
+
+### Key findings
+
+*   **Degeneracy is essential**: collapsing degenerate bases to consensus drops `indo-only` Flu A PCR coverage from **91.20% to 18.61%** (>70 pp), confirming IUPAC bases are needed to absorb natural variation [@elnifro2000; @khan2020]. `all-partial` shows the same collapse (93.88% → 19.22%); `sea-only`'s non-degen floor is higher (80.89%) because its consensus already matches a broader regional set.
+*   **On PCR, a broader database raises Flu B but is mixed for Flu A**: Flu B PCR jumps from 83.22% (`indo-only`) to 99.68% (`sea-only`/`all-partial`). For Flu A the overall PCR is similar (91–96%), but the *per-subtype* picture (§3) is where the databases diverge.
 
 ---
 
 ## 2. In-Silico Validation Report Dashboard
 
-For transparency and verification, the pipeline generated interactive HTML reports under Module 10 (M10). You can click the links below to open the real data tables and coverage heatmaps directly in your browser:
+Interactive M10 reports and coverage heatmaps for each design (Flu A MP shown; the B-MP equivalents live under each `influenza-b-mp-*` build):
 
 ```{=html}
 <style>
@@ -69,7 +81,7 @@ For transparency and verification, the pipeline generated interactive HTML repor
 <table class="table report-table" style="width: 100%; border-collapse: collapse; margin-top: 15px;">
   <thead>
     <tr>
-      <th style="text-align: left;">Geographic Model</th>
+      <th style="text-align: left;">Design Database</th>
       <th style="text-align: center;">M10 Comparison Report</th>
       <th style="text-align: center;">Degenerate Heatmap</th>
       <th style="text-align: center;">Non-Degenerate Heatmap</th>
@@ -88,35 +100,60 @@ For transparency and verification, the pipeline generated interactive HTML repor
         <a class="btn-report" href="results/influenza-a-mp-indo-only/m10/non_degenerate/coverage_heatmap.html">Non-Degenerate</a>
       </td>
     </tr>
+    <tr>
+      <td style="border: 1px solid #e2e8f0; padding: 12px; font-weight: bold; color: #334155;">Southeast Asia (sea-only)</td>
+      <td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+        <a class="btn-report" href="results/influenza-a-mp-sea-only/m10/comparison_report.html">Comparison Report</a>
+      </td>
+      <td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+        <a class="btn-report" href="results/influenza-a-mp-sea-only/m10/degenerate/coverage_heatmap.html">Degenerate Heatmap</a>
+      </td>
+      <td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+        <a class="btn-report" href="results/influenza-a-mp-sea-only/m10/non_degenerate/coverage_heatmap.html">Non-Degenerate</a>
+      </td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid #e2e8f0; padding: 12px; font-weight: bold; color: #334155;">All-Partial (all-partial)</td>
+      <td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+        <a class="btn-report" href="results/influenza-a-mp-all-partial/m10/comparison_report.html">Comparison Report</a>
+      </td>
+      <td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+        <a class="btn-report" href="results/influenza-a-mp-all-partial/m10/degenerate/coverage_heatmap.html">Degenerate Heatmap</a>
+      </td>
+      <td style="border: 1px solid #e2e8f0; padding: 12px; text-align: center;">
+        <a class="btn-report" href="results/influenza-a-mp-all-partial/m10/non_degenerate/coverage_heatmap.html">Non-Degenerate</a>
+      </td>
+    </tr>
   </tbody>
 </table>
+```
 
 ---
 
-## 3. Subtype-Specific Performance Analysis
+## 3. Subtype-Specific Performance (global set, Flu A)
 
-Coverage was analyzed across major Influenza A subtypes. **Read the database carefully:** the table below is coverage against the **design / focal DB** (the sequences each design was built on), which is why the numbers are high. It is NOT the global figure — see the global callout beneath it.
+The clearest view of how the design database matters is the **global per-subtype PCR-amplified** coverage (fair across scenarios — same seqkit model):
 
-**Design / focal-DB coverage** (RAA detected %; N = design-DB sequences of that subtype):
+| Subtype | N | `indo-only` PCR | `sea-only` PCR | `all-partial` PCR |
+|---|---|---|---|---|
+| A / H3N2 | 19,258 | **99.01%** | 97.87% | 93.81% |
+| A / H1N1 | 18,468 | 96.92% | **99.15%** | 97.10% |
+| A / H9N2 | 4,315 | 91.24% | 77.87% | **98.49%** |
+| A / H5N1 | 1,784 | **31.84%** | **96.69%** | 79.54% |
 
-| Subtype | Indo-Only (focal) |
-|---|---|
-| **A / H5N1** | **98.72%** *(N=312)* |
-| **A / H3N2** | **99.58%** *(N=238)* |
-| **A / H1N1** | **96.25%** *(N=160)* |
+*   **`indo-only`** is strongest on the human-seasonal subtypes it was built around (H3N2 99.0%, H1N1 96.9%) but weakest on **global A/H5N1 (31.84%)** — its Indonesia-tuned primers miss divergent avian H5N1 at the strict `≤3`-mismatch PCR gate. Under RAA tolerance this gap largely closes (M12 estimate ≈ 94%; see the Module 10 page §1.3), so it is a strict-PCR/importation signal, not a routine-use hole.
+*   **A broader database buys H5N1 breadth**: `sea-only` (96.69%) and `all-partial` (79.54%) PCR-amplify far more global H5N1 than `indo-only`, at a modest cost to H3N2 (`all-partial` 93.81%). This is the core database trade-off.
 
-::: {.callout-important title="The same subtypes on the GLOBAL surveillance set (indo-only design) tell a different story"}
-Against the 50,750-sequence global set, indo-only per-subtype RAA-detected coverage is **H5N1 31.84%**, H3N2 ~99.0%, H1N1 ~96.9%. The H5N1 drop is **not** a design failure on the target population (focal = 98.7%): it is the strict-PCR gate artifact of §1.3 (M10) — under RAA tolerance ~94% of global H5N1 is still detected, and only ~6% (clade 2.3.4.4b / Japan) truly fails. The design covers what circulates in Indonesia; the global H5N1 gap is an importation/preparedness signal, not a routine-use hole.
+::: {.callout-note title="Design/focal-DB coverage (context)"}
+On the **focal DB it was built on**, `indo-only` reaches $>96\%$ on every major subtype (A/H5N1 98.72% n=312, A/H3N2 99.58% n=238, A/H1N1 96.25% n=160) — the design covers what circulates locally. The focal-DB per-subtype tables for `sea-only`/`all-partial` are dominated by their own (regional / avian-heavy) training composition and are not directly comparable, so the global table above is used for the cross-scenario view.
 :::
 
-*   **Subtype Inclusivity (focal / target population)**: the `indo-only` design is highly effective across all major subtypes it was built on, achieving $>96\%$ on H5N1, H3N2, and H1N1.
-
 ---
 
-## 4. Temporal Robustness & Antigenic Drift
+## 4. Temporal Robustness & Antigenic Drift (`indo-only`)
 
-Breaking the `indo-only` degenerate coverage down by collection year (from the M10 `breakdowns.year` table) shows how the assay tracks viral evolution over the past decade against the global set:
+Breaking the `indo-only` degenerate coverage down by collection year (M10 `breakdowns.year`) shows how the recommended design tracks viral evolution on the global set:
 
-*   Coverage is **not flat**: it holds in the high-80s to low-90s for most years (2015 87.4%, 2016 89.0%, 2017 88.8%, 2018 88.1%, 2019 93.7%), dips to a low of **74.4% in 2020**, and then recovers strongly through the most recent seasons (2023 92.8%, 2024 93.4%, **2025 96.7%**).
-*   The 2020 trough coincides with the pandemic-era collapse in influenza sampling (only 1,393 sequences that year) and a shift in circulating lineages; the subsequent recovery to >93% indicates the **187–341 bp** target region remains well matched to the strains dominating 2023–2025.
-*   Because RAA detection is currently PCR-capped (§1), these per-year figures are the PCR-conservative floor; the RAA-viable coverage in the divergent years is higher (see M12).
+*   Coverage is **not flat**: high-80s to low-90s for most years (2015 87.4%, 2016 89.0%, 2017 88.8%, 2018 88.1%, 2019 93.7%), a low of **74.4% in 2020**, then recovery to 2023 92.8%, 2024 93.4%, **2025 96.7%**.
+*   The 2020 trough coincides with the pandemic-era collapse in influenza sampling (1,393 sequences that year) and a lineage shift; recovery to >93% shows the **187–341 bp** target stays well matched to 2023–2025 strains.
+*   These per-year figures are PCR (the fair lens); RAA-viable coverage in divergent years is higher (M12).

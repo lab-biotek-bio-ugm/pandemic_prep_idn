@@ -2,7 +2,7 @@
 title: "Results: Dual-Target Multiplex Compatibility"
 ---
 
-To enable simultaneous point-of-care detection of **Influenza A** and **Influenza B** in a single reaction tube, candidate assays designed for the Indonesian cohort were evaluated using the **Multiplex Compatibility Screening Engine** (`scripts/m11_multiplex_checker.py`).
+To enable simultaneous point-of-care detection of **Influenza A** and **Influenza B** in a single reaction tube, candidate assays were evaluated using the **Multiplex Compatibility Screening Engine** (`scripts/m11_multiplex_checker.py`). All three design databases were screened — the outcome comparison is in §2 below — and the **`indo-only`** assay (the only one that is both usable and safe) is detailed in full.
 
 The screening engine evaluates all pairwise heterodimerization thermodynamics ($\Delta G$), kinetic melting temperature alignment ($\Delta T_m$), and fluorophore channel separation across a 6-oligo reaction mixture ($\text{Fwd}_A, \text{Rev}_A, \text{Probe}_A, \text{Fwd}_B, \text{Rev}_B, \text{Probe}_B$).
 
@@ -34,6 +34,20 @@ The table below highlights the top 5 multiplex combinations ranked by candidate 
 *   **3'-End Safety**: All 3' complementarity runs remain $\le 5\text{ bp}$, well below the threshold for priming non-specific noise.
 *   **Kinetic Balance**: $T_m$ differences across all primers in the multiplex mixture stay within acceptable bounds for isothermal and thermal cycling regimes.
 *   **Fluorophore Independence**: Influenza A probe uses FAM ($\lambda_{\text{em}} = 520\text{ nm}$) and Influenza B probe uses HEX ($\lambda_{\text{em}} = 556\text{ nm}$), eliminating optical crosstalk.
+
+### Multiplex outcome across the three design databases
+
+The same A×B pairing was run for each design database. The recommendation differs sharply — and not in favour of the design with the most passing pairs:
+
+| Design DB | Pairs screened | Passed (level) | Rank-1 pair | Score | Verdict |
+|---|---|---|---|---|---|
+| **`indo-only`** | 15 | **6** (L1) | `FluA_Rank10_x_FluB_Rank12` | 64.5 | ✅ recommended |
+| `sea-only` | 90 | 14 (L1) | `FluA_Rank3_x_FluB_Rank8` | 60.8 | ⚠️ passes, but Flu A probe is globally H3N2-blind |
+| `all-partial` | 0 | 0 | — none — | — | ❌ No Recommended Combination |
+
+*   **`all-partial` yields nothing**: every one of its top-10 Flu A candidates trips the non-negotiable Class-1 gate — a predicted off-target amplicon on human DNA — so no pair can be recommended (see [Candidate Diagnostics](results_candidates.qmd) and [Design DB Comparison §3](results_design_comparison.qmd)).
+*   **`sea-only` passes more pairs (14) but is not usable**: its Flu A probe detects only 2.66% of global H3N2 (the largest subtype), so the assay is globally blind to H3N2 ([Performance §3](results_performance.qmd)).
+*   **`indo-only` is the recommended, usable multiplex** — the assay detailed below.
 
 ---
 
