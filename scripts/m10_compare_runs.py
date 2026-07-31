@@ -298,10 +298,10 @@ def generate_html_report(non_deg_data: list, deg_data: list, output_path: Path, 
         <!-- Toggle Switch -->
         <div class="toggle-container">
             <button class="toggle-btn active" id="btn-global" onclick="setDatasetMode('global')">
-                🌍 Global Surveillance DB (50k)
+                🌍 Global Surveillance DB
             </button>
             <button class="toggle-btn" id="btn-design" onclick="setDatasetMode('design')">
-                🎯 Design DB (Indonesia 645)
+                🎯 Design DB
             </button>
         </div>
 
@@ -364,6 +364,18 @@ def generate_html_report(non_deg_data: list, deg_data: list, output_path: Path, 
         const nonDegData = {non_deg_json};
         const degData = {deg_json};
         const hasDegenerate = {has_deg_js};
+
+        // Label the dataset-toggle buttons from the actual data — the design DB
+        // size varies per build (e.g. indo ~759, all-partial ~6,306) and the
+        // global set is not always 50k (Flu B ~7k), so these must not be hardcoded.
+        (function() {{
+            const c = (nonDegData && nonDegData[0]) || {{}};
+            const g = c.total_seqs, d = c.design_db_total;
+            if (g != null) document.getElementById('btn-global').innerHTML =
+                '🌍 Global Surveillance DB (' + g.toLocaleString() + ')';
+            if (d != null) document.getElementById('btn-design').innerHTML =
+                '🎯 Design DB (' + d.toLocaleString() + ' seqs)';
+        }})();
 
         let currentMode = 'global';
 
