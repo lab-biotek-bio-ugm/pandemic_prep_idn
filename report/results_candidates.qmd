@@ -260,7 +260,7 @@ To prevent self-priming, hairpin loops, and primer-dimer complexes, the engine e
 IUPAC degenerate bases (such as `R` for A/G, `Y` for C/T, `K` for G/T) are added to primer sequences to ensure the assay can bind to templates containing single nucleotide polymorphisms (SNPs) circulating in the population:
 
 *   **Indo-Only Design**:
-    *   Designed in the conserved **187–341 bp** M1 region (155 bp amplicon), the primers use a degeneracy multiplier of **16** to reach **95.65%** coverage of the local design/focal set (**91.20%** against the 50,750-sequence global set; see the Performance page). This relatively low degeneracy count is ideal because high degeneracy can dilute the concentration of the active primer species in the PCR mix.
+    *   Designed in the conserved **187–341 bp** M1 region (155 bp amplicon), the primers use a degeneracy multiplier of **16** to reach **95.65%** coverage of the local design/focal set (**91.47%** PCR / 93.14% RAA against the 50,750-sequence global set; see the Performance page). This relatively low degeneracy count is ideal because high degeneracy can dilute the concentration of the active primer species in the PCR mix.
 
 ---
 

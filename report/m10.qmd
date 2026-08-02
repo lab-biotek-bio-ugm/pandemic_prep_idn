@@ -54,12 +54,10 @@ Because RAA operates at $39^\circ\text{C}$ with a recombinase complex, it is the
 *   **Internal Body**: Allows a maximum of **4 mismatches** across the rest of the 30–35 bp primer body.
 *   **Probe Binding**: Probes (46–52 bp) allow a maximum of **5 total mismatches** (not 3'-weighted — the probe's 3' terminus is C3-blocked and cannot be extended), following the TwistAmp Assay Design Manual §2.7, which reports RPA performance is unaffected by 5–9 mismatches on primers or probe.
 
-### 1.3. Why the reported RAA coverage is currently PCR-capped
-A modelling caveat that materially changes how the numbers below should be read. M10's authoritative amplification call comes from `seqkit amplicon`, run at the **PCR** mismatch budget (`max_mismatch = 3`). The RAA binding rules in §1.2 are then applied **only to sequences seqkit already amplified**. Consequently `raa_detected_pct` is a *subset* of the PCR-amplified set and can never exceed it — the opposite of RAA biology, in which the recombinase tolerates *more* mismatches than PCR.
+### 1.3. RAA is decoupled from the PCR gate; the H5N1 gap is a real clade mismatch
+An earlier version of M10 took its amplification call only from `seqkit amplicon` run at the **PCR** budget (`max_mismatch = 3`) and then applied the RAA rules **only to sequences seqkit had already amplified** — so `raa_detected_pct` was a subset of PCR and could never exceed it, the opposite of RAA biology. That has been fixed: M10 now runs `seqkit` at the wider RAA mismatch budget and derives the PCR and RAA metrics **separately**, so RAA can exceed PCR where the chemistry allows. In the current `indo-only` run RAA (93.14%) now sits *above* PCR (91.47%) overall, and RAA raises the divergent-but-close subtypes (e.g. A/H9N2 91→99%).
 
-The effect is large for divergent subtypes. Global A/H5N1 clusters at ~5 total primer mismatches — above the PCR `-m 3` cut, but within the RAA tolerance (1 in the 3' anchor, 4 internal). The seqkit gate therefore drops them and the reported figure reads **31.84%**, whereas a seqkit-free RAA assessment puts the RAA-viable coverage at **~94%**. Only ~6% of global H5N1 fails even the RAA model, concentrated in clade **2.3.4.4b / Japan** and driven by a reverse-primer internal substitution. This per-position attribution is produced by the coverage-failure attribution step (**M12**, `scripts/m12_coverage_attribution.py`) — a generated artifact under `results/<build>/m12/` and surfaced in the per-assay QC dossier, not a separate report page.
-
-The figures on this page are therefore **PCR-conservative for an RAA assay**. A fix that runs `seqkit` at the RAA budget and derives the PCR and RAA metrics separately is prepared; until it is executed on HPC, treat `raa_detected_pct` as a lower bound and the Module 12 RAA-viable estimate as the biologically appropriate figure.
+What the decoupling did **not** change is global **A/H5N1**, which stays at ~32% on both PCR (31.84%) and RAA (31.89%). This is therefore **not** a modelling artifact — it is a genuine **clade mismatch**. `indo-only` covers *local* A/H5N1 at **98.72%** (the focal DB, §3), so the primers work on the H5N1 they were built on; but Indonesian H5N1 is **clade 2.1.3** (older poultry outbreaks) while global H5N1 is now dominated by **clade 2.3.4.4b** (the 2021+ panzootic), which differs beyond even the RAA mismatch tolerance. The per-position attribution (**M12**, `scripts/m12_coverage_attribution.py`, under `results/<build>/m12/` and in the QC dossier) localises the failing global H5N1 to clade 2.3.4.4b. Closing it would require adding recent clade-2.3.4.4b sequences to the design cohort — a targeted update, not a routine-use fix.
 
 
 ---
@@ -114,7 +112,7 @@ python scripts/m10_insilico_pcr.py \
 ```
 
 ### 3. Output: coverage_summary.json Snippet
-This file breaks performance down by subtype for **two** databases — the 50,750-sequence global surveillance set and the smaller design/focal set — and the two must not be conflated. The **98.72%** for A/H5N1 shown below is the **design/focal DB** (the Indonesian sequences the primers were built on, n=312). On the **global** set the same candidate reads only **31.84%** for A/H5N1 — but, per §1.3, that figure is capped by the PCR amplification gate; under RAA tolerance ~94% of global H5N1 would still be detected. A/H3N2 covers ~99% on both. (The `design_db_breakdowns` key below is the focal set; `breakdowns` is the global set.)
+This file breaks performance down by subtype for **two** databases — the 50,750-sequence global surveillance set and the smaller design/focal set — and the two must not be conflated. The **98.72%** for A/H5N1 shown below is the **design/focal DB** (the Indonesian sequences the primers were built on, n=312). On the **global** set the same candidate reads only **31.84%** for A/H5N1 (and ~32% under RAA too) — a genuine **clade mismatch** (local clade 2.1.3 vs the globally dominant clade 2.3.4.4b), per §1.3, not a gating artifact. A/H3N2 and A/H1N1 cover ~97–99% on both databases. (The `design_db_breakdowns` key below is the focal set; `breakdowns` is the global set.)
 ```json
 [
   {
@@ -128,10 +126,10 @@ This file breaks performance down by subtype for **two** databases — the 50,75
     "fwd_degenerate_seq": "CTGACTAARGGRATTTTRGGRTTTGTATTCA",
     "rev_degenerate_seq": "GCAGTTAAACTATATARGAARCTGAARAGRG",
     "total_seqs": 50750,
-    "pcr_amplified_pct": 91.20,
-    "pcr_detected_pct": 91.06,
-    "raa_amplified_pct": 91.16,
-    "raa_detected_pct": 91.16,
+    "pcr_amplified_pct": 91.47,
+    "pcr_detected_pct": 91.33,
+    "raa_amplified_pct": 93.15,
+    "raa_detected_pct": 93.14,
     "design_db_breakdowns": {
       "subtype": [
         {
@@ -194,7 +192,7 @@ insilico_pcr:
 Module 10 outputs an interactive report (`coverage_heatmap.html`):
 
 *   **PCR vs RAA Amplified**: in the *current* model RAA reads at or below PCR because RAA detection is a subset of the PCR-`seqkit -m` amplified set (see §1.3) — a modelling artifact, not biology. Under the RAA tolerance itself, RAA coverage is expected to be *higher* than PCR.
-*   **Subtype Breakdown Table**: Review this table to identify target bias. A primer set with $99\%$ H3N2 but a low H5N1 figure signals either a real mismatch against a divergent clade OR the PCR-cap artifact (§1.3) — the Module 12 attribution distinguishes the two.
+*   **Subtype Breakdown Table**: Review this table to identify target bias. A primer set with $99\%$ H3N2 but a low H5N1 figure signals a real mismatch against a divergent clade (e.g. global A/H5N1 clade 2.3.4.4b, §1.3); the Module 12 attribution localises which clade/position drives it.
 
 ---
 
@@ -215,7 +213,7 @@ The files involved in Module 10 are summarized below:
 
 ## 5. Troubleshooting & Limitations
 
-### 5.1. Low RAA Coverage compared to PCR Coverage
-*   **Problem**: The RAA amplified percentage reads at or below the PCR amplified percentage.
-*   **Cause**: This is a known modelling artifact, not biology (see §1.3). RAA is currently evaluated only on sequences the PCR `seqkit -m max_mismatch` pass already amplified, so the RAA figure is a *subset* of PCR and cannot exceed it — the opposite of RAA's higher mismatch tolerance. For divergent subtypes (e.g. global H5N1) this understates true RAA coverage substantially (31.84% reported vs ~94% RAA-viable).
-*   **Solution**: A fix that runs `seqkit` at the RAA mismatch budget and derives PCR and RAA separately is prepared (to be run on HPC). Meanwhile use the Module 12 coverage-failure attribution for the RAA-viable estimate, and degenerate base rescue (Module 08) to genuinely raise coverage at variable sites.
+### 5.1. RAA coverage reads at or below PCR for a subtype
+*   **Problem**: A subtype's RAA amplified percentage does not exceed its PCR percentage.
+*   **Was an artifact, now fixed**: earlier M10 evaluated RAA only on sequences the PCR `seqkit -m max_mismatch` pass had already amplified, so RAA was a *subset* of PCR and could never exceed it. M10 now runs `seqkit` at the RAA budget and derives PCR and RAA **separately** (see §1.3), so RAA exceeds PCR wherever the extra mismatch tolerance helps (e.g. `indo-only` overall RAA 93.14% > PCR 91.47%).
+*   **If RAA still ≈ PCR for a subtype, it is real**: the divergence exceeds even the RAA tolerance. The clearest case is global A/H5N1 (~32% on both) — a clade mismatch (local clade 2.1.3 vs global clade 2.3.4.4b), not a modelling limit. Use the Module 12 attribution to localise it, and a targeted design update (adding the divergent clade) rather than expecting the model to close the gap.
