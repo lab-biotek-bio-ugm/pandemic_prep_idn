@@ -49,3 +49,10 @@ jobs:
           publish_branch: cf-pages
           publish_dir: report/_site
           exclude_assets: ''
+          # keep_files preserves the large interactive run artifacts (results/**:
+          # M10 comparison reports, coverage heatmaps, BLAST summaries) that the
+          # report links to. They are gitignored derived data, so the render can
+          # never regenerate them on the runner; without this every publish would
+          # wipe them off cf-pages. They are refreshed independently by
+          # scripts/sync_report_assets.sh when a run changes.
+          keep_files: true
