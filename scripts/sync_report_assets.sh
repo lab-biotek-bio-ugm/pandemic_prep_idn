@@ -72,6 +72,9 @@ def relabel(html_path, build):
 synced = []
 for src in sorted(glob.glob(os.path.join(results_dir, "influenza-a-mp-*", "m10"))):
     build = os.path.basename(os.path.dirname(src))
+    # skip archived/backup copies (e.g. *_old-m10) — only canonical builds ship
+    if any(m in build for m in ("_old", ".old", "_bak", "_backup", "_archive")):
+        continue
     dst = os.path.join(wt, "results", build, "m10")
     shutil.rmtree(dst, ignore_errors=True)
     shutil.copytree(src, dst)
