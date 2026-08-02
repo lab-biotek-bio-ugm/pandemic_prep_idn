@@ -458,7 +458,7 @@ window.Quarto = {
   <ul class="collapse">
   <li><a href="#pcr-simulation-seqkit-amplicon" id="toc-pcr-simulation-seqkit-amplicon" class="nav-link" data-scroll-target="#pcr-simulation-seqkit-amplicon">1.1. PCR Simulation (<code>seqkit amplicon</code>)</a></li>
   <li><a href="#raa-isothermal-binding-rules" id="toc-raa-isothermal-binding-rules" class="nav-link" data-scroll-target="#raa-isothermal-binding-rules">1.2. RAA Isothermal Binding Rules</a></li>
-  <li><a href="#why-the-reported-raa-coverage-is-currently-pcr-capped" id="toc-why-the-reported-raa-coverage-is-currently-pcr-capped" class="nav-link" data-scroll-target="#why-the-reported-raa-coverage-is-currently-pcr-capped">1.3. Why the reported RAA coverage is currently PCR-capped</a></li>
+  <li><a href="#raa-is-decoupled-from-the-pcr-gate-the-h5n1-gap-is-a-real-clade-mismatch" id="toc-raa-is-decoupled-from-the-pcr-gate-the-h5n1-gap-is-a-real-clade-mismatch" class="nav-link" data-scroll-target="#raa-is-decoupled-from-the-pcr-gate-the-h5n1-gap-is-a-real-clade-mismatch">1.3. RAA is decoupled from the PCR gate; the H5N1 gap is a real clade mismatch</a></li>
   </ul></li>
   <li><a href="#spatial-and-temporal-coverage-aggregation" id="toc-spatial-and-temporal-coverage-aggregation" class="nav-link" data-scroll-target="#spatial-and-temporal-coverage-aggregation">2. Spatial and Temporal Coverage Aggregation</a></li>
   <li><a href="#configuration-outputs-tabset-examples" id="toc-configuration-outputs-tabset-examples" class="nav-link" data-scroll-target="#configuration-outputs-tabset-examples">3. Configuration &amp; Outputs (Tabset Examples)</a></li>
@@ -470,7 +470,7 @@ window.Quarto = {
   <li><a href="#inputs-outputs-files" id="toc-inputs-outputs-files" class="nav-link" data-scroll-target="#inputs-outputs-files">4. Inputs, Outputs &amp; Files</a></li>
   <li><a href="#troubleshooting-limitations" id="toc-troubleshooting-limitations" class="nav-link" data-scroll-target="#troubleshooting-limitations">5. Troubleshooting &amp; Limitations</a>
   <ul class="collapse">
-  <li><a href="#low-raa-coverage-compared-to-pcr-coverage" id="toc-low-raa-coverage-compared-to-pcr-coverage" class="nav-link" data-scroll-target="#low-raa-coverage-compared-to-pcr-coverage">5.1. Low RAA Coverage compared to PCR Coverage</a></li>
+  <li><a href="#raa-coverage-reads-at-or-below-pcr-for-a-subtype" id="toc-raa-coverage-reads-at-or-below-pcr-for-a-subtype" class="nav-link" data-scroll-target="#raa-coverage-reads-at-or-below-pcr-for-a-subtype">5.1. RAA coverage reads at or below PCR for a subtype</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -545,11 +545,10 @@ window.Quarto = {
 <li><strong>Probe Binding</strong>: Probes (46–52 bp) allow a maximum of <strong>5 total mismatches</strong> (not 3’-weighted — the probe’s 3’ terminus is C3-blocked and cannot be extended), following the TwistAmp Assay Design Manual §2.7, which reports RPA performance is unaffected by 5–9 mismatches on primers or probe.</li>
 </ul>
 </section>
-<section id="why-the-reported-raa-coverage-is-currently-pcr-capped" class="level3">
-<h3 class="anchored" data-anchor-id="why-the-reported-raa-coverage-is-currently-pcr-capped">1.3. Why the reported RAA coverage is currently PCR-capped</h3>
-<p>A modelling caveat that materially changes how the numbers below should be read. M10’s authoritative amplification call comes from <code>seqkit amplicon</code>, run at the <strong>PCR</strong> mismatch budget (<code>max_mismatch = 3</code>). The RAA binding rules in §1.2 are then applied <strong>only to sequences seqkit already amplified</strong>. Consequently <code>raa_detected_pct</code> is a <em>subset</em> of the PCR-amplified set and can never exceed it — the opposite of RAA biology, in which the recombinase tolerates <em>more</em> mismatches than PCR.</p>
-<p>The effect is large for divergent subtypes. Global A/H5N1 clusters at ~5 total primer mismatches — above the PCR <code>-m 3</code> cut, but within the RAA tolerance (1 in the 3’ anchor, 4 internal). The seqkit gate therefore drops them and the reported figure reads <strong>31.84%</strong>, whereas a seqkit-free RAA assessment puts the RAA-viable coverage at <strong>~94%</strong>. Only ~6% of global H5N1 fails even the RAA model, concentrated in clade <strong>2.3.4.4b / Japan</strong> and driven by a reverse-primer internal substitution. This per-position attribution is produced by the coverage-failure attribution step (<strong>M12</strong>, <code>scripts/m12_coverage_attribution.py</code>) — a generated artifact under <code>results/&lt;build&gt;/m12/</code> and surfaced in the per-assay QC dossier, not a separate report page.</p>
-<p>The figures on this page are therefore <strong>PCR-conservative for an RAA assay</strong>. A fix that runs <code>seqkit</code> at the RAA budget and derives the PCR and RAA metrics separately is prepared; until it is executed on HPC, treat <code>raa_detected_pct</code> as a lower bound and the Module 12 RAA-viable estimate as the biologically appropriate figure.</p>
+<section id="raa-is-decoupled-from-the-pcr-gate-the-h5n1-gap-is-a-real-clade-mismatch" class="level3">
+<h3 class="anchored" data-anchor-id="raa-is-decoupled-from-the-pcr-gate-the-h5n1-gap-is-a-real-clade-mismatch">1.3. RAA is decoupled from the PCR gate; the H5N1 gap is a real clade mismatch</h3>
+<p>An earlier version of M10 took its amplification call only from <code>seqkit amplicon</code> run at the <strong>PCR</strong> budget (<code>max_mismatch = 3</code>) and then applied the RAA rules <strong>only to sequences seqkit had already amplified</strong> — so <code>raa_detected_pct</code> was a subset of PCR and could never exceed it, the opposite of RAA biology. That has been fixed: M10 now runs <code>seqkit</code> at the wider RAA mismatch budget and derives the PCR and RAA metrics <strong>separately</strong>, so RAA can exceed PCR where the chemistry allows. In the current <code>indo-only</code> run RAA (93.14%) now sits <em>above</em> PCR (91.47%) overall, and RAA raises the divergent-but-close subtypes (e.g.&nbsp;A/H9N2 91→99%).</p>
+<p>What the decoupling did <strong>not</strong> change is global <strong>A/H5N1</strong>, which stays at ~32% on both PCR (31.84%) and RAA (31.89%). This is therefore <strong>not</strong> a modelling artifact — it is a genuine <strong>clade mismatch</strong>. <code>indo-only</code> covers <em>local</em> A/H5N1 at <strong>98.72%</strong> (the focal DB, §3), so the primers work on the H5N1 they were built on; but Indonesian H5N1 is <strong>clade 2.1.3</strong> (older poultry outbreaks) while global H5N1 is now dominated by <strong>clade 2.3.4.4b</strong> (the 2021+ panzootic), which differs beyond even the RAA mismatch tolerance. The per-position attribution (<strong>M12</strong>, <code>scripts/m12_coverage_attribution.py</code>, under <code>results/&lt;build&gt;/m12/</code> and in the QC dossier) localises the failing global H5N1 to clade 2.3.4.4b. Closing it would require adding recent clade-2.3.4.4b sequences to the design cohort — a targeted update, not a routine-use fix.</p>
 <hr>
 </section>
 </section>
@@ -599,7 +598,7 @@ window.Quarto = {
 <span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">--threads</span> 16</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div id="tabset-1-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-3-tab">
-<p>This file breaks performance down by subtype for <strong>two</strong> databases — the 50,750-sequence global surveillance set and the smaller design/focal set — and the two must not be conflated. The <strong>98.72%</strong> for A/H5N1 shown below is the <strong>design/focal DB</strong> (the Indonesian sequences the primers were built on, n=312). On the <strong>global</strong> set the same candidate reads only <strong>31.84%</strong> for A/H5N1 — but, per §1.3, that figure is capped by the PCR amplification gate; under RAA tolerance ~94% of global H5N1 would still be detected. A/H3N2 covers ~99% on both. (The <code>design_db_breakdowns</code> key below is the focal set; <code>breakdowns</code> is the global set.)</p>
+<p>This file breaks performance down by subtype for <strong>two</strong> databases — the 50,750-sequence global surveillance set and the smaller design/focal set — and the two must not be conflated. The <strong>98.72%</strong> for A/H5N1 shown below is the <strong>design/focal DB</strong> (the Indonesian sequences the primers were built on, n=312). On the <strong>global</strong> set the same candidate reads only <strong>31.84%</strong> for A/H5N1 (and ~32% under RAA too) — a genuine <strong>clade mismatch</strong> (local clade 2.1.3 vs the globally dominant clade 2.3.4.4b), per §1.3, not a gating artifact. A/H3N2 and A/H1N1 cover ~97–99% on both databases. (The <code>design_db_breakdowns</code> key below is the focal set; <code>breakdowns</code> is the global set.)</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ot">[</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">{</span></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"cand_id"</span><span class="fu">:</span> <span class="st">"segment-MP_region_1_Cand_1"</span><span class="fu">,</span></span>
@@ -612,10 +611,10 @@ window.Quarto = {
 <span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"fwd_degenerate_seq"</span><span class="fu">:</span> <span class="st">"CTGACTAARGGRATTTTRGGRTTTGTATTCA"</span><span class="fu">,</span></span>
 <span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"rev_degenerate_seq"</span><span class="fu">:</span> <span class="st">"GCAGTTAAACTATATARGAARCTGAARAGRG"</span><span class="fu">,</span></span>
 <span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"total_seqs"</span><span class="fu">:</span> <span class="dv">50750</span><span class="fu">,</span></span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"pcr_amplified_pct"</span><span class="fu">:</span> <span class="fl">91.20</span><span class="fu">,</span></span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"pcr_detected_pct"</span><span class="fu">:</span> <span class="fl">91.06</span><span class="fu">,</span></span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"raa_amplified_pct"</span><span class="fu">:</span> <span class="fl">91.16</span><span class="fu">,</span></span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"raa_detected_pct"</span><span class="fu">:</span> <span class="fl">91.16</span><span class="fu">,</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"pcr_amplified_pct"</span><span class="fu">:</span> <span class="fl">91.47</span><span class="fu">,</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"pcr_detected_pct"</span><span class="fu">:</span> <span class="fl">91.33</span><span class="fu">,</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"raa_amplified_pct"</span><span class="fu">:</span> <span class="fl">93.15</span><span class="fu">,</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"raa_detected_pct"</span><span class="fu">:</span> <span class="fl">93.14</span><span class="fu">,</span></span>
 <span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"design_db_breakdowns"</span><span class="fu">:</span> <span class="fu">{</span></span>
 <span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"subtype"</span><span class="fu">:</span> <span class="ot">[</span></span>
 <span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>        <span class="fu">{</span></span>
@@ -715,7 +714,7 @@ window.Quarto = {
 <p>Module 10 outputs an interactive report (<code>coverage_heatmap.html</code>):</p>
 <ul>
 <li><strong>PCR vs RAA Amplified</strong>: in the <em>current</em> model RAA reads at or below PCR because RAA detection is a subset of the PCR-<code>seqkit -m</code> amplified set (see §1.3) — a modelling artifact, not biology. Under the RAA tolerance itself, RAA coverage is expected to be <em>higher</em> than PCR.</li>
-<li><strong>Subtype Breakdown Table</strong>: Review this table to identify target bias. A primer set with <span class="math inline">\(99\%\)</span> H3N2 but a low H5N1 figure signals either a real mismatch against a divergent clade OR the PCR-cap artifact (§1.3) — the Module 12 attribution distinguishes the two.</li>
+<li><strong>Subtype Breakdown Table</strong>: Review this table to identify target bias. A primer set with <span class="math inline">\(99\%\)</span> H3N2 but a low H5N1 figure signals a real mismatch against a divergent clade (e.g.&nbsp;global A/H5N1 clade 2.3.4.4b, §1.3); the Module 12 attribution localises which clade/position drives it.</li>
 </ul>
 <hr>
 </section>
@@ -781,12 +780,12 @@ window.Quarto = {
 </section>
 <section id="troubleshooting-limitations" class="level2">
 <h2 class="anchored" data-anchor-id="troubleshooting-limitations">5. Troubleshooting &amp; Limitations</h2>
-<section id="low-raa-coverage-compared-to-pcr-coverage" class="level3">
-<h3 class="anchored" data-anchor-id="low-raa-coverage-compared-to-pcr-coverage">5.1. Low RAA Coverage compared to PCR Coverage</h3>
+<section id="raa-coverage-reads-at-or-below-pcr-for-a-subtype" class="level3">
+<h3 class="anchored" data-anchor-id="raa-coverage-reads-at-or-below-pcr-for-a-subtype">5.1. RAA coverage reads at or below PCR for a subtype</h3>
 <ul>
-<li><strong>Problem</strong>: The RAA amplified percentage reads at or below the PCR amplified percentage.</li>
-<li><strong>Cause</strong>: This is a known modelling artifact, not biology (see §1.3). RAA is currently evaluated only on sequences the PCR <code>seqkit -m max_mismatch</code> pass already amplified, so the RAA figure is a <em>subset</em> of PCR and cannot exceed it — the opposite of RAA’s higher mismatch tolerance. For divergent subtypes (e.g.&nbsp;global H5N1) this understates true RAA coverage substantially (31.84% reported vs ~94% RAA-viable).</li>
-<li><strong>Solution</strong>: A fix that runs <code>seqkit</code> at the RAA mismatch budget and derives PCR and RAA separately is prepared (to be run on HPC). Meanwhile use the Module 12 coverage-failure attribution for the RAA-viable estimate, and degenerate base rescue (Module 08) to genuinely raise coverage at variable sites.</li>
+<li><strong>Problem</strong>: A subtype’s RAA amplified percentage does not exceed its PCR percentage.</li>
+<li><strong>Was an artifact, now fixed</strong>: earlier M10 evaluated RAA only on sequences the PCR <code>seqkit -m max_mismatch</code> pass had already amplified, so RAA was a <em>subset</em> of PCR and could never exceed it. M10 now runs <code>seqkit</code> at the RAA budget and derives PCR and RAA <strong>separately</strong> (see §1.3), so RAA exceeds PCR wherever the extra mismatch tolerance helps (e.g.&nbsp;<code>indo-only</code> overall RAA 93.14% &gt; PCR 91.47%).</li>
+<li><strong>If RAA still ≈ PCR for a subtype, it is real</strong>: the divergence exceeds even the RAA tolerance. The clearest case is global A/H5N1 (~32% on both) — a clade mismatch (local clade 2.1.3 vs global clade 2.3.4.4b), not a modelling limit. Use the Module 12 attribution to localise it, and a targeted design update (adding the divergent clade) rather than expecting the model to close the gap.</li>
 </ul>
 
 

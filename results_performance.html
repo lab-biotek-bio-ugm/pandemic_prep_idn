@@ -452,17 +452,17 @@ window.Quarto = {
 
 
 <p>This section validates the designed primer/probe sets in silico across the <strong>three design databases</strong> — <code>indo-only</code>, <code>sea-only</code>, and <code>all-partial</code> — evaluated on the same global surveillance set (Flu A MP: <span class="math inline">\(N=50{,}750\)</span>; Flu B MP: <span class="math inline">\(N=7{,}248\)</span>). <code>indo-only</code> remains the main design thread of this report; the other two are shown for comparison. The full head-to-head trade-off (safety, multiplex, thermodynamics) is on the <a href="./results_design_comparison.html">Design DB Comparison</a> page.</p>
-<div class="callout callout-style-default callout-important callout-titled" title="Compare scenarios on PCR; read RAA per-scenario">
+<div class="callout callout-style-default callout-note callout-titled" title="All three builds use the same (decoupled) M10 model">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Important</span>Compare scenarios on PCR; read RAA per-scenario
+<span class="screen-reader-only">Note</span>All three builds use the same (decoupled) M10 model
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>Cross-scenario numbers are only fair on the <strong>PCR</strong> lens — every build uses the same <code>seqkit -m 3</code> PCR model. The <strong>RAA</strong> figures are <strong>not</strong> directly comparable across scenarios: the <code>indo-only</code> run predates the M10 RAA decoupling fix, so its RAA is <strong>PCR-capped</strong> (it can never exceed PCR — e.g.&nbsp;global A/H5N1 reads 31.84%), whereas <code>sea-only</code> and <code>all-partial</code> were run with the decoupled model (RAA can exceed PCR). The decoupled RAA-viable estimate for <code>indo-only</code> comes from the seqkit-free M12 attribution (global A/H5N1 ≈ 94%). <code>indo-only</code> has not been re-run under the new model (HPC capacity). Rankings below are therefore made on PCR; RAA is shown per-scenario with this caveat.</p>
+<p><code>indo-only</code> was re-run with the current M10, in which RAA is decoupled from the PCR gate, so all three scenarios are now directly comparable on both the PCR and RAA lenses. This re-run also corrected two figures from an earlier draft: <code>indo-only</code> Flu B coverage (an old-M10 build under-counted the degenerate benefit, reporting 83.22% where the correct value is 99.68%), and global A/H5N1 — the earlier seqkit-free M12 step suggested ~94% RAA-viable, but the real decoupled M10 confirms it stays ~32% (a genuine local-vs-global clade gap, §3), not a modelling artifact.</p>
 </div>
 </div>
 <hr>
@@ -488,9 +488,9 @@ window.Quarto = {
 <tbody>
 <tr class="odd">
 <td><code>indo-only</code></td>
-<td>18.61%</td>
-<td><strong>91.20%</strong></td>
-<td>91.16% <em>(capped)</em></td>
+<td>18.64%</td>
+<td><strong>91.47%</strong></td>
+<td>93.14%</td>
 </tr>
 <tr class="even">
 <td><code>sea-only</code></td>
@@ -519,9 +519,9 @@ window.Quarto = {
 <tbody>
 <tr class="odd">
 <td><code>indo-only</code></td>
-<td>83.22%</td>
-<td><strong>83.22%</strong></td>
-<td>83.22% <em>(capped)</em></td>
+<td>83.29%</td>
+<td><strong>99.68%</strong></td>
+<td>99.81%</td>
 </tr>
 <tr class="even">
 <td><code>sea-only</code></td>
@@ -537,12 +537,11 @@ window.Quarto = {
 </tr>
 </tbody>
 </table>
-<p><em>(capped)</em> — <code>indo-only</code> RAA is PCR-capped (old M10) and not comparable to the decoupled sea/all-partial RAA; see the caveat above.</p>
 <section id="key-findings" class="level3">
 <h3 class="anchored" data-anchor-id="key-findings">Key findings</h3>
 <ul>
-<li><strong>Degeneracy is essential</strong>: collapsing degenerate bases to consensus drops <code>indo-only</code> Flu A PCR coverage from <strong>91.20% to 18.61%</strong> (&gt;70 pp), confirming IUPAC bases are needed to absorb natural variation <span class="citation" data-cites="elnifro2000 khan2020">(<a href="#ref-elnifro2000" role="doc-biblioref"><span class="nocase">Elnifro et al.</span> 2000</a>; <a href="#ref-khan2020" role="doc-biblioref">Khan and Cheung 2020</a>)</span>. <code>all-partial</code> shows the same collapse (93.88% → 19.22%); <code>sea-only</code>’s non-degen floor is higher (80.89%) because its consensus already matches a broader regional set.</li>
-<li><strong>On PCR, a broader database raises Flu B but is mixed for Flu A</strong>: Flu B PCR jumps from 83.22% (<code>indo-only</code>) to 99.68% (<code>sea-only</code>/<code>all-partial</code>). For Flu A the overall PCR is similar (91–96%), but the <em>per-subtype</em> picture (§3) is where the databases diverge.</li>
+<li><strong>Degeneracy is essential</strong>: collapsing degenerate bases to consensus drops <code>indo-only</code> Flu A PCR coverage from <strong>91.47% to 18.64%</strong> (&gt;70 pp), confirming IUPAC bases are needed to absorb natural variation <span class="citation" data-cites="elnifro2000 khan2020">(<a href="#ref-elnifro2000" role="doc-biblioref"><span class="nocase">Elnifro et al.</span> 2000</a>; <a href="#ref-khan2020" role="doc-biblioref">Khan and Cheung 2020</a>)</span>. <code>all-partial</code> shows the same collapse (93.88% → 19.22%); <code>sea-only</code>’s non-degen floor is higher (80.89%) because its consensus already matches a broader regional set.</li>
+<li><strong>Flu B is essentially maxed for every database</strong>: all three reach <strong>99.68% PCR / 99.81% RAA</strong> on Flu B — a broader design database gives no Flu B advantage (the earlier 83.22% for <code>indo-only</code> was an old-M10 under-count). The database choice matters for <strong>Flu A</strong>, and specifically in the <em>per-subtype</em> picture (§3), not in the overall Flu A PCR (91–96% for all three).</li>
 </ul>
 <hr>
 </section>
@@ -634,21 +633,21 @@ window.Quarto = {
 <tr class="odd">
 <td>A / H3N2</td>
 <td>19,258</td>
-<td><strong>99.01%</strong></td>
+<td><strong>99.02%</strong></td>
 <td>97.87%</td>
 <td>93.81%</td>
 </tr>
 <tr class="even">
 <td>A / H1N1</td>
 <td>18,468</td>
-<td>96.92%</td>
+<td>96.95%</td>
 <td><strong>99.15%</strong></td>
 <td>97.10%</td>
 </tr>
 <tr class="odd">
 <td>A / H9N2</td>
 <td>4,315</td>
-<td>91.24%</td>
+<td>93.81%</td>
 <td>77.87%</td>
 <td><strong>98.49%</strong></td>
 </tr>
@@ -662,8 +661,8 @@ window.Quarto = {
 </tbody>
 </table>
 <ul>
-<li><strong><code>indo-only</code></strong> is strongest on the human-seasonal subtypes it was built around (H3N2 99.0%, H1N1 96.9%) but weakest on <strong>global A/H5N1 (31.84%)</strong> — its Indonesia-tuned primers miss divergent avian H5N1 at the strict <code>≤3</code>-mismatch PCR gate. Under RAA tolerance this gap largely closes (M12 estimate ≈ 94%; see the Module 10 page §1.3), so it is a strict-PCR/importation signal, not a routine-use hole.</li>
-<li><strong>A broader database buys H5N1 breadth</strong>: <code>sea-only</code> (96.69%) and <code>all-partial</code> (79.54%) PCR-amplify far more global H5N1 than <code>indo-only</code>, at a modest cost to H3N2 (<code>all-partial</code> 93.81%). This is the core database trade-off.</li>
+<li><strong><code>indo-only</code></strong> is strong on the human-seasonal subtypes it was built around (H3N2 99.0%, H1N1 97.0%) but weak on <strong>global A/H5N1 (31.84% PCR; RAA does not rescue it — 31.89%)</strong>. This is <strong>not</strong> a modelling artifact and not a strict-PCR quirk: <code>indo-only</code> covers <em>local</em> A/H5N1 at <strong>98.72%</strong> (§context below), so the primers work on the H5N1 it was built on. The gap is a <strong>clade mismatch</strong> — Indonesian H5N1 is <strong>clade 2.1.3</strong> (older poultry outbreaks), while global H5N1 is now dominated by <strong>clade 2.3.4.4b</strong> (the 2021+ panzootic), which differs beyond even the RAA mismatch tolerance. So it is a genuine <strong>global-H5N1 / importation</strong> gap, not a local-use hole.</li>
+<li><strong>A broader database buys global-H5N1 breadth</strong>: <code>sea-only</code> (96.69%) and <code>all-partial</code> (79.54%) PCR-amplify far more global H5N1 because their design cohorts include the divergent clades — but that advantage is undercut by their disqualifying flaws (sea: probe globally blind to H3N2; all-partial: primers amplify human DNA — see <a href="./results_design_comparison.html">Design DB Comparison</a>).</li>
 </ul>
 <div class="callout callout-style-default callout-note callout-titled" title="Design/focal-DB coverage (context)">
 <div class="callout-header d-flex align-content-center">
@@ -686,7 +685,7 @@ window.Quarto = {
 <ul>
 <li>Coverage is <strong>not flat</strong>: high-80s to low-90s for most years (2015 87.4%, 2016 89.0%, 2017 88.8%, 2018 88.1%, 2019 93.7%), a low of <strong>74.4% in 2020</strong>, then recovery to 2023 92.8%, 2024 93.4%, <strong>2025 96.7%</strong>.</li>
 <li>The 2020 trough coincides with the pandemic-era collapse in influenza sampling (1,393 sequences that year) and a lineage shift; recovery to &gt;93% shows the <strong>187–341 bp</strong> target stays well matched to 2023–2025 strains.</li>
-<li>These per-year figures are PCR (the fair lens); RAA-viable coverage in divergent years is higher (M12).</li>
+<li>These per-year figures are the decoupled-M10 PCR coverage; the RAA lens tracks it closely for <code>indo-only</code> now that the two are computed separately.</li>
 </ul>
 
 
