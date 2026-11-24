@@ -1,0 +1,14 @@
+Evolutionary Diagnostic Pipeline for Emerging Pathogens
+Copyright (c) 2026 Matin Nuhamunada and Engki Nandatama
+
+This product includes software developed at the Faculty of Biology,
+Universitas Gadjah Mada, in collaboration with Pusat Riset Biomedis BRIN,
+under the CARE-I programme (Pandemic Fund).
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Documentation, the written report and figures in this repository are licensed
+separately under CC BY 4.0 (see LICENSE-docs).
+
+Input sequence data is not covered by either licence: GISAID records remain
+subject to the GISAID Database Access Agreement.

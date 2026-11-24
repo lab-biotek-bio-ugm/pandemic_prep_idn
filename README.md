@@ -5,6 +5,8 @@
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg?style=flat-square)](https://www.python.org/)
 [![Documentation](https://img.shields.io/badge/docs-Mintlify-blueviolet.svg?style=flat-square)](https://pandemic-prep-docs.mintlify.site/)
 [![Report](https://img.shields.io/badge/report-Quarto-orange.svg?style=flat-square)](https://pandemic.matinnu.org/)
+[![License: code Apache 2.0](https://img.shields.io/badge/code-Apache%202.0-green.svg?style=flat-square)](LICENSE)
+[![License: docs CC BY 4.0](https://img.shields.io/badge/docs-CC%20BY%204.0-green.svg?style=flat-square)](LICENSE-docs)
 
 An enterprise-grade, **Snakemake-orchestrated bioinformatics pipeline** designed for the rapid identification, validation, and thermodynamic design of diagnostic assays (PCR and RAA/RPA) resilient to mutational escape. 
 
@@ -139,4 +141,23 @@ Our comprehensive documentation is deployed at [pandemic-prep-docs.mintlify.site
 ---
 
 ## 📄 License
-This project is licensed under the terms of the license pending institutional review.
+Copyright (c) 2026 Matin Nuhamunada and Engki Nandatama.
+
+| What | Licence |
+|---|---|
+| Pipeline code — `rules/`, `scripts/`, `Snakefile`, `config/`, `tests/` | [Apache License 2.0](LICENSE) |
+| Documentation, report and figures — `docs/`, `report/`, this README | [CC BY 4.0](LICENSE-docs) ([ringkasan](https://creativecommons.org/licenses/by/4.0/deed.id)) |
+
+Apache 2.0 is used for the code rather than MIT because it carries an explicit
+patent grant and a retaliation clause — relevant where contributors span several
+institutions and a diagnostic patent may follow. Creative Commons
+[advises against CC licences for software](https://creativecommons.org/faq/#can-i-apply-a-creative-commons-license-to-software),
+so CC BY covers only the written work.
+
+Neither licence grants rights to the primer and probe designs themselves; any
+patent or IP arrangement over the assay is governed by the PKS between the
+partner institutions. See [NOTICE](NOTICE) for attribution terms.
+
+Input sequence data is likewise outside both licences: GISAID records remain
+subject to the GISAID Database Access Agreement, and any derived alignments,
+trees or figures must be redistributed under those terms.
