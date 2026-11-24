@@ -1,0 +1,27 @@
+Creative Commons Attribution 4.0 International (CC BY 4.0)
+
+Copyright (c) 2026 Matin Nuhamunada and Engki Nandatama
+
+This licence applies to the documentation, written report and figures in this
+repository -- `docs/`, `report/` (including rendered output and generated
+figures) and the README -- but NOT to the pipeline source code, which is
+released under the Apache License 2.0 in LICENSE.
+
+You are free to share and adapt this material for any purpose, including
+commercially, provided you give appropriate credit, link to the licence, and
+indicate if changes were made.
+
+Full licence text:
+  https://creativecommons.org/licenses/by/4.0/legalcode
+Plain-language summary (Bahasa Indonesia):
+  https://creativecommons.org/licenses/by/4.0/deed.id
+
+Suggested attribution:
+  Nuhamunada M, Nandatama E. Evolutionary Diagnostic Pipeline for Emerging
+  Pathogens. Fakultas Biologi, Universitas Gadjah Mada, 2026.
+  https://github.com/lab-biotek-bio-ugm/pandemic_prep_idn -- CC BY 4.0.
+
+Note on input data: this licence does not extend to third-party sequence data.
+GISAID records remain subject to the GISAID Database Access Agreement, and any
+derived alignments, trees or figures built from them must be redistributed
+under those terms.
